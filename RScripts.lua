@@ -1,5 +1,5 @@
 --- Author: Rostal
---- Last edit date: 2022/11/6
+--- Last edit date: 2022/11/14
 
 util.require_natives("natives-1663599433")
 util.keep_running()
@@ -10,49 +10,7 @@ util.keep_running()
 ---------------------------------------
 local Support_GTAO = 1.63
 
-local weapon_list_name = {
-    "小刀",
-    "穿甲手枪",
-    "电击枪",
-    "微型冲锋枪",
-    "特质卡宾步枪",
-    "突击霰弹枪",
-    "火神机枪",
-    "火箭筒",
-    "电磁步枪"
-}
-
-local weapon_name_list_item = {
-    { "小刀" },
-    { "穿甲手枪" },
-    { "电击枪" },
-    { "微型冲锋枪" },
-    { "特质卡宾步枪" },
-    { "突击霰弹枪" },
-    { "火神机枪" },
-    { "火箭筒" },
-    { "电磁步枪" }
-}
-
-local weapon_list_model = {
-    "WEAPON_KNIFE",
-    "WEAPON_APPISTOL",
-    "WEAPON_STUNGUN",
-    "WEAPON_MICROSMG",
-    "WEAPON_SPECIALCARBINE",
-    "WEAPON_ASSAULTSHOTGUN",
-    "WEAPON_MINIGUN",
-    "WEAPON_RPG",
-    "WEAPON_RAILGUN"
-}
-
-local entity_type_ListItem = {
-    { "Ped", {}, "NPC" },
-    { "Vehicle", {}, "载具" },
-    { "Object", {}, "物体" },
-    { "Pickup", {}, "拾取物" }
-}
-
+-- 颜色
 local color = {
     purple = {
         r = 1.0,
@@ -74,6 +32,63 @@ local color = {
     }
 }
 
+-- 武器
+local weapon_name_ListItem = {
+    { "小刀" },
+    { "穿甲手枪" },
+    { "电击枪" },
+    { "微型冲锋枪" },
+    { "特质卡宾步枪" },
+    { "突击霰弹枪" },
+    { "火神机枪" },
+    { "火箭筒" },
+    { "电磁步枪" }
+}
+local weapon_model_list = {
+    "WEAPON_KNIFE",
+    "WEAPON_APPISTOL",
+    "WEAPON_STUNGUN",
+    "WEAPON_MICROSMG",
+    "WEAPON_SPECIALCARBINE",
+    "WEAPON_ASSAULTSHOTGUN",
+    "WEAPON_MINIGUN",
+    "WEAPON_RPG",
+    "WEAPON_RAILGUN"
+}
+
+-- 驾驶风格
+local driving_style_name_ListItem = {
+    { "正常" },
+    { "半冲刺" },
+    { "反向" },
+    { "无视红绿灯" },
+    { "避开交通" },
+    { "极度避开交通" },
+    { "有时超车" },
+}
+local driving_style_list = {
+    786603,
+    1074528293,
+    8388614,
+    1076,
+    2883621,
+    786468,
+    262144,
+    786469,
+    512,
+    5,
+    6
+}
+
+-- 实体类型
+local entity_type_ListItem = {
+    { "Ped", {}, "NPC" },
+    { "Vehicle", {}, "载具" },
+    { "Object", {}, "物体" },
+    { "Pickup", {}, "拾取物" }
+}
+
+-- enum
 local enum_PedType = {
     "PLAYER_0",
     "PLAYER_1",
@@ -810,13 +825,24 @@ function Set_Entity_Networked(ent, canMigrate)
     return false
 end
 
----升级载具（排除涂装）
+---获取载具指定座位的NPC
+function get_vehicle_ped(vehicle, seat)
+    if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, seat, false) then
+        return VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, seat)
+    end
+    return false
+end
+
+---升级载具（排除涂装、车轮）
 function Upgrade_Vehicle(vehicle)
     if ENTITY.DOES_ENTITY_EXIST(vehicle) and ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         VEHICLE.SET_VEHICLE_MOD_KIT(vehicle, 0)
         for i = 0, 50 do
-            if i ~= 48 then
-                VEHICLE.SET_VEHICLE_MOD(vehicle, i, VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, i) - 1, false)
+            if i ~= 48 and i ~= 23 and i ~= 24 then
+                local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, i)
+                if mod_num > 0 then
+                    VEHICLE.SET_VEHICLE_MOD(vehicle, i, mod_num - 1, false)
+                end
             end
         end
         VEHICLE.SET_VEHICLE_TYRES_CAN_BURST(vehicle, false)
@@ -910,8 +936,10 @@ function GetEntityInfo_ListItem(ent)
         local ent_info = {}
         local t = ""
 
+        local model_hash = ENTITY.GET_ENTITY_MODEL(ent)
+
         --Model Name
-        local model_name = util.reverse_joaat(ENTITY.GET_ENTITY_MODEL(ent))
+        local model_name = util.reverse_joaat(model_hash)
         if model_name ~= "" then
             t = "Model Name: " .. model_name
         end
@@ -919,18 +947,9 @@ function GetEntityInfo_ListItem(ent)
         table.insert(ent_info_item_data, ent_info)
 
         --Hash
-        local hash = ENTITY.GET_ENTITY_MODEL(ent)
-        t = "Model Hash: " .. hash
+        t = "Model Hash: " .. model_hash
         ent_info = newTableValue(1, t)
         table.insert(ent_info_item_data, ent_info)
-
-        --Label Name
-        local label_name = util.get_label_text(model_name)
-        if label_name ~= "NULL" then
-            t = "Label Name: " .. label_name
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-        end
 
         --Type
         local entity_type = GET_ENTITY_TYPE(ent, 2)
@@ -1039,9 +1058,10 @@ function GetEntityInfo_ListItem(ent)
             table.insert(ent_info_item_data, ent_info)
 
             local attached_entity = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
+            local attached_hash = ENTITY.GET_ENTITY_MODEL(attached_entity)
 
             --Model Name
-            local attached_model_name = util.reverse_joaat(ENTITY.GET_ENTITY_MODEL(attached_entity))
+            local attached_model_name = util.reverse_joaat(attached_hash)
             if attached_model_name ~= "" then
                 t = "Model Name: " .. attached_model_name
                 ent_info = newTableValue(1, t)
@@ -1049,7 +1069,6 @@ function GetEntityInfo_ListItem(ent)
             end
 
             --Hash
-            local attached_hash = ENTITY.GET_ENTITY_MODEL(attached_entity)
             t = "Model Hash: " .. attached_hash
             ent_info = newTableValue(1, t)
             table.insert(ent_info_item_data, ent_info)
@@ -1126,8 +1145,10 @@ function GetEntityInfo_ListItem(ent)
                 ent_info = newTableValue(1, "\n-----  Dead Ped  -----")
                 table.insert(ent_info_item_data, ent_info)
 
+                local cause_model_hash = PED.GET_PED_CAUSE_OF_DEATH(ent)
+
                 --Cause of Death Model
-                local cause_model_name = util.reverse_joaat(PED.GET_PED_CAUSE_OF_DEATH(ent))
+                local cause_model_name = util.reverse_joaat(cause_model_hash)
                 if cause_model_name ~= "" then
                     t = "Cause of Death Model: " .. cause_model_name
                     ent_info = newTableValue(1, t)
@@ -1135,7 +1156,7 @@ function GetEntityInfo_ListItem(ent)
                 end
 
                 --Cause of Death Hash
-                t = "Cause of Death Hash: " .. PED.GET_PED_CAUSE_OF_DEATH(ent)
+                t = "Cause of Death Hash: " .. cause_model_hash
                 ent_info = newTableValue(1, t)
                 table.insert(ent_info_item_data, ent_info)
 
@@ -1151,9 +1172,17 @@ function GetEntityInfo_ListItem(ent)
             ent_info = newTableValue(1, "\n-----  Vehicle  -----")
             table.insert(ent_info_item_data, ent_info)
 
+            --Display Name
+            local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(model_hash))
+            if display_name ~= "NULL" then
+                t = "Display Name: " .. display_name
+                ent_info = newTableValue(1, t)
+                table.insert(ent_info_item_data, ent_info)
+            end
+
             --Vehicle Class
             local vehicle_class = VEHICLE.GET_VEHICLE_CLASS(ent)
-            t = "Vehicle Class: " .. HUD.GET_FILENAME_FOR_AUDIO_CONVERSATION("VEH_CLASS_" .. vehicle_class)
+            t = "Vehicle Class: " .. util.get_label_text("VEH_CLASS_" .. vehicle_class)
             ent_info = newTableValue(1, t)
             table.insert(ent_info_item_data, ent_info)
 
@@ -1173,7 +1202,7 @@ function GetEntityInfo_ListItem(ent)
             table.insert(ent_info_item_data, ent_info)
 
             --- HELI ---
-            if VEHICLE.IS_THIS_MODEL_A_HELI(hash) then
+            if VEHICLE.IS_THIS_MODEL_A_HELI(model_hash) then
                 --Heli Main Rotor Health
                 t = "Heli Main Rotor Health: " .. VEHICLE.GET_HELI_MAIN_ROTOR_HEALTH(ent)
                 ent_info = newTableValue(1, t)
@@ -1636,13 +1665,13 @@ function entity_control_ped(menu_parent, ped, index)
             end
         end
     end)
-    menu.action(ped_options, "移除全部武器", {}, "", function()
-        WEAPON.REMOVE_ALL_PED_WEAPONS(ped)
-    end)
-    menu.action_slider(ped_options, "给予武器", {}, "", weapon_list_name, function(value)
-        local weaponHash = util.joaat(weapon_list_model[value])
+    menu.list_action(ped_options, "给予武器", {}, "", weapon_name_ListItem, function(value)
+        local weaponHash = util.joaat(weapon_model_list[value])
         WEAPON.GIVE_WEAPON_TO_PED(ped, weaponHash, -1, false, true)
         WEAPON.SET_CURRENT_PED_WEAPON(ped, weaponHash, false)
+    end)
+    menu.action(ped_options, "移除全部武器", {}, "", function()
+        WEAPON.REMOVE_ALL_PED_WEAPONS(ped)
     end)
     menu.action(ped_options, "克隆", {}, "", function()
         local model = ENTITY.GET_ENTITY_MODEL(ped)
@@ -1656,8 +1685,10 @@ function entity_control_ped(menu_parent, ped, index)
         PED.SET_PED_RANDOM_COMPONENT_VARIATION(ped, 0)
         PED.SET_PED_RANDOM_PROPS(ped)
     end)
-    menu.action(ped_options, "CLEAR PED TASKS IMMEDIATELY", {}, "", function()
-        TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
+    menu.action(ped_options, "与玩家友好", {}, "", function()
+        local player_rel_hash = PED.GET_PED_RELATIONSHIP_GROUP_HASH(players.user_ped())
+        PED.SET_RELATIONSHIP_BETWEEN_GROUPS(0, player_rel_hash, player_rel_hash)
+        PED.SET_PED_RELATIONSHIP_GROUP_HASH(ped, player_rel_hash)
     end)
 
     local ped_combat_options = menu.list(menu_parent, "NPC作战能力选项", {}, "")
@@ -1703,6 +1734,77 @@ function entity_control_ped(menu_parent, ped, index)
             }
             PED.SET_PED_COMBAT_MOVEMENT(ped, eCombatMovement[value])
         end)
+
+    local ped_task_options = menu.list(menu_parent, "Ped Task 选项", {}, "")
+
+    menu.action(ped_task_options, "Clear Ped Tasks Immediately", {}, "", function()
+        TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
+    end)
+    menu.action(ped_task_options, "Clear Ped All Tasks", {}, "", function()
+        TASK.CLEAR_PED_TASKS(ped)
+        TASK.CLEAR_DEFAULT_PRIMARY_TASK(ped)
+        TASK.CLEAR_PED_SECONDARY_TASK(ped)
+        TASK.TASK_CLEAR_LOOK_AT(ped)
+        TASK.TASK_CLEAR_DEFENSIVE_AREA(ped)
+        TASK.CLEAR_DRIVEBY_TASK_UNDERNEATH_DRIVING_TASK(ped)
+        if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
+            local veh = PED.GET_VEHICLE_PED_IS_USING(ped)
+            TASK.CLEAR_PRIMARY_VEHICLE_TASK(veh)
+            TASK.CLEAR_VEHICLE_CRASH_TASK(veh)
+        end
+    end)
+
+    --- Ped Task Follow ---
+    local task_follow = menu.list(ped_task_options, "NPC 跟随", {}, "")
+    local ped_follow = {
+        x = 0.0,
+        y = -1.0,
+        z = 0.0,
+        movementSpeed = 7.0,
+        timeout = -1,
+        stoppingRange = 10.0,
+        persistFollowing = true
+    }
+    menu.slider_float(task_follow, "offsetX", { "task_ped" .. index .. "follow_x" }, "", -10000, 10000, 0, 100,
+        function(value)
+            ped_follow.x = value * 0.01
+        end)
+    menu.slider_float(task_follow, "offsetY", { "task_ped" .. index .. "follow_y" }, "", -10000, 10000, -100, 100,
+        function(value)
+            ped_follow.y = value * 0.01
+        end)
+    menu.slider_float(task_follow, "offsetZ", { "task_ped" .. index .. "follow_z" }, "", -10000, 10000, 0, 100,
+        function(value)
+            ped_follow.z = value * 0.01
+        end)
+    menu.slider_float(task_follow, "移动速度", { "task_ped" .. index .. "follow_movementSpeed" }, "", 0, 100000, 700
+        , 100,
+        function(value)
+            ped_follow.movementSpeed = value * 0.01
+        end)
+    menu.slider(task_follow, "超时时间", { "task_ped" .. index .. "follow_timeout" }, "", -1, 10000, -1, 1,
+        function(value)
+            ped_follow.timeout = value
+        end)
+    menu.slider_float(task_follow, "停止跟随的最远距离", { "task_ped" .. index .. "follow_stoppingRange" }, "",
+        0, 100000, 1000, 100,
+        function(value)
+            ped_follow.stoppingRange = value * 0.01
+        end)
+    menu.toggle(task_follow, "持续跟随", {}, "", function(toggle)
+        ped_follow.persistFollowing = toggle
+    end, true)
+    menu.action(task_follow, "设置任务", {}, "", function()
+        TASK.TASK_FOLLOW_TO_OFFSET_OF_ENTITY(ped, players.user_ped(), ped_follow.x, ped_follow.y, ped_follow.z,
+            ped_follow.movementSpeed,
+            ped_follow.timeout, ped_follow.stoppingRange, ped_follow.persistFollowing)
+        util.toast("Done!")
+    end)
+
+    menu.action(ped_task_options, "躲在掩体处", {}, "", function()
+        TASK.TASK_STAY_IN_COVER(ped)
+    end)
+
 end
 
 --- Vehicle entity type ---
@@ -1823,6 +1925,121 @@ function entity_control_vehicle(menu_parent, vehicle, index)
             end
         end
     end)
+
+    local ped = get_vehicle_ped(vehicle, -1)
+    if ped then
+        local veh_task_options = menu.list(menu_parent, "Vehicle Task 选项", {}, "")
+
+        menu.action(veh_task_options, "Clear Driver Tasks Immediately", {}, "", function()
+            TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
+        end)
+        menu.action(veh_task_options, "Clear Driver All Tasks", {}, "", function()
+            TASK.CLEAR_PED_TASKS(ped)
+            TASK.CLEAR_DEFAULT_PRIMARY_TASK(ped)
+            TASK.CLEAR_PED_SECONDARY_TASK(ped)
+            TASK.TASK_CLEAR_LOOK_AT(ped)
+            TASK.TASK_CLEAR_DEFENSIVE_AREA(ped)
+            TASK.CLEAR_DRIVEBY_TASK_UNDERNEATH_DRIVING_TASK(ped)
+            if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
+                local veh = PED.GET_VEHICLE_PED_IS_USING(ped)
+                TASK.CLEAR_PRIMARY_VEHICLE_TASK(veh)
+                TASK.CLEAR_VEHICLE_CRASH_TASK(veh)
+            end
+        end)
+
+        --- Vehicle Task Follow ---
+        local task_follow = menu.list(veh_task_options, "载具 跟随", {}, "")
+        local veh_follow = {
+            speed = 30.0,
+            drivingStyle = 786603,
+            minDistance = 5.0
+        }
+        menu.slider_float(task_follow, "速度", { "task_veh" .. index .. "follow_speed" }, "", 0, 100000, 3000
+            , 100,
+            function(value)
+                veh_follow.speed = value * 0.01
+            end)
+        menu.list_select(task_follow, "驾驶风格", {}, "", driving_style_name_ListItem, 1, function(value)
+            veh_follow.drivingStyle = driving_style_list[value]
+        end)
+        menu.slider_float(task_follow, "最小跟随距离", { "task_veh" .. index .. "follow_minDistance" }, "", 0
+            , 100000, 500
+            , 100,
+            function(value)
+                veh_follow.minDistance = value * 0.01
+            end)
+        menu.action(task_follow, "设置任务", {}, "", function()
+            TASK.TASK_VEHICLE_FOLLOW(ped, vehicle, players.user_ped(), veh_follow.speed, veh_follow.drivingStyle,
+                veh_follow.minDistance)
+            util.toast("Done!")
+        end)
+
+        --- Vehicle Task Escort ---
+        local task_escort = menu.list(veh_task_options, "载具 护送", {}, "")
+        local veh_escort = {
+            mode = -1,
+            speed = 30.0,
+            drivingStyle = 786603,
+            minDistance = 5.0,
+            minHeightAboveTerrain = 20,
+            noRoadsDistance = 5.0
+        }
+        local task_veh_escort_mode_list = {
+            { "后面" }, -- -1
+            { "前面" }, -- 0
+            { "左边" }, -- 1
+            { "右边" }, -- 2
+            { "后左边" }, -- 3
+            { "后右边" }, -- 4
+        }
+        menu.list_select(task_escort, "护送模式", {},
+            "The mode defines the relative position to the targetVehicle. The ped will try to position its vehicle there."
+            , task_veh_escort_mode_list, 1, function(value)
+            veh_escort.mode = value - 2
+        end)
+        menu.slider_float(task_escort, "速度", { "task_veh" .. index .. "escort_speed" }, "", 0, 100000, 3000
+            , 100,
+            function(value)
+                veh_escort.speed = value * 0.01
+            end)
+        menu.list_select(task_escort, "驾驶风格", {}, "", driving_style_name_ListItem, 1, function(value)
+            veh_escort.drivingStyle = driving_style_list[value]
+        end)
+        menu.slider_float(task_escort, "最小跟随距离", { "task_veh" .. index .. "escort_minDistance" },
+            "minDistance is ignored if drivingstyle is avoiding traffic, but Rushed is fine.", 0
+            , 100000, 500
+            , 100,
+            function(value)
+                veh_escort.minDistance = value * 0.01
+            end)
+        menu.slider(task_escort, "minHeightAboveTerrain", { "task_veh" .. index .. "escort_minHeightAboveTerrain" }, "",
+            0, 1000, 20, 1, function(value)
+            veh_escort.minHeightAboveTerrain = value
+        end)
+        menu.slider_float(task_escort, "No Roads Distance", { "task_veh" .. index .. "escort_noRoadsDistance" },
+            "if the target is closer than noRoadsDistance, the driver will ignore pathing/roads and follow you directly."
+            , 0
+            , 100000, 500
+            , 100,
+            function(value)
+                veh_escort.noRoadsDistance = value * 0.01
+            end)
+        menu.action(task_escort, "设置任务", {},
+            "Makes a ped follow the targetVehicle with <minDistance> in between.", function()
+            if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+                local target_vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
+                TASK.TASK_VEHICLE_ESCORT(ped, vehicle, target_vehicle, veh_escort.mode, veh_escort.speed,
+                    veh_escort.drivingStyle, veh_escort.minDistance, veh_escort.minHeightAboveTerrain,
+                    veh_escort.noRoadsDistance)
+                util.toast("Done!")
+            else
+                util.toast("你需要先进入一辆载具后才能设置任务")
+            end
+        end)
+
+
+    end
+
 
 end
 
@@ -2169,6 +2386,7 @@ end
 ------------------------------
 ------- 保存的 Hash 列表 -------
 ------------------------------
+
 -- 格式 --
 -- name
 -- hash \n type
@@ -2366,6 +2584,7 @@ if SCRIPT_MANUAL_START then
 end
 
 
+
 --
 menu.divider(menu.my_root(), "RScript")
 
@@ -2380,7 +2599,7 @@ local Self_options = menu.list(menu.my_root(), "自我选项", {}, "")
 local Self_Custom_options = menu.list(Self_options, "自定义血量护甲", {}, "")
 
 --- 自定义最大生命值 ---
-menu.divider(Self_Custom_options, "Health")
+menu.divider(Self_Custom_options, "生命")
 
 local defaultHealth = ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID())
 local moddedHealth = defaultHealth
@@ -2406,7 +2625,7 @@ menu.click_slider(Self_Custom_options, "设置当前生命值", { "set_health" }
     end)
 
 --- 自定义最大护甲 ---
-menu.divider(Self_Custom_options, "Armour")
+menu.divider(Self_Custom_options, "护甲")
 
 local defaultArmour = PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID())
 local moddedArmour = defaultArmour
@@ -2686,10 +2905,12 @@ menu.toggle_loop(Weapon_Entity_control, "开启", { "ctrl_gun" }, "", function()
             end
             -- help_text
             local text = ""
-            local label = util.get_label_text(modelName)
-            if label ~= "NULL" then
-                text = text .. "Label Name: " .. label .. "\n"
+
+            local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(modelHash))
+            if display_name ~= "NULL" then
+                text = text .. "Display Name: " .. display_name .. "\n"
             end
+
             local entity_type = GET_ENTITY_TYPE(ent, 2)
             local owner = entities.get_owner(entities.handle_to_pointer(ent))
             owner = players.get_name(owner)
@@ -2747,89 +2968,225 @@ local Vehicle_options = menu.list(menu.my_root(), "载具选项", {}, "")
 ----- 载具改装 -----
 local Vehicle_MOD_options = menu.list(Vehicle_options, "载具改装", {}, "")
 
+local vehicle_mod = {
+    performance = 2,
+    turbo = true,
+    spoilers = 1,
+    suspension = 1,
+    xenon = -1,
+    extra_types = 1,
+
+    neon = {
+        toggle = false,
+        r = 0,
+        g = 0,
+        b = 0,
+        left = false,
+        right = false,
+        front = false,
+        rear = false,
+    },
+    tyre_smoke = {
+        toggle = false,
+        r = 255,
+        g = 255,
+        b = 255,
+    },
+    plate = {
+        toggle = false,
+        text = "ROCKSTAR",
+    },
+    bullet_tyre = true,
+    unbreakable_doors = false,
+    unbreakable_lights = false,
+}
+
 local VehicleMOD_ListItem = {
-    { "全面升级" },
-    { "性能升级", {}, "升级载具的引擎，刹车，变速器，防御和涡轮增压" },
-    { "性能升级(包括尾翼)" }
+    { "默认", {}, "不进行改装" },
+    { "顶级" }
 }
-local vehicle_mod_select = 1
-menu.list_select(Vehicle_MOD_options, "选择改装方案", {}, "", VehicleMOD_ListItem, 1, function(value)
-    vehicle_mod_select = value
+local Vehicle_MOD_Kits = menu.list(Vehicle_MOD_options, "改装选项", {}, "")
+menu.list_select(Vehicle_MOD_Kits, "主要性能", {}, "引擎、刹车、变速箱、防御", VehicleMOD_ListItem, 2,
+    function(value)
+        vehicle_mod.performance = value
+    end)
+menu.toggle(Vehicle_MOD_Kits, "涡轮增压", {}, "", function(toggle)
+    vehicle_mod.turbo = toggle
+end, true)
+menu.list_select(Vehicle_MOD_Kits, "尾翼", {}, "", VehicleMOD_ListItem, 1, function(value)
+    vehicle_mod.spoilers = value
 end)
+menu.list_select(Vehicle_MOD_Kits, "悬挂", {}, "", VehicleMOD_ListItem, 1, function(value)
+    vehicle_mod.suspension = value
+end)
+menu.slider(Vehicle_MOD_Kits, "前车灯", { "vehicle_xenon_light" }, "", -1, 12, -1, 1, function(value)
+    vehicle_mod.xenon = value
 
-local Vehicle_MOD_Extra_options = menu.list(Vehicle_MOD_options, "其它改装选项", {}, "")
-local vehicle_mod_extra = {
-    neon_r = 0,
-    neon_g = 0,
-    neon_b = 0,
-    neon_left = false,
-    neon_right = false,
-    neon_front = false,
-    neon_back = false,
-    tyre_smoke_r = 255,
-    tyre_smoke_g = 255,
-    tyre_smoke_b = 255,
-    tyre_smoke = true,
-}
-menu.divider(Vehicle_MOD_Extra_options, "霓虹灯")
-menu.colour(Vehicle_MOD_Extra_options, "颜色", { "vehicle_neon_colour" }, "", 1, 1, 1
-    , 1, false, function(colour)
-    vehicle_mod_extra.neon_r = math.ceil(255 * colour.r)
-    vehicle_mod_extra.neon_g = math.ceil(255 * colour.g)
-    vehicle_mod_extra.neon_b = math.ceil(255 * colour.b)
-end)
-menu.toggle(Vehicle_MOD_Extra_options, "左", {}, "", function(toggle)
-    vehicle_mod_extra.neon_left = toggle
-end)
-menu.toggle(Vehicle_MOD_Extra_options, "右", {}, "", function(toggle)
-    vehicle_mod_extra.neon_right = toggle
-end)
-menu.toggle(Vehicle_MOD_Extra_options, "前", {}, "", function(toggle)
-    vehicle_mod_extra.neon_front = toggle
-end)
-menu.toggle(Vehicle_MOD_Extra_options, "后", {}, "", function(toggle)
-    vehicle_mod_extra.neon_back = toggle
-end)
-menu.divider(Vehicle_MOD_Extra_options, "轮胎烟雾")
-menu.colour(Vehicle_MOD_Extra_options, "颜色", { "vehicle_tyre_smoke_colour" }, "设置R,G,B都为0会使载具轮胎烟雾为独立日颜色"
-    , 1, 1, 1
-    , 1, false, function(colour)
-    vehicle_mod_extra.tyre_smoke_r = math.ceil(255 * colour.r)
-    vehicle_mod_extra.tyre_smoke_g = math.ceil(255 * colour.g)
-    vehicle_mod_extra.tyre_smoke_b = math.ceil(255 * colour.b)
-end)
-menu.toggle(Vehicle_MOD_Extra_options, "开启", {}, "", function(toggle)
-    vehicle_mod_extra.tyre_smoke = toggle
-end)
-
-menu.toggle_loop(Vehicle_MOD_options, "开启自动改装", {}, "自动改装你正在进入的载具", function()
-    if PED.IS_PED_GETTING_INTO_A_VEHICLE(players.user_ped()) then
-        if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-            if vehicle_mod_select == 1 then
-                menu.trigger_commands("tune")
-            elseif vehicle_mod_select == 2 then
-                menu.trigger_commands("performance")
-            elseif vehicle_mod_select == 3 then
-                menu.trigger_commands("perwithspoiler")
-            end
-        end
-
-        local veh = PED.GET_VEHICLE_PED_IS_ENTERING(players.user_ped())
+    if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+        local veh = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
         if veh then
-            VEHICLE.SET_VEHICLE_NEON_ENABLED(veh, 0, vehicle_mod_extra.neon_left)
-            VEHICLE.SET_VEHICLE_NEON_ENABLED(veh, 1, vehicle_mod_extra.neon_right)
-            VEHICLE.SET_VEHICLE_NEON_ENABLED(veh, 2, vehicle_mod_extra.neon_front)
-            VEHICLE.SET_VEHICLE_NEON_ENABLED(veh, 3, vehicle_mod_extra.neon_back)
-            VEHICLE.SET_VEHICLE_NEON_COLOUR(veh, vehicle_mod_extra.neon_r, vehicle_mod_extra.neon_g,
-                vehicle_mod_extra.neon_b)
-
-            if vehicle_mod_extra.tyre_smoke then
-                VEHICLE.SET_VEHICLE_TYRE_SMOKE_COLOR(veh, vehicle_mod_extra.tyre_smoke_r, vehicle_mod_extra.tyre_smoke_g
-                    , vehicle_mod_extra.tyre_smoke_b)
+            if vehicle_mod.xenon >= 0 then
+                VEHICLE.TOGGLE_VEHICLE_MOD(veh, 22, true)
+                VEHICLE.SET_VEHICLE_XENON_LIGHT_COLOR_INDEX(veh, vehicle_mod.xenon)
+            else
+                VEHICLE.TOGGLE_VEHICLE_MOD(veh, 22, false)
             end
         end
     end
+
 end)
+menu.list_select(Vehicle_MOD_Kits, "其它改装配件", {}, "侧裙、保险杠等，排除涂装、车轮、喇叭",
+    VehicleMOD_ListItem, 1, function(value)
+    vehicle_mod.extra_types = value
+end)
+
+local Vehicle_MOD_neon = menu.list(Vehicle_MOD_Kits, "霓虹灯", {}, "")
+menu.toggle(Vehicle_MOD_neon, "开启", {}, "", function(toggle)
+    vehicle_mod.neon.toggle = toggle
+end)
+menu.colour(Vehicle_MOD_neon, "颜色", { "vehicle_neon_colour" }, "", 1, 1, 1
+    , 1, false, function(colour)
+    vehicle_mod.neon.r = math.ceil(255 * colour.r)
+    vehicle_mod.neon.g = math.ceil(255 * colour.g)
+    vehicle_mod.neon.b = math.ceil(255 * colour.b)
+end)
+menu.toggle(Vehicle_MOD_neon, "左", {}, "", function(toggle)
+    vehicle_mod.neon.left = toggle
+end)
+menu.toggle(Vehicle_MOD_neon, "右", {}, "", function(toggle)
+    vehicle_mod.neon.right = toggle
+end)
+menu.toggle(Vehicle_MOD_neon, "前", {}, "", function(toggle)
+    vehicle_mod.neon.front = toggle
+end)
+menu.toggle(Vehicle_MOD_neon, "后", {}, "", function(toggle)
+    vehicle_mod.neon.rear = toggle
+end)
+
+local Vehicle_MOD_tyre_smoke = menu.list(Vehicle_MOD_Kits, "轮胎烟雾", {}, "")
+menu.toggle(Vehicle_MOD_tyre_smoke, "开启", {}, "", function(toggle)
+    vehicle_mod.tyre_smoke.toggle = toggle
+end)
+menu.colour(Vehicle_MOD_tyre_smoke, "颜色", { "vehicle_tyre_smoke_colour" }, "设置R,G,B都为0会使载具轮胎烟雾为独立日颜色"
+    , 1, 1, 1
+    , 1, false, function(colour)
+    vehicle_mod.tyre_smoke.r = math.ceil(255 * colour.r)
+    vehicle_mod.tyre_smoke.g = math.ceil(255 * colour.g)
+    vehicle_mod.tyre_smoke.b = math.ceil(255 * colour.b)
+end)
+
+local Vehicle_MOD_plate = menu.list(Vehicle_MOD_Kits, "车牌", {}, "")
+menu.toggle(Vehicle_MOD_plate, "开启", {}, "", function(toggle)
+    vehicle_mod.plate.toggle = toggle
+end)
+menu.text_input(Vehicle_MOD_plate, "内容", { "vehicle_plate_text" }, "最大8个字符", function(value)
+    vehicle_mod.plate.text = value
+end, "ROCKSTAR")
+
+
+local Vehicle_MOD_Extra_options = menu.list(Vehicle_MOD_options, "其它改装选项", {}, "")
+menu.toggle(Vehicle_MOD_Extra_options, "防弹轮胎", {}, "", function(toggle)
+    vehicle_mod.bullet_tyre = toggle
+end, true)
+menu.toggle(Vehicle_MOD_Extra_options, "不可损坏的车门", {}, "", function(toggle)
+    vehicle_mod.unbreakable_doors = toggle
+end)
+menu.toggle(Vehicle_MOD_Extra_options, "不可损坏的车灯", {}, "", function(toggle)
+    vehicle_mod.unbreakable_lights = toggle
+end)
+
+local function Custom_Mod_Vehicle(vehicle)
+    VEHICLE.SET_VEHICLE_MOD_KIT(vehicle, 0)
+
+    if vehicle_mod.performance == 2 then
+        for k, v in pairs({ 11, 12, 13, 16 }) do
+            local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, v)
+            VEHICLE.SET_VEHICLE_MOD(vehicle, v, mod_num - 1, false)
+        end
+    end
+
+    if vehicle_mod.turbo then
+        VEHICLE.TOGGLE_VEHICLE_MOD(vehicle, 18, true)
+    end
+
+    if vehicle_mod.spoilers == 2 then
+        local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, 0)
+        VEHICLE.SET_VEHICLE_MOD(vehicle, 0, mod_num - 1, false)
+    end
+
+    if vehicle_mod.suspension == 2 then
+        local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, 15)
+        VEHICLE.SET_VEHICLE_MOD(vehicle, 15, mod_num - 1, false)
+    end
+
+    if vehicle_mod.extra_types == 2 then
+        local extra_type_list = {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+            25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+            39, 40, 41, 42, 43, 44, 45, 46
+        }
+        for k, v in pairs(extra_type_list) do
+            local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, v)
+            if mod_num > 0 then
+                VEHICLE.SET_VEHICLE_MOD(vehicle, v, mod_num - 1, false)
+            end
+        end
+    end
+
+    if vehicle_mod.xenon >= 0 then
+        VEHICLE.TOGGLE_VEHICLE_MOD(vehicle, 22, true)
+        VEHICLE.SET_VEHICLE_XENON_LIGHT_COLOR_INDEX(vehicle, vehicle_mod.xenon)
+    end
+
+    if vehicle_mod.neon.toggle then
+        VEHICLE.SET_VEHICLE_NEON_ENABLED(vehicle, 0, vehicle_mod.neon.left)
+        VEHICLE.SET_VEHICLE_NEON_ENABLED(vehicle, 1, vehicle_mod.neon.right)
+        VEHICLE.SET_VEHICLE_NEON_ENABLED(vehicle, 2, vehicle_mod.neon.front)
+        VEHICLE.SET_VEHICLE_NEON_ENABLED(vehicle, 3, vehicle_mod.neon.rear)
+        VEHICLE.SET_VEHICLE_NEON_COLOUR(vehicle, vehicle_mod.neon.r, vehicle_mod.neon.g,
+            vehicle_mod.neon.b)
+    end
+
+    if vehicle_mod.tyre_smoke.toggle then
+        VEHICLE.TOGGLE_VEHICLE_MOD(vehicle, 20, true)
+        VEHICLE.SET_VEHICLE_TYRE_SMOKE_COLOR(vehicle, vehicle_mod.tyre_smoke.r, vehicle_mod.tyre_smoke.g
+            , vehicle_mod.tyre_smoke.b)
+    end
+
+    if vehicle_mod.plate.toggle then
+        VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT(vehicle, vehicle_mod.plate.text)
+    end
+
+    -- 其它改装选项
+    if vehicle_mod.bullet_tyre then
+        VEHICLE.SET_VEHICLE_TYRES_CAN_BURST(vehicle, false)
+    end
+    if vehicle_mod.unbreakable_doors then
+        for i = 0, 3 do
+            VEHICLE.SET_DOOR_ALLOWED_TO_BE_BROKEN_OFF(vehicle, i, false)
+        end
+    end
+    if vehicle_mod.unbreakable_lights then
+        VEHICLE.SET_VEHICLE_HAS_UNBREAKABLE_LIGHTS(vehicle, true)
+    end
+end
+
+menu.toggle_loop(Vehicle_MOD_options, "开启自动改装", { "auto_mod_vehicle" }, "自动改装正在进入的载具",
+    function()
+        if PED.IS_PED_GETTING_INTO_A_VEHICLE(players.user_ped()) then
+            local veh = PED.GET_VEHICLE_PED_IS_ENTERING(players.user_ped())
+            if veh then
+                Custom_Mod_Vehicle(veh)
+            end
+        end
+    end)
+menu.action(Vehicle_MOD_options, "改装载具", { "mod_vehicle" }, "改装当前载具或上一辆载具", function()
+    local vehicle = entities.get_user_vehicle_as_handle()
+    if vehicle then
+        Custom_Mod_Vehicle(vehicle)
+    end
+end)
+
 
 ----- 载具车窗 -----
 local Vehicle_Window_options = menu.list(Vehicle_options, "载具车窗", {}, "")
@@ -2895,6 +3252,7 @@ menu.toggle_loop(Vehicle_Window_options, "粉碎车窗", {}, "", function()
         end
     end
 end)
+
 
 ----- 载具门 -----
 local Vehicle_Door_options = menu.list(Vehicle_options, "载具门", {}, "")
@@ -2974,6 +3332,7 @@ menu.toggle(Vehicle_Door_options, "车门不可损坏", {}, "", function(toggle)
     end
 end)
 
+
 ----- 载具锁门 -----
 local Vehicle_DoorLock_options = menu.list(Vehicle_options, "载具锁门", {}, "")
 
@@ -3016,6 +3375,7 @@ menu.toggle(Vehicle_DoorLock_options, "对所有玩家锁门", {}, "", function(
     end
 end)
 
+
 ----- 载具车灯 -----
 local Vehicle_Light_options = menu.list(Vehicle_options, "载具车灯", {}, "")
 
@@ -3037,6 +3397,7 @@ menu.toggle(Vehicle_Light_options, "车灯不会损坏", {}, "", function(toggle
         VEHICLE.SET_VEHICLE_HAS_UNBREAKABLE_LIGHTS(vehicle, toggle)
     end
 end)
+
 
 ----- 载具电台 -----
 local Vehicle_Radio_options = menu.list(Vehicle_options, "载具电台", {}, "")
@@ -3133,8 +3494,9 @@ menu.action(Vehicle_Personal_options, "打开左右车门", {}, "", function()
         VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 1, false, false)
     end
 end)
-menu.slider_text(Vehicle_Personal_options, "传送到附近", {}, "会传送在路边等位置", { "上一辆载具",
-    "个人载具" },
+menu.slider_text(Vehicle_Personal_options, "传送到附近", { "pv_tp_near" }, "会传送在路边等位置",
+    { "上一辆载具",
+        "个人载具" },
     function(value)
         local vehicle = 0
         if not PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
@@ -3933,7 +4295,7 @@ end)
 
 -----
 menu.divider(Nearby_Vehicle_options, "全部范围")
-menu.action(Nearby_Vehicle_options, "解锁车门", {}, "", function()
+menu.action(Nearby_Vehicle_options, "解锁车门", { "unlock_all_vehicle" }, "", function()
     for k, vehicle in ipairs(entities.get_all_vehicles_as_handles()) do
         VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, 1)
         VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER(vehicle, players.user(), false)
@@ -4055,8 +4417,8 @@ menu.toggle(Nearby_Ped_Friendly_options, "修改掉落现金", {}, "", function(
         control_nearby_peds()
     end
 end)
-menu.list_select(Nearby_Ped_Friendly_options, "设置武器", {}, "", weapon_name_list_item, 1, function(value)
-    control_nearby_peds_data.weapon_hash = util.joaat(weapon_list_model[value])
+menu.list_select(Nearby_Ped_Friendly_options, "设置武器", {}, "", weapon_name_ListItem, 1, function(value)
+    control_nearby_peds_data.weapon_hash = util.joaat(weapon_model_list[value])
 end)
 menu.toggle(Nearby_Ped_Friendly_options, "给予武器", {}, "", function(toggle)
     control_nearby_peds_toggles.give_weapon = toggle
@@ -6254,9 +6616,9 @@ menu.action(MISSION_ENTITY_All, "获取任务实体列表", {}, "", function()
             end
             -- help_text
             local text = ""
-            local label = util.get_label_text(modelName)
-            if label ~= "NULL" then
-                text = text .. "Label Name: " .. label .. "\n"
+            local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(modelHash))
+            if display_name ~= "NULL" then
+                text = text .. "Display Name: " .. display_name .. "\n"
             end
             local owner = entities.get_owner(entities.handle_to_pointer(ent))
             owner = players.get_name(owner)
@@ -6408,10 +6770,12 @@ menu.action(MISSION_ENTITY_custom, "获取所有实体列表", {}, "", function(
                     end
                     -- help_text
                     local text = ""
-                    local label = util.get_label_text(modelName)
-                    if label ~= "NULL" then
-                        text = text .. "Label Name: " .. label .. "\n"
+
+                    local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(modelHash))
+                    if display_name ~= "NULL" then
+                        text = text .. "Display Name: " .. display_name .. "\n"
                     end
+
                     local owner = entities.get_owner(entities.handle_to_pointer(ent))
                     owner = players.get_name(owner)
                     text = text .. "Hash: " .. modelHash .. "\nOwner: " .. owner
@@ -6649,31 +7013,34 @@ end, true)
 --------------------------------
 local Bodyguard_options = menu.list(menu.my_root(), "保镖选项", {}, "")
 
------- Functions ------
-local function addRelationshipGroup(name)
+--------- Functions ---------
+Relationship = {
+    friendly_group = 0,
+}
+
+function Relationship:addGroup(GroupName)
     local ptr = memory.alloc_int()
-    PED.ADD_RELATIONSHIP_GROUP(name, ptr)
+    PED.ADD_RELATIONSHIP_GROUP(GroupName, ptr)
     local rel = memory.read_int(ptr)
     memory.free(ptr)
     return rel
 end
 
-relationship = {}
-function relationship:friendly(ped)
-    if not PED.DOES_RELATIONSHIP_GROUP_EXIST(self.friendly_group) then
-        self.friendly_group = addRelationshipGroup("friendly_group")
-        PED.SET_RELATIONSHIP_BETWEEN_GROUPS(0, self.friendly_group, self.friendly_group)
+function Relationship:friendly(ped)
+    if not PED.DOES_RELATIONSHIP_GROUP_EXIST(Relationship.friendly_group) then
+        Relationship.friendly_group = Relationship:addGroup("friendly_group")
+        PED.SET_RELATIONSHIP_BETWEEN_GROUPS(0, Relationship.friendly_group, Relationship.friendly_group)
     end
-    PED.SET_PED_RELATIONSHIP_GROUP_HASH(ped, self.friendly_group)
+    PED.SET_PED_RELATIONSHIP_GROUP_HASH(ped, Relationship.friendly_group)
 end
 
-local function getGroupSize(ID)
+Group = {}
+function Group:getSize(ID)
     local unkPtr, sizePtr = memory.alloc(1), memory.alloc(1)
     PED.GET_GROUP_SIZE(ID, unkPtr, sizePtr)
     return memory.read_int(sizePtr)
 end
 
-Group = {}
 function Group:pushMember(ped)
     local groupID = PLAYER.GET_PLAYER_GROUP(players.user())
     local RelationGroupHash = util.joaat("rgFM_AiLike_HateAiHate")
@@ -6740,8 +7107,8 @@ menu.slider(Bodyguard_NPC_default_setting, "生命", { "bodyguard_npc_health" },
 menu.toggle(Bodyguard_NPC_default_setting, "不会摔倒", {}, "", function(toggle)
     bodyguard_npc_set.no_ragdoll = toggle
 end)
-menu.list_select(Bodyguard_NPC_default_setting, "武器", {}, "", weapon_list_name, 4, function(value)
-    bodyguard_npc_set.weapon = weapon_list_model[value]
+menu.list_select(Bodyguard_NPC_default_setting, "武器", {}, "", weapon_name_ListItem, 4, function(value)
+    bodyguard_npc_set.weapon = weapon_model_list[value]
 end)
 menu.toggle(Bodyguard_NPC_default_setting, "不换弹夹", {}, "", function(toggle)
     bodyguard_npc_set.no_clip = toggle
@@ -6783,7 +7150,7 @@ end)
 ------
 menu.action(Bodyguard_NPC_options, "生成保镖", {}, "", function()
     local groupID = PLAYER.GET_PLAYER_GROUP(players.user())
-    if getGroupSize(groupID) >= 7 then
+    if Group:getSize(groupID) >= 7 then
         util.toast("保镖人数已达到上限")
     else
         local modelHash = util.joaat(bodyguard_npc_set.model)
@@ -6856,10 +7223,10 @@ menu.toggle(Bodyguard_NPC_options, "所有保镖无敌", {}, "", function(toggle
         end
     end
 end)
-menu.list_action(Bodyguard_NPC_options, "给予所有保镖武器", {}, "", weapon_list_name, function(value)
+menu.list_action(Bodyguard_NPC_options, "给予所有保镖武器", {}, "", weapon_name_ListItem, function(value)
     for k, ent in pairs(bodyguard_npc_list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
-            local weaponHash = util.joaat(weapon_list_model[value])
+            local weaponHash = util.joaat(weapon_model_list[value])
             WEAPON.GIVE_WEAPON_TO_PED(ent, weaponHash, -1, false, true)
             WEAPON.SET_CURRENT_PED_WEAPON(ent, weaponHash, false)
         end
@@ -6936,7 +7303,7 @@ menu.action(Bodyguard_Heli_options, "生成保镖直升机", {}, "", function()
     pos.z = pos.z + 30
 
     RequestModels(ped_hash, heli_hash)
-    relationship:friendly(players.user_ped())
+    Relationship:friendly(players.user_ped())
     local heli = entities.create_vehicle(heli_hash, pos, CAM.GET_GAMEPLAY_CAM_ROT(0).z)
 
     if not ENTITY.DOES_ENTITY_EXIST(heli) then
@@ -6983,7 +7350,7 @@ menu.action(Bodyguard_Heli_options, "生成保镖直升机", {}, "", function()
     ENTITY.SET_ENTITY_HEALTH(pilot, 10000)
     ENTITY.SET_ENTITY_INVINCIBLE(pilot, bodyguard_heli.ped_godmode)
 
-    relationship:friendly(pilot)
+    Relationship:friendly(pilot)
     table.insert(heli_ped_list, pilot)
 
     local seats = VEHICLE.GET_VEHICLE_MODEL_NUMBER_OF_SEATS(heli_hash) - 2
@@ -7038,7 +7405,7 @@ menu.action(Bodyguard_Heli_options, "生成保镖直升机", {}, "", function()
         ENTITY.SET_ENTITY_HEALTH(ped, 1000)
         ENTITY.SET_ENTITY_INVINCIBLE(ped, bodyguard_heli.ped_godmode)
 
-        relationship:friendly(ped)
+        Relationship:friendly(ped)
         table.insert(heli_ped_list, ped)
     end
 
@@ -7245,11 +7612,12 @@ menu.click_slider(Team_Lives, "修改生命数", { "tlive_casino" }, "fm_mission
 --- 可调整项 ---
 local Tuneables_options = menu.list(Mission_options, "可调整项", {}, "慎用")
 
+-- tuneables_processing.c
 local Tunables_Globals = {
     Auto_Shop_Contract_Setup = 262145 + 31669, -- -425845436 (float)
     Auto_Shop_Contract_Finale = 262145 + 31670, -- -394140353 (float)
     Exotic_Export_Delivery = 262145 + 31672, -- 1870939070 (float)
-    -- -- VIP/CEO Work
+    ----- VIP/CEO Work
     VIP_Work_Cooldown = 262145 + 13078, -- -1404265088
     -- Headhunter
     Headhunter_Cooldown = 262145 + 15523, -- 753551541
@@ -7260,6 +7628,7 @@ local Tunables_Globals = {
     Sightseer_Cooldown = 262145 + 12975, -- -1911318106
     Sightseer_Base_Cash = 262145 + 12978, -- 503107913
     Sightseer_Bonus_Cash = 262145 + 12980, -- 2032571281
+
     -- Payphone
     Payphone_Hit_Payment = 262145 + 31715, -- 1660338738
 }
@@ -7368,7 +7737,7 @@ menu.slider(Local_Editor, "Local 地址", { "local_address" }, "输入计算总�
         local_address = value
     end)
 local local_type = "int"
-menu.slider_text(Local_Editor, "数据类型", {}, "点击应用修改", { "INT", "FLOAT" }, function(value)
+menu.list_select(Local_Editor, "数据类型", {}, "", { { "INT" }, { "FLOAT" } }, 1, function(value)
     if value == 1 then
         local_type = "int"
     elseif value == 2 then
@@ -7398,11 +7767,12 @@ end)
 
 menu.divider(Local_Editor, "写入")
 local local_write = 0
-menu.slider(Local_Editor, "要写入的值", { "local_write" }, "", 0, 16777216, 0, 1, function(value)
-    local_write = value
-end)
+menu.text_input(Local_Editor, "要写入的值", { "local_write" }, "务必注意int类型和float类型的格式",
+    function(value)
+        local_write = value
+    end)
 menu.action(Local_Editor, "写入 Local", {}, "", function()
-    if local_address > 0 then
+    if local_address > 0 and tonumber(local_write) ~= nil then
         if SCRIPT.HAS_SCRIPT_LOADED(mission_script) then
             if local_type == "int" then
                 SET_INT_LOCAL(mission_script, local_address, local_write)
@@ -7415,7 +7785,7 @@ menu.action(Local_Editor, "写入 Local", {}, "", function()
     end
 end)
 menu.toggle_loop(Local_Editor, "锁定写入 Local", {}, "", function()
-    if local_address > 0 then
+    if local_address > 0 and tonumber(local_write) ~= nil then
         if SCRIPT.HAS_SCRIPT_LOADED(mission_script) then
             if local_type == "int" then
                 SET_INT_LOCAL(mission_script, local_address, local_write)
@@ -7438,13 +7808,14 @@ menu.slider(Global_Editor, "Global 地址", { "global_address" }, "输入计算�
         global_address = value
     end)
 local global_type = "int"
-menu.slider_text(Global_Editor, "数据类型", {}, "点击应用修改", { "INT", "FLOAT" }, function(value)
-    if value == 1 then
-        global_type = "int"
-    elseif value == 2 then
-        global_type = "float"
-    end
-end)
+menu.list_select(Global_Editor, "数据类型", {}, "", { { "INT" }, { "FLOAT" } }, 1,
+    function(value)
+        if value == 1 then
+            global_type = "int"
+        elseif value == 2 then
+            global_type = "float"
+        end
+    end)
 menu.action(Global_Editor, "读取 Global", {}, "", function()
     if global_address > 0 then
         local value
@@ -7464,11 +7835,12 @@ end)
 
 menu.divider(Global_Editor, "写入")
 local global_write = 0
-menu.slider(Global_Editor, "要写入的值", { "global_write" }, "", 0, 16777216, 0, 1, function(value)
-    global_write = value
-end)
+menu.text_input(Global_Editor, "要写入的值", { "global_write" }, "务必注意int类型和float类型的格式",
+    function(value)
+        global_write = value
+    end)
 menu.action(Global_Editor, "写入 Global", {}, "", function()
-    if global_address > 0 then
+    if global_address > 0 and tonumber(global_write) ~= nil then
         if global_type == "int" then
             SET_INT_GLOBAL(global_address, global_write)
         elseif global_type == "float" then
@@ -7477,7 +7849,7 @@ menu.action(Global_Editor, "写入 Global", {}, "", function()
     end
 end)
 menu.toggle_loop(Global_Editor, "锁定写入 Global", {}, "", function()
-    if global_address > 0 then
+    if global_address > 0 and tonumber(global_write) ~= nil then
         if global_type == "int" then
             SET_INT_GLOBAL(global_address, global_write)
         elseif global_type == "float" then
@@ -8052,7 +8424,6 @@ menu.slider_text(Other_options_Developer, "设置周围物体可碰撞", {}, "",
         end
         util.toast("Done!")
     end)
-
 
 
 
@@ -8720,7 +9091,7 @@ local PlayerFunctions = function(pId)
 
     menu.divider(Trolling_options_NearbyPed, "附近行人敌对此玩家")
     local Player_NearbyPed_Combat = {
-        weapon = util.joaat(weapon_list_model[1]),
+        weapon = util.joaat(weapon_model_list[1]),
         is_enhance = false,
         is_perfect = false,
         is_drop_money = false,
@@ -8788,9 +9159,9 @@ local PlayerFunctions = function(pId)
         end
     end)
 
-    menu.list_select(Trolling_options_NearbyPed, "设置武器", {}, "点击应用修改", weapon_name_list_item, 1,
+    menu.list_select(Trolling_options_NearbyPed, "设置武器", {}, "", weapon_name_ListItem, 1,
         function(value)
-            Player_NearbyPed_Combat.weapon = util.joaat(weapon_list_model[value])
+            Player_NearbyPed_Combat.weapon = util.joaat(weapon_model_list[value])
         end)
     menu.toggle(Trolling_options_NearbyPed, "强化作战能力", {}, "如果npc会逃跑的话，开启这个",
         function(toggle)
