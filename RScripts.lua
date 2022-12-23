@@ -2,14 +2,14 @@
 --- Author: Rostal
 ---------------------------
 
-util.require_natives("natives-1663599433")
 util.keep_running()
+util.require_natives("natives-1663599433")
 
 -- 脚本版本
-local Script_Version <const> = "2022/12/1"
+local Script_Version <const> = "2022/12/23"
 
 -- 支持的GTA线上版本
-local Support_GTAO <const> = 1.63
+local Support_GTAO <const> = 1.64
 
 
 
@@ -43,10 +43,12 @@ Texture.point = directx.create_texture(Texture.file.point)
 local ScriptDir <const> = filesystem.scripts_dir()
 local Required_Files <const> = {
     "lib\\RScripts\\labels.lua",
+    "lib\\RScripts\\variables.lua",
     "lib\\RScripts\\functions.lua",
     "lib\\RScripts\\functions2.lua",
     "lib\\RScripts\\Menu\\Entity_options.lua",
     "lib\\RScripts\\Menu\\Mission_options.lua",
+    "lib\\RScripts\\Menu\\Dev_options.lua",
 }
 for _, file in pairs(Required_Files) do
     local file_path = ScriptDir .. file
@@ -58,6 +60,7 @@ for _, file in pairs(Required_Files) do
 end
 
 require "RScripts.labels"
+require "RScripts.variables"
 require "RScripts.functions"
 require "RScripts.functions2"
 
@@ -459,11 +462,29 @@ end)
 ---------------- START -------------------
 
 
------- 创建对应实体的menu操作 ------
+Entity_Control = {}
 
---- All entity type ---
-function entity_control_all(menu_parent, ent, index)
+------ 创建对应实体的menu操作 ------
+function Entity_Control.generate_menu(menu_parent, ent, index)
+    Entity_Control.entity(menu_parent, ent, index)
+
+    if ENTITY.IS_ENTITY_A_PED(ent) then
+        Entity_Control.ped(menu_parent, ent, index)
+    end
+
+    if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
+        Entity_Control.vehicle(menu_parent, ent, index)
+    end
+
+    if IS_ENTITY_A_PICKUP(ent) then
+        Entity_Control.pickup(menu_parent, ent, index)
+    end
+end
+
+--- Entity ---
+function Entity_Control.entity(menu_parent, ent, index)
     menu.divider(menu_parent, menu.get_menu_name(menu_parent))
+
     menu.toggle(menu_parent, "描绘实体连线", {}, "", function(toggle)
         if toggle then
             if control_ent_tick_handler.Drawing_line.toggle then
@@ -521,6 +542,11 @@ function entity_control_all(menu_parent, ent, index)
         util.copy_to_clipboard(text, false)
         util.toast("完成")
     end)
+    menu.action(menu_parent, "复制Hash", {}, "", function()
+        local text = ENTITY.GET_ENTITY_MODEL(ent)
+        util.copy_to_clipboard(text, false)
+        util.toast(text)
+    end)
 
     local save_hash = menu.list(menu_parent, "保存到 Hash 列表", {}, "")
     local save_ent_hash_name = util.reverse_joaat(ENTITY.GET_ENTITY_MODEL(ent))
@@ -551,7 +577,7 @@ function entity_control_all(menu_parent, ent, index)
     end)
     menu.list_action(entity_options, "爆炸", {}, "选择爆炸类型", ExplosionType_ListItem, function(value)
         local pos = ENTITY.GET_ENTITY_COORDS(ent)
-        FIRE.ADD_EXPLOSION(pos.x, pos.y, pos.z, value - 2, 1000.0, true, false, 0.0, false)
+        add_explosion(pos, value - 2)
     end)
     menu.toggle(entity_options, "无碰撞", {}, "可以直接穿过实体", function(toggle)
         ENTITY.SET_ENTITY_COLLISION(ent, not toggle, not toggle)
@@ -629,32 +655,36 @@ function entity_control_all(menu_parent, ent, index)
     menu.action(entity_options, "设置为网络实体", {}, "可将本地实体同步给其他玩家", function()
         util.toast(Set_Entity_Networked(ent))
     end)
-    menu.action(entity_options, "设置为本地实体", {}, "~Not Working~", function()
-        NETWORK.NETWORK_UNREGISTER_NETWORKED_ENTITY(ent)
-        util.toast(NETWORK.NETWORK_GET_ENTITY_IS_LOCAL(ent))
-    end)
     menu.action(entity_options, "删除", {}, "", function()
         entities.delete_by_handle(ent)
     end)
 
-    menu.divider(entity_options, "血量")
-    menu.action(entity_options, "获取当前血量", {}, "", function()
+    ----- Health -----
+    local health_options = menu.list(menu_parent, "实体血量", {}, "")
+    local readonly_ent_health = menu.readonly(health_options, "血量")
+    menu.on_tick_in_viewport(readonly_ent_health, function()
         local health = ENTITY.GET_ENTITY_HEALTH(ent)
         local max_health = ENTITY.GET_ENTITY_MAX_HEALTH(ent)
-        util.toast("Health: " .. health .. "/" .. max_health)
+        menu.set_value(readonly_ent_health, health .. "/" .. max_health)
     end)
+    menu.divider(health_options, "设置血量")
     local ctrl_ent_health = 1000
-    menu.slider(entity_options, "血量", { "ctrl_ent" .. index .. "_health" }, "", 0, 100000, 1000, 100,
+    menu.slider(health_options, "血量", { "ctrl_ent" .. index .. "_health" }, "", 0, 100000, 1000, 100,
         function(value)
             ctrl_ent_health = value
         end)
-    menu.action(entity_options, "设置血量", {}, "", function()
+    menu.action(health_options, "当前血量", {}, "", function()
         ENTITY.SET_ENTITY_HEALTH(ent, ctrl_ent_health)
     end)
-    menu.action(entity_options, "设置最大血量", {}, "", function()
+    menu.action(health_options, "最大血量", {}, "", function()
         ENTITY.SET_ENTITY_MAX_HEALTH(ent, ctrl_ent_health)
     end)
 
+    Entity_Control.teleport(menu_parent, ent, index)
+    Entity_Control.movement(menu_parent, ent, index)
+end
+
+function Entity_Control.teleport(menu_parent, ent, index)
     ----- Teleport -----
     local teleport_options = menu.list(menu_parent, "传送 选项", {}, "")
     local ctrl_ent_tp_x = 0.0
@@ -698,7 +728,9 @@ function entity_control_all(menu_parent, ent, index)
                 end
             end
         end)
+end
 
+function Entity_Control.movement(menu_parent, ent, index)
     ----- Movement -----
     local movement_options = menu.list(menu_parent, "移动 选项", {}, "")
     menu.click_slider_float(movement_options, "前/后 移动", { "ctrl_ent" .. index .. "_move_y" }, "", -10000, 10000,
@@ -758,11 +790,10 @@ function entity_control_all(menu_parent, ent, index)
         coords.z = value * 0.01
         SET_ENTITY_COORDS(ent, coords)
     end)
-
 end
 
---- Ped entity type ---
-function entity_control_ped(menu_parent, ped, index)
+--- Ped ---
+function Entity_Control.ped(menu_parent, ped, index)
     local ped_options = menu.list(menu_parent, "Ped 选项", {}, "")
     menu.toggle(ped_options, "燃烧", {}, "", function(toggle)
         if toggle then
@@ -804,7 +835,18 @@ function entity_control_ped(menu_parent, ped, index)
         PED.SET_RELATIONSHIP_BETWEEN_GROUPS(0, player_rel_hash, player_rel_hash)
         PED.SET_PED_RELATIONSHIP_GROUP_HASH(ped, player_rel_hash)
     end)
+    menu.action(ped_options, "DROP_AMBIENT_PROP", {}, "", function()
+        PED.DROP_AMBIENT_PROP(ped)
+    end)
+    menu.action(ped_options, "CLEAR_ALL_PED_PROPS", {}, "", function()
+        PED.CLEAR_ALL_PED_PROPS(ped)
+    end)
 
+    Entity_Control.ped_combat(menu_parent, ped, index)
+    Entity_Control.ped_task(menu_parent, ped, index)
+end
+
+function Entity_Control.ped_combat(menu_parent, ped, index)
     local ped_combat_options = menu.list(menu_parent, "NPC作战能力选项", {}, "")
     menu.action(ped_combat_options, "一键无敌强化NPC", {}, "适用于友方NPC", function()
         Increase_Ped_Combat_Ability(ped, true, false)
@@ -817,56 +859,57 @@ function entity_control_ped(menu_parent, ped, index)
     menu.click_slider(ped_combat_options, "精准度", {}, "", 0, 100, 50, 10, function(value)
         PED.SET_PED_ACCURACY(ped, value)
     end)
-    menu.slider_text(ped_combat_options, "战斗能力", {}, "", { "Poor", "Average", "Professional", "NumTypes" },
-        function(value)
-            local eCombatAbility = {
-                CA_Poor,
-                CA_Average,
-                CA_Professional,
-                CA_NumTypes
-            }
-            PED.SET_PED_COMBAT_ABILITY(ped, eCombatAbility[value])
-        end)
-    menu.slider_text(ped_combat_options, "战斗范围", {}, "", { "Near", "Medium", "Far", "VeryFar", "NumRanges" },
-        function(value)
-            local eCombatRange = {
-                CR_Near,
-                CR_Medium,
-                CR_Far,
-                CR_VeryFar,
-                CR_NumRanges
-            }
-            PED.SET_PED_COMBAT_RANGE(ped, eCombatRange[value])
-        end)
-    menu.slider_text(ped_combat_options, "战斗走位", {}, "",
-        { "Stationary", "Defensive", "WillAdvance", "WillRetreat" },
-        function(value)
-            local eCombatMovement = {
-                CM_Stationary,
-                CM_Defensive,
-                CM_WillAdvance,
-                CM_WillRetreat
-            }
-            PED.SET_PED_COMBAT_MOVEMENT(ped, eCombatMovement[value])
-        end)
+    menu.slider_text(ped_combat_options, "战斗能力", {}, "", enum_CombatAbility, function(value)
+        PED.SET_PED_COMBAT_ABILITY(ped, value - 1)
+    end)
+    menu.slider_text(ped_combat_options, "战斗范围", {}, "", enum_CombatRange, function(value)
+        PED.SET_PED_COMBAT_RANGE(ped, value - 1)
+    end)
+    menu.slider_text(ped_combat_options, "战斗走位", {}, "", enum_CombatMovement, function(value)
+        PED.SET_PED_COMBAT_MOVEMENT(ped, value - 1)
+    end)
+    menu.slider_text(ped_combat_options, "警觉度", {}, "", enum_Alertness, function(value)
+        PED.SET_PED_ALERTNESS(ped, value - 1)
+    end)
+    menu.list_action(ped_combat_options, "射击模式", {}, "", Ped_FirePattern_ListItem, function(value)
+        PED.SET_PED_FIRING_PATTERN(ped, value)
+    end)
 
+
+    local combat_attributes_options = menu.list(ped_combat_options, "NPC作战属性", {}, "")
+    local combat_attributes_menus = {}
+    menu.toggle(combat_attributes_options, "全部开/关", {}, "", function(toggle)
+        for i, the_menu in pairs(combat_attributes_menus) do
+            menu.set_value(the_menu, toggle)
+        end
+    end)
+    for id, data in pairs(Ped_CombatAttributes_List) do
+        combat_attributes_menus[id] = menu.toggle(combat_attributes_options, data[1], {}, data[2], function(toggle)
+            PED.SET_PED_COMBAT_ATTRIBUTES(ped, id, toggle)
+        end)
+    end
+
+    local combat_float_options = menu.list(ped_combat_options, "NPC作战数值", {}, "")
+    local combat_float_menus = {}
+    for id, data in pairs(Ped_CombatFloat_List) do
+        local default = string.format("%.2f", PED.GET_COMBAT_FLOAT(ped, id))
+        default = tonumber(default) * 100
+        combat_float_menus[id] = menu.click_slider_float(combat_float_options, data[1], {}, data[2], 0, 50000, default,
+            10, function(value)
+            PED.SET_COMBAT_FLOAT(ped, id, value * 0.01)
+        end)
+    end
+
+end
+
+function Entity_Control.ped_task(menu_parent, ped, index)
     local ped_task_options = menu.list(menu_parent, "Ped Task 选项", {}, "")
 
     menu.action(ped_task_options, "Clear Ped Tasks Immediately", {}, "", function()
         TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
     end)
     menu.action(ped_task_options, "Clear Ped All Tasks", {}, "", function()
-        TASK.CLEAR_PED_TASKS(ped)
-        TASK.CLEAR_DEFAULT_PRIMARY_TASK(ped)
-        TASK.CLEAR_PED_SECONDARY_TASK(ped)
-        TASK.TASK_CLEAR_LOOK_AT(ped)
-        TASK.TASK_CLEAR_DEFENSIVE_AREA(ped)
-        TASK.CLEAR_DRIVEBY_TASK_UNDERNEATH_DRIVING_TASK(ped)
-        if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
-            local veh = PED.GET_VEHICLE_PED_IS_USING(ped)
-            TASK.CLEAR_PRIMARY_VEHICLE_TASK(veh)
-            TASK.CLEAR_VEHICLE_CRASH_TASK(veh)
-        end
+        Clear_Ped_All_Tasks(ped)
     end)
 
     --- Ped Task Follow ---
@@ -926,11 +969,15 @@ function entity_control_ped(menu_parent, ped, index)
             TASK.TASK_TURN_PED_TO_FACE_ENTITY(ped, players.user_ped(), 0)
         end
     end)
+    menu.click_slider_float(ped_task_options, "讨厌附近目标", { "task_ped" .. index .. "hated_around" }, "",
+        0, 50000, 0, 10, function(value)
+        TASK.TASK_COMBAT_HATED_TARGETS_AROUND_PED(ped, value * 0.01, 0)
+    end)
 
 end
 
---- Vehicle entity type ---
-function entity_control_vehicle(menu_parent, vehicle, index)
+--- Vehicle ---
+function Entity_Control.vehicle(menu_parent, vehicle, index)
     local vehicle_options = menu.list(menu_parent, "Vehicle 选项", {}, "")
     menu.action(vehicle_options, "传送到载具内", {}, "", function()
         if VEHICLE.ARE_ANY_VEHICLE_SEATS_FREE(vehicle) then
@@ -1055,7 +1102,16 @@ function entity_control_vehicle(menu_parent, vehicle, index)
             end
         end
     end)
+    menu.action(vehicle_options, "随机喷漆", {}, "", function()
+        local primary, secundary = get_random_colour(), get_random_colour()
+        VEHICLE.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR(vehicle, primary.r, primary.g, primary.b)
+        VEHICLE.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR(vehicle, secundary.r, secundary.g, secundary.b)
+    end)
 
+    Entity_Control.vehicle_task(menu_parent, vehicle, index)
+end
+
+function Entity_Control.vehicle_task(menu_parent, vehicle, index)
     local ped = GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
     if ped then
         local veh_task_options = menu.list(menu_parent, "Vehicle Task 选项", {}, "")
@@ -1064,17 +1120,7 @@ function entity_control_vehicle(menu_parent, vehicle, index)
             TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
         end)
         menu.action(veh_task_options, "Clear Driver All Tasks", {}, "", function()
-            TASK.CLEAR_PED_TASKS(ped)
-            TASK.CLEAR_DEFAULT_PRIMARY_TASK(ped)
-            TASK.CLEAR_PED_SECONDARY_TASK(ped)
-            TASK.TASK_CLEAR_LOOK_AT(ped)
-            TASK.TASK_CLEAR_DEFENSIVE_AREA(ped)
-            TASK.CLEAR_DRIVEBY_TASK_UNDERNEATH_DRIVING_TASK(ped)
-            if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
-                local veh = PED.GET_VEHICLE_PED_IS_USING(ped)
-                TASK.CLEAR_PRIMARY_VEHICLE_TASK(veh)
-                TASK.CLEAR_VEHICLE_CRASH_TASK(veh)
-            end
+            Clear_Ped_All_Tasks(ped)
         end)
 
         --- Vehicle Task Follow ---
@@ -1103,6 +1149,7 @@ function entity_control_vehicle(menu_parent, vehicle, index)
                 veh_follow.minDistance)
             util.toast("Done!")
         end)
+
 
         --- Vehicle Task Escort ---
         local task_escort = menu.list(veh_task_options, "载具 护送", {}, "")
@@ -1168,13 +1215,69 @@ function entity_control_vehicle(menu_parent, vehicle, index)
         end)
 
 
-    end
+        --- Vehicle Task Mission ---
+        local task_mission = menu.list(veh_task_options, "载具 设置任务", {}, "")
+        local veh_mission = {
+            missionType = 7,
+            maxSpeed = 500.0,
+            drivingStyle = 786603,
+            minDistance = 5.0,
+            straightLineDistance = 0.0,
+            DriveAgainstTraffic = true,
+        }
 
+        menu.list_select(task_mission, "任务类型", {}, "", Vehicle_MissionType_ListItem, 7, function(value)
+            veh_mission.missionType = value
+        end)
+        menu.slider(task_mission, "最大速度", { "task_veh" .. index .. "mission_maxSpeed" }, "", 0, 1000, 500, 10,
+            function(value)
+                veh_mission.maxSpeed = value
+            end)
+        menu.list_select(task_mission, "驾驶风格", {}, "", DrivingStyleName_ListItem, 1, function(value)
+            veh_mission.drivingStyle = DrivingStyle_List[value]
+        end)
+        menu.slider_float(task_mission, "最小距离", { "task_veh" .. index .. "mission_minDistance" }, "", 0,
+            100000, 500, 100, function(value)
+            veh_mission.minDistance = value * 0.01
+        end)
+        menu.slider_float(task_mission, "直线距离", { "task_veh" .. index .. "mission_straightLineDistance" }, "", 0
+            , 100000, 0, 100, function(value)
+            veh_mission.straightLineDistance = value * 0.01
+        end)
+        menu.toggle(task_mission, "DriveAgainstTraffic", {}, "", function(toggle)
+            veh_mission.DriveAgainstTraffic = toggle
+        end, true)
+        menu.action(task_mission, "设置任务", {}, "", function()
+            TASK.TASK_VEHICLE_MISSION_PED_TARGET(ped, vehicle, players.user_ped(), veh_mission.missionType,
+                veh_mission.maxSpeed, veh_mission.drivingStyle, veh_mission.minDistance, veh_mission.straightLineDistance
+                , veh_mission.DriveAgainstTraffic)
+            util.toast("Done!")
+        end)
+
+
+    end
+end
+
+--- Pickup ---
+function Entity_Control.pickup(menu_parent, pickup, index)
+    local pickup_options = menu.list(menu_parent, "Pickup 选项", {}, "")
+    local modelHash = ENTITY.GET_ENTITY_MODEL(pickup)
+
+    menu.action(pickup_options, "是否被收集", {}, "", function()
+        util.toast(OBJECT.HAS_PICKUP_BEEN_COLLECTED(pickup))
+    end)
+    menu.click_slider(pickup_options, "玩家最大携带量", { "ctrl_pickup" .. index .. "max_carried" }, "", 0, 1000,
+        1, 1, function(value)
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(modelHash, value)
+    end)
+    menu.toggle(pickup_options, "不可收集", {}, "", function(toggle)
+        OBJECT.SET_PICKUP_UNCOLLECTABLE(pickup, toggle)
+    end)
 
 end
 
---- All Entities Control ---
-function all_entities_control(menu_parent, entity_list)
+--- All Entities ---
+function Entity_Control.entities(menu_parent, entity_list)
     menu.click_slider(menu_parent, "请求控制实体", { "request_ctrl_ents" }, "发送请求控制的次数", 1, 100
         , 20, 1, function(value)
         local success_num = 0
@@ -1223,7 +1326,7 @@ function all_entities_control(menu_parent, entity_list)
         for k, ent in pairs(entity_list) do
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 local pos = ENTITY.GET_ENTITY_COORDS(ent)
-                FIRE.ADD_EXPLOSION(pos.x, pos.y, pos.z, value - 2, 1000.0, true, false, 0.0, false)
+                add_explosion(pos, value - 2)
             end
         end
         util.toast("Done!")
@@ -1256,6 +1359,11 @@ function all_entities_control(menu_parent, entity_list)
         util.toast("Done!")
     end)
 
+    Entity_Control.entities_teleport(menu_parent, entity_list)
+    Entity_Control.entities_movement(menu_parent, entity_list)
+end
+
+function Entity_Control.entities_teleport(menu_parent, entity_list)
     ----- Teleport -----
     local teleport_options = menu.list(menu_parent, "传送 选项", {}, "")
     local ctrl_ents_tp_x = 0.0
@@ -1288,7 +1396,9 @@ function all_entities_control(menu_parent, entity_list)
         end
         util.toast("Done!")
     end)
+end
 
+function Entity_Control.entities_movement(menu_parent, entity_list)
     ----- Movement -----
     local movement_options = menu.list(menu_parent, "移动 选项", {}, "")
     menu.click_slider_float(movement_options, "前/后 移动", { "ctrl_ents_move_y" }, "", -10000, 10000,
@@ -1338,7 +1448,6 @@ function all_entities_control(menu_parent, entity_list)
             end
             util.toast("Done!")
         end)
-
 end
 
 ----------------- END --------------------
@@ -1541,7 +1650,7 @@ function Saved_Hash_List.refresh()
 end
 
 ----- SCRIPT START -----
-if SCRIPT_MANUAL_START then
+if not SCRIPT_SILENT_START then
     local GTAO = tonumber(NETWORK.GET_ONLINE_VERSION())
     if Support_GTAO ~= GTAO then
         util.toast("支持的GTA线上版本: " .. Support_GTAO .. "\n当前GTA线上版本: " .. GTAO)
@@ -1732,6 +1841,7 @@ end, function()
 end)
 menu.toggle_loop(Self_options, "行动无声", {}, "", function()
     PLAYER.SET_PLAYER_NOISE_MULTIPLIER(PLAYER.PLAYER_ID(), 0.0)
+    PLAYER.SET_PLAYER_SNEAKING_NOISE_MULTIPLIER(PLAYER.PLAYER_ID(), 0.0)
 end)
 menu.toggle_loop(Self_options, "不会被帮派骚乱", {}, "", function()
     PLAYER.SET_PLAYER_CAN_BE_HASSLED_BY_GANGS(PLAYER.PLAYER_ID(), false)
@@ -1761,6 +1871,7 @@ end, function()
     PED.RESET_AI_WEAPON_DAMAGE_MODIFIER()
     PED.RESET_AI_MELEE_WEAPON_DAMAGE_MODIFIER()
 end)
+
 
 
 
@@ -1807,122 +1918,72 @@ end)
 ------------------------
 ------- 视野工具枪 -------
 ------------------------
-local Weapon_Cam_Gun = menu.list(Weapon_options, "视野工具枪", { "cam_gun" }, "玩家镜头中心的位置")
+local Weapon_Cam_Gun = menu.list(Weapon_options, "视野工具枪", {}, "玩家镜头中心的位置")
 
----------------
------ 爆炸 -----
----------------
-local Cam_Gun_explosion = menu.list(Weapon_Cam_Gun, "爆炸", { "cam_gun_explosion" }, "")
 
-local cam_gun_explosion_data = {
-    delay = 100,
-    explosionType = 2,
-    is_owned = false,
-    damage = 1000,
-    is_audible = true,
-    is_invisible = false,
-    camera_shake = 0.0,
+local Cam_Gun = {
+    select = 1,
+
 }
-menu.toggle_loop(Cam_Gun_explosion, "开启[按住E键]", {}, "", function()
-    main_tick_handler.draw_point_on_screen = true
-    if PAD.IS_CONTROL_PRESSED(0, 51) then
-        local result = get_raycast_result(1500, -1)
-        local cam_pos = result.endCoords
-        if result.didHit and cam_pos ~= nil then
-            if cam_gun_explosion_data.is_owned then
-                FIRE.ADD_OWNED_EXPLOSION(players.user_ped(), cam_pos.x, cam_pos.y, cam_pos.z,
-                    cam_gun_explosion_data.explosionType, cam_gun_explosion_data.damage,
-                    cam_gun_explosion_data.is_audible, cam_gun_explosion_data.is_invisible,
-                    cam_gun_explosion_data.camera_shake)
-            else
-                FIRE.ADD_EXPLOSION(cam_pos.x, cam_pos.y, cam_pos.z, cam_gun_explosion_data.explosionType,
-                    cam_gun_explosion_data.damage, cam_gun_explosion_data.is_audible, cam_gun_explosion_data.is_invisible
-                    , cam_gun_explosion_data.camera_shake, false)
-            end
-            util.yield(cam_gun_explosion_data.delay)
-        end
-    end
-end, function()
-    main_tick_handler.draw_point_on_screen = false
-end)
 
-menu.divider(Cam_Gun_explosion, "设置")
-menu.slider(Cam_Gun_explosion, "循环延迟", { "cam_gun_explosion_delay" }, "单位: ms", 0, 5000, 100, 10,
-    function(value)
-        cam_gun_explosion_data.delay = value
-    end)
-menu.list_select(Cam_Gun_explosion, "爆炸类型", {}, "", ExplosionType_ListItem, 4, function(index)
-    cam_gun_explosion_data.explosionType = index - 2
-end)
-menu.toggle(Cam_Gun_explosion, "署名爆炸", {}, "以玩家名义", function(toggle)
-    cam_gun_explosion_data.is_owned = toggle
-end)
-menu.slider(Cam_Gun_explosion, "伤害", { "cam_gun_explosion_damage" }, "", 0, 10000, 1000, 100,
-    function(value)
-        cam_gun_explosion_data.damage = value
-    end)
-menu.toggle(Cam_Gun_explosion, "可听见", {}, "", function(toggle)
-    cam_gun_explosion_data.is_audible = toggle
-end, true)
-menu.toggle(Cam_Gun_explosion, "不可见", {}, "", function(toggle)
-    cam_gun_explosion_data.is_invisible = toggle
-end)
-menu.slider_float(Cam_Gun_explosion, "镜头晃动", { "cam_gun_explosion_camera_shake" }, "", 0, 1000, 0, 10,
-    function(value)
-        value = value * 0.01
-        cam_gun_explosion_data.camera_shake = value
-    end)
-
-
----------------
------ 射击 -----
----------------
-local Cam_Gun_shoot = menu.list(Weapon_Cam_Gun, "射击", { "cam_gun_shoot" }, "")
-
-local cam_gun_shoot_data = {
+--- Shoot ---
+Cam_Gun.shoot_setting = {
     shoot_method = 1,
     delay = 100,
+
+    weapon_select = 1,
     weapon_hash = "PLAYER_WEAPON",
+    vehicle_weapon_hash = "VEHICLE_WEAPON",
+
     is_owned = false,
+    CreateTraceVfx = true,
+    AllowRumble = true,
     damage = 1000,
     speed = 1000,
-    is_audible = true,
-    is_invisible = false,
+    PerfectAccuracy = false,
+
     start_from_player = false,
     x = 0.0,
     y = 0.0,
     z = 2.0,
 }
 
-local function Cam_Gun_Shoot_Pos(pos, state)
+function Cam_Gun.Shoot_Pos(pos, state)
     local user_ped = players.user_ped()
 
-    local weaponHash = cam_gun_shoot_data.weapon_hash
+    local weaponHash = Cam_Gun.shoot_setting.weapon_hash
+    if Cam_Gun.shoot_setting.weapon_select == 2 then
+        weaponHash = Cam_Gun.shoot_setting.vehicle_weapon_hash
+    end
+
     if weaponHash == "PLAYER_WEAPON" then
         local pWeapon = memory.alloc_int()
         WEAPON.GET_CURRENT_PED_WEAPON(user_ped, pWeapon, true)
         weaponHash = memory.read_int(pWeapon)
-    else
-        if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHashHash) then
-            Request_Weapon_Asset(weaponHash)
-        end
+    elseif weaponHash == "VEHICLE_WEAPON" then
+        local pWeapon = memory.alloc_int()
+        WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(user_ped, pWeapon)
+        weaponHash = memory.read_int(pWeapon)
+    end
+    if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHashHash) then
+        Request_Weapon_Asset(weaponHash)
     end
 
     local owner = 0
-    if cam_gun_shoot_data.is_owned then
+    if Cam_Gun.shoot_setting.is_owned then
         owner = user_ped
     end
 
     local start_pos = v3.new()
-    if cam_gun_shoot_data.start_from_player then
+    if Cam_Gun.shoot_setting.start_from_player then
         local player_pos = ENTITY.GET_ENTITY_COORDS(user_ped)
-        start_pos.x = player_pos.x + cam_gun_shoot_data.x
-        start_pos.y = player_pos.y + cam_gun_shoot_data.y
-        start_pos.z = player_pos.z + cam_gun_shoot_data.z
+        start_pos.x = player_pos.x + Cam_Gun.shoot_setting.x
+        start_pos.y = player_pos.y + Cam_Gun.shoot_setting.y
+        start_pos.z = player_pos.z + Cam_Gun.shoot_setting.z
     else
-        start_pos.x = pos.x + cam_gun_shoot_data.x
-        start_pos.y = pos.y + cam_gun_shoot_data.y
-        start_pos.z = pos.z + cam_gun_shoot_data.z
+        start_pos.x = pos.x + Cam_Gun.shoot_setting.x
+        start_pos.y = pos.y + Cam_Gun.shoot_setting.y
+        start_pos.z = pos.z + Cam_Gun.shoot_setting.z
     end
 
     if state == "drawing_line" then
@@ -1935,105 +1996,244 @@ local function Cam_Gun_Shoot_Pos(pos, state)
 
         MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(start_pos.x, start_pos.y, start_pos.z,
             pos.x, pos.y, pos.z,
-            cam_gun_shoot_data.damage, false, weaponHash, owner,
-            cam_gun_shoot_data.is_audible, cam_gun_shoot_data.is_invisible, cam_gun_shoot_data.speed,
+            Cam_Gun.shoot_setting.damage, Cam_Gun.shoot_setting.PerfectAccuracy, weaponHash, owner,
+            Cam_Gun.shoot_setting.CreateTraceVfx, Cam_Gun.shoot_setting.AllowRumble, Cam_Gun.shoot_setting.speed,
             ignore_entity)
     end
 
 end
 
-menu.toggle_loop(Cam_Gun_shoot, "开启[按住E键]", {}, "", function()
+function Cam_Gun.Shoot()
+    local cam_pos
+    if Cam_Gun.shoot_setting.shoot_method == 1 then
+        local result = get_raycast_result(1500, -1)
+        if result.didHit then
+            cam_pos = result.endCoords
+        end
+    elseif Cam_Gun.shoot_setting.shoot_method == 2 then
+        cam_pos = get_offset_from_cam(1500)
+    end
+
+    if cam_pos ~= nil then
+        Cam_Gun.Shoot_Pos(cam_pos, "shoot")
+        util.yield(Cam_Gun.shoot_setting.delay)
+    end
+end
+
+--- Explosion ---
+Cam_Gun.explosion_setting = {
+    delay = 100,
+    explosionType = 2,
+    is_owned = false,
+    damage = 1000,
+    is_audible = true,
+    is_invisible = false,
+    camera_shake = 0.0,
+}
+
+function Cam_Gun.Explosion()
+    local result = get_raycast_result(1500, -1)
+    local cam_pos = result.endCoords
+    if result.didHit and cam_pos ~= nil then
+        if Cam_Gun.explosion_setting.is_owned then
+            FIRE.ADD_OWNED_EXPLOSION(players.user_ped(), cam_pos.x, cam_pos.y, cam_pos.z,
+                Cam_Gun.explosion_setting.explosionType, Cam_Gun.explosion_setting.damage,
+                Cam_Gun.explosion_setting.is_audible, Cam_Gun.explosion_setting.is_invisible,
+                Cam_Gun.explosion_setting.camera_shake)
+        else
+            FIRE.ADD_EXPLOSION(cam_pos.x, cam_pos.y, cam_pos.z, Cam_Gun.explosion_setting.explosionType,
+                Cam_Gun.explosion_setting.damage, Cam_Gun.explosion_setting.is_audible,
+                Cam_Gun.explosion_setting.is_invisible
+                , Cam_Gun.explosion_setting.camera_shake, false)
+        end
+        util.yield(Cam_Gun.explosion_setting.delay)
+    end
+end
+
+--- Fire ---
+Cam_Gun.fire_setting = {
+    fire_ids = {},
+    maxChildren = 25,
+    isGasFire = false,
+}
+
+function Cam_Gun.Fire()
+    local result = get_raycast_result(1500, -1)
+    local cam_pos = result.endCoords
+    if result.didHit and cam_pos ~= nil then
+        local fire_id = FIRE.START_SCRIPT_FIRE(cam_pos.x, cam_pos.y, cam_pos.z, Cam_Gun.fire_setting.maxChildren,
+            Cam_Gun.fire_setting.isGasFire)
+        table.insert(Cam_Gun.fire_setting.fire_ids, fire_id)
+    end
+end
+
+menu.toggle_loop(Weapon_Cam_Gun, "开启[按住E键]", { "cam_gun" }, "", function()
     main_tick_handler.draw_point_on_screen = true
     if PAD.IS_CONTROL_PRESSED(0, 51) then
-        local cam_pos
-        if cam_gun_shoot_data.shoot_method == 1 then
-            local result = get_raycast_result(1500, -1)
-            if result.didHit then
-                cam_pos = result.endCoords
-            end
-        elseif cam_gun_shoot_data.shoot_method == 2 then
-            cam_pos = get_offset_from_cam(1500)
-        end
-
-        if cam_pos ~= nil then
-            Cam_Gun_Shoot_Pos(cam_pos, "shoot")
-            util.yield(cam_gun_shoot_data.delay)
+        if Cam_Gun.select == 1 then
+            Cam_Gun.Shoot()
+        elseif Cam_Gun.select == 2 then
+            Cam_Gun.Explosion()
+        elseif Cam_Gun.select == 3 then
+            Cam_Gun.Fire()
         end
     end
 end, function()
     main_tick_handler.draw_point_on_screen = false
 end)
 
+menu.list_select(Weapon_Cam_Gun, "选择操作", { "cam_gun_select" }, "", {
+    { "射击", { "shoot" }, "" },
+    { "爆炸", { "explosion" }, "" },
+    { "燃烧", { "fire" }, "" },
+}, 1, function(value)
+    Cam_Gun.select = value
+end)
+
+
+menu.divider(Weapon_Cam_Gun, "设置")
+----------------
+-- 射击设置
+----------------
+local Cam_Gun_shoot = menu.list(Weapon_Cam_Gun, "射击", {}, "")
 
 menu.toggle_loop(Cam_Gun_shoot, "绘制射击连线", {}, "", function()
     main_tick_handler.draw_point_on_screen = true
 
     local cam_pos
-    if cam_gun_shoot_data.shoot_method == 1 then
+    if Cam_Gun.shoot_setting.shoot_method == 1 then
         local result = get_raycast_result(1500, -1)
         if result.didHit then
             cam_pos = result.endCoords
         end
-    elseif cam_gun_shoot_data.shoot_method == 2 then
+    elseif Cam_Gun.shoot_setting.shoot_method == 2 then
         cam_pos = get_offset_from_cam(1500)
     end
 
     if cam_pos ~= nil then
-        Cam_Gun_Shoot_Pos(cam_pos, "drawing_line")
+        Cam_Gun.Shoot_Pos(cam_pos, "drawing_line")
     end
 
 end, function()
     main_tick_handler.draw_point_on_screen = false
 end)
 
-menu.divider(Cam_Gun_shoot, "设置")
-
-local Cam_Gun_shoot_method = {
+menu.list_select(Cam_Gun_shoot, "射击方式", {}, "", {
     { "方式1", {}, "射击的坐标更加准确，只能向实体或地面射击" },
     { "方式2", {}, "射击的坐标不是很准确，但可以向空中射击" }
-}
-menu.list_select(Cam_Gun_shoot, "射击方式", {}, "", Cam_Gun_shoot_method, 1, function(value)
-    cam_gun_shoot_data.shoot_method = value
+}, 1, function(value)
+    Cam_Gun.shoot_setting.shoot_method = value
 end)
 menu.slider(Cam_Gun_shoot, "循环延迟", { "cam_gun_shoot_delay" }, "单位: ms", 0, 5000, 100, 10,
     function(value)
-        cam_gun_shoot_data.delay = value
+        Cam_Gun.shoot_setting.delay = value
     end)
-menu.list_select(Cam_Gun_shoot, "武器", {}, "", AllWeapons_NoClose_ListItem, 1, function(value)
-    cam_gun_shoot_data.weapon_hash = AllWeapons_NoClose_ListItem[value][3]
+
+local Cam_Gun_shoot_weapon = menu.list(Cam_Gun_shoot, "武器", {}, "")
+menu.list_select(Cam_Gun_shoot_weapon, "武器类型", {}, "", { { "手持武器" }, { "载具武器" } }, 1,
+    function(value)
+        Cam_Gun.shoot_setting.weapon_select = value
+    end)
+menu.list_select(Cam_Gun_shoot_weapon, "手持武器", {}, "", AllWeapons_NoMelee_ListItem, 1, function(value)
+    Cam_Gun.shoot_setting.weapon_hash = AllWeapons_NoMelee_ListItem[value][3]
 end)
+menu.list_select(Cam_Gun_shoot_weapon, "载具武器", {}, "", All_VehicleWeapons_ListItem, 1, function(value)
+    Cam_Gun.shoot_setting.vehicle_weapon_hash = All_VehicleWeapons_ListItem[value][3]
+end)
+
 menu.toggle(Cam_Gun_shoot, "署名射击", {}, "以玩家名义", function(toggle)
-    cam_gun_shoot_data.is_owned = toggle
+    Cam_Gun.shoot_setting.is_owned = toggle
 end)
 menu.slider(Cam_Gun_shoot, "伤害", { "cam_gun_shoot_damage" }, "", 0, 10000, 1000, 100,
     function(value)
-        cam_gun_shoot_data.damage = value
+        Cam_Gun.shoot_setting.damage = value
     end)
 menu.slider(Cam_Gun_shoot, "速度", { "cam_gun_shoot_speed" }, "", 0, 10000, 1000, 100,
     function(value)
-        cam_gun_shoot_data.speed = value
+        Cam_Gun.shoot_setting.speed = value
     end)
+menu.toggle(Cam_Gun_shoot, "Create Trace Vfx", {}, "", function(toggle)
+    Cam_Gun.shoot_setting.CreateTraceVfx = toggle
+end, true)
+menu.toggle(Cam_Gun_shoot, "Allow Rumble", {}, "", function(toggle)
+    Cam_Gun.shoot_setting.AllowRumble = toggle
+end, true)
+menu.toggle(Cam_Gun_shoot, "Perfect Accuracy", {}, "", function(toggle)
+    Cam_Gun.shoot_setting.PerfectAccuracy = toggle
+end)
 menu.divider(Cam_Gun_shoot, "起始射击位置偏移")
 menu.toggle(Cam_Gun_shoot, "从玩家位置起始射击", {}, "如果关闭，则起始位置为目标位置+偏移\n如果开启，建议偏移Z>1.0"
     ,
     function(toggle)
-        cam_gun_shoot_data.start_from_player = toggle
+        Cam_Gun.shoot_setting.start_from_player = toggle
     end)
 menu.slider_float(Cam_Gun_shoot, "X", { "cam_gun_shoot_x" }, "", -10000, 10000, 0, 10,
     function(value)
         value = value * 0.01
-        cam_gun_shoot_data.x = value
+        Cam_Gun.shoot_setting.x = value
     end)
 menu.slider_float(Cam_Gun_shoot, "Y", { "cam_gun_shoot_y" }, "", -10000, 10000, 0, 10,
     function(value)
         value = value * 0.01
-        cam_gun_shoot_data.y = value
+        Cam_Gun.shoot_setting.y = value
     end)
 menu.slider_float(Cam_Gun_shoot, "Z", { "cam_gun_shoot_z" }, "", -10000, 10000, 200, 10,
     function(value)
         value = value * 0.01
-        cam_gun_shoot_data.z = value
+        Cam_Gun.shoot_setting.z = value
     end)
+
+----------------
+-- 爆炸设置
+----------------
+local Cam_Gun_explosion = menu.list(Weapon_Cam_Gun, "爆炸", {}, "")
+
+menu.slider(Cam_Gun_explosion, "循环延迟", { "cam_gun_explosion_delay" }, "单位: ms", 0, 5000, 100, 10,
+    function(value)
+        Cam_Gun.explosion_setting.delay = value
+    end)
+menu.list_select(Cam_Gun_explosion, "爆炸类型", {}, "", ExplosionType_ListItem, 4, function(index)
+    Cam_Gun.explosion_setting.explosionType = index - 2
+end)
+menu.toggle(Cam_Gun_explosion, "署名爆炸", {}, "以玩家名义", function(toggle)
+    Cam_Gun.explosion_setting.is_owned = toggle
+end)
+menu.slider(Cam_Gun_explosion, "伤害", { "cam_gun_explosion_damage" }, "", 0, 10000, 1000, 100,
+    function(value)
+        Cam_Gun.explosion_setting.damage = value
+    end)
+menu.toggle(Cam_Gun_explosion, "可听见", {}, "", function(toggle)
+    Cam_Gun.explosion_setting.is_audible = toggle
+end, true)
+menu.toggle(Cam_Gun_explosion, "不可见", {}, "", function(toggle)
+    Cam_Gun.explosion_setting.is_invisible = toggle
+end)
+menu.slider_float(Cam_Gun_explosion, "镜头晃动", { "cam_gun_explosion_camera_shake" }, "", 0, 1000, 0, 10,
+    function(value)
+        value = value * 0.01
+        Cam_Gun.explosion_setting.camera_shake = value
+    end)
+
+----------------
+-- 燃烧设置
+----------------
+local Cam_Gun_fire = menu.list(Weapon_Cam_Gun, "燃烧", {}, "")
+
+menu.slider(Cam_Gun_fire, "max Children", { "cam_gun_fire_maxChildren" },
+    "The max amount of times a fire can spread to other objects.", 0, 25, 25, 1, function(value)
+    Cam_Gun.fire_setting.maxChildren = value
+end)
+menu.toggle(Cam_Gun_fire, "is Gas Fire", {}, "Whether or not the fire is powered by gasoline.", function(toggle)
+    Cam_Gun.fire_setting.isGasFire = toggle
+end)
+menu.action(Cam_Gun_fire, "REMOVE_SCRIPT_FIRE", {}, "", function()
+    if next(Cam_Gun.fire_setting.fire_ids) ~= nil then
+        for k, v in pairs(Cam_Gun.fire_setting.fire_ids) do
+            FIRE.REMOVE_SCRIPT_FIRE(v)
+        end
+        Cam_Gun.fire_setting.fire_ids = {}
+    end
+end)
 
 
 
@@ -2134,17 +2334,8 @@ menu.toggle_loop(Weapon_Entity_Control, "开启", { "ctrl_gun" }, "", function()
                 -- 实体控制列表 menu.list
                 local menu_list = menu.list(Weapon_Entity_Control, menu_name, {}, text)
 
-                -- entity
                 entity_control_Head(menu_list, ent)
-                entity_control_all(menu_list, ent, control_ent_index)
-                -- ped
-                if ENTITY.IS_ENTITY_A_PED(ent) then
-                    entity_control_ped(menu_list, ent, control_ent_index)
-                end
-                -- vehicle
-                if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
-                    entity_control_vehicle(menu_list, ent, control_ent_index)
-                end
+                Entity_Control.generate_menu(menu_list, ent, control_ent_index)
 
                 table.insert(control_ent_menu_list, menu_list) --menu.list
 
@@ -2698,17 +2889,18 @@ menu.action(Vehicle_Personal_options, "打开引擎和左车门", {}, "", functi
         VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 0, false, false)
     end
 end)
-menu.action(Vehicle_Personal_options, "开启载具引擎", {}, "个人载具和上一辆载具", function()
-    local vehicle = entities.get_user_personal_vehicle_as_handle()
-    if vehicle then
-        VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
-    end
+menu.action(Vehicle_Personal_options, "开启载具引擎", { "veh_engine_on" }, "个人载具和上一辆载具",
+    function()
+        local vehicle = entities.get_user_personal_vehicle_as_handle()
+        if vehicle then
+            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
+        end
 
-    local last_vehicle = entities.get_user_vehicle_as_handle()
-    if last_vehicle and last_vehicle ~= vehicle then
-        VEHICLE.SET_VEHICLE_ENGINE_ON(last_vehicle, true, true, false)
-    end
-end)
+        local last_vehicle = entities.get_user_vehicle_as_handle()
+        if last_vehicle and last_vehicle ~= vehicle then
+            VEHICLE.SET_VEHICLE_ENGINE_ON(last_vehicle, true, true, false)
+        end
+    end)
 menu.action(Vehicle_Personal_options, "打开左车门", {}, "", function()
     local vehicle = entities.get_user_personal_vehicle_as_handle()
     if vehicle then
@@ -2722,33 +2914,33 @@ menu.action(Vehicle_Personal_options, "打开左右车门", {}, "", function()
         VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 1, false, false)
     end
 end)
-menu.slider_text(Vehicle_Personal_options, "传送到附近", { "pv_tp_near" }, "会传送在路边等位置",
-    { "上一辆载具",
-        "个人载具" },
-    function(value)
-        local vehicle = 0
-        if not PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-            vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), true)
+menu.list_action(Vehicle_Personal_options, "传送到附近", { "veh_tp_near" }, "会传送在路边等位置", {
+    { "上一辆载具", { "last" } },
+    { "个人载具", { "personal" } }
+}, function(value)
+    local vehicle = 0
+    if not PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+        vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), true)
+    end
+    if value == 2 then
+        vehicle = entities.get_user_personal_vehicle_as_handle()
+    end
+    if vehicle then
+        local pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+        local bool, coords, heading = Get_Closest_Vehicle_Node(pos, 0)
+        if bool then
+            ENTITY.SET_ENTITY_COORDS(vehicle, coords.x, coords.y, coords.z, true, false, false, false)
+            ENTITY.SET_ENTITY_HEADING(vehicle, heading)
+            Fix_Vehicle(vehicle)
+            VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle, 5.0)
+            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
+            --show blip
+            SHOW_BLIP_TIMER(vehicle, 225, 27, 5000)
+        else
+            util.toast("未找到合适位置")
         end
-        if value == 2 then
-            vehicle = entities.get_user_personal_vehicle_as_handle()
-        end
-        if vehicle then
-            local pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-            local bool, coords, heading = Get_Closest_Vehicle_Node(pos, 0)
-            if bool then
-                ENTITY.SET_ENTITY_COORDS(vehicle, coords.x, coords.y, coords.z, true, false, false, false)
-                ENTITY.SET_ENTITY_HEADING(vehicle, heading)
-                Fix_Vehicle(vehicle)
-                VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle, 5.0)
-                VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
-                --show blip
-                SHOW_BLIP_TIMER(vehicle, 225, 27, 5000)
-            else
-                util.toast("未找到合适位置")
-            end
-        end
-    end)
+    end
+end)
 
 
 
@@ -2765,12 +2957,17 @@ local veh_weapon_data = {
         [5] = false, -- up
         [6] = false, -- down
     },
+
+    weapon_select = 1,
     weapon_hash = "PLAYER_WEAPON",
+    vehicle_weapon_hash = "VEHICLE_WEAPON",
+
     is_owned = false,
     damage = 1000,
     speed = 1000,
-    is_audible = true,
-    is_invisible = false,
+    CreateTraceVfx = true,
+    AllowRumble = true,
+    PerfectAccuracy = false,
     start_offset = {
         -- front
         [1] = { x = 0.0, y = 1.0, z = 0.0 },
@@ -2783,7 +2980,7 @@ local veh_weapon_data = {
         -- up
         [5] = { x = 0.0, y = 0.0, z = 2.5 },
         -- down
-        [6] = { x = 0.0, y = 0.0, z = -2.5 }
+        [6] = { x = 0.0, y = 0.0, z = -2.5 },
     }
 }
 
@@ -2796,14 +2993,21 @@ end
 
 local function Vehicle_Weapon_Shoot(vehicle, direction, state)
     local weaponHash = veh_weapon_data.weapon_hash
+    if veh_weapon_data.weapon_select == 2 then
+        weaponHash = veh_weapon_data.vehicle_weapon_hash
+    end
+
     if weaponHash == "PLAYER_WEAPON" then
         local pWeapon = memory.alloc_int()
-        WEAPON.GET_CURRENT_PED_WEAPON(players.user_ped(), pWeapon, true)
+        WEAPON.GET_CURRENT_PED_WEAPON(user_ped, pWeapon, true)
         weaponHash = memory.read_int(pWeapon)
-    else
-        if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHashHash) then
-            Request_Weapon_Asset(weaponHash)
-        end
+    elseif weaponHash == "VEHICLE_WEAPON" then
+        local pWeapon = memory.alloc_int()
+        WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(user_ped, pWeapon)
+        weaponHash = memory.read_int(pWeapon)
+    end
+    if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHashHash) then
+        Request_Weapon_Asset(weaponHash)
     end
 
     local owner = 0
@@ -2872,15 +3076,15 @@ local function Vehicle_Weapon_Shoot(vehicle, direction, state)
         elseif state == "shoot" then
             MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(start_pos.x, start_pos.y, start_pos.z,
                 end_pos.x, end_pos.y, end_pos.z,
-                veh_weapon_data.damage, false, weaponHash, owner,
-                veh_weapon_data.is_audible, veh_weapon_data.is_invisible, veh_weapon_data.speed,
+                veh_weapon_data.damage, veh_weapon_data.PerfectAccuracy, weaponHash, owner,
+                veh_weapon_data.CreateTraceVfx, veh_weapon_data.AllowRumble, veh_weapon_data.speed,
                 vehicle)
         end
 
     end
 end
 
-menu.toggle_loop(Vehicle_Weapon_options, "开启[按住E键]", {}, "", function()
+menu.toggle_loop(Vehicle_Weapon_options, "开启[按住E键]", { "veh_weapon" }, "", function()
     if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) and PAD.IS_CONTROL_PRESSED(0, 51) then
         local vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
         if vehicle then
@@ -2917,9 +3121,18 @@ for k, v in pairs({ "前", "后", "左", "右", "上", "下" }) do
     end, veh_weapon_data.direction[k])
 end
 
-menu.list_select(Vehicle_Weapon_options, "武器", {}, "", AllWeapons_NoClose_ListItem, 1, function(value)
-    veh_weapon_data.weapon_hash = AllWeapons_NoClose_ListItem[value][3]
+local Vehicle_Weapon_select = menu.list(Vehicle_Weapon_options, "武器", {}, "")
+menu.list_select(Vehicle_Weapon_select, "武器类型", {}, "", { { "手持武器" }, { "载具武器" } }, 1,
+    function(value)
+        veh_weapon_data.weapon_select = value
+    end)
+menu.list_select(Vehicle_Weapon_select, "手持武器", {}, "", AllWeapons_NoMelee_ListItem, 1, function(value)
+    veh_weapon_data.weapon_hash = AllWeapons_NoMelee_ListItem[value][3]
 end)
+menu.list_select(Vehicle_Weapon_select, "载具武器", {}, "", All_VehicleWeapons_ListItem, 1, function(value)
+    veh_weapon_data.vehicle_weapon_hash = All_VehicleWeapons_ListItem[value][3]
+end)
+
 menu.toggle(Vehicle_Weapon_options, "署名射击", {}, "以玩家名义", function(toggle)
     veh_weapon_data.is_owned = toggle
 end)
@@ -2931,7 +3144,15 @@ menu.slider(Vehicle_Weapon_options, "速度", { "veh_weapon_speed" }, "", 0, 100
     function(value)
         veh_weapon_data.speed = value
     end)
-
+menu.toggle(Vehicle_Weapon_options, "Create Trace Vfx", {}, "", function(toggle)
+    veh_weapon_data.CreateTraceVfx = toggle
+end, true)
+menu.toggle(Vehicle_Weapon_options, "Allow Rumble", {}, "", function(toggle)
+    veh_weapon_data.AllowRumble = toggle
+end, true)
+menu.toggle(Vehicle_Weapon_options, "Perfect Accuracy", {}, "", function(toggle)
+    veh_weapon_data.PerfectAccuracy = toggle
+end)
 local Vehicle_Weapon_startOffset = menu.list(Vehicle_Weapon_options, "起始射击位置偏移", {}, "")
 for k, v in pairs({ "前", "后", "左", "右", "上", "下" }) do
     local menu_list = menu.list(Vehicle_Weapon_startOffset, v, {}, "")
@@ -3029,6 +3250,7 @@ end)
 
 
 
+
 -----------------------------------
 ------------ 世界实体选项 -----------
 -----------------------------------
@@ -3042,73 +3264,183 @@ require "RScripts.Menu.Entity_options"
 --------------------------------
 local Session_options = menu.list(menu.my_root(), "战局选项", {}, "")
 
-local Session_BlockArea_options = menu.list(Session_options, "阻挡区域", {}, "")
+----------------
+-- 阻挡区域
+----------------
+local BlockArea_options = menu.list(Session_options, "阻挡区域", {}, "")
 
-local BlockArea_ListItem = {
-    area = {
-        { "全部改车王" }, { "本尼改车坊" }, { "赌场" },
+local block_area_data = {
+    area_ListItem = {
+        { "改车王" },
+        { "武器店" },
+        { "带靶场的武器店" },
+        { "理发店" },
+        { "服装店" },
+        { "纹身店" },
+        { "商店" },
     },
-    object = {
-        { "木板" }, { "UFO" },
+    object_ListItem = {
+        { "UFO" },
+    },
+    object_ListData = {
+        -- hash, type
+        { 1241740398, "object" },
+    },
+    setting = {
+        area = 1,
+        obj = 1,
+        visible = true,
+        freeze = true,
     }
 }
-local BlockArea_ListData = {
-    -- { x, y, z, heading }
-    { { -357.66544, -134.26419, 38.237751, 340.001 }, { -1144.0569, -1989.5784, 12.9626, 40.001 },
-        { 721.08496, -1088.8752, 22.046721, 0.001 },
-        { 115.59574, 6621.5693, 31.646144, 310.001 }, { 110.460236, 6615.827, 31.660228, 310.001 } },
-    { { -205.6571, -1308.4313, 31.0932, 270.001 } },
-    { { 925.2641, 48.6246, 80.7647, 325.001 }, { 935.29553, -0.5328601, 78.56404, 235.001 } },
-}
-local BlockArea_ObjData = {
-    -- hash, type
-    { 309416120, "object" },
-    { 1241740398, "object" },
-}
-local BlockArea_Setting = {
-    area = 1,
-    obj = 1,
-    visible = true,
-    freeze = true,
+
+local block_area_AreaData = {
+    -- x, y, z
+    {
+        -- radar_car_mod_shop 72
+        { 1174.7074, 2644.4497, 36.7552 },
+        { 113.2615, 6624.2803, 30.7871 },
+        { -354.5272, -135.4011, 38.1850 },
+        { 724.5240, -1089.0811, 21.1692 },
+        { -1147.3138, -1992.4344, 12.1803 },
+    },
+    {
+        -- radar_gun_shop 110
+        { 1697.9788, 3753.2002, 33.7053 },
+        { -1111.2375, 2688.4626, 17.6131 },
+        { 2569.6116, 302.5760, 107.7349 },
+        { -325.8904, 6077.0264, 30.4548 },
+        { 245.2711, -45.8126, 68.9410 },
+        { 844.1248, -1025.5707, 27.1948 },
+        { -1313.9485, -390.9637, 35.5920 },
+        { -664.2178, -943.3646, 20.8292 },
+        { -3165.2307, 1082.8551, 19.8438 },
+    },
+    {
+        -- radar_shootingrange_gunshop 313
+        { 17.6804, -1114.2880, 28.7970 },
+        { 811.8699, -2149.1016, 28.6363 },
+    },
+    {
+        -- radar_barber 71
+        { 1933.1191, 3726.0791, 31.8444 },
+        { -280.8165, 6231.7705, 30.6955 },
+        { 1208.3335, -470.9170, 65.2080 },
+        { -30.7448, -148.4921, 56.0765 },
+        { -821.9946, -187.1776, 36.5689 },
+        { 133.5702, -1710.9180, 28.2916 },
+        { -1287.0822, -1116.5576, 5.9901 },
+    },
+    {
+        -- radar_clothes_store 73
+        { 80.6650, -1391.6694, 28.3761 },
+        { 419.5310, -807.5787, 28.4896 },
+        { -818.6218, -1077.5330, 10.3282 },
+        { -158.2199, -304.9663, 38.7350 },
+        { 126.6853, -212.5027, 53.5578 },
+        { -715.3598, -155.7742, 36.4105 },
+        { -1199.8092, -776.6886, 16.3237 },
+        { -1455.0045, -233.1862, 48.7936 },
+        { -3168.9663, 1055.2869, 19.8632 },
+        { 618.1857, 2752.5667, 41.0881 },
+        { -1094.0487, 2704.1707, 18.0873 },
+        { 1197.9722, 2704.2205, 37.1572 },
+        { 1687.8812, 4820.5498, 41.0096 },
+        { -0.2361, 6516.0454, 30.8684 },
+    },
+    {
+        -- radar_tattoo 75
+        { -1153.9481, -1425.0186, 3.9544 },
+        { 321.6098, 179.4165, 102.5865 },
+        { 1322.4547, -1651.1252, 51.1885 },
+        { -3169.4204, 1074.7272, 19.8343 },
+        { 1861.6853, 3750.0798, 32.0318 },
+        { -290.1603, 6199.0947, 30.4871 },
+    },
+    {
+        -- radar_crim_holdups 52
+        { 1965.0542, 3740.5552, 31.3448 },
+        { 1394.1692, 3599.8601, 34.0121 },
+        { 2682.0034, 3282.5432, 54.2411 },
+        { 1698.8085, 4929.1978, 41.0783 },
+        { 1166.3920, 2703.5042, 37.1573 },
+        { 544.2802, 2672.8113, 41.1566 },
+        { 1731.2098, 6411.4033, 34.0372 },
+        { 2559.2471, 385.5266, 107.6230 },
+        { 376.6533, 323.6471, 102.5664 },
+        { 1159.5421, -326.6986, 67.9230 },
+        { 1141.3596, -980.8802, 45.4155 },
+        { -1822.2866, 788.0060, 137.1859 },
+        { -711.7210, -916.6965, 18.2145 },
+        { -1491.0565, -383.5728, 39.1706 },
+        { 29.0641, -1349.2128, 28.5036 },
+        { -1226.4644, -902.5864, 11.2783 },
+        { -53.1240, -1756.4054, 28.4210 },
+        { -3240.3169, 1004.4334, 11.8307 },
+        { -3038.9082, 589.5187, 6.9048 },
+        { -2973.2617, 390.8184, 14.0433 },
+    }
 }
 
-menu.list_select(Session_BlockArea_options, "选择区域", {}, "", BlockArea_ListItem.area, 1, function(value)
-    BlockArea_Setting.area = value
+menu.list_select(BlockArea_options, "选择区域", {}, "", block_area_data.area_ListItem, 1, function(value)
+    block_area_data.setting.area = value
 end)
-menu.action(Session_BlockArea_options, "阻挡", {}, "", function()
-    local i = 0
-    local hash = BlockArea_ObjData[BlockArea_Setting.obj][1]
-    local Type = BlockArea_ObjData[BlockArea_Setting.obj][2]
-    local ent
-    local area = BlockArea_ListData[BlockArea_Setting.area]
+menu.action(BlockArea_options, "阻挡", {}, "", function()
+    local count = 0
+    local hash = block_area_data.object_ListData[block_area_data.setting.obj][1]
+    local Type = block_area_data.object_ListData[block_area_data.setting.obj][2]
+    local ent = 0
+    local area = block_area_AreaData[block_area_data.setting.area]
 
-    for k, data in pairs(area) do
+    Request_Model(hash)
+    for k, pos in pairs(area) do
         if Type == "object" then
-            ent = Create_Network_Object(hash, data[1], data[2], data[3])
+            ent = entities.create_object(hash, v3.new(pos[1], pos[2], pos[3] + 1.0))
         end
-        if ent then
-            ENTITY.SET_ENTITY_HEADING(ent, data[4])
-            ENTITY.SET_ENTITY_VISIBLE(ent, BlockArea_Setting.visible, 0)
-            ENTITY.FREEZE_ENTITY_POSITION(ent, BlockArea_Setting.freeze)
+
+        if ENTITY.DOES_ENTITY_EXIST(ent) then
+            ENTITY.FREEZE_ENTITY_POSITION(ent, block_area_data.setting.freeze)
+            ENTITY.SET_ENTITY_VISIBLE(ent, block_area_data.setting.visible, 0)
+            ENTITY.SET_ENTITY_AS_MISSION_ENTITY(ent, true, true)
             ENTITY.SET_ENTITY_INVINCIBLE(ent, true)
-            entities.set_can_migrate(entities.handle_to_pointer(ent), false)
-            i = i + 1
+            Set_Entity_Networked(ent, false)
+            count = count + 1
         end
     end
 
-    util.toast("阻挡完成！\n阻挡区域: " .. i .. " 个")
+    STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(hash)
+    util.toast("阻挡完成！\n阻挡区域: " .. count .. " 个")
 end)
+
 -----
-menu.divider(Session_BlockArea_options, "设置")
-menu.list_select(Session_BlockArea_options, "阻挡物体", {}, "", BlockArea_ListItem.object, 1, function(value)
-    BlockArea_Setting.obj = value
+menu.divider(BlockArea_options, "设置")
+menu.list_select(BlockArea_options, "阻挡物体", {}, "", block_area_data.object_ListItem, 1, function(value)
+    block_area_data.setting.obj = value
 end)
-menu.toggle(Session_BlockArea_options, "可见", {}, "", function(toggle)
-    BlockArea_Setting.visible = toggle
+menu.toggle(BlockArea_options, "冻结", {}, "", function(toggle)
+    block_area_data.setting.freeze = toggle
 end, true)
-menu.toggle(Session_BlockArea_options, "冻结", {}, "", function(toggle)
-    BlockArea_Setting.freeze = toggle
+menu.toggle(BlockArea_options, "可见", {}, "", function(toggle)
+    block_area_data.setting.visible = toggle
 end, true)
+
+
+
+-- menu.action(Session_options, "移除悬赏", {}, "", function()
+--     if memory.read_int(memory.script_global(1835502 + 4 + 1 + (players.user() * 3))) == 1 then
+--         memory.write_int(memory.script_global(2815059 + 1856 + 17), -1)
+--         memory.write_int(memory.script_global(2359296 + 1 + 5149 + 13), 2880000)
+--     else
+--         util.toast("未被悬赏")
+--     end
+-- end)
+menu.action(Session_options, "停止观看", {}, "停止观看战局内其他玩家", function()
+    local name = players.get_name(players.user())
+    menu.trigger_commands("spectate" .. name .. ' on')
+    util.yield(3000)
+    menu.trigger_commands("spectate" .. name .. ' off')
+end)
+
 
 
 
@@ -3197,14 +3529,15 @@ local bodyguard_npc_set = {
     no_ragdoll = false,
     weapon = "WEAPON_MICROSMG",
     no_clip = false,
-    see_hear_range = 300,
+    see_hear_range = 500,
     accuracy = 100,
-    shoot_rate = 800,
+    shoot_rate = 1000,
     combat_ability = 2,
     combat_range = 2,
-    combat_movement = 2,
+    combat_movement = 1,
     target_loss_response = 1,
     BF_PerfectAccuracy = false,
+    BF_AlwaysEquipBestWeapon = false,
 }
 --生成的保镖
 local bodyguard_npc_list = {}
@@ -3231,7 +3564,7 @@ menu.toggle(Bodyguard_NPC_default_setting, "不换弹夹", {}, "", function(togg
     bodyguard_npc_set.no_clip = toggle
 end)
 menu.divider(Bodyguard_NPC_default_setting, "作战能力")
-menu.slider(Bodyguard_NPC_default_setting, "视力听觉范围", { "bodyguard_npc_see_hear_range" }, "", 10, 1000, 300,
+menu.slider(Bodyguard_NPC_default_setting, "视力听觉范围", { "bodyguard_npc_see_hear_range" }, "", 10, 1000, 500,
     100,
     function(value)
         bodyguard_npc_set.see_hear_range = value
@@ -3240,29 +3573,32 @@ menu.slider(Bodyguard_NPC_default_setting, "精确度", { "bodyguard_npc_accurac
     function(value)
         bodyguard_npc_set.accuracy = value
     end)
-menu.slider(Bodyguard_NPC_default_setting, "射击频率", { "bodyguard_npc_shoot_rate" }, "", 0, 1000, 800, 100,
+menu.slider(Bodyguard_NPC_default_setting, "射击频率", { "bodyguard_npc_shoot_rate" }, "", 0, 1000, 1000, 100,
     function(value)
         bodyguard_npc_set.shoot_rate = value
     end)
-menu.slider_text(Bodyguard_NPC_default_setting, "作战技能", {}, "", { "弱", "普通", "专业" }, function(value)
-    bodyguard_npc_set.combat_ability = value - 1
+menu.list_select(Bodyguard_NPC_default_setting, "作战技能", {}, "", { { "弱" }, { "普通" }, { "专业" } }, 3,
+    function(value)
+        bodyguard_npc_set.combat_ability = value - 1
+    end)
+menu.list_select(Bodyguard_NPC_default_setting, "作战范围", {}, "", { { "近" }, { "中等" }, { "远" }, { "非常远" } }
+    , 3, function(value)
+    bodyguard_npc_set.combat_range = value - 1
 end)
-menu.slider_text(Bodyguard_NPC_default_setting, "作战范围", {}, "", { "近", "中等", "远", "非常远" },
-    function(value)
-        bodyguard_npc_set.combat_range = value - 1
-    end)
-menu.slider_text(Bodyguard_NPC_default_setting, "作战走位", {}, "", { "站立", "防卫", "会前进", "会后退" }
-    ,
-    function(value)
-        bodyguard_npc_set.combat_movement = value - 1
-    end)
-menu.slider_text(Bodyguard_NPC_default_setting, "失去目标时反应", {}, "", { "退出战斗", "从不失去目标",
-    "寻找目标" }, function(value)
+menu.list_select(Bodyguard_NPC_default_setting, "作战走位", {}, "", { { "站立" }, { "防卫" }, { "会前进" },
+    { "会后退" } }, 2, function(value)
+    bodyguard_npc_set.combat_movement = value - 1
+end)
+menu.list_select(Bodyguard_NPC_default_setting, "失去目标时反应", {}, "", { { "退出战斗" }, { "从不失去目标" },
+    { "寻找目标" } }, 2, function(value)
     bodyguard_npc_set.target_loss_response = value - 1
 end)
 menu.divider(Bodyguard_NPC_default_setting, "作战属性")
 menu.toggle(Bodyguard_NPC_default_setting, "完美精准度", {}, "", function(toggle)
     bodyguard_npc_set.BF_PerfectAccuracy = toggle
+end)
+menu.toggle(Bodyguard_NPC_default_setting, "总是装备最好的武器", {}, "", function(toggle)
+    bodyguard_npc_set.BF_AlwaysEquipBestWeapon = toggle
 end)
 ------
 menu.action(Bodyguard_NPC_options, "生成保镖", {}, "", function()
@@ -3273,7 +3609,12 @@ menu.action(Bodyguard_NPC_options, "生成保镖", {}, "", function()
         local modelHash = util.joaat(bodyguard_npc_set.model)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(players.user_ped(), 0.0, 2.0, 0.0)
         local heading = ENTITY.GET_ENTITY_HEADING(players.user_ped()) + 180
-        local ped = Create_Network_Ped(PED_TYPE_MISSION, modelHash, coords.x, coords.y, coords.z, heading)
+        local ped = Create_Network_Ped(26, modelHash, coords.x, coords.y, coords.z, heading)
+        --BLIP
+        local blip = HUD.ADD_BLIP_FOR_ENTITY(ped)
+        HUD.SET_BLIP_SPRITE(blip, 271)
+        HUD.SET_BLIP_COLOUR(blip, 3)
+        HUD.SET_BLIP_SCALE(blip, 0.5)
         --INVINCIBLE
         ENTITY.SET_ENTITY_INVINCIBLE(ped, bodyguard_npc_set.godmode)
         ENTITY.SET_ENTITY_PROOFS(ped, bodyguard_npc_set.godmode, bodyguard_npc_set.godmode, bodyguard_npc_set.godmode,
@@ -3282,12 +3623,14 @@ menu.action(Bodyguard_NPC_options, "生成保镖", {}, "", function()
         --HEALTH
         ENTITY.SET_ENTITY_MAX_HEALTH(ped, bodyguard_npc_set.health)
         ENTITY.SET_ENTITY_HEALTH(ped, bodyguard_npc_set.health)
-
+        --RAGDOLL
         PED.SET_PED_CAN_RAGDOLL(ped, not bodyguard_npc_set.no_ragdoll)
         PED.DISABLE_PED_INJURED_ON_GROUND_BEHAVIOUR(ped)
         PED.SET_PED_CAN_PLAY_AMBIENT_ANIMS(ped, false)
         PED.SET_PED_CAN_PLAY_AMBIENT_BASE_ANIMS(ped, false)
         --WEAPON
+        local weapon_smoke = util.joaat("WEAPON_SMOKEGRENADE")
+        WEAPON.GIVE_WEAPON_TO_PED(ped, weapon_smoke, -1, false, false)
         local weaponHash = util.joaat(bodyguard_npc_set.weapon)
         WEAPON.GIVE_WEAPON_TO_PED(ped, weaponHash, -1, false, true)
         WEAPON.SET_CURRENT_PED_WEAPON(ped, weaponHash, false)
@@ -3297,6 +3640,7 @@ menu.action(Bodyguard_NPC_options, "生成保镖", {}, "", function()
         --PERCEPTIVE
         PED.SET_PED_SEEING_RANGE(ped, bodyguard_npc_set.see_hear_range)
         PED.SET_PED_HEARING_RANGE(ped, bodyguard_npc_set.see_hear_range)
+        PED.SET_PED_ID_RANGE(ped, bodyguard_npc_set.see_hear_range)
         --PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(bodyguard_npc_set.see_hear_range)
         PED.SET_PED_HIGHLY_PERCEPTIVE(ped, true)
         PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, 90.0)
@@ -3310,21 +3654,36 @@ menu.action(Bodyguard_NPC_options, "生成保镖", {}, "", function()
         PED.SET_PED_COMBAT_MOVEMENT(ped, bodyguard_npc_set.combat_movement)
         PED.SET_PED_TARGET_LOSS_RESPONSE(ped, bodyguard_npc_set.target_loss_response)
         --COMBAT ATTRIBUTES
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 0, true) --CanUseCover
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 1, true) --CanUseVehicles
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 2, true) --CanDoDrivebys
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true) --AlwaysFight
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 12, true) --BlindFireWhenInCover
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 0, true) --Use Cover
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 1, true) --Use Vehicle
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 4, true) --Can Use Dynamic Strafe Decisions
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true) --Always Fight
         PED.SET_PED_COMBAT_ATTRIBUTES(ped, 13, true) --Aggressive
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 17, false) --AlwaysFlee
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true) --CanTauntInVehicle
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true) --CanChaseTargetOnFoot
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true) --CanCommandeerVehicles
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) --CanFightArmedPedsWhenNotArmed
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true) --CanSeeUnderwaterPeds
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) --DisableFleeFromCombat
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 17, false) --Always Flee
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true) --Can Taunt In Vehicle
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true) --Can Chase Target On Foot
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 24, true) --Use Proximity Firing Rate
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 39, true) --Can Bust
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true) --Can Commandeer Vehicles
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 42, true) --Can Flank
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) --Can Fight Armed Peds When Not Armed
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 49, false) --Use Enemy Accuracy Scaling
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 52, true) --Use Vehicle Attack
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 53, true) --Use Vehicle Attack If Vehicle Has Mounted Guns
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true) --Can See Underwater Peds
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) --Disable Flee From Combat
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 60, true) --Can Throw Smoke Grenade
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true) --Disable All Randoms Flee
 
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, bodyguard_npc_set.BF_PerfectAccuracy)
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, bodyguard_npc_set.BF_PerfectAccuracy) --Perfect Accuracy
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 54, bodyguard_npc_set.BF_AlwaysEquipBestWeapon) --Always Equip Best Weapon
+        --TASK
+        TASK.SET_PED_PATH_CAN_USE_CLIMBOVERS(ped, true)
+        TASK.SET_PED_PATH_CAN_USE_LADDERS(ped, true)
+        TASK.SET_PED_PATH_CAN_DROP_FROM_HEIGHT(ped, true)
+        TASK.SET_PED_PATH_AVOID_FIRE(ped, false)
+        TASK.SET_PED_PATH_MAY_ENTER_WATER(ped, true)
+
         ----
         Group:pushMember(ped)
         table.insert(bodyguard_npc_list, ped)
@@ -3455,6 +3814,7 @@ menu.action(Bodyguard_Heli_options, "生成保镖直升机", {}, "", function()
     PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(pilot, 500.0)
     PED.SET_PED_SEEING_RANGE(pilot, 500.0)
     PED.SET_PED_HEARING_RANGE(pilot, 500.0)
+    PED.SET_PED_ID_RANGE(pilot, 500.0)
 
     PED.SET_PED_COMBAT_MOVEMENT(pilot, 1) --Defensive
     PED.SET_PED_COMBAT_ABILITY(pilot, 2) --Professional
@@ -3592,6 +3952,17 @@ end)
 menu.toggle_loop(Protect_options, "移除防空区域", {}, "", function()
     WEAPON.REMOVE_ALL_AIR_DEFENCE_SPHERES()
 end)
+menu.toggle_loop(Protect_options, "移除载具上的黏弹", {}, "", function()
+    local vehicle = GET_VEHICLE_PED_IS_IN(players.user_ped())
+    if vehicle then
+        NETWORK.REMOVE_ALL_STICKY_BOMBS_FROM_ENTITY(vehicle)
+    end
+end)
+menu.toggle_loop(Protect_options, "停止所有声音", {}, "", function()
+    for i = 0, 99 do
+        AUDIO.STOP_SOUND(i)
+    end
+end)
 
 
 
@@ -3610,49 +3981,8 @@ require "RScripts.Menu.Mission_options"
 --------------------------------
 local Other_options = menu.list(menu.my_root(), "其它选项", {}, "")
 
---- 开发者选项 ---
-local Other_options_Developer = menu.list(Other_options, "开发者选项", {}, "")
-
-menu.action(Other_options_Developer, "Copy Coords & Heading", {}, "", function()
-    local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-    local heading = ENTITY.GET_ENTITY_HEADING(players.user_ped())
-    local text = coords.x .. ", " .. coords.y .. ", " .. coords.z .. "\n" .. heading
-    util.copy_to_clipboard(text, false)
-    util.toast("Copied!\n" .. text)
-end)
-menu.action(Other_options_Developer, "GET_ENTITY_HEADING", {}, "", function()
-    util.toast(ENTITY.GET_ENTITY_HEADING(players.user_ped()))
-end)
-menu.action(Other_options_Developer, "GET_NETWORK_TIME", {}, "", function()
-    util.toast(NETWORK.GET_NETWORK_TIME())
-end)
-menu.action(Other_options_Developer, "GET_MAX_RANGE_OF_CURRENT_PED_WEAPON", {}, "", function()
-    util.toast(WEAPON.GET_MAX_RANGE_OF_CURRENT_PED_WEAPON(players.user_ped()))
-end)
-menu.action(Other_options_Developer, "Clear Player Ped Tasks", { "clstask" }, "", function()
-    local ped = players.user_ped()
-    TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
-    TASK.CLEAR_PED_TASKS(ped)
-    TASK.CLEAR_DEFAULT_PRIMARY_TASK(ped)
-    TASK.CLEAR_PED_SECONDARY_TASK(ped)
-    TASK.TASK_CLEAR_LOOK_AT(ped)
-    TASK.TASK_CLEAR_DEFENSIVE_AREA(ped)
-    TASK.CLEAR_DRIVEBY_TASK_UNDERNEATH_DRIVING_TASK(ped)
-end)
-menu.slider_text(Other_options_Developer, "设置周围物体可碰撞", {}, "", { "Object", "Pickup" },
-    function(value)
-        local entity_list = {}
-        if value == 1 then
-            entity_list = entities.get_all_objects_as_handles()
-        elseif value == 2 then
-            entity_list = entities.get_all_pickups_as_handles()
-        end
-        for k, ent in pairs(entity_list) do
-            ENTITY.SET_ENTITY_COLLISION(ent, true, true)
-            ENTITY.ENABLE_ENTITY_BULLET_COLLISION(ent)
-        end
-        util.toast("Done!")
-    end)
+Dev_options = menu.list(Other_options, "开发者选项", {}, "")
+require "RScripts.Menu.Dev_options"
 
 
 ------------------
@@ -3668,6 +3998,7 @@ menu.action(Other_options_SnackArmour, "补满全部零食", {}, "", function()
     STAT_SET_INT("NUMBER_OF_BOURGE_BOUGHT", 10)
     STAT_SET_INT("NUMBER_OF_CHAMP_BOUGHT", 5)
     STAT_SET_INT("CIGARETTES_BOUGHT", 20)
+    STAT_SET_INT("NUMBER_OF_SPRUNK_BOUGHT", 10)
     util.toast("完成！")
 end)
 menu.action(Other_options_SnackArmour, "补满全部护甲", {}, "", function()
@@ -3684,42 +4015,241 @@ menu.action(Other_options_SnackArmour, "补满呼吸器", {}, "", function()
 end)
 
 menu.divider(Other_options_SnackArmour, "零食")
-menu.click_slider(Other_options_SnackArmour, "PQ豆", {}, "+15 Health", 0, 99, 30, 1, function(value)
+menu.click_slider(Other_options_SnackArmour, "PQ豆", { "snack_yum" }, "+15 Health", 0, 999, 30, 1, function(value)
     STAT_SET_INT("NO_BOUGHT_YUM_SNACKS", value)
     util.toast("完成！")
 end)
-menu.click_slider(Other_options_SnackArmour, "宝力旺", {}, "+45 Health", 0, 99, 15, 1, function(value)
-    STAT_SET_INT("NO_BOUGHT_HEALTH_SNACKS", value)
-    util.toast("完成！")
-end)
-menu.click_slider(Other_options_SnackArmour, "麦提来", {}, "+30 Health", 0, 99, 5, 1, function(value)
-    STAT_SET_INT("NO_BOUGHT_EPIC_SNACKS", value)
-    util.toast("完成！")
-end)
-menu.click_slider(Other_options_SnackArmour, "易可乐", {}, "+36 Health", 0, 99, 10, 1, function(value)
-    STAT_SET_INT("NUMBER_OF_ORANGE_BOUGHT", value)
-    util.toast("完成！")
-end)
-menu.click_slider(Other_options_SnackArmour, "尿汤啤", {}, "", 0, 99, 10, 1, function(value)
+menu.click_slider(Other_options_SnackArmour, "宝力旺", { "snack_health" }, "+45 Health", 0, 999, 15, 1,
+    function(value)
+        STAT_SET_INT("NO_BOUGHT_HEALTH_SNACKS", value)
+        util.toast("完成！")
+    end)
+menu.click_slider(Other_options_SnackArmour, "麦提来", { "snack_epic" }, "+30 Health", 0, 999, 5, 1,
+    function(value)
+        STAT_SET_INT("NO_BOUGHT_EPIC_SNACKS", value)
+        util.toast("完成！")
+    end)
+menu.click_slider(Other_options_SnackArmour, "易可乐", { "snack_orange" }, "+36 Health", 0, 999, 10, 1,
+    function(value)
+        STAT_SET_INT("NUMBER_OF_ORANGE_BOUGHT", value)
+        util.toast("完成！")
+    end)
+menu.click_slider(Other_options_SnackArmour, "尿汤啤", { "snack_bourge" }, "", 0, 999, 10, 1, function(value)
     STAT_SET_INT("NUMBER_OF_BOURGE_BOUGHT", value)
     util.toast("完成！")
 end)
-menu.click_slider(Other_options_SnackArmour, "蓝醉香槟", {}, "", 0, 99, 5, 1, function(value)
+menu.click_slider(Other_options_SnackArmour, "蓝醉香槟", { "snack_champ" }, "", 0, 999, 5, 1, function(value)
     STAT_SET_INT("NUMBER_OF_CHAMP_BOUGHT", value)
     util.toast("完成！")
 end)
-menu.click_slider(Other_options_SnackArmour, "香烟", {}, "-5 Health", 0, 99, 20, 1, function(value)
-    STAT_SET_INT("CIGARETTES_BOUGHT", value)
-    util.toast("完成！")
-end)
+menu.click_slider(Other_options_SnackArmour, "香烟", { "snack_cigarettes" }, "-5 Health", 0, 999, 20, 1,
+    function(value)
+        STAT_SET_INT("CIGARETTES_BOUGHT", value)
+        util.toast("完成！")
+    end)
+menu.click_slider(Other_options_SnackArmour, "霜碧", { "snack_sprunk" }, "+36 Health", 0, 999, 10, 1,
+    function(value)
+        STAT_SET_INT("NUMBER_OF_SPRUNK_BOUGHT", value)
+        util.toast("完成！")
+    end)
+
 
 --------------------
 ----- 标记点选项 -----
 --------------------
-local Other_options_Waypoint = menu.list(Other_options, "标记点选项", {}, "")
+local Blip_options = menu.list(Other_options, "标记点选项", {}, "")
+
+------------------
+-- 地图全部标记点
+------------------
+local Blip_all = menu.list(Blip_options, "地图全部标记点", {}, "")
+
+blip_count = 0 -- 获取到的标记点数量
+blip_menu_list = {} -- 标记点列表 menu.list
+
+local function Init_blip_menu_list()
+    if next(blip_menu_list) ~= nil then
+        for k, v in pairs(blip_menu_list) do
+            if v ~= nil and menu.is_ref_valid(v) then
+                menu.delete(v)
+            end
+        end
+    end
+    menu.set_menu_name(Blip_all_divider, "标记点列表")
+    blip_count = 0
+    blip_menu_list = {} -- menu.list
+end
+
+local function generate_blip_menu(menu_parent, blip)
+    menu.divider(menu_parent, menu.get_menu_name(menu_parent))
+
+    local sprite = HUD.GET_BLIP_SPRITE(blip)
+    local blip_type = GET_BLIP_TYPE(blip)
+
+    ----- 信息显示 -----
+    local readonly_menu_list = {}
+    local blip_info = menu.list(menu_parent, "查看标记点信息", {}, "")
+    menu.readonly(blip_info, "Sprite", sprite)
+    readonly_menu_list[1] = menu.readonly(blip_info, "Type", HUD.GET_BLIP_INFO_ID_TYPE(blip))
+    readonly_menu_list[2] = menu.readonly(blip_info, "Colour")
+    readonly_menu_list[3] = menu.readonly(blip_info, "HUD Colour")
+    readonly_menu_list[4] = menu.readonly(blip_info, "Display")
+    readonly_menu_list[5] = menu.readonly(blip_info, "Rotation")
+    menu.divider(blip_info, "Coords")
+    readonly_menu_list[6] = menu.readonly(blip_info, "X")
+    readonly_menu_list[7] = menu.readonly(blip_info, "Y")
+    readonly_menu_list[8] = menu.readonly(blip_info, "Z")
+
+    menu.on_tick_in_viewport(readonly_menu_list[1], function()
+        if HUD.DOES_BLIP_EXIST(blip) then
+            menu.set_value(readonly_menu_list[2], HUD.GET_BLIP_COLOUR(blip))
+            menu.set_value(readonly_menu_list[3], HUD.GET_BLIP_HUD_COLOUR(blip))
+            menu.set_value(readonly_menu_list[4], HUD.GET_BLIP_INFO_ID_DISPLAY(blip))
+            menu.set_value(readonly_menu_list[5], HUD.GET_BLIP_ROTATION(blip))
+            local coords = HUD.GET_BLIP_COORDS(blip)
+            menu.set_value(readonly_menu_list[6], coords.x)
+            menu.set_value(readonly_menu_list[7], coords.y)
+            menu.set_value(readonly_menu_list[8], coords.z)
+        end
+    end)
+
+    ----- 标记点设置 -----
+    local blip_setting = menu.list(menu_parent, "标记点设置", {}, "")
+    menu.click_slider(blip_setting, "Set Sprite", { "set_blip" .. sprite .. "sprite" }, "", 0, 826, sprite, 1,
+        function(value)
+            HUD.SET_BLIP_SPRITE(blip, value)
+        end)
+    menu.click_slider(blip_setting, "Set Colour", { "set_blip" .. sprite .. "colour" }, "", 0, 85,
+        HUD.GET_BLIP_HUD_COLOUR(blip), 1,
+        function(value)
+            HUD.SET_BLIP_COLOUR(blip, value)
+        end)
+    menu.list_select(blip_setting, "Set Display", {}, "", Blip_DisplayID_ListItem, HUD.GET_BLIP_INFO_ID_DISPLAY(blip) + 1
+        , function(value)
+        HUD.SET_BLIP_DISPLAY(blip, value - 1)
+    end)
+    menu.toggle(blip_setting, "Flashs", {}, "", function(toggle)
+        HUD.SET_BLIP_FLASHES(blip, toggle)
+    end, HUD.IS_BLIP_FLASHING(blip))
+    menu.toggle(blip_setting, "Set As Short Range", {},
+        "Sets whether or not the specified blip should only be displayed when nearby, or on the minimap.",
+        function(toggle)
+            HUD.SET_BLIP_AS_SHORT_RANGE(blip, toggle)
+        end, HUD.IS_BLIP_SHORT_RANGE(blip))
+    menu.slider_text(blip_setting, "Set Friendly", {}, "", { "Friendly", "Enemy" }, function(value)
+        local toggle = true
+        if value == 2 then
+            toggle = false
+        end
+        HUD.SET_BLIP_AS_FRIENDLY(blip, toggle)
+    end)
+    menu.toggle(blip_setting, "Set Radius Edge", {}, "Enabling this on a radius blip will make it outline only.",
+        function(toggle)
+            HUD.SET_RADIUS_BLIP_EDGE(blip, toggle)
+        end)
+    menu.click_slider_float(blip_setting, "Set Scale", { "set_blip" .. sprite .. "scale" }, "", 0, 1000, 100, 10,
+        function(value)
+            HUD.SET_BLIP_SCALE(blip, value * 0.01)
+        end)
+    menu.toggle(blip_setting, "Show Height On Blip", {}, "", function(toggle)
+        HUD.SHOW_HEIGHT_ON_BLIP(blip, toggle)
+    end)
+
+
+    menu.divider(menu_parent, "Type: " .. blip_type)
+
+    ----- 传送选项 -----
+    local teleport_options = menu.list(menu_parent, "传送", {}, "")
+    local tp_offset = {
+        x = 0.0,
+        y = 2.0,
+        z = 0.0
+    }
+    menu.slider_float(teleport_options, "前/后", { "blip" .. sprite .. "_tp_x" }, "", -5000, 5000, 200, 50,
+        function(value)
+            tp_offset.y = value * 0.01
+        end)
+    menu.slider_float(teleport_options, "上/下", { "blip" .. sprite .. "_tp_y" }, "", -5000, 5000, 0, 50,
+        function(value)
+            tp_offset.z = value * 0.01
+        end)
+    menu.slider_float(teleport_options, "左/右", { "blip" .. sprite .. "_tp_z" }, "", -5000, 5000, 0, 50,
+        function(value)
+            tp_offset.x = value * 0.01
+        end)
+
+    menu.action(teleport_options, "传送到标记点", {}, "直接传送到坐标", function()
+        if not IS_BLIP_ENTITY(blip) then
+            local pos = HUD.GET_BLIP_COORDS(blip)
+            if pos ~= nil then
+                TELEPORT(pos.x, pos.y, pos.z + 1.0)
+            end
+        else
+            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+            TP_TO_ENTITY(ent, tp_offset.x, tp_offset.y, tp_offset.z)
+        end
+    end)
+    menu.action(teleport_options, "传送到标记点 (Safe)", {}, "会传送到地面", function()
+        if not IS_BLIP_ENTITY(blip) then
+            local pos = GET_BLIP_COORDS(blip)
+            if pos ~= nil then
+                TELEPORT(pos.x, pos.y, pos.z)
+            end
+        else
+            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+            TP_TO_ENTITY(ent, tp_offset.x, tp_offset.y, tp_offset.z)
+        end
+    end)
+    menu.action(teleport_options, "传送到我", {}, "", function()
+        if not IS_BLIP_ENTITY(blip) then
+            util.toast("标记点不是实体，无法传送到我")
+        else
+            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+            TP_TO_ME(ent, tp_offset.x, tp_offset.y, tp_offset.z)
+        end
+    end)
+
+end
+
+menu.action(Blip_all, "获取地图显示的全部标记点", {}, "重复的标记点只能获取到最近的一个",
+    function()
+        Init_blip_menu_list()
+
+        for i = 0, 826, 1 do
+            -- local blip = HUD.GET_FIRST_BLIP_INFO_ID(i)
+            local blip = HUD.GET_CLOSEST_BLIP_INFO_ID(i)
+            if HUD.DOES_BLIP_EXIST(blip) then
+                local blip_name = All_Blips[i + 1]
+                local blip_type = GET_BLIP_TYPE(blip)
+
+                local menu_name = i .. ". " .. blip_name
+                local help_text = "Type: " .. blip_type
+                local menu_list = menu.list(Blip_all, menu_name, {}, help_text)
+                generate_blip_menu(menu_list, blip)
+
+                table.insert(blip_menu_list, menu_list)
+
+                blip_count = blip_count + 1
+                menu.set_menu_name(Blip_all_divider, "标记点列表 (" .. blip_count .. ")")
+            end
+        end
+
+    end)
+
+menu.action(Blip_all, "清空列表", {}, "", function()
+    Init_blip_menu_list()
+end)
+Blip_all_divider = menu.divider(Blip_all, "标记点列表")
+
+
+
+------------------
+-- 自定义标记点
+------------------
+local Blip_custom = menu.list(Blip_options, "自定义标记点", {}, "")
 
 local waypoint_blip_sprite = 8
-menu.slider_text(Other_options_Waypoint, "标记点类型", {}, "点击应用修改\n只作用于第一个标记的大头针位置"
+menu.slider_text(Blip_custom, "标记点类型", {}, "点击应用修改\n只作用于第一个标记的大头针位置"
     , { "标记点位置", "大头针位置" }, function(value)
     if value == 1 then
         waypoint_blip_sprite = 8
@@ -3728,7 +4258,7 @@ menu.slider_text(Other_options_Waypoint, "标记点类型", {}, "点击应用修
     end
 end)
 
-menu.toggle(Other_options_Waypoint, "在小地图上显示标记点", {}, "", function(toggle)
+menu.toggle(Blip_custom, "在小地图上显示标记点", {}, "", function(toggle)
     local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
     if blip > 0 then
         if toggle then
@@ -3738,13 +4268,13 @@ menu.toggle(Other_options_Waypoint, "在小地图上显示标记点", {}, "", fu
         end
     end
 end)
-menu.toggle(Other_options_Waypoint, "闪烁标记点", {}, "", function(toggle)
+menu.toggle(Blip_custom, "闪烁标记点", {}, "", function(toggle)
     local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
     if blip > 0 then
         HUD.SET_BLIP_FLASHES(blip, toggle)
     end
 end)
-menu.action(Other_options_Waypoint, "通知坐标", {}, "", function()
+menu.action(Blip_custom, "通知坐标", {}, "", function()
     local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
     if blip == 0 then
         util.toast("No Waypoint Found")
@@ -3757,9 +4287,9 @@ menu.action(Other_options_Waypoint, "通知坐标", {}, "", function()
     end
 end)
 
-menu.divider(Other_options_Waypoint, "在标记点位置")
+menu.divider(Blip_custom, "在标记点位置")
 
-local Waypoint_CreateVehicle = menu.list(Other_options_Waypoint, "生成载具", {}, "")
+local Waypoint_CreateVehicle = menu.list(Blip_custom, "生成载具", {}, "")
 local Waypoint_Vehicle_ListItem = {
     --name, model, help_text
     { "警车", "police3", "" },
@@ -3789,7 +4319,7 @@ for k, data in pairs(Waypoint_Vehicle_ListItem) do
     end)
 end
 
-local Waypoint_CreatePickup = menu.list(Other_options_Waypoint, "生成拾取物", {}, "")
+local Waypoint_CreatePickup = menu.list(Blip_custom, "生成拾取物", {}, "")
 local Waypoint_Pickup_ListItem = {
     --name, model, pickupHash, value
     { "医药包", "prop_ld_health_pack", 2406513688, 100 },
@@ -3814,7 +4344,7 @@ for k, data in pairs(Waypoint_Pickup_ListItem) do
     end)
 end
 
-local Waypoint_Explosion = menu.list(Other_options_Waypoint, "爆炸", {}, "")
+local Waypoint_Explosion = menu.list(Blip_custom, "爆炸", {}, "")
 local waypoint_explosion_type = 2
 menu.list_select(Waypoint_Explosion, "爆炸类型", {}, "", ExplosionType_ListItem, 4, function(index)
     waypoint_explosion_type = index - 2
@@ -3826,7 +4356,7 @@ menu.action(Waypoint_Explosion, "爆炸", {}, "", function()
     else
         local pos = GET_BLIP_COORDS(blip)
         if pos ~= nil then
-            FIRE.ADD_EXPLOSION(pos.x, pos.y, pos.z, waypoint_explosion_type, 1000, true, false, 0.0, false)
+            add_explosion(pos, waypoint_explosion_type)
         end
     end
 end)
@@ -3850,44 +4380,28 @@ end)
 -------------------
 local Request_Service_options = menu.list(Other_options, "请求服务", {}, "")
 
-local ceo_ability_list = {
-    -- global, default_value
-    { cost = { 12844, 1000 }, cooldown = { 12831, 30000 } }, -- Drop Ammo
-    { cost = { 12845, 1500 }, cooldown = { 12832, 30000 } }, -- Drop Armor
-    { cost = { 12846, 1000 }, cooldown = { 12833, 30000 } }, -- Drop Bull Shark
-    { cost = { 12847, 12000 }, cooldown = { 12834, 600000 } }, -- Ghost Organization
-    { cost = { 12848, 15000 }, cooldown = { 12835, 600000 } }, -- Bribe Authorities
-}
 menu.toggle_loop(Request_Service_options, "移除CEO技能费用和冷却时间", {}, "", function()
-    for k, v in pairs(ceo_ability_list) do
+    for k, v in pairs(Globals.ceo_ability_list) do
         local g1 = 262145 + v.cost[1]
         SET_INT_GLOBAL(g1, 0)
         local g2 = 262145 + v.cooldown[1]
         SET_INT_GLOBAL(g2, 0)
     end
 end, function()
-    for k, v in pairs(ceo_ability_list) do
+    for k, v in pairs(Globals.ceo_ability_list) do
         local g1 = 262145 + v.cost[1]
         SET_INT_GLOBAL(g1, v.cost[2])
         local g2 = 262145 + v.cooldown[1]
         SET_INT_GLOBAL(g2, v.cooldown[2])
     end
 end)
-
-local ceo_vehicle_request_cost = {
-    -- global, default_value
-    { 12839, 20000 }, { 12840, 5000 }, { 12841, 5000 }, { 12842, 5000 }, { 12843, 25000 },
-    { 16014, 5000 }, { 16015, 5000 }, { 16016, 5000 },
-    { 16023, 10000 }, { 16024, 7000 }, { 16025, 9000 }, { 16026, 5000 }, { 16027, 5000 }, { 16028, 5000 },
-    { 19347, 5000 }, { 19349, 10000 },
-}
 menu.toggle_loop(Request_Service_options, "移除CEO载具请求费用", {}, "", function()
-    for k, v in pairs(ceo_vehicle_request_cost) do
+    for k, v in pairs(Globals.ceo_vehicle_request_cost) do
         local g1 = 262145 + v[1]
         SET_INT_GLOBAL(g1, 0)
     end
 end, function()
-    for k, v in pairs(ceo_vehicle_request_cost) do
+    for k, v in pairs(Globals.ceo_vehicle_request_cost) do
         local g1 = 262145 + v[1]
         SET_INT_GLOBAL(g1, v[2])
     end
@@ -3895,68 +4409,64 @@ end)
 
 menu.action(Request_Service_options, "请求重型装甲", { "ammo_drop" }, "请求弹道装甲和火神机枪",
     function()
-        SET_INT_GLOBAL(2815059 + 884, 1)
+        SET_INT_GLOBAL(Globals.Ballistic_Armor, 1)
     end)
-menu.action(Request_Service_options, "重型装甲包裹 传送到我", {}, "\nModel Hash: 1688540826", function()
+menu.action(Request_Service_options, "重型装甲包裹 传送到我", {}, "", function()
     local entity_model_hash = 1688540826
     for k, ent in pairs(entities.get_all_pickups_as_handles()) do
         local EntityHash = ENTITY.GET_ENTITY_MODEL(ent)
         if EntityHash == entity_model_hash and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
-            local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(PLAYER.PLAYER_PED_ID(), 0.0, 2.0, 0.0)
-            ENTITY.SET_ENTITY_COORDS(ent, coords.x, coords.y, coords.z, true, false, false, false)
+            TP_TO_ME(ent, 0.0, 2.0, 0.0)
         end
     end
 end)
 menu.toggle(Request_Service_options, "请求RC坦克", {}, "", function(toggle)
     if toggle then
-        SET_INT_GLOBAL(2815059 + 6752, 1)
+        SET_INT_GLOBAL(Globals.RC_Tank, 1)
     else
-        SET_INT_GLOBAL(2815059 + 6752, 0)
+        SET_INT_GLOBAL(Globals.RC_Tank, 0)
     end
 end)
 menu.toggle(Request_Service_options, "请求RC匪徒", {}, "", function(toggle)
     if toggle then
-        SET_INT_GLOBAL(2815059 + 6751, 1)
+        SET_INT_GLOBAL(Globals.RC_Bandito, 1)
     else
-        SET_INT_GLOBAL(2815059 + 6751, 0)
+        SET_INT_GLOBAL(Globals.RC_Bandito, 0)
     end
 end)
 
 menu.divider(Request_Service_options, "无视犯罪")
 menu.toggle_loop(Request_Service_options, "锁定倒计时", {}, "无视犯罪的倒计时", function()
-    SET_INT_GLOBAL(2815059 + 4627, NETWORK.GET_NETWORK_TIME())
+    SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
     util.yield(5000)
 end)
 menu.action(Request_Service_options, "警察无视犯罪", { "no_cops" }, "莱斯特电话请求", function()
-    SET_INT_GLOBAL(2815059 + 4624, 5)
-    SET_INT_GLOBAL(2815059 + 4625, 1)
-    SET_INT_GLOBAL(2815059 + 4627, NETWORK.GET_NETWORK_TIME())
+    SET_INT_GLOBAL(Globals.NCOPS.type, 5)
+    SET_INT_GLOBAL(Globals.NCOPS.flag, 1)
+    SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
 end)
 menu.click_slider(Request_Service_options, "贿赂当局 倒计时时间", {}, "单位:分钟", 1, 60, 2, 1,
     function(value)
-        SET_INT_GLOBAL(262145 + 13147, value * 60 * 1000)
+        SET_INT_GLOBAL(Globals.GB_BRIBE_AUTHORITIES_DURATION, value * 60 * 1000)
         util.toast("Done!")
     end)
 menu.toggle(Request_Service_options, "贿赂当局", {}, "CEO技能", function(toggle)
     if toggle then
-        SET_INT_GLOBAL(2815059 + 4624, 81)
-        SET_INT_GLOBAL(2815059 + 4625, 1)
-        SET_INT_GLOBAL(2815059 + 4627, NETWORK.GET_NETWORK_TIME())
+        SET_INT_GLOBAL(Globals.NCOPS.type, 81)
+        SET_INT_GLOBAL(Globals.NCOPS.flag, 1)
+        SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
     else
-        SET_INT_GLOBAL(2815059 + 4627, 0)
+        SET_INT_GLOBAL(Globals.NCOPS.time, 0)
     end
 end)
 
 menu.divider(Request_Service_options, "幽灵组织")
 menu.click_slider(Request_Service_options, "倒计时时间", {}, "单位:分钟", 1, 60, 3, 1,
     function(value)
-        SET_INT_GLOBAL(262145 + 13146, value * 60 * 1000)
+        SET_INT_GLOBAL(Globals.GB_GHOST_ORG_DURATION, value * 60 * 1000)
         util.toast("Done!")
     end)
-menu.action(Request_Service_options, "幽灵组织", { "ghost_orz" }, "CEO技能\n~Not Working~", function()
-    local Var0 = GET_INT_GLOBAL(1892703 + 1 + PLAYER.PLAYER_ID() * 599 + 10)
-    SET_INT_GLOBAL(2689235 + 1 + Var0 * 453 + 208, 1)
-end)
+-- menu.action(Request_Service_options, "幽灵组织", { "ghost_org" }, "CEO技能\n~Not Working~", function() end)
 
 -------------------
 ----- 聊天选项 -----
@@ -4026,14 +4536,6 @@ menu.action(Other_options, "停止对话", { "stop_talk" }, "", function()
         AUDIO.STOP_SCRIPTED_CONVERSATION(false)
     end
 end)
-menu.action(Other_options, "移除悬赏", {}, "", function()
-    if memory.read_int(memory.script_global(1835502 + 4 + 1 + (players.user() * 3))) == 1 then
-        memory.write_int(memory.script_global(2815059 + 1856 + 17), -1)
-        memory.write_int(memory.script_global(2359296 + 1 + 5149 + 13), 2880000)
-    else
-        util.toast("你未被悬赏")
-    end
-end)
 local simulate_left_click_delay = 50 --ms
 menu.toggle_loop(Other_options, "模拟鼠标左键点击", { "left_click" }, "用于拿取目标财物时",
     function()
@@ -4047,6 +4549,9 @@ menu.slider(Other_options, "模拟点击延迟", { "delay_left_click" }, "单位
 menu.action(Other_options, "Clear Tick Handler", {}, "用于解决控制实体的描绘连线、显示信息、锁定传送等问题"
     , function()
     Clear_control_ent_tick_handler()
+end)
+menu.toggle_loop(Other_options, "Wanted Level Time Multiplier", {}, "", function()
+    SET_FLOAT_GLOBAL(262145 + 9388, 1.0)
 end)
 
 
@@ -4096,7 +4601,7 @@ local PlayerFunctions = function(pId)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, -1.0, 0.0)
         local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
 
-        local g_ped = Create_Network_Ped(PED_TYPE_CIVMALE, modelHash, coords.x, coords.y, coords.z, heading)
+        local g_ped = Create_Network_Ped(28, modelHash, coords.x, coords.y, coords.z, heading)
 
         PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
         TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
@@ -4106,39 +4611,20 @@ local PlayerFunctions = function(pId)
         PED.SET_PED_MONEY(g_ped, 2000)
         ENTITY.SET_ENTITY_MAX_HEALTH(g_ped, 30000)
         ENTITY.SET_ENTITY_HEALTH(g_ped, 30000)
-        PED.SET_PED_CAN_RAGDOLL(g_ped, false)
 
-        PED.SET_PED_HIGHLY_PERCEPTIVE(g_ped, true)
-        PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(g_ped, 500.0)
-        PED.SET_PED_SEEING_RANGE(g_ped, 500)
-        PED.SET_PED_HEARING_RANGE(g_ped, 500)
-
-        PED.SET_PED_SHOOT_RATE(g_ped, 1000.0)
-        PED.SET_PED_ACCURACY(g_ped, 100.0)
-
-        PED.SET_PED_COMBAT_ATTRIBUTES(g_ped, 5, true) --AlwaysFight
-        PED.SET_PED_COMBAT_ATTRIBUTES(g_ped, 13, true) --Aggressive
-        PED.SET_PED_COMBAT_ATTRIBUTES(g_ped, 21, true) --CanChaseTargetOnFoot
-        PED.SET_PED_COMBAT_ATTRIBUTES(g_ped, 27, true) --PerfectAccuracy
-        PED.SET_PED_COMBAT_ATTRIBUTES(g_ped, 46, true) --CanFightArmedPedsWhenNotArmed
-        PED.SET_PED_COMBAT_ATTRIBUTES(g_ped, 58, true) --DisableFleeFromCombat
-
-        PED.SET_PED_COMBAT_MOVEMENT(g_ped, 2) --WillAdvance
-        PED.SET_PED_COMBAT_ABILITY(g_ped, 2) --Professional
-        PED.SET_PED_COMBAT_RANGE(g_ped, 2) --Far
-        PED.SET_PED_TARGET_LOSS_RESPONSE(g_ped, 1) --NeverLoseTarget
-        PED.SET_COMBAT_FLOAT(g_ped, 10, 500.0)
+        Increase_Ped_Combat_Ability(g_ped, false, false)
+        Increase_Ped_Combat_Attributes(g_ped)
     end)
 
     menu.action(Trolling_options, "载具内敌人攻击", {}, "", function()
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        if PED.IS_PED_IN_ANY_VEHICLE(player_ped) then
-            local vehicle = PED.GET_VEHICLE_PED_IS_IN(player_ped, false)
+        local vehicle = PED.GET_VEHICLE_PED_IS_IN(player_ped, true)
+        if vehicle then
             local modelHash = util.joaat("A_M_M_ACult_01")
             local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 2.0)
             local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
 
-            local g_ped = Create_Network_Ped(PED_TYPE_CIVMALE, modelHash, coords.x, coords.y, coords.z, heading)
+            local g_ped = Create_Network_Ped(26, modelHash, coords.x, coords.y, coords.z, heading)
             PED.SET_PED_INTO_VEHICLE(g_ped, vehicle, -2)
 
             PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
@@ -4158,6 +4644,45 @@ local PlayerFunctions = function(pId)
             Increase_Ped_Combat_Ability(g_ped, false, false)
             Increase_Ped_Combat_Attributes(g_ped)
             PED.SET_PED_COMBAT_ATTRIBUTES(g_ped, 3, false) --CanLeaveVehicle
+        else
+            util.toast("未找到玩家的载具")
+        end
+    end)
+
+    menu.action(Trolling_options, "生成敌人抢夺载具", {}, "", function()
+        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
+        local vehicle = PED.GET_VEHICLE_PED_IS_IN(player_ped, true)
+        if vehicle then
+            local modelHash = util.joaat("A_M_M_ACult_01")
+            local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(vehicle, -2.0, 0.0, 0.0)
+            local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
+
+            local g_ped = Create_Network_Ped(26, modelHash, coords.x, coords.y, coords.z, heading)
+
+            PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
+            TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
+            TASK.TASK_COMBAT_PED(g_ped, player_ped, 0, 16)
+            PED.SET_PED_KEEP_TASK(g_ped, true)
+
+            PED.SET_PED_MONEY(g_ped, 2000)
+            ENTITY.SET_ENTITY_MAX_HEALTH(g_ped, 30000)
+            ENTITY.SET_ENTITY_HEALTH(g_ped, 30000)
+            PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(g_ped, false)
+
+            local weaponHash = util.joaat("WEAPON_MICROSMG")
+            WEAPON.GIVE_WEAPON_TO_PED(g_ped, weaponHash, -1, false, true)
+            WEAPON.SET_CURRENT_PED_WEAPON(g_ped, weaponHash, true)
+
+            Increase_Ped_Combat_Ability(g_ped, false, false)
+            Increase_Ped_Combat_Attributes(g_ped)
+
+            TASK.TASK_ENTER_VEHICLE(g_ped, vehicle, -1, -1, 5.0, 16, 0)
+            TASK.TASK_VEHICLE_DRIVE_TO_COORD(g_ped, vehicle, math.random(1000), math.random(1000), math.random(100),
+                100
+                , 1, ENTITY.GET_ENTITY_MODEL(vehicle), 786996, 5, 0)
+        else
+            util.toast("未找到玩家的载具")
+
         end
     end)
 
@@ -4277,37 +4802,17 @@ local PlayerFunctions = function(pId)
                     TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
                     TASK.TASK_VEHICLE_CHASE(driver, player_ped)
                     PED.SET_PED_KEEP_TASK(driver, true)
+                    PED.SET_PED_FLEE_ATTRIBUTES(driver, 0, false)
+                    PED.SET_PED_COMBAT_ATTRIBUTES(driver, 46, true)
                 end
             end
         end
     end)
 
-    local VehicleMissionType = {
-        { "Cruise", {}, "巡航" },
-        { "Ram", {}, "猛撞" },
-        { "Block", {}, "阻挡" },
-        { "GoTo", {}, "前往" },
-        { "Stop", {}, "停止" },
-        { "Attack", {}, "攻击" },
-        { "Follow", {}, "跟随" },
-        { "Flee", {}, "逃跑" },
-        { "Circle", {}, "围绕" },
-        { "Escort", {}, "护送，护卫" },
-        { "FollowRecording", {}, "跟踪录制" },
-        { "PoliceBehaviour", {}, "警察行为" },
-        { "Land", {}, "降落" },
-        { "Land2", {}, "降落" },
-        { "Crash", {}, "碰撞" },
-        { "PullOver", {}, "靠边停车" },
-        { "HeliProtect", {}, "直升机保护" },
-    }
-    local VehicleMissionType_id = {
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 15, 16, 19, 20, 21, 22, 23
-    }
     local veh_mission_type = 6
-    menu.list_select(Trolling_options_NearbyVeh, "Vehicle Mission Type", {}, "", VehicleMissionType, 6,
+    menu.list_select(Trolling_options_NearbyVeh, "Vehicle Mission Type", {}, "", Vehicle_MissionType_ListItem, 6,
         function(value)
-            veh_mission_type = VehicleMissionType_id[value]
+            veh_mission_type = value
         end)
     menu.toggle_loop(Trolling_options_NearbyVeh, "Task Vehicle Mission Target Player", {}, "", function()
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
@@ -4318,9 +4823,11 @@ local PlayerFunctions = function(pId)
                     RequestControl(driver)
                     PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
                     TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
-                    TASK.TASK_VEHICLE_MISSION_PED_TARGET(driver, vehicle, player_ped, veh_mission_type, 300.0, 0, 0.0,
+                    TASK.TASK_VEHICLE_MISSION_PED_TARGET(driver, vehicle, player_ped, veh_mission_type, 500.0, 0, 0.0,
                         0.0, true)
                     PED.SET_PED_KEEP_TASK(driver, true)
+                    PED.SET_PED_FLEE_ATTRIBUTES(driver, 0, false)
+                    PED.SET_PED_COMBAT_ATTRIBUTES(driver, 46, true)
                 end
             end
         end
@@ -4345,6 +4852,8 @@ local PlayerFunctions = function(pId)
                 TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
                 TASK.TASK_ARREST_PED(ped, player_ped)
                 PED.SET_PED_KEEP_TASK(ped, true)
+                PED.SET_PED_FLEE_ATTRIBUTES(driver, 0, false)
+                PED.SET_PED_COMBAT_ATTRIBUTES(driver, 46, true)
             end
         end
     end)
@@ -4626,7 +5135,7 @@ local PlayerFunctions = function(pId)
 
             local ent
             if Type == 1 then
-                ent = Create_Network_Ped(PED_TYPE_MISSION, hash, coords.x, coords.y, coords.z, heading)
+                ent = Create_Network_Ped(26, hash, coords.x, coords.y, coords.z, heading)
             elseif Type == 2 then
                 ent = Create_Network_Vehicle(hash, coords.x, coords.y, coords.z, heading)
             elseif Type == 3 then

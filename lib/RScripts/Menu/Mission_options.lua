@@ -8,18 +8,15 @@ local Mission_options = menu.list(menu.my_root(), "任务选项", {}, "")
 ----- 分红编辑 -----
 local Heist_Cut_Editor = menu.list(Mission_options, "分红编辑", {}, "")
 
-local cut_global_base = 1973321 + 823 + 56
-menu.list_select(Heist_Cut_Editor, "当前抢劫", {}, "", { "佩里科岛", "赌场抢劫", "末日豪劫" }, 1,
-    function(index)
-        if index == 1 then
-            cut_global_base = 1973321 + 823 + 56
-        elseif index == 2 then
-            cut_global_base = 1966534 + 2325
-        elseif index == 3 then
-            cut_global_base = 1962546 + 812 + 50
-        end
-        --util.toast(cut_global_base)
-    end)
+local cut_global_base = 1977693 + 823 + 56
+local Heist_Cut_Editor_ListItem = {
+    [1977693 + 823 + 56] = { "佩里科岛" },
+    [1970895 + 2325] = { "赌场抢劫" },
+    [1966831 + 812 + 50] = { "末日豪劫" },
+}
+menu.list_select(Heist_Cut_Editor, "当前抢劫", {}, "", Heist_Cut_Editor_ListItem, cut_global_base, function(value)
+    cut_global_base = value
+end)
 
 menu.click_slider(Heist_Cut_Editor, "玩家1 (房主)", { "Cut_Edit_1" }, "", 0, 300, 85, 5, function(value)
     SET_INT_GLOBAL(cut_global_base + 1, value)
@@ -103,19 +100,16 @@ local Team_Lives = menu.list(Mission_options, "修改生命数", {}, "")
 menu.divider(Team_Lives, "佩里科岛&末日&改装铺")
 menu.action(Team_Lives, "获取当前生命数", {}, "", function()
     if SCRIPT.HAS_SCRIPT_LOADED("fm_mission_controller_2020") then
-        local value = GET_INT_LOCAL("fm_mission_controller_2020", 44664 + 865 + 1)
+        local value = GET_INT_LOCAL("fm_mission_controller_2020", Locals.MC_TLIVES_2020)
         util.toast(value)
     else
         util.toast("This Script Has Not Loaded")
     end
 end)
-
-local team_live_cayo = 0
 menu.click_slider(Team_Lives, "修改生命数", { "tlive_perico" }, "fm_mission_controller_2020", -1, 30000, 0, 1,
     function(value)
-        team_live_cayo = value
         if SCRIPT.HAS_SCRIPT_LOADED("fm_mission_controller_2020") then
-            SET_INT_LOCAL("fm_mission_controller_2020", 44664 + 865 + 1, team_live_cayo)
+            SET_INT_LOCAL("fm_mission_controller_2020", Locals.MC_TLIVES_2020, value)
         else
             util.toast("This Script Has Not Loaded")
         end
@@ -124,19 +118,16 @@ menu.click_slider(Team_Lives, "修改生命数", { "tlive_perico" }, "fm_mission
 menu.divider(Team_Lives, "赌场抢劫&联系人差事")
 menu.action(Team_Lives, "获取当前生命数", {}, "", function()
     if SCRIPT.HAS_SCRIPT_LOADED("fm_mission_controller") then
-        local value = GET_INT_LOCAL("fm_mission_controller", 26105 + 1322 + 1)
+        local value = GET_INT_LOCAL("fm_mission_controller", Locals.MC_TLIVES)
         util.toast(value)
     else
         util.toast("This Script Has Not Loaded")
     end
 end)
-
-local team_live_casino = 0
 menu.click_slider(Team_Lives, "修改生命数", { "tlive_casino" }, "fm_mission_controller", -1, 30000, 0, 1,
     function(value)
-        team_live_casino = value
         if SCRIPT.HAS_SCRIPT_LOADED("fm_mission_controller") then
-            SET_INT_LOCAL("fm_mission_controller", 26105 + 1322 + 1, team_live_casino)
+            SET_INT_LOCAL("fm_mission_controller", Locals.MC_TLIVES, value)
         else
             util.toast("This Script Has Not Loaded")
         end
@@ -145,7 +136,7 @@ menu.click_slider(Team_Lives, "修改生命数", { "tlive_casino" }, "fm_mission
 
 
 ----- 资产监视 -----
-local Business_Monitor = menu.list(Mission_options, "资产监视", {}, "")
+local Business_Monitor = menu.list(Mission_options, "资产监视", { "business_monitor" }, "")
 
 Business = {}
 function Business.GetOrgOffset()
@@ -153,7 +144,7 @@ function Business.GetOrgOffset()
 end
 
 function Business.GetOnlineWorkOffset()
-    return (1853348 + 1 + (players.user() * 834) + 267)
+    return (1853910 + 1 + (players.user() * 862) + 267)
 end
 
 function Business.GetBusinessSupplies(slot)
@@ -165,20 +156,20 @@ function Business.GetBusinessProduct(slot)
 end
 
 function Business.GetNightclubValue(slot)
-    local offset = Business.GetOnlineWorkOffset() + 295 + 8 + 1 + slot
+    local offset = Business.GetOnlineWorkOffset() + 310 + 8 + 1 + slot
     return GET_INT_GLOBAL(offset)
 end
 
 Business.Globals = {
-    Bunker = { Cap = 262145 + 21575 },
+    Bunker = { Cap = 262145 + 21531 }, -- 2092556011
     NightClub = {
-        [0] = { name = "Cargo", Cap = 262145 + 24422 },
-        [1] = { name = "Weapons", Cap = 262145 + 24416 },
-        [2] = { name = "Cocaine", Cap = 262145 + 24417 },
-        [3] = { name = "Meth", Cap = 262145 + 24418 },
-        [4] = { name = "Weed", Cap = 262145 + 24419 },
-        [5] = { name = "Forgery", Cap = 262145 + 24420 },
-        [6] = { name = "Cash", Cap = 262145 + 24421 }
+        [0] = { name = "Cargo", Cap = 262145 + 24394 }, -- -1168716160
+        [1] = { name = "Weapons", Cap = 262145 + 24388 }, -- -1318722703
+        [2] = { name = "Cocaine", Cap = 262145 + 24389 }, -- -2136290534
+        [3] = { name = "Meth", Cap = 262145 + 24390 }, -- 1069721135
+        [4] = { name = "Weed", Cap = 262145 + 24391 }, -- -8586474
+        [5] = { name = "Forgery", Cap = 262145 + 24392 }, -- -358911902
+        [6] = { name = "Cash", Cap = 262145 + 24393 } -- -879486246
     },
 }
 
@@ -198,6 +189,9 @@ local Business_Monitor_Menu = {
         [5] = { name = "印刷品", menu },
         [6] = { name = "印钞", menu }
     },
+
+    drug_supplies,
+    drug_product,
 
     arcade_safe_cash,
     agency_safe_cash,
@@ -228,6 +222,14 @@ menu.action(Business_Monitor, "刷新状态", {}, "", function()
         menu.set_value(Business_Monitor_Menu.arcade_safe_cash, STAT_GET_INT("ARCADE_SAFE_CASH_VALUE"))
         menu.set_value(Business_Monitor_Menu.agency_safe_cash, STAT_GET_INT("FIXER_SAFE_CASH_VALUE"))
 
+        --- Drug War ---
+        slot = 6
+        text = Business.GetBusinessSupplies(slot) .. "%"
+        menu.set_value(Business_Monitor_Menu.drug_supplies, text)
+
+        text = Business.GetBusinessProduct(slot) .. "/160"
+        menu.set_value(Business_Monitor_Menu.drug_product, text)
+
     else
         util.toast("仅在线上模式战局内可用")
     end
@@ -249,10 +251,14 @@ menu.divider(Business_Monitor, "其它")
 Business_Monitor_Menu.arcade_safe_cash = menu.readonly(Business_Monitor, "游戏厅保险箱现金")
 Business_Monitor_Menu.agency_safe_cash = menu.readonly(Business_Monitor, "事务所保险箱现金")
 
+menu.divider(Business_Monitor, "致幻剂实验室")
+Business_Monitor_Menu.drug_supplies = menu.readonly(Business_Monitor, "原材料")
+Business_Monitor_Menu.drug_product = menu.readonly(Business_Monitor, "产品")
+
 
 
 ----- Local Editor -----
-local Local_Editor = menu.list(Mission_options, "Local Editor", {}, "")
+local Local_Editor = menu.list(Mission_options, "Local Editor", { "local_editor" }, "")
 
 local mission_script = "fm_mission_controller"
 menu.list_select(Local_Editor, "选择脚本", {}, "", {
@@ -336,7 +342,7 @@ end)
 
 
 ----- Global Editor -----
-local Global_Editor = menu.list(Mission_options, "Global Editor", {}, "")
+local Global_Editor = menu.list(Mission_options, "Global Editor", { "global_editor" }, "")
 
 local global_address = 0
 menu.slider(Global_Editor, "Global 地址", { "global_address" }, "输入计算总和", 0, 16777216, 0, 1,
@@ -396,7 +402,7 @@ end)
 
 
 ----- Stat Editor -----
-local Stat_Editor = menu.list(Mission_options, "Stat Editor", {}, "")
+local Stat_Editor = menu.list(Mission_options, "Stat Editor", { "stat_editor" }, "")
 -----
 local Stat_Playtime = menu.list(Stat_Editor, "游玩时间", {}, "")
 
@@ -768,6 +774,21 @@ menu.action(Mission_Assistant_Prison, "终章：敌对天煞 传送到海洋并�
             end
         end
     end)
+menu.action(Mission_Assistant_Prison, "终章：敌对天煞 禁用导弹", {}, "\nModel Hash: -1281684762",
+    function()
+        local weaponHash = util.joaat("VEHICLE_WEAPON_PLANE_ROCKET")
+        local entity_list = GetEntity_ByModelHash("vehicle", true, -1281684762)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                if RequestControl(ent) then
+                    local ped = GET_PED_IN_VEHICLE_SEAT(ent, -1)
+                    VEHICLE.DISABLE_VEHICLE_WEAPON(true, weaponHash, ent, ped)
+                    util.toast("Done!")
+                end
+            end
+        end
+    end)
+
 
 -- Model Name: ig_rashcosvki, Hash: 940330470
 local Mission_Assistant_Prison_rashcosvki = menu.list(Mission_Assistant_Prison, "终章：光头", {},
@@ -1189,38 +1210,38 @@ menu.action(Mission_options, "跳过破解", { "skip_hacking" }, "所有的破�
     local script = "fm_mission_controller_2020"
     if SCRIPT.HAS_SCRIPT_LOADED(script) then
         -- Fingerprint Clone
-        if GET_INT_LOCAL(script, 23385) == 4 then
-            SET_INT_LOCAL(script, 23385, 5)
+        if GET_INT_LOCAL(script, 22032) == 4 then
+            SET_INT_LOCAL(script, 22032, 5)
         end
         -- Sewer Fence Scene
-        if GET_INT_LOCAL(script, 27500) == 4 then
-            SET_INT_LOCAL(script, 27500, 6)
+        if GET_INT_LOCAL(script, 26746) == 4 then
+            SET_INT_LOCAL(script, 26746, 6)
         end
 
         SET_FLOAT_LOCAL(script, 28736 + 3, 100) -- Glass Cutter
-        SET_INT_LOCAL(script, 972 + 135, 3) -- For ULP Missions
+        SET_INT_LOCAL(script, 974 + 135, 3) -- For ULP Missions
     end
 
     script = "fm_mission_controller"
     if SCRIPT.HAS_SCRIPT_LOADED(script) then
         -- For Fingerprint
-        if GET_INT_LOCAL(script, 52929) ~= 1 then
-            SET_INT_LOCAL(script, 52929, 5)
+        if GET_INT_LOCAL(script, 52962) ~= 1 then
+            SET_INT_LOCAL(script, 52962, 5)
         end
         -- For Keypad
-        if GET_INT_LOCAL(script, 53991) ~= 1 then
-            SET_INT_LOCAL(script, 53991, 5)
+        if GET_INT_LOCAL(script, 54024) ~= 1 then
+            SET_INT_LOCAL(script, 54024, 5)
         end
         -- Instant Vault Door Laser
-        local Value = GET_INT_LOCAL(script, 10082 + 37)
-        SET_INT_LOCAL(script, 10082 + 7, Value)
+        local Value = GET_INT_LOCAL(script, 10098 + 37)
+        SET_INT_LOCAL(script, 10098 + 7, Value)
 
         -- Doomsday Heist
-        SET_INT_LOCAL(script, 1263 + 135, 3) -- For ACT III - Beam Puzzle
-        SET_INT_LOCAL(script, 1537, 2) -- For ACT I, Setup: Server Farm (Lester)
+        SET_INT_LOCAL(script, 1265 + 135, 3) -- For ACT III - Beam Puzzle
+        SET_INT_LOCAL(script, 1510, 2) -- For ACT I, Setup: Server Farm (Lester)
 
         -- Fleeca Heist
-        SET_INT_LOCAL(script, 11731 + 24, 7) -- VLSI Circuit Breaker 2.0
+        SET_INT_LOCAL(script, 11757 + 24, 7) -- VLSI Circuit Breaker 2.0
         SET_FLOAT_LOCAL(script, 10042 + 11, 100) -- vaultDrillHoleDepth Skip Drilling
     end
 
@@ -1229,14 +1250,14 @@ menu.toggle_loop(Mission_options, "Voltage Hack", { "voltage_hack" }, "", functi
     local script = "fm_mission_controller_2020"
     if SCRIPT.HAS_SCRIPT_LOADED(script) then
         -- Infinite Voltage Timer
-        local Value = GET_INT_LOCAL(script, 1716)
-        SET_INT_LOCAL(script, 1715, Value)
+        local Value = GET_INT_LOCAL(script, 1718)
+        SET_INT_LOCAL(script, 1717, Value)
     end
 
-    script = "fm_content_island_heist"
-    if SCRIPT.HAS_SCRIPT_LOADED(script) then
-        -- Infinite Voltage Timer
-        local Value = GET_INT_LOCAL(script, 757)
-        SET_INT_LOCAL(script, 756, Value)
-    end
+    -- script = "fm_content_island_heist"
+    -- if SCRIPT.HAS_SCRIPT_LOADED(script) then
+    --     -- Infinite Voltage Timer
+    --     local Value = GET_INT_LOCAL(script, 757)
+    --     SET_INT_LOCAL(script, 756, Value)
+    -- end
 end)

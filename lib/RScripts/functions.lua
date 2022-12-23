@@ -5,9 +5,7 @@
 ---@param entity Entity
 ---@param coords v3
 function SET_ENTITY_COORDS(entity, coords)
-    if ENTITY.DOES_ENTITY_EXIST(entity) then
-        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(entity, coords.x, coords.y, coords.z, false, false, false)
-    end
+    ENTITY.SET_ENTITY_COORDS_NO_OFFSET(entity, coords.x, coords.y, coords.z, true, false, false)
 end
 
 ---@param vehicle Vehicle
@@ -38,6 +36,81 @@ function DRAW_LINE(start_pos, end_pos, colour)
         colour.b, colour.a)
 end
 
+---Creates an explosion at the co-ordinates.
+---Default `explosionType` = 2
+---@param coords v3
+---@param explosionType? integer
+---@param add_explosion_Params? table
+---@class add_explosion_Params
+---@field damageScale float
+---@field isAudible boolean
+---@field isVisible boolean
+---@field cameraShake float
+---@field noDamage boolean
+function add_explosion(coords, explosionType, add_explosion_Params)
+    if explosionType == nil then explosionType = 2 end
+    Params = add_explosion_Params or {}
+    Params.damageScale = Params.damageScale or 1.0
+    if Params.isAudible == nil then Params.isAudible = true end
+    Params.cameraShake = Params.cameraShake or 0.0
+
+    FIRE.ADD_EXPLOSION(coords.x, coords.y, coords.z,
+        explosionType,
+        Params.damageScale, Params.isAudible, Params.isInvisible, Params.cameraShake, Params.noDamage)
+end
+
+---Creates an explosion at the co-ordinates owned by a specific ped.
+---Default `explosionType` = 2
+---@param owner Ped
+---@param coords v3
+---@param explosionType? integer
+---@param add_own_explosion_Params? table
+---@class add_own_explosion_Params
+---@field damageScale float
+---@field isAudible boolean
+---@field isVisible boolean
+---@field cameraShake float
+function add_own_explosion(owner, coords, explosionType, add_own_explosion_Params)
+    if explosionType == nil then explosionType = 2 end
+    Params = add_own_explosion_Params or {}
+    Params.damageScale = Params.damageScale or 1.0
+    if Params.isAudible == nil then Params.isAudible = true end
+    Params.cameraShake = Params.cameraShake or 0.0
+
+    FIRE.ADD_OWNED_EXPLOSION(owner, coords.x, coords.y, coords.z,
+        explosionType,
+        Params.damageScale, Params.isAudible, Params.isInvisible, Params.cameraShake)
+end
+
+---Fires an instant hit bullet between the two points taking into account an entity to ignore for damage.
+---@param startCoords v3
+---@param endCoords v3
+---@param shoot_single_bullet_Params? table
+---@class shoot_single_bullet_Params
+---@field damage integer
+---@field perfectAccuracy boolean
+---@field weaponHash Hash
+---@field owner Ped
+---@field CreateTraceVfx boolean
+---@field AllowRumble boolean
+---@field speed integer
+---@field ignoreEntity Entity
+function shoot_single_bullet(startCoords, endCoords, shoot_single_bullet_Params)
+    Params = shoot_single_bullet_Params or {}
+    Params.damage = Params.damage or 1000
+    Params.weaponHash = Params.weaponHash or 4058111347
+    Params.owner = Params.owner or 0
+    if Params.CreateTraceVfx == nil then Params.CreateTraceVfx = true end
+    if Params.AllowRumble == nil then Params.AllowRumble = true end
+    Params.speed = Params.speed or 1000
+    Params.ignoreEntity = Params.ignoreEntity or 0
+
+    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(startCoords.x, startCoords.y, startCoords.z,
+        endCoords.x, endCoords.y, endCoords.z,
+        Params.damage, Params.perfectAccuracy, Params.weaponHash, Params.owner,
+        Params.CreateTraceVfx, Params.AllowRumble, Params.speed, Params.ignoreEntity)
+end
+
 ----------------------------------------
 -- Only Work for Player Functions
 ----------------------------------------
@@ -59,30 +132,48 @@ function TELEPORT(x, y, z, heading)
     end
 end
 
+---设置/获取玩家的朝向
+---@param heading? float
+---@return float
+function PLAYER_HEADING(heading)
+    if heading ~= nil then
+        ENTITY.SET_ENTITY_HEADING(players.user_ped(), heading)
+    end
+
+    return ENTITY.GET_ENTITY_HEADING(players.user_ped())
+end
+
 ---传送实体到我
 ---@param ent Entity
----@param x? float
----@param y? float
----@param z? float
-function TP_TO_ME(ent, x, y, z)
-    if x == nil then x = 0.0 end
-    if y == nil then y = 0.0 end
-    if z == nil then z = 0.0 end
-    local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(players.user_ped(), x, y, z)
+---@param offsetX? float
+---@param offsetY? float
+---@param offsetZ? float
+function TP_TO_ME(ent, offsetX, offsetY, offsetZ)
+    if offsetX == nil then offsetX = 0.0 end
+    if offsetY == nil then offsetY = 0.0 end
+    if offsetZ == nil then offsetZ = 0.0 end
+    local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(players.user_ped(), offsetX, offsetY, offsetZ)
     SET_ENTITY_COORDS(ent, coords)
 end
 
 ---我传送到实体
 ---@param ent Entity
----@param x? float
----@param y? float
----@param z? float
-function TP_TO_ENTITY(ent, x, y, z)
-    if x == nil then x = 0.0 end
-    if y == nil then y = 0.0 end
-    if z == nil then z = 0.0 end
-    local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(ent, x, y, z)
-    SET_ENTITY_COORDS(players.user_ped(), coords)
+---@param offsetX? float
+---@param offsetY? float
+---@param offsetZ? float
+function TP_TO_ENTITY(ent, offsetX, offsetY, offsetZ)
+    if offsetX == nil then offsetX = 0.0 end
+    if offsetY == nil then offsetY = 0.0 end
+    if offsetZ == nil then offsetZ = 0.0 end
+    local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(ent, offsetX, offsetY, offsetZ)
+
+
+    local tp = players.user_ped()
+    local veh = GET_VEHICLE_PED_IS_IN(tp)
+    if veh then
+        tp = veh
+    end
+    SET_ENTITY_COORDS(tp, coords)
 end
 
 ---我传送进载具驾驶位
@@ -179,6 +270,17 @@ end
 function IS_AN_ENTITY(entity)
     if ENTITY.DOES_ENTITY_EXIST(entity) then
         if ENTITY.IS_ENTITY_A_PED(entity) or ENTITY.IS_ENTITY_A_VEHICLE(entity) or ENTITY.IS_ENTITY_AN_OBJECT(entity) then
+            return true
+        end
+    end
+    return false
+end
+
+---@param entity Entity
+---@return boolean
+function IS_ENTITY_A_PICKUP(entity)
+    if ENTITY.IS_ENTITY_AN_OBJECT(entity) then
+        if OBJECT.IS_OBJECT_A_PICKUP(entity) or OBJECT.IS_OBJECT_A_PORTABLE_PICKUP(entity) then
             return true
         end
     end
@@ -305,6 +407,7 @@ function Set_Entity_Networked(ent, canMigrate)
     if ENTITY.DOES_ENTITY_EXIST(ent) then
         if canMigrate == nil then canMigrate = true end
 
+        ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(obj, true, 1)
         ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(ent, true)
 
         NETWORK.NETWORK_REGISTER_ENTITY_AS_NETWORKED(ent)
@@ -317,6 +420,52 @@ function Set_Entity_Networked(ent, canMigrate)
         return NETWORK.NETWORK_GET_ENTITY_IS_NETWORKED(ent)
     end
     return false
+end
+
+---获取对应类型的所有实体
+---@param Type string
+---@return table
+function get_all_entities(Type)
+    local all_entity = {}
+    Type = string.lower(Type)
+    if Type == "ped" then
+        all_entity = entities.get_all_peds_as_handles()
+    elseif Type == "vehicle" then
+        all_entity = entities.get_all_vehicles_as_handles()
+    elseif Type == "object" then
+        all_entity = entities.get_all_objects_as_handles()
+    elseif Type == "pickup" then
+        all_entity = entities.get_all_pickups_as_handles()
+    end
+    return all_entity
+end
+
+---通过Model Hash寻找实体
+---@param Type string
+---@param isMission boolean
+---@return table
+function GetEntity_ByModelHash(Type, isMission, ...)
+    local all_entity = get_all_entities(Type)
+
+    local entity_list = {}
+    local arg = { ... } --Hash list
+
+    for k, ent in pairs(all_entity) do
+        local EntityHash = ENTITY.GET_ENTITY_MODEL(ent)
+        for _, Hash in pairs(arg) do
+            if EntityHash == Hash then
+                if isMission then
+                    if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
+                        table.insert(entity_list, ent)
+                    end
+                else
+                    table.insert(entity_list, ent)
+                end
+            end
+        end
+    end
+
+    return entity_list
 end
 
 -----------------------------------
@@ -332,7 +481,7 @@ end
 ---@return Ped
 function Create_Network_Ped(pedType, modelHash, x, y, z, heading)
     Request_Model(modelHash)
-    local ped = PED.CREATE_PED(pedType, modelHash, x, y, z, heading, true, false)
+    local ped = PED.CREATE_PED(pedType, modelHash, x, y, z, heading, true, true)
 
     ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(ped, true, 1)
     ENTITY.SET_ENTITY_AS_MISSION_ENTITY(ped, true, false)
@@ -358,7 +507,7 @@ end
 ---@return Vehicle
 function Create_Network_Vehicle(modelHash, x, y, z, heading)
     Request_Model(modelHash)
-    local veh = VEHICLE.CREATE_VEHICLE(modelHash, x, y, z, heading, true, false, true)
+    local veh = VEHICLE.CREATE_VEHICLE(modelHash, x, y, z, heading, true, true, true)
 
     VEHICLE.SET_VEHICLE_ENGINE_ON(veh, true, true, false)
     VEHICLE.SET_VEHICLE_STAYS_FROZEN_WHEN_CLEANED_UP(veh, true)
@@ -392,7 +541,7 @@ end
 ---@return Pickup
 function Create_Network_Pickup(pickupHash, x, y, z, modelHash, value)
     Request_Model(modelHash)
-    local pickup = OBJECT.CREATE_AMBIENT_PICKUP(pickupHash, x, y, z, 0, value, modelHash, false, true)
+    local pickup = OBJECT.CREATE_AMBIENT_PICKUP(pickupHash, x, y, z, 4, value, modelHash, false, true)
 
     OBJECT.SET_PICKUP_OBJECT_COLLECTABLE_IN_VEHICLE(pickup)
 
@@ -419,7 +568,7 @@ end
 ---@return Object
 function Create_Network_Object(modelHash, x, y, z)
     Request_Model(modelHash)
-    local obj = OBJECT.CREATE_OBJECT_NO_OFFSET(modelHash, x, y, z, true, false, false)
+    local obj = OBJECT.CREATE_OBJECT_NO_OFFSET(modelHash, x, y, z, true, true, false)
 
     ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(obj, true, 1)
     ENTITY.SET_ENTITY_AS_MISSION_ENTITY(obj, true, false)
@@ -616,6 +765,7 @@ function Increase_Ped_Combat_Ability(ped, isGodmode, canRagdoll)
         PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(ped, 500.0)
         PED.SET_PED_SEEING_RANGE(ped, 500.0)
         PED.SET_PED_HEARING_RANGE(ped, 500.0)
+        PED.SET_PED_ID_RANGE(ped, 500.0)
         PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, 90.0)
         PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 90.0)
         PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, 90.0)
@@ -630,6 +780,8 @@ function Increase_Ped_Combat_Ability(ped, isGodmode, canRagdoll)
         PED.SET_PED_COMBAT_ABILITY(ped, 2) --Professional
         PED.SET_PED_COMBAT_RANGE(ped, 2) --Far
         PED.SET_PED_TARGET_LOSS_RESPONSE(ped, 1) --NeverLoseTarget
+
+        PED.SET_PED_FLEE_ATTRIBUTES(ped, 512, true) -- NeverFlee
     end
 end
 
@@ -637,22 +789,58 @@ end
 ---@param ped Ped
 function Increase_Ped_Combat_Attributes(ped)
     if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 0, true) --CanUseCover
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 1, true) --CanUseVehicles
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 2, true) --CanDoDrivebys
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true) --AlwaysFight
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 12, true) --BlindFireWhenInCover
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 0, true) --Use Cover
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 1, true) --Use Vehicle
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 4, true) --Can Use Dynamic Strafe Decisions
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true) --Always Fight
         PED.SET_PED_COMBAT_ATTRIBUTES(ped, 13, true) --Aggressive
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 14, true) --CanInvestigate
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true) --CanTauntInVehicle
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true) --CanChaseTargetOnFoot
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, true) --PerfectAccuracy
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true) --CanCommandeerVehicles
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) --CanFightArmedPedsWhenNotArmed
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 54, true) --AlwaysEquipBestWeapon
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true) --CanSeeUnderwaterPeds
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) --DisableFleeFromCombat
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 60, true) --CanThrowSmokeGrenade
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 17, false) --Always Flee
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true) --Can Taunt In Vehicle
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true) --Can Chase Target On Foot
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 24, true) --Use Proximity Firing Rate
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, true) --Perfect Accuracy
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 39, true) --Can Bust
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true) --Can Commandeer Vehicles
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 42, true) --Can Flank
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) --Can Fight Armed Peds When Not Armed
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 49, false) --Use Enemy Accuracy Scaling
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 52, true) --Use Vehicle Attack
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 53, true) --Use Vehicle Attack If Vehicle Has Mounted Guns
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 54, true) --Always Equip Best Weapon
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true) --Can See Underwater Peds
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) --Disable Flee From Combat
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 60, true) --Can Throw Smoke Grenade
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true) --Disable All Randoms Flee
+    end
+end
+
+---@param ped Ped
+function Clear_Ped_All_Tasks(ped)
+    if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
+        TASK.CLEAR_PED_TASKS(ped)
+        TASK.CLEAR_DEFAULT_PRIMARY_TASK(ped)
+        TASK.CLEAR_PED_SECONDARY_TASK(ped)
+        TASK.TASK_CLEAR_LOOK_AT(ped)
+        TASK.TASK_CLEAR_DEFENSIVE_AREA(ped)
+        TASK.CLEAR_DRIVEBY_TASK_UNDERNEATH_DRIVING_TASK(ped)
+        if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
+            local veh = PED.GET_VEHICLE_PED_IS_USING(ped)
+            TASK.CLEAR_PRIMARY_VEHICLE_TASK(veh)
+            TASK.CLEAR_VEHICLE_CRASH_TASK(veh)
+        end
+    end
+end
+
+---@param ped Ped
+function Disable_Ped_Flee(ped)
+    if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 6, false) -- FLEE_WHILST_IN_VEHICLE
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 17, false) -- ALWAYS_FLEE
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) -- CAN_FIGHT_ARMED_PEDS_WHEN_NOT_ARMED
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) -- DISABLE_FLEE_FROM_COMBAT
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true) -- DISABLE_ALL_RANDOMS_FLEE
+
+        PED.SET_PED_FLEE_ATTRIBUTES(ped, 512, true) -- NEVER_FLEE
     end
 end
 
@@ -661,10 +849,10 @@ end
 -----------------------------
 
 ---获取标记点坐标
----@param blip integer
+---@param blip Blip
 ---@return v3
 function GET_BLIP_COORDS(blip)
-    if blip == 0 then
+    if not HUD.DOES_BLIP_EXIST(blip) then
         return nil
     end
     local pos = HUD.GET_BLIP_COORDS(blip)
@@ -677,6 +865,32 @@ function GET_BLIP_COORDS(blip)
     end
     if success then pos.z = groundz end
     return pos
+end
+
+---获取标记点类型
+---@param blip Blip
+---@return string
+function GET_BLIP_TYPE(blip)
+    if not HUD.DOES_BLIP_EXIST(blip) then
+        return ""
+    end
+
+    local blip_type = HUD.GET_BLIP_INFO_ID_TYPE(blip)
+    return enum_BlipType[blip_type + 1]
+end
+
+---判断标记点是否为实体
+---@param blip Blip
+---@return boolean
+function IS_BLIP_ENTITY(blip)
+    if not HUD.DOES_BLIP_EXIST(blip) then
+        return false
+    end
+    local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+    if ENTITY.DOES_ENTITY_EXIST(ent) then
+        return true
+    end
+    return false
 end
 
 ---为实体添加地图标记
@@ -853,7 +1067,7 @@ function DrawString(text, scale)
 end
 
 function draw_point_in_center()
-    directx.draw_texture(Texture.point, 0.0015, 0.0015, 0.5, 0.5, 0.5, 0.5, 0, color.white)
+    directx.draw_texture(Texture.point, 0.0016, 0, 0.5, 0.5, 0.5, 0.5, 0, color.white)
 end
 
 -----------------------------
@@ -906,6 +1120,16 @@ function round(num, places)
     return tonumber(string.format('%.' .. (places or 0) .. 'f', num))
 end
 
+---@param bool boolean
+---@return string
+function bool_to_string(bool)
+    if bool then
+        return "是"
+    else
+        return "否"
+    end
+end
+
 ---@param dist number
 ---@return v3
 function get_offset_from_cam(dist)
@@ -918,7 +1142,7 @@ function get_offset_from_cam(dist)
     return offset
 end
 
-TraceFlag = {
+local TraceFlag = {
     everything = 4294967295,
     none = 0,
     world = 1,
@@ -935,7 +1159,6 @@ TraceFlag = {
 ---@field endCoords v3
 ---@field surfaceNormal v3
 ---@field hitEntity Entity
-
 ---@param dist number
 ---@param flag? integer
 ---@return RaycastResult
@@ -977,44 +1200,6 @@ function GetEntity_PlayerIsAimingAt(player)
         end
     end
     return ent
-end
-
----通过Model Hash寻找实体
----@param Type string
----@param isMission boolean
----@return table
-function GetEntity_ByModelHash(Type, isMission, ...)
-    local all_entity
-    Type = string.lower(Type)
-    if Type == "ped" then
-        all_entity = entities.get_all_peds_as_handles()
-    elseif Type == "vehicle" then
-        all_entity = entities.get_all_vehicles_as_handles()
-    elseif Type == "object" then
-        all_entity = entities.get_all_objects_as_handles()
-    elseif Type == "pickup" then
-        all_entity = entities.get_all_pickups_as_handles()
-    end
-
-    local entity_list = {}
-    local arg = { ... } --Hash list
-
-    for k, ent in pairs(all_entity) do
-        local EntityHash = ENTITY.GET_ENTITY_MODEL(ent)
-        for _, Hash in pairs(arg) do
-            if EntityHash == Hash then
-                if isMission then
-                    if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
-                        table.insert(entity_list, ent)
-                    end
-                else
-                    table.insert(entity_list, ent)
-                end
-            end
-        end
-    end
-
-    return entity_list
 end
 
 -------------------------

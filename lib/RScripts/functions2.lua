@@ -1,4 +1,28 @@
 --------------------------
+-- Script Functions
+--------------------------
+
+function IS_SCRIPT_RUNNING(str)
+    return SCRIPT.GET_NUMBER_OF_THREADS_RUNNING_THE_SCRIPT_WITH_THIS_HASH(util.joaat(str)) > 0
+end
+
+function START_SCRIPT(str, arg_count)
+    if not SCRIPT.DOES_SCRIPT_EXIST(str) then
+        return false
+    end
+    if IS_SCRIPT_RUNNING(str) then
+        return true
+    end
+    SCRIPT.REQUEST_SCRIPT(str)
+    while not SCRIPT.HAS_SCRIPT_LOADED(str) do
+        util.yield()
+    end
+    SYSTEM.START_NEW_SCRIPT(str, arg_count or 0)
+    SCRIPT.SET_SCRIPT_AS_NO_LONGER_NEEDED(str)
+    return true
+end
+
+--------------------------
 -- Stat Functions
 --------------------------
 
@@ -150,5 +174,3 @@ function GET_FLOAT_LOCAL(Script, Local)
         end
     end
 end
-
-
