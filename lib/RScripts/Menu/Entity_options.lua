@@ -1808,7 +1808,14 @@ end)
 menu.action(MISSION_ENTITY_bunker, "原材料 传送到我", { "tpme_bsupplies" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(556)
     if not HUD.DOES_BLIP_EXIST(blip) then
-        util.toast("No Vehicle Cargo Found")
+        local entity_list = GetEntity_ByModelHash("pickup", true, -955159266)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                TP_TO_ME(ent, 0.0, 2.0, 0.0)
+            end
+        else
+            util.toast("No Vehicle Cargo Found")
+        end
     else
         local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
         if ENTITY.DOES_ENTITY_EXIST(ent) then
@@ -1821,16 +1828,6 @@ menu.action(MISSION_ENTITY_bunker, "原材料 传送到我", { "tpme_bsupplies" 
         else
             util.toast("No Entity, Can't Teleport To Me")
         end
-    end
-end)
-menu.action(MISSION_ENTITY_bunker, "原材料：箱子 传送到我", {}, "游艇 货轮", function()
-    local entity_list = GetEntity_ByModelHash("pickup", true, -955159266)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, -1.0)
-        end
-    else
-        util.toast("Not Found")
     end
 end)
 menu.action(MISSION_ENTITY_bunker, "长鳍追飞机：掉落货物 传送到我", {}, "", function()
@@ -1860,6 +1857,7 @@ menu.action(MISSION_ENTITY_bunker, "消灭对手行动单位：箱子 全部爆�
     local entity_list = GetEntity_ByModelHash("object", true, -986153641)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
+            local pos = ENTITY.GET_ENTITY_COORDS(ent)
             add_own_explosion(players.user_ped(), pos)
         end
     else
@@ -2989,21 +2987,51 @@ menu.action(MISSION_ENTITY_air, "货物 传送到我", { "tp_me_air_product" }, 
     end
 end)
 menu.action(MISSION_ENTITY_air, "货物(载具) 传送到我", {}, "", function()
-    local entity_list = GetEntity_ByModelHash("vehicle", true, 788747387, -305727417, -1386191424, 744705981, -
-        1205689942)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 1.0, 0.0)
-            SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
-            TP_INTO_VEHICLE(ent, "delete", "delete")
+    local product = 0
+    local blip = HUD.GET_NEXT_BLIP_INFO_ID(568)
+    if not HUD.DOES_BLIP_EXIST(blip) then
+        local entity_list = GetEntity_ByModelHash("pickup", true, -1270906188)
+        if next(entity_list) ~= nil then
+            product = entity_list[1]
+        else
+            util.toast("No Air Product Found")
         end
+    else
+        product = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+    end
+
+    if ENTITY.DOES_ENTITY_EXIST(product) then
+        local product_pos = ENTITY.GET_ENTITY_COORDS(product)
+
+        --- 获取距离最近的载具 ---
+        local closest_disance = 1000.0
+        local target_ent = 0
+        for k, ent in pairs(entities.get_all_vehicles_as_handles()) do
+            if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
+                local pos = ENTITY.GET_ENTITY_COORDS(ent)
+                local distance = vect.dist(pos, product_pos)
+                if distance < closest_disance then
+                    closest_disance = distance
+                    target_ent = ent
+                end
+            end
+        end
+        if ENTITY.DOES_ENTITY_EXIST(target_ent) then
+            TP_TO_ME(target_ent, 0.0, 1.0, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(target_ent, players.user_ped())
+            TP_INTO_VEHICLE(target_ent, "delete", "delete")
+        else
+            util.toast("Not Found")
+        end
+
     end
 end)
+
 menu.action(MISSION_ENTITY_air, "毁掉 泰坦号", {}, "", function()
     local entity_list = GetEntity_ByModelHash("vehicle", true, 1981688531)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 0.0, 20.0)
+            TP_TO_ME(ent, 0.0, 10.0, 20.0)
             util.yield(2000)
             entities.delete(ent)
         end

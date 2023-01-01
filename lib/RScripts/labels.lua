@@ -122,7 +122,6 @@ enum_CombatAbility = {
     "Poor", -- 0
     "Average", -- 1
     "Professional", -- 2
-    "NumTypes" -- 3
 }
 
 enum_CombatRange = {
@@ -130,7 +129,6 @@ enum_CombatRange = {
     "Medium", -- 1
     "Far", -- 2
     "Very Far", -- 3
-    "NumRanges" -- 4
 }
 
 enum_Alertness = {
@@ -169,6 +167,26 @@ enum_BlipType = {
     "Area", -- 11
 }
 
+-- 直升机模式 [id] = { name, {}, comment }
+HeliMode_ListItem = {
+    [0] = { "None", {}, "" },
+    [1] = { "Attain Requested Orientation", {}, "" },
+    [2] = { "Dont Modify Orientation", {}, "" },
+    [4] = { "Dont Modify Pitch", {}, "" },
+    [8] = { "Dont Modify Throttle", {}, "" },
+    [16] = { "Dont Modify Roll", {}, "" },
+    [32] = { "Land On Arrival", {}, "" },
+    [64] = { "Dont Do Avoidance", {}, "" },
+    [128] = { "Start Engine Immediately", {}, "" },
+    [256] = { "Force Height Map Avoidance", {}, "" },
+    [512] = { "Dont Clamp Probes To Destination", {}, "" },
+    [1024] = { "Enable Timeslicing When Possible", {}, "" },
+    [2048] = { "Circle Opposite Direction", {}, "" },
+    [4096] = { "Maintain Height Above Terrain", {}, "" },
+    [8192] = { "Ignore Hidden Entities DuringLand", {}, "" },
+    [16384] = { "Disable AllHeight Map Avoidance", {}, "" },
+    [320] = { "Height Map Only Avoidance", {}, "" },
+}
 
 -- 载具任务 [id] = { name, {}, comment }
 Vehicle_MissionType_ListItem = {
@@ -195,6 +213,26 @@ Vehicle_MissionType_ListItem = {
     [21] = { "Crash", {}, "碰撞" },
     [22] = { "Pull Over", {}, "靠边停车" },
     [23] = { "Protect", {}, "保护" },
+}
+
+-- NPC射击模式 [hash] = { name }
+Ped_FirePattern_ListItem = {
+    [1073727030] = { "Burst Fire" },
+    [40051185] = { "Burst Fire In Cover" },
+    [-753768974] = { "Burst Fire Driveby" },
+    [577037782] = { "From Ground" },
+    [2055493265] = { "Delay Fire By One Sec" },
+    [-957453492] = { "Full Auto" },
+    [1566631136] = { "Single Shot" },
+    [-1608983670] = { "Burst Fire Pistol" },
+    [1863348768] = { "Burst Fire Smg" },
+    [-1670073338] = { "Burst Fire Rifle" },
+    [-1250703948] = { "Burst Fire Mg" },
+    [12239771] = { "Burst Fire Pumpshotgun" },
+    [-1857128337] = { "Burst Fire Heli" },
+    [1122960381] = { "Burst Fire Micro" },
+    [445831135] = { "Short Bursts" },
+    [-490063247] = { "Slow Fire Tank" },
 }
 
 -- NPC作战属性 [id] = { name, comment }
@@ -364,30 +402,16 @@ Ped_CombatFloat_List = {
         "Multiplies the weapon damage dealt by the ped, range is 0.0-10.0 (default is 1.0)" },
 }
 
--- NPC射击模式 [hash] = { name }
-Ped_FirePattern_ListItem = {
-    [1073727030] = { "Burst Fire" },
-    [40051185] = { "Burst Fire In Cover" },
-    [-753768974] = { "Burst Fire Driveby" },
-    [577037782] = { "From Ground" },
-    [2055493265] = { "Delay Fire By One Sec" },
-    [-957453492] = { "Full Auto" },
-    [1566631136] = { "Single Shot" },
-    [-1608983670] = { "Burst Fire Pistol" },
-    [1863348768] = { "Burst Fire Smg" },
-    [-1670073338] = { "Burst Fire Rifle" },
-    [-1250703948] = { "Burst Fire Mg" },
-    [12239771] = { "Burst Fire Pumpshotgun" },
-    [-1857128337] = { "Burst Fire Heli" },
-    [1122960381] = { "Burst Fire Micro" },
-    [445831135] = { "Short Bursts" },
-    [-490063247] = { "Slow Fire Tank" },
-}
+
 
 
 -- blip color
 Blip_Color_Red = {
-    1, 2, 3, 4, 5, 49, 59, 66, 67, 68, 69, 75
+    1, -- BLIP_COLOUR_RED
+    49, -- BLIP_COLOUR_FRIENDLY
+    59, -- BLIP_COLOUR_HUDCOLOUR_RED
+    75,
+    79,
 }
 
 -- all blip  blipName = blipSprite + 1

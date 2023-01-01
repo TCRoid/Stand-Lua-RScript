@@ -406,12 +406,10 @@ local Stat_Editor = menu.list(Mission_options, "Stat Editor", { "stat_editor" },
 -----
 local Stat_Playtime = menu.list(Stat_Editor, "游玩时间", {}, "")
 
-local Stat_Playtime_ListItem_Method = {
+local Stat_Playtime_Method = menu.list_select(Stat_Playtime, "选择方式", {}, "", {
     { "覆盖", {}, "会将时间修改成所设置的时间\n最大24.8天" },
     { "增加", {}, "会在当前时间的基础上增加设置的时间\n最大50000天" }
-}
-local Stat_Playtime_Method = menu.list_select(Stat_Playtime, "选择方式", {}, "", Stat_Playtime_ListItem_Method, 1,
-    function() end)
+}, 1, function() end)
 menu.divider(Stat_Playtime, "设置时间")
 local Stat_Playtime_Year = menu.slider(Stat_Playtime, "年", { "stat_playtime_year" }, "", 0, 100, 0, 1, function() end)
 local Stat_Playtime_Day = menu.slider(Stat_Playtime, "天", { "stat_playtime_day" }, "", 0, 50000, 0, 1, function() end)
@@ -443,7 +441,16 @@ local Stat_Playtime_ListItem_Stat = {
     { "被通缉持续时间", {}, "TOTAL_CHASE_TIME" },
     { "上一次通缉等级持续时间", {}, "LAST_CHASE_TIME" },
     { "最长通缉等级持续时间", {}, "LONGEST_CHASE_TIME" },
-    { "五星通缉等级持续时间", {}, "TOTAL_TIME_MAX_STARS" }
+    { "五星通缉等级持续时间", {}, "TOTAL_TIME_MAX_STARS" },
+
+    { "Total time spent in Lobby", {}, "MPPLY_TOTAL_TIME_IN_LOBBY" },
+    { "Total time spent in Freemode", {}, "MPPLY_TOTAL_TIME_SPENT_FREEMODE" },
+    { "Total Playing time in multiplayer", {}, "LEADERBOARD_PLAYING_TIME" },
+    { "GTA在线模式中花费的时间_New", {}, "MP_PLAYING_TIME_NEW" },
+    { "Total time spent in Loading screen", {}, "MPPLY_TOTAL_TIME_LOAD_SCREEN" },
+    { "Average time spent on missions", {}, "CHAR_TOTAL_TIME_MISSION" },
+    { "Total Time spent in Start Menu", {}, "TOTAL_STARTMENU_TIME" },
+    { "Total Time spent shopping", {}, "TOTAL_SHOP_TIME" },
 }
 local Stat_Playtime_Select = menu.list_select(Stat_Playtime, "Stat", {}, "", Stat_Playtime_ListItem_Stat, 1,
     function() end)
@@ -484,6 +491,12 @@ menu.divider(Stat_Date, "")
 local Stat_Date_ListItem_Stat = {
     { "制作的角色时间", {}, "CHAR_DATE_CREATED" },
     { "最后一次升级时间", {}, "CHAR_DATE_RANKUP" },
+
+    { "MPPLY_STARTED_MP", {}, "MPPLY_STARTED_MP" },
+    { "MPPLY_NON_CHEATER_CASH", {}, "MPPLY_NON_CHEATER_CASH" },
+    { "CHAR_LAST_PLAY_TIME", {}, "CHAR_LAST_PLAY_TIME" },
+    { "CLOUD_TIME_CHAR_CREATED", {}, "CLOUD_TIME_CHAR_CREATED" },
+    { "PS_TIME_CHAR_CREATED", {}, "PS_TIME_CHAR_CREATED" },
 }
 local Stat_Date_Select = menu.list_select(Stat_Date, "Stat", {}, "", Stat_Date_ListItem_Stat, 1, function() end)
 menu.action(Stat_Date, "设置", {}, "", function()

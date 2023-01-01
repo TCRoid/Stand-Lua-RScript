@@ -6,7 +6,7 @@ util.keep_running()
 util.require_natives("natives-1663599433")
 
 -- 脚本版本
-local Script_Version <const> = "2022/12/23"
+local Script_Version <const> = "2023/1/1"
 
 -- 支持的GTA线上版本
 local Support_GTAO <const> = 1.64
@@ -835,11 +835,12 @@ function Entity_Control.ped(menu_parent, ped, index)
         PED.SET_RELATIONSHIP_BETWEEN_GROUPS(0, player_rel_hash, player_rel_hash)
         PED.SET_PED_RELATIONSHIP_GROUP_HASH(ped, player_rel_hash)
     end)
-    menu.action(ped_options, "DROP_AMBIENT_PROP", {}, "", function()
-        PED.DROP_AMBIENT_PROP(ped)
-    end)
-    menu.action(ped_options, "CLEAR_ALL_PED_PROPS", {}, "", function()
-        PED.CLEAR_ALL_PED_PROPS(ped)
+    menu.action(ped_options, "清理外观", {}, "", function()
+        PED.RESET_PED_VISIBLE_DAMAGE(ped)
+        PED.CLEAR_PED_LAST_DAMAGE_BONE(ped)
+        PED.CLEAR_PED_BLOOD_DAMAGE(ped)
+        PED.CLEAR_PED_WETNESS(ped)
+        PED.CLEAR_PED_ENV_DIRT(ped)
     end)
 
     Entity_Control.ped_combat(menu_parent, ped, index)
@@ -1022,10 +1023,9 @@ function Entity_Control.vehicle(menu_parent, vehicle, index)
     end)
 
     menu.click_slider(vehicle_options, "向前加速", { "ctrl_veh" .. index .. "_forward_speed" }, "", 0.0, 1000.0, 30.0
-        , 10.0,
-        function(value)
-            VEHICLE.SET_VEHICLE_FORWARD_SPEED(vehicle, value)
-        end)
+        , 10.0, function(value)
+        VEHICLE.SET_VEHICLE_FORWARD_SPEED(vehicle, value)
+    end)
 
     menu.action(vehicle_options, "修复载具", {}, "", function()
         Fix_Vehicle(vehicle)
@@ -1108,7 +1108,100 @@ function Entity_Control.vehicle(menu_parent, vehicle, index)
         VEHICLE.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR(vehicle, secundary.r, secundary.g, secundary.b)
     end)
 
+    Entity_Control.vehicle_health(menu_parent, vehicle, index)
     Entity_Control.vehicle_task(menu_parent, vehicle, index)
+end
+
+function Entity_Control.vehicle_health(menu_parent, vehicle, index)
+    local hash = ENTITY.GET_ENTITY_MODEL(vehicle)
+    local vehicle_health_options = menu.list(menu_parent, "Vehicle Health 选项", {}, "")
+
+    menu.click_slider(vehicle_health_options, "引擎血量", { "ctrl_veh" .. index .. "_engine_health" },
+        "1000.0 = full, 0.0 = go on fire, -1000.0 = burnt out", -1000, 1000,
+        1000, 100, function(value)
+        VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, value)
+    end)
+    menu.click_slider(vehicle_health_options, "油箱血量", { "ctrl_veh" .. index .. "_petrol_tank_health" },
+        "1000.0 = full, 0.0 = go on fire, -1000.0 = burnt out", -1000, 1000,
+        1000, 100, function(value)
+        VEHICLE.SET_VEHICLE_PETROL_TANK_HEALTH(vehicle, value)
+    end)
+    menu.click_slider(vehicle_health_options, "外观血量", { "ctrl_veh" .. index .. "_body_health" },
+        "1000.0 = full, 0.0 = damaged", -1000, 1000,
+        1000, 100, function(value)
+        VEHICLE.SET_VEHICLE_BODY_HEALTH(vehicle, value)
+    end)
+
+    if VEHICLE.IS_THIS_MODEL_A_PLANE(hash) then
+        menu.click_slider(vehicle_health_options, "飞机引擎血量", { "ctrl_veh" .. index .. "_plane_engine_health" },
+            "the same as the above function but it allows the engine health on planes to be set higher than the max health"
+            , -1000, 10000, 1000, 100, function(value)
+            VEHICLE.SET_PLANE_ENGINE_HEALTH(vehicle, value)
+        end)
+    end
+
+    if VEHICLE.IS_THIS_MODEL_A_HELI(hash) then
+        menu.click_slider(vehicle_health_options, "直升机主旋翼血量", { "ctrl_veh" .. index .. "_main_rotor_health" },
+            "", -1000, 1000, 1000, 100, function(value)
+            VEHICLE.SET_HELI_MAIN_ROTOR_HEALTH(vehicle, value)
+        end)
+        menu.click_slider(vehicle_health_options, "直升机尾旋翼血量", { "ctrl_veh" .. index .. "_tail_rotor_health" },
+            "", -1000, 1000, 1000, 100, function(value)
+            VEHICLE.SET_HELI_TAIL_ROTOR_HEALTH(vehicle, value)
+        end)
+    end
+
+
+
+
+    local vehicle_other_attribute = menu.list(vehicle_health_options, "其它属性", {}, "")
+    menu.toggle(vehicle_other_attribute, "禁止发动机故障失火", {}, "", function(toggle)
+        VEHICLE.SET_VEHICLE_CAN_ENGINE_MISSFIRE(vehicle, not toggle)
+    end)
+    menu.toggle(vehicle_other_attribute, "禁止漏油", {}, "", function(toggle)
+        VEHICLE.SET_VEHICLE_CAN_LEAK_OIL(vehicle, not toggle)
+        VEHICLE.SET_VEHICLE_CAN_LEAK_PETROL(vehicle, not toggle)
+    end)
+    menu.toggle(vehicle_other_attribute, "禁止油箱起火", {}, "", function(toggle)
+        VEHICLE.SET_DISABLE_VEHICLE_PETROL_TANK_FIRES(vehicle, toggle)
+    end)
+    menu.toggle(vehicle_other_attribute, "禁止油箱伤害", {}, "", function(toggle)
+        VEHICLE.SET_DISABLE_VEHICLE_PETROL_TANK_DAMAGE(vehicle, toggle)
+    end)
+    menu.toggle(vehicle_other_attribute, "禁止发动机起火", {}, "", function(toggle)
+        VEHICLE.SET_DISABLE_VEHICLE_ENGINE_FIRES(vehicle, toggle)
+    end)
+    menu.toggle(vehicle_other_attribute, "禁止因碰撞身体损坏而爆炸", {}, "", function(toggle)
+        local value = 0
+        if toggle then
+            value = 1
+        end
+        VEHICLE.SET_DISABLE_EXPLODE_FROM_BODY_DAMAGE_ON_COLLISION(vehicle, value)
+    end)
+    menu.toggle(vehicle_other_attribute, "禁止载具部分分离", {}, "", function(toggle)
+        VEHICLE.SET_VEHICLE_CAN_BREAK(vehicle, not toggle)
+    end)
+
+    if VEHICLE.IS_THIS_MODEL_A_HELI(hash) then
+        menu.toggle(vehicle_other_attribute, "禁止直升机尾翼损坏", {}, "", function(toggle)
+            VEHICLE.SET_HELI_TAIL_BOOM_CAN_BREAK_OFF(vehicle, not toggle)
+        end)
+        menu.toggle(vehicle_other_attribute, "提高直升机防炸性", {},
+            "(MP Only) Heli might survive from 2 or more explosions when set", function(toggle)
+            VEHICLE.SET_HELI_RESIST_TO_EXPLOSION(vehicle, toggle)
+        end)
+        menu.toggle(vehicle_other_attribute, "禁止直升机身体损坏而爆炸", {}, "", function(toggle)
+            VEHICLE.SET_DISABLE_HELI_EXPLODE_FROM_BODY_DAMAGE(vehicle, toggle)
+        end)
+    end
+
+    if VEHICLE.IS_THIS_MODEL_A_PLANE(hash) then
+        menu.toggle(vehicle_other_attribute, "提高飞机防炸性", {},
+            "(MP Only) Plane might survive from 2 or more explosions when set", function(toggle)
+            VEHICLE.SET_PLANE_RESIST_TO_EXPLOSION(vehicle, toggle)
+        end)
+    end
+
 end
 
 function Entity_Control.vehicle_task(menu_parent, vehicle, index)
@@ -1189,7 +1282,7 @@ function Entity_Control.vehicle_task(menu_parent, vehicle, index)
             function(value)
                 veh_escort.minDistance = value * 0.01
             end)
-        menu.slider(task_escort, "minHeightAboveTerrain", { "task_veh" .. index .. "escort_minHeightAboveTerrain" }, "",
+        menu.slider(task_escort, "离地面最小高度", { "task_veh" .. index .. "escort_minHeightAboveTerrain" }, "",
             0, 1000, 20, 1, function(value)
             veh_escort.minHeightAboveTerrain = value
         end)
@@ -1875,6 +1968,7 @@ end)
 
 
 
+
 --------------------------------
 ------------ 武器选项 ------------
 --------------------------------
@@ -2243,7 +2337,7 @@ end)
 local Weapon_Entity_Control = menu.list(Weapon_options, "实体控制枪", {}, "控制你所瞄准的实体")
 
 local entity_control_data = {
-    entity_type = "全部"
+    entity_type = "全部",
 }
 
 local function entity_control_Head(menu_parent, ent)
@@ -3182,7 +3276,8 @@ end
 
 ----------
 local veh_dirt_level = 0.0
-menu.click_slider(Vehicle_options, "载具灰尘程度", {}, "载具全身灰尘程度", 0.0, 15.0, 0.0, 1.0,
+menu.click_slider(Vehicle_options, "载具灰尘程度", { "veh_dirt_level" }, "载具全身灰尘程度", 0.0, 15.0, 0.0
+    , 1.0,
     function(value)
         veh_dirt_level = value
         local vehicle = PED.GET_VEHICLE_PED_IS_IN(PLAYER.PLAYER_PED_ID(), false)
@@ -3425,15 +3520,6 @@ menu.toggle(BlockArea_options, "可见", {}, "", function(toggle)
 end, true)
 
 
-
--- menu.action(Session_options, "移除悬赏", {}, "", function()
---     if memory.read_int(memory.script_global(1835502 + 4 + 1 + (players.user() * 3))) == 1 then
---         memory.write_int(memory.script_global(2815059 + 1856 + 17), -1)
---         memory.write_int(memory.script_global(2359296 + 1 + 5149 + 13), 2880000)
---     else
---         util.toast("未被悬赏")
---     end
--- end)
 menu.action(Session_options, "停止观看", {}, "停止观看战局内其他玩家", function()
     local name = players.get_name(players.user())
     menu.trigger_commands("spectate" .. name .. ' on')
@@ -3450,7 +3536,6 @@ end)
 --------------------------------
 local Bodyguard_options = menu.list(menu.my_root(), "保镖选项", {}, "")
 
---------- Functions ---------
 Relationship = {
     friendly_group = 0,
 }
@@ -3492,12 +3577,153 @@ function Group:pushMember(ped)
     --PED.SET_GROUP_FORMATION(groupID, self.formation)
 end
 
+Bodyguard = {
+    setting = {},
+}
+
+Bodyguard.npc = {
+    --选择的保镖模型
+    model_select = 1,
+    --生成的保镖NPC list
+    list = {},
+    --生成的保镖NPC对应的menu list
+    menu_list = {},
+    --序号
+    index = 1,
+}
+
+Bodyguard.heli = {
+    --选择的直升机类型
+    model_select = 1,
+    --生成的保镖直升机 list
+    list = {},
+    --生成的保镖直升机里面的NPC list
+    npc_list = {},
+    --生成的保镖直升机对应的menu list
+    menu_list = {},
+    --序号
+    index = 1,
+}
+
+--生成保镖NPC 默认设置
+Bodyguard.setting.npc = {
+    godmode = false,
+    health = 1000,
+    no_ragdoll = false,
+    weapon = "WEAPON_MICROSMG",
+    see_hear_range = 500,
+    accuracy = 100,
+    shoot_rate = 1000,
+    combat_ability = 2,
+    combat_range = 2,
+    combat_movement = 1,
+    target_loss_response = 1,
+    fire_pattern = -957453492,
+}
+
+--生成保镖直升机 默认设置
+Bodyguard.setting.heli = {
+    godmode = false,
+    health = 10000,
+    Speed = 300,
+    drivingStyle = 786603,
+    CustomOffsets = -1.0,
+    MinHeightAboveTerrain = 20,
+    HeliMode = 0,
+}
+
+function Bodyguard.set_npc_attribute(ped)
+    --INVINCIBLE
+    ENTITY.SET_ENTITY_INVINCIBLE(ped, Bodyguard.setting.npc.godmode)
+    ENTITY.SET_ENTITY_PROOFS(ped, Bodyguard.setting.npc.godmode, Bodyguard.setting.npc.godmode,
+        Bodyguard.setting.npc.godmode,
+        Bodyguard.setting.npc.godmode, Bodyguard.setting.npc.godmode, Bodyguard.setting.npc.godmode,
+        Bodyguard.setting.npc.godmode,
+        Bodyguard.setting.npc.godmode)
+    --HEALTH
+    ENTITY.SET_ENTITY_MAX_HEALTH(ped, Bodyguard.setting.npc.health)
+    ENTITY.SET_ENTITY_HEALTH(ped, Bodyguard.setting.npc.health)
+    --RAGDOLL
+    PED.SET_PED_CAN_RAGDOLL(ped, not Bodyguard.setting.npc.no_ragdoll)
+    PED.DISABLE_PED_INJURED_ON_GROUND_BEHAVIOUR(ped)
+    PED.SET_PED_CAN_PLAY_AMBIENT_ANIMS(ped, false)
+    PED.SET_PED_CAN_PLAY_AMBIENT_BASE_ANIMS(ped, false)
+    --WEAPON
+    local weapon_smoke = util.joaat("WEAPON_SMOKEGRENADE")
+    WEAPON.GIVE_WEAPON_TO_PED(ped, weapon_smoke, -1, false, false)
+    local weaponHash = util.joaat(Bodyguard.setting.npc.weapon)
+    WEAPON.GIVE_WEAPON_TO_PED(ped, weaponHash, -1, false, true)
+    WEAPON.SET_CURRENT_PED_WEAPON(ped, weaponHash, false)
+    WEAPON.SET_PED_DROPS_WEAPONS_WHEN_DEAD(ped, false)
+    PED.SET_PED_CAN_SWITCH_WEAPON(ped, true)
+    WEAPON.SET_PED_INFINITE_AMMO_CLIP(ped, true)
+    --PERCEPTIVE
+    PED.SET_PED_SEEING_RANGE(ped, Bodyguard.setting.npc.see_hear_range)
+    PED.SET_PED_HEARING_RANGE(ped, Bodyguard.setting.npc.see_hear_range)
+    PED.SET_PED_ID_RANGE(ped, Bodyguard.setting.npc.see_hear_range)
+    PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(ped, Bodyguard.setting.npc.see_hear_range)
+    PED.SET_PED_HIGHLY_PERCEPTIVE(ped, true)
+    PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, 90.0)
+    PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 90.0)
+    PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, 90.0)
+    PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 90.0)
+    PED.SET_PED_VISUAL_FIELD_CENTER_ANGLE(ped, 90.0)
+    --COMBAT
+    PED.SET_PED_COMBAT_ABILITY(ped, Bodyguard.setting.npc.combat_ability)
+    PED.SET_PED_COMBAT_RANGE(ped, Bodyguard.setting.npc.combat_range)
+    PED.SET_PED_COMBAT_MOVEMENT(ped, Bodyguard.setting.npc.combat_movement)
+    PED.SET_PED_TARGET_LOSS_RESPONSE(ped, Bodyguard.setting.npc.target_loss_response)
+    --COMBAT ATTRIBUTES
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 4, true) --Can Use Dynamic Strafe Decisions
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true) --Always Fight
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 6, false) --Flee Whilst In Vehicle
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 13, true) --Aggressive
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 14, true) --Can Investigate
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 17, false) --Always Flee
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true) --Can Taunt In Vehicle
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true) --Can Chase Target On Foot
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 22, true) --Will Drag Injured Peds to Safety
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 24, true) --Use Proximity Firing Rate
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, true) --Perfect Accuracy
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 28, true) --Can Use Frustrated Advance
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 29, true) --Move To Location Before Cover Search
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 38, true) --Disable Bullet Reactions
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 39, true) --Can Bust
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true) --Can Commandeer Vehicles
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 42, true) --Can Flank
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) --Can Fight Armed Peds When Not Armed
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 49, false) --Use Enemy Accuracy Scaling
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 52, true) --Use Vehicle Attack
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 53, true) --Use Vehicle Attack If Vehicle Has Mounted Guns
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 54, true) --Always Equip Best Weapon
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true) --Can See Underwater Peds
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) --Disable Flee From Combat
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 60, true) --Can Throw Smoke Grenade
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true) --Disable All Randoms Flee
+    --FLEE ATTRIBUTES
+    PED.SET_PED_FLEE_ATTRIBUTES(ped, 512, true) -- NEVER_FLEE
+    --TASK
+    TASK.SET_PED_PATH_CAN_USE_CLIMBOVERS(ped, true)
+    TASK.SET_PED_PATH_CAN_USE_LADDERS(ped, true)
+    TASK.SET_PED_PATH_CAN_DROP_FROM_HEIGHT(ped, true)
+    TASK.SET_PED_PATH_AVOID_FIRE(ped, false)
+    TASK.SET_PED_PATH_MAY_ENTER_WATER(ped, true)
+end
+
+function Bodyguard.generate_npc_menu(menu_parent, ped, index)
+    Entity_Control.generate_menu(menu_parent, ped, index)
+end
+
+function Bodyguard.generate_heli_menu(menu_parent, heli, index)
+    Entity_Control.generate_menu(menu_parent, heli, index)
+end
+
 ------------------
 ----- 保镖NPC -----
 ------------------
 local Bodyguard_NPC_options = menu.list(Bodyguard_options, "保镖NPC", {}, "")
 
-local npc_name_list_select = {
+local Bodyguard_NPC_name_ListItem = {
     { "富兰克林", {}, "" },
     { "麦克", {}, "" },
     { "崔佛", {}, "" },
@@ -3509,7 +3735,7 @@ local npc_name_list_select = {
     { "崔西", {}, "麦克女儿" },
     { "阿曼达", {}, "麦克妻子" },
 }
-local npc_model_list_select = {
+local Bodyguard_NPC_model_list = {
     "player_one",
     "player_zero",
     "player_two",
@@ -3521,186 +3747,57 @@ local npc_model_list_select = {
     "ig_tracydisanto",
     "ig_amandatownley",
 }
---生成保镖的默认设置
-local bodyguard_npc_set = {
-    model = "player_one",
-    godmode = false,
-    health = 1000,
-    no_ragdoll = false,
-    weapon = "WEAPON_MICROSMG",
-    no_clip = false,
-    see_hear_range = 500,
-    accuracy = 100,
-    shoot_rate = 1000,
-    combat_ability = 2,
-    combat_range = 2,
-    combat_movement = 1,
-    target_loss_response = 1,
-    BF_PerfectAccuracy = false,
-    BF_AlwaysEquipBestWeapon = false,
-}
---生成的保镖
-local bodyguard_npc_list = {}
 
-menu.list_select(Bodyguard_NPC_options, "选择模型", {}, "", npc_name_list_select, 1, function(value)
-    bodyguard_npc_set.model = npc_model_list_select[value]
+menu.list_select(Bodyguard_NPC_options, "选择模型", {}, "", Bodyguard_NPC_name_ListItem, 1
+    , function(value)
+    Bodyguard.npc.model_select = value
 end)
 
-local Bodyguard_NPC_default_setting = menu.list(Bodyguard_NPC_options, "默认生成设置", {}, "")
-menu.toggle(Bodyguard_NPC_default_setting, "无敌", {}, "", function(toggle)
-    bodyguard_npc_set.godmode = toggle
-end)
-menu.slider(Bodyguard_NPC_default_setting, "生命", { "bodyguard_npc_health" }, "", 100, 30000, 1000, 100,
-    function(value)
-        bodyguard_npc_set.health = value
-    end)
-menu.toggle(Bodyguard_NPC_default_setting, "不会摔倒", {}, "", function(toggle)
-    bodyguard_npc_set.no_ragdoll = toggle
-end)
-menu.list_select(Bodyguard_NPC_default_setting, "武器", {}, "", WeaponName_ListItem, 4, function(value)
-    bodyguard_npc_set.weapon = WeaponModel_List[value]
-end)
-menu.toggle(Bodyguard_NPC_default_setting, "不换弹夹", {}, "", function(toggle)
-    bodyguard_npc_set.no_clip = toggle
-end)
-menu.divider(Bodyguard_NPC_default_setting, "作战能力")
-menu.slider(Bodyguard_NPC_default_setting, "视力听觉范围", { "bodyguard_npc_see_hear_range" }, "", 10, 1000, 500,
-    100,
-    function(value)
-        bodyguard_npc_set.see_hear_range = value
-    end)
-menu.slider(Bodyguard_NPC_default_setting, "精确度", { "bodyguard_npc_accuracy" }, "", 0, 100, 100, 10,
-    function(value)
-        bodyguard_npc_set.accuracy = value
-    end)
-menu.slider(Bodyguard_NPC_default_setting, "射击频率", { "bodyguard_npc_shoot_rate" }, "", 0, 1000, 1000, 100,
-    function(value)
-        bodyguard_npc_set.shoot_rate = value
-    end)
-menu.list_select(Bodyguard_NPC_default_setting, "作战技能", {}, "", { { "弱" }, { "普通" }, { "专业" } }, 3,
-    function(value)
-        bodyguard_npc_set.combat_ability = value - 1
-    end)
-menu.list_select(Bodyguard_NPC_default_setting, "作战范围", {}, "", { { "近" }, { "中等" }, { "远" }, { "非常远" } }
-    , 3, function(value)
-    bodyguard_npc_set.combat_range = value - 1
-end)
-menu.list_select(Bodyguard_NPC_default_setting, "作战走位", {}, "", { { "站立" }, { "防卫" }, { "会前进" },
-    { "会后退" } }, 2, function(value)
-    bodyguard_npc_set.combat_movement = value - 1
-end)
-menu.list_select(Bodyguard_NPC_default_setting, "失去目标时反应", {}, "", { { "退出战斗" }, { "从不失去目标" },
-    { "寻找目标" } }, 2, function(value)
-    bodyguard_npc_set.target_loss_response = value - 1
-end)
-menu.divider(Bodyguard_NPC_default_setting, "作战属性")
-menu.toggle(Bodyguard_NPC_default_setting, "完美精准度", {}, "", function(toggle)
-    bodyguard_npc_set.BF_PerfectAccuracy = toggle
-end)
-menu.toggle(Bodyguard_NPC_default_setting, "总是装备最好的武器", {}, "", function(toggle)
-    bodyguard_npc_set.BF_AlwaysEquipBestWeapon = toggle
-end)
-------
 menu.action(Bodyguard_NPC_options, "生成保镖", {}, "", function()
     local groupID = PLAYER.GET_PLAYER_GROUP(players.user())
     if Group:getSize(groupID) >= 7 then
         util.toast("保镖人数已达到上限")
     else
-        local modelHash = util.joaat(bodyguard_npc_set.model)
+        local modelHash = util.joaat(Bodyguard_NPC_model_list[Bodyguard.npc.model_select])
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(players.user_ped(), 0.0, 2.0, 0.0)
-        local heading = ENTITY.GET_ENTITY_HEADING(players.user_ped()) + 180
+        local heading = PLAYER_HEADING() + 180
         local ped = Create_Network_Ped(26, modelHash, coords.x, coords.y, coords.z, heading)
         --BLIP
         local blip = HUD.ADD_BLIP_FOR_ENTITY(ped)
         HUD.SET_BLIP_SPRITE(blip, 271)
         HUD.SET_BLIP_COLOUR(blip, 3)
         HUD.SET_BLIP_SCALE(blip, 0.5)
-        --INVINCIBLE
-        ENTITY.SET_ENTITY_INVINCIBLE(ped, bodyguard_npc_set.godmode)
-        ENTITY.SET_ENTITY_PROOFS(ped, bodyguard_npc_set.godmode, bodyguard_npc_set.godmode, bodyguard_npc_set.godmode,
-            bodyguard_npc_set.godmode, bodyguard_npc_set.godmode, bodyguard_npc_set.godmode, bodyguard_npc_set.godmode,
-            bodyguard_npc_set.godmode)
-        --HEALTH
-        ENTITY.SET_ENTITY_MAX_HEALTH(ped, bodyguard_npc_set.health)
-        ENTITY.SET_ENTITY_HEALTH(ped, bodyguard_npc_set.health)
-        --RAGDOLL
-        PED.SET_PED_CAN_RAGDOLL(ped, not bodyguard_npc_set.no_ragdoll)
-        PED.DISABLE_PED_INJURED_ON_GROUND_BEHAVIOUR(ped)
-        PED.SET_PED_CAN_PLAY_AMBIENT_ANIMS(ped, false)
-        PED.SET_PED_CAN_PLAY_AMBIENT_BASE_ANIMS(ped, false)
-        --WEAPON
-        local weapon_smoke = util.joaat("WEAPON_SMOKEGRENADE")
-        WEAPON.GIVE_WEAPON_TO_PED(ped, weapon_smoke, -1, false, false)
-        local weaponHash = util.joaat(bodyguard_npc_set.weapon)
-        WEAPON.GIVE_WEAPON_TO_PED(ped, weaponHash, -1, false, true)
-        WEAPON.SET_CURRENT_PED_WEAPON(ped, weaponHash, false)
-        WEAPON.SET_PED_DROPS_WEAPONS_WHEN_DEAD(ped, false)
-        PED.SET_PED_CAN_SWITCH_WEAPON(ped, true)
-        WEAPON.SET_PED_INFINITE_AMMO_CLIP(ped, bodyguard_npc_set.no_clip)
-        --PERCEPTIVE
-        PED.SET_PED_SEEING_RANGE(ped, bodyguard_npc_set.see_hear_range)
-        PED.SET_PED_HEARING_RANGE(ped, bodyguard_npc_set.see_hear_range)
-        PED.SET_PED_ID_RANGE(ped, bodyguard_npc_set.see_hear_range)
-        --PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(bodyguard_npc_set.see_hear_range)
-        PED.SET_PED_HIGHLY_PERCEPTIVE(ped, true)
-        PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, 90.0)
-        PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 90.0)
-        PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, 90.0)
-        PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 90.0)
-        PED.SET_PED_VISUAL_FIELD_CENTER_ANGLE(ped, 90.0)
-        --COMBAT
-        PED.SET_PED_COMBAT_ABILITY(ped, bodyguard_npc_set.combat_ability)
-        PED.SET_PED_COMBAT_RANGE(ped, bodyguard_npc_set.combat_range)
-        PED.SET_PED_COMBAT_MOVEMENT(ped, bodyguard_npc_set.combat_movement)
-        PED.SET_PED_TARGET_LOSS_RESPONSE(ped, bodyguard_npc_set.target_loss_response)
-        --COMBAT ATTRIBUTES
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 0, true) --Use Cover
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 1, true) --Use Vehicle
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 4, true) --Can Use Dynamic Strafe Decisions
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true) --Always Fight
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 13, true) --Aggressive
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 17, false) --Always Flee
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true) --Can Taunt In Vehicle
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true) --Can Chase Target On Foot
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 24, true) --Use Proximity Firing Rate
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 39, true) --Can Bust
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true) --Can Commandeer Vehicles
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 42, true) --Can Flank
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) --Can Fight Armed Peds When Not Armed
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 49, false) --Use Enemy Accuracy Scaling
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 52, true) --Use Vehicle Attack
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 53, true) --Use Vehicle Attack If Vehicle Has Mounted Guns
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true) --Can See Underwater Peds
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) --Disable Flee From Combat
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 60, true) --Can Throw Smoke Grenade
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true) --Disable All Randoms Flee
 
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, bodyguard_npc_set.BF_PerfectAccuracy) --Perfect Accuracy
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 54, bodyguard_npc_set.BF_AlwaysEquipBestWeapon) --Always Equip Best Weapon
-        --TASK
-        TASK.SET_PED_PATH_CAN_USE_CLIMBOVERS(ped, true)
-        TASK.SET_PED_PATH_CAN_USE_LADDERS(ped, true)
-        TASK.SET_PED_PATH_CAN_DROP_FROM_HEIGHT(ped, true)
-        TASK.SET_PED_PATH_AVOID_FIRE(ped, false)
-        TASK.SET_PED_PATH_MAY_ENTER_WATER(ped, true)
+        Bodyguard.set_npc_attribute(ped)
 
-        ----
+        -- 添加进保镖小组
         Group:pushMember(ped)
-        table.insert(bodyguard_npc_list, ped)
+        table.insert(Bodyguard.npc.list, ped)
+        -- 创建对应的menu
+        local index = Bodyguard.npc.index
+        local menu_name = Bodyguard_NPC_name_ListItem[Bodyguard.npc.model_select][1]
+        local menu_list = menu.list(Bodyguard_NPC_options, index .. ". " .. menu_name, {}, "")
+        index = "bg" .. index
+        Bodyguard.generate_npc_menu(menu_list, ped, index)
+        table.insert(Bodyguard.npc.menu_list, menu_list)
+
+        Bodyguard.npc.index = Bodyguard.npc.index + 1
     end
 end)
 
 menu.divider(Bodyguard_NPC_options, "管理保镖")
-menu.toggle(Bodyguard_NPC_options, "所有保镖无敌", {}, "", function(toggle)
-    for k, ent in pairs(bodyguard_npc_list) do
+
+local Bodyguard_NPC_manage_all = menu.list(Bodyguard_NPC_options, "所有保镖", {}, "")
+menu.toggle(Bodyguard_NPC_manage_all, "无敌", {}, "", function(toggle)
+    for k, ent in pairs(Bodyguard.npc.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             ENTITY.SET_ENTITY_INVINCIBLE(ent, toggle)
             ENTITY.SET_ENTITY_PROOFS(ent, toggle, toggle, toggle, toggle, toggle, toggle, toggle, toggle)
         end
     end
 end)
-menu.list_action(Bodyguard_NPC_options, "给予所有保镖武器", {}, "", WeaponName_ListItem, function(value)
-    for k, ent in pairs(bodyguard_npc_list) do
+menu.list_action(Bodyguard_NPC_manage_all, "给予武器", {}, "", WeaponName_ListItem, function(value)
+    for k, ent in pairs(Bodyguard.npc.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             local weaponHash = util.joaat(WeaponModel_List[value])
             WEAPON.GIVE_WEAPON_TO_PED(ent, weaponHash, -1, false, true)
@@ -3708,9 +3805,9 @@ menu.list_action(Bodyguard_NPC_options, "给予所有保镖武器", {}, "", Weap
         end
     end
 end)
-menu.action(Bodyguard_NPC_options, "所有保镖传送到我", {}, "", function()
+menu.action(Bodyguard_NPC_manage_all, "传送到我", {}, "", function()
     local y = 2.0
-    for k, ent in pairs(bodyguard_npc_list) do
+    for k, ent in pairs(Bodyguard.npc.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             TP_TO_ME(ent, 0.0, y, 0.0)
             SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped(), 180.0)
@@ -3718,23 +3815,19 @@ menu.action(Bodyguard_NPC_options, "所有保镖传送到我", {}, "", function(
         end
     end
 end)
-menu.action(Bodyguard_NPC_options, "删除已死亡保镖", {}, "", function()
-    for k, ent in pairs(bodyguard_npc_list) do
-        if ENTITY.DOES_ENTITY_EXIST(ent) then
-            if ENTITY.IS_ENTITY_DEAD(ent) then
-                entities.delete_by_handle(ent)
-                table.remove(bodyguard_npc_list, k)
-            end
-        end
-    end
-end)
-menu.action(Bodyguard_NPC_options, "删除所有保镖", {}, "", function()
-    for k, ent in pairs(bodyguard_npc_list) do
+menu.action(Bodyguard_NPC_manage_all, "删除", {}, "", function()
+    for k, ent in pairs(Bodyguard.npc.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             entities.delete_by_handle(ent)
         end
     end
-    bodyguard_npc_list = {} --生成的保镖
+    for k, v in pairs(Bodyguard.npc.menu_list) do
+        if v ~= nil and menu.is_ref_valid(v) then
+            menu.delete(v)
+        end
+    end
+    Bodyguard.npc.list = {} --生成的保镖NPC list
+    Bodyguard.npc.menu_list = {} --生成的保镖直升机对应的menu list
 end)
 
 
@@ -3743,188 +3836,229 @@ end)
 --------------------
 local Bodyguard_Heli_options = menu.list(Bodyguard_options, "保镖直升机", {}, "")
 
-local heli_list = {} --生成的直升机
-local heli_ped_list = {} --直升机内的保镖
-
-local bodyguard_heli = {
-    name = "valkyrie",
-    heli_godmode = false,
-    ped_godmode = false
-}
-
-local heli_name_list_select = {
+local Bodyguard_Heli_name_ListItem = {
     { "女武神" },
     { "秃鹰" },
     { "猎杀者" },
     { "警用小蛮牛" },
 }
-local heli_model_list_select = {
+local Bodyguard_Heli_model_list = {
     "valkyrie", "buzzard", "hunter", "polmav"
 }
-menu.list_select(Bodyguard_Heli_options, "直升机类型", {}, "", heli_name_list_select, 1,
-    function(value)
-        bodyguard_heli.name = heli_model_list_select[value]
-    end)
 
-menu.toggle(Bodyguard_Heli_options, "直升机无敌", {}, "", function(toggle)
-    bodyguard_heli.heli_godmode = toggle
+menu.list_select(Bodyguard_Heli_options, "直升机类型", {}, "", Bodyguard_Heli_name_ListItem,
+    1, function(value)
+    Bodyguard.heli.model_select = value
 end)
 
 menu.action(Bodyguard_Heli_options, "生成保镖直升机", {}, "", function()
-    local heli_hash = util.joaat(bodyguard_heli.name)
+    local heli_hash = util.joaat(Bodyguard_Heli_model_list[Bodyguard.heli.model_select])
     local ped_hash = util.joaat("s_m_y_blackops_01")
+
     local pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
     pos.x = pos.x + math.random(-10, 10)
     pos.y = pos.y + math.random(-10, 10)
     pos.z = pos.z + 30
 
-    Request_Model(ped_hash)
-    Request_Model(heli_hash)
+    local heli = Create_Network_Vehicle(heli_hash, pos.x, pos.y, pos.z, CAM.GET_GAMEPLAY_CAM_ROT(0).z)
+    --BLIP
+    add_blip_for_entity(heli, 422, 26)
+    --INVINCIBLE
+    ENTITY.SET_ENTITY_INVINCIBLE(heli, Bodyguard.setting.heli.godmode)
+    ENTITY.SET_ENTITY_PROOFS(heli, Bodyguard.setting.heli.godmode, Bodyguard.setting.heli.godmode,
+        Bodyguard.setting.heli.godmode, Bodyguard.setting.heli.godmode, Bodyguard.setting.heli.godmode,
+        Bodyguard.setting.heli.godmode, Bodyguard.setting.heli.godmode, Bodyguard.setting.heli.godmode)
+    VEHICLE.SET_VEHICLE_CAN_BREAK(heli, Bodyguard.setting.heli.godmode)
+    --HEALTH
+    ENTITY.SET_ENTITY_MAX_HEALTH(heli, Bodyguard.setting.heli.health)
+    ENTITY.SET_ENTITY_HEALTH(heli, Bodyguard.setting.heli.health)
+    --BEHAVIOUR
+    VEHICLE.SET_HELI_BLADES_FULL_SPEED(heli)
+    VEHICLE.SET_VEHICLE_SEARCHLIGHT(heli, true, true)
+    VEHICLE.SET_VEHICLE_HAS_UNBREAKABLE_LIGHTS(heli, true)
+    VEHICLE.SET_HELI_TAIL_BOOM_CAN_BREAK_OFF(heli, true)
+
+    table.insert(Bodyguard.heli.list, heli)
+
     Relationship:friendly(players.user_ped())
-    local heli = entities.create_vehicle(heli_hash, pos, CAM.GET_GAMEPLAY_CAM_ROT(0).z)
 
-    if not ENTITY.DOES_ENTITY_EXIST(heli) then
-        util.toast("Failed to create vehicle. Please try again")
-        return
-    else
-        local heliNetId = NETWORK.VEH_TO_NET(heli)
-        if NETWORK.NETWORK_GET_ENTITY_IS_NETWORKED(NETWORK.NET_TO_PED(heliNetId)) then
-            NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(heliNetId, true)
-            NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(heliNetId, players.user(), true)
-        end
-        VEHICLE.SET_VEHICLE_ENGINE_ON(heli, true, true, true)
-        VEHICLE.SET_HELI_BLADES_FULL_SPEED(heli)
-        VEHICLE.SET_VEHICLE_SEARCHLIGHT(heli, true, true)
-        add_blip_for_entity(heli, 422, 26)
-        --health
-        ENTITY.SET_ENTITY_INVINCIBLE(heli, bodyguard_heli.heli_godmode)
-        ENTITY.SET_ENTITY_MAX_HEALTH(heli, 10000)
-        ENTITY.SET_ENTITY_HEALTH(heli, 10000)
-
-        table.insert(heli_list, heli)
-    end
-
-    local pilot = entities.create_ped(29, ped_hash, pos, CAM.GET_GAMEPLAY_CAM_ROT(0).z)
+    ------
+    local pilot = Create_Network_Ped(29, ped_hash, pos.x, pos.y, pos.z, CAM.GET_GAMEPLAY_CAM_ROT(0).z)
     PED.SET_PED_INTO_VEHICLE(pilot, heli, -1)
-    PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(pilot, true)
-    TASK.TASK_HELI_MISSION(pilot, heli, 0, players.user_ped(), 0.0, 0.0, 0.0, 23, 80.0, 50.0, -1.0, 0, 10, -1.0, 0)
+    --PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(pilot, true)
+    --TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(pilot, true)
+    --TASK.TASK_HELI_MISSION(pilot, heli, 0, players.user_ped(), 0.0, 0.0, 0.0, 23, 80.0, 50.0, -1.0, 0, 10, -1.0, 0)
+    TASK.TASK_VEHICLE_HELI_PROTECT(pilot, heli, players.user_ped(), Bodyguard.setting.heli.Speed,
+        Bodyguard.setting.heli.drivingStyle, Bodyguard.setting.heli.CustomOffsets,
+        Bodyguard.setting.heli.MinHeightAboveTerrain, Bodyguard.setting.heli.HeliMode)
     PED.SET_PED_KEEP_TASK(pilot, true)
 
-    PED.SET_PED_HIGHLY_PERCEPTIVE(pilot, true)
-    PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(pilot, 500.0)
-    PED.SET_PED_SEEING_RANGE(pilot, 500.0)
-    PED.SET_PED_HEARING_RANGE(pilot, 500.0)
-    PED.SET_PED_ID_RANGE(pilot, 500.0)
-
-    PED.SET_PED_COMBAT_MOVEMENT(pilot, 1) --Defensive
-    PED.SET_PED_COMBAT_ABILITY(pilot, 2) --Professional
-    PED.SET_PED_COMBAT_RANGE(pilot, 1) --Medium
-    PED.SET_PED_TARGET_LOSS_RESPONSE(pilot, 1) --NeverLoseTarget
-
-    PED.SET_COMBAT_FLOAT(pilot, 10, 500.0)
+    Bodyguard.set_npc_attribute(pilot)
     PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(pilot, false)
-    --health
-    PED.SET_PED_MAX_HEALTH(pilot, 10000)
-    ENTITY.SET_ENTITY_HEALTH(pilot, 10000)
-    ENTITY.SET_ENTITY_INVINCIBLE(pilot, bodyguard_heli.ped_godmode)
+    PED.SET_PED_CAN_BE_KNOCKED_OFF_VEHICLE(pilot, 1)
 
     Relationship:friendly(pilot)
-    table.insert(heli_ped_list, pilot)
+    table.insert(Bodyguard.heli.npc_list, pilot)
 
+    ------
     local seats = VEHICLE.GET_VEHICLE_MODEL_NUMBER_OF_SEATS(heli_hash) - 2
     for seat = 0, seats do
-        local ped = entities.create_ped(29, ped_hash, pos, CAM.GET_GAMEPLAY_CAM_ROT(0).z)
-        local pedNetId = NETWORK.PED_TO_NET(ped)
-        if NETWORK.NETWORK_GET_ENTITY_IS_NETWORKED(ped) then
-            NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(pedNetId, true)
-            NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(pedNetId, players.user(), true)
-        end
+        local ped = Create_Network_Ped(29, ped_hash, pos.x, pos.y, pos.z, CAM.GET_GAMEPLAY_CAM_ROT(0).z)
         PED.SET_PED_INTO_VEHICLE(ped, heli, seat)
-        --fight
-        WEAPON.GIVE_WEAPON_TO_PED(ped, util.joaat("weapon_mg"), -1, false, true)
-        WEAPON.SET_PED_INFINITE_AMMO_CLIP(ped, true)
-        PED.SET_PED_SHOOT_RATE(ped, 1000)
-        PED.SET_PED_ACCURACY(ped, 100)
 
-        PED.SET_PED_HIGHLY_PERCEPTIVE(ped, true)
-        PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(ped, 500.0)
-        PED.SET_PED_SEEING_RANGE(ped, 500.0)
-        PED.SET_PED_HEARING_RANGE(ped, 500.0)
-        PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, 90.0)
-        PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 90.0)
-        PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, 90.0)
-        PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 90.0)
-        PED.SET_PED_VISUAL_FIELD_CENTER_ANGLE(ped, 90.0)
-
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 0, true) --CanUseCover
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 1, true) --CanUseVehicles
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 2, true) --CanDoDrivebys
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 3, false) --CanLeaveVehicle
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true) --AlwaysFight
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 12, true) --BlindFireWhenInCover
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 13, true) --Aggressive
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true) --CanTauntInVehicle
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true) --CanChaseTargetOnFoot
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, true) --PerfectAccuracy
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true) --CanCommandeerVehicles
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) --CanFightArmedPedsWhenNotArmed
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true) --CanSeeUnderwaterPeds
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) --DisableFleeFromCombat
-
-        PED.SET_PED_COMBAT_MOVEMENT(ped, 1) --Defensive
-        PED.SET_PED_COMBAT_ABILITY(ped, 2) --Professional
-        PED.SET_PED_COMBAT_RANGE(ped, 2) --Far
-        PED.SET_PED_TARGET_LOSS_RESPONSE(ped, 1) --NeverLoseTarget
-
-        PED.SET_COMBAT_FLOAT(ped, 10, 500.0)
+        Bodyguard.set_npc_attribute(ped)
         PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(ped, false)
-        --health
-        PED.SET_PED_MAX_HEALTH(ped, 1000)
-        ENTITY.SET_ENTITY_HEALTH(ped, 1000)
-        ENTITY.SET_ENTITY_INVINCIBLE(ped, bodyguard_heli.ped_godmode)
+        PED.SET_PED_CAN_BE_KNOCKED_OFF_VEHICLE(ped, 1)
 
         Relationship:friendly(ped)
-        table.insert(heli_ped_list, ped)
+        table.insert(Bodyguard.heli.npc_list, ped)
     end
 
-    STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(heli_hash)
-    STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(ped_hash)
+    -- 创建对应的menu
+    local index = Bodyguard.heli.index
+    local menu_name = Bodyguard_Heli_name_ListItem[Bodyguard.heli.model_select][1]
+    local menu_list = menu.list(Bodyguard_Heli_options, index .. ". " .. menu_name, {}, "")
+    index = "bgh" .. index
+    Bodyguard.generate_heli_menu(menu_list, heli, index)
+    table.insert(Bodyguard.heli.menu_list, menu_list)
+
+    Bodyguard.heli.index = Bodyguard.heli.index + 1
 end)
 
 menu.divider(Bodyguard_Heli_options, "管理保镖直升机")
-menu.toggle(Bodyguard_Heli_options, "所有保镖直升机无敌", {}, "", function(toggle)
-    for k, ent in pairs(heli_ped_list) do
+
+local Bodyguard_Heli_manage_all = menu.list(Bodyguard_Heli_options, "所有保镖直升机", {}, "")
+menu.toggle(Bodyguard_Heli_manage_all, "无敌", {}, "", function(toggle)
+    for k, ent in pairs(Bodyguard.heli.npc_list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             ENTITY.SET_ENTITY_INVINCIBLE(ent, toggle)
+            ENTITY.SET_ENTITY_PROOFS(ent, toggle, toggle, toggle, toggle, toggle, toggle, toggle, toggle)
+
         end
     end
-    for k, ent in pairs(heli_list) do
+    for k, ent in pairs(Bodyguard.heli.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             ENTITY.SET_ENTITY_INVINCIBLE(ent, toggle)
+            ENTITY.SET_ENTITY_PROOFS(ent, toggle, toggle, toggle, toggle, toggle, toggle, toggle, toggle)
+            VEHICLE.SET_VEHICLE_CAN_BREAK(ent, toggle)
         end
     end
 end)
-menu.action(Bodyguard_Heli_options, "所有保镖直升机传送到我", {}, "", function()
-    for k, ent in pairs(heli_list) do
+menu.action(Bodyguard_Heli_manage_all, "传送到我", {}, "", function()
+    for k, ent in pairs(Bodyguard.heli.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             TP_TO_ME(ent, math.random(-10, 10), math.random(-10, 10), 30)
         end
     end
 end)
-menu.action(Bodyguard_Heli_options, "删除所有保镖直升机", {}, "", function()
-    for k, ent in pairs(heli_ped_list) do
+menu.action(Bodyguard_Heli_manage_all, "删除", {}, "", function()
+    for k, ent in pairs(Bodyguard.heli.npc_list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             entities.delete_by_handle(ent)
         end
     end
-    for k, ent in pairs(heli_list) do
+    for k, ent in pairs(Bodyguard.heli.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             entities.delete_by_handle(ent)
         end
     end
-    heli_list = {} --生成的直升机
-    heli_ped_list = {} --直升机内的保镖
+    for k, v in pairs(Bodyguard.heli.menu_list) do
+        if v ~= nil and menu.is_ref_valid(v) then
+            menu.delete(v)
+        end
+    end
+
+    Bodyguard.heli.list = {} --生成的保镖直升机 list
+    Bodyguard.heli.npc_list = {} --生成的保镖直升机里面的NPC list
+    Bodyguard.heli.menu_list = {} --生成的保镖直升机对应的menu list
+    Bodyguard.heli.index = 1
 end)
+
+
+----------------
+----- 设置 ------
+----------------
+menu.divider(Bodyguard_options, "设置")
+
+----- 保镖NPC -----
+local Bodyguard_npc_setting = menu.list(Bodyguard_options, "保镖NPC 默认设置", {}, "")
+menu.toggle(Bodyguard_npc_setting, "无敌", {}, "", function(toggle)
+    Bodyguard.setting.npc.godmode = toggle
+end)
+menu.slider(Bodyguard_npc_setting, "生命", { "bodyguard_npc_health" }, "", 100, 30000, 1000, 100,
+    function(value)
+        Bodyguard.setting.npc.health = value
+    end)
+menu.toggle(Bodyguard_npc_setting, "不会摔倒", {}, "", function(toggle)
+    Bodyguard.setting.npc.no_ragdoll = toggle
+end)
+menu.list_select(Bodyguard_npc_setting, "武器", {}, "", WeaponName_ListItem, 4, function(value)
+    Bodyguard.setting.npc.weapon = WeaponModel_List[value]
+end)
+menu.divider(Bodyguard_npc_setting, "作战能力")
+menu.slider(Bodyguard_npc_setting, "视力听觉范围", { "bodyguard_npc_see_hear_range" }, "", 10, 1000, 500,
+    100, function(value)
+    Bodyguard.setting.npc.see_hear_range = value
+end)
+menu.slider(Bodyguard_npc_setting, "精确度", { "bodyguard_npc_accuracy" }, "", 0, 100, 100, 10,
+    function(value)
+        Bodyguard.setting.npc.accuracy = value
+    end)
+menu.slider(Bodyguard_npc_setting, "射击频率", { "bodyguard_npc_shoot_rate" }, "", 0, 1000, 1000, 100,
+    function(value)
+        Bodyguard.setting.npc.shoot_rate = value
+    end)
+menu.list_select(Bodyguard_npc_setting, "作战技能", {}, "", { { "弱" }, { "普通" }, { "专业" } }, 3,
+    function(value)
+        Bodyguard.setting.npc.combat_ability = value - 1
+    end)
+menu.list_select(Bodyguard_npc_setting, "作战范围", {}, "", { { "近" }, { "中等" }, { "远" }, { "非常远" } }
+    , 3, function(value)
+    Bodyguard.setting.npc.combat_range = value - 1
+end)
+menu.list_select(Bodyguard_npc_setting, "作战走位", {}, "", { { "站立" }, { "防卫" }, { "会前进" },
+    { "会后退" } }, 2, function(value)
+    Bodyguard.setting.npc.combat_movement = value - 1
+end)
+menu.list_select(Bodyguard_npc_setting, "失去目标时反应", {}, "", { { "退出战斗" }, { "从不失去目标" },
+    { "寻找目标" } }, 2, function(value)
+    Bodyguard.setting.npc.target_loss_response = value - 1
+end)
+menu.list_select(Bodyguard_npc_setting, "射击模式", {}, "", Ped_FirePattern_ListItem, -957453492, function(value)
+    Bodyguard.setting.npc.fire_pattern = value
+end)
+
+----- 保镖直升机 -----
+local Bodyguard_heli_setting = menu.list(Bodyguard_options, "保镖直升机 默认设置", {}, "")
+menu.toggle(Bodyguard_heli_setting, "无敌", {}, "", function(toggle)
+    Bodyguard.setting.heli.godmode = toggle
+end)
+menu.slider(Bodyguard_heli_setting, "生命", { "bodyguard_heli_health" }, "", 100, 30000, 10000, 100,
+    function(value)
+        Bodyguard.setting.heli.health = value
+    end)
+menu.divider(Bodyguard_heli_setting, "任务设置")
+menu.slider(Bodyguard_heli_setting, "速度", { "bodyguard_heli_Speed" }, "", 0, 10000, 300, 10,
+    function(value)
+        Bodyguard.setting.heli.Speed = value
+    end)
+menu.list_select(Bodyguard_heli_setting, "驾驶风格", {}, "", DrivingStyleName_ListItem, 1, function(value)
+    Bodyguard.setting.heli.drivingStyle = DrivingStyle_List[value]
+end)
+menu.slider_float(Bodyguard_heli_setting, "Custom Offset", { "bodyguard_heli_CustomOffset" }, "", -100000, 100000, -100,
+    10, function(value)
+    Bodyguard.setting.heli.CustomOffsets = value
+end)
+menu.slider(Bodyguard_heli_setting, "地面上的最小高度", { "bodyguard_heli_MinHeightAboveTerrain" }, "", 0, 10000
+    , 20, 1,
+    function(value)
+        Bodyguard.setting.heli.MinHeightAboveTerrain = value
+    end)
+menu.list_select(Bodyguard_heli_setting, "直升机模式", {}, "", HeliMode_ListItem, 0, function(value)
+    Bodyguard.setting.heli.HeliMode = value
+end)
+
+
 
 
 
@@ -3963,6 +4097,7 @@ menu.toggle_loop(Protect_options, "停止所有声音", {}, "", function()
         AUDIO.STOP_SOUND(i)
     end
 end)
+
 
 
 
@@ -4064,8 +4199,8 @@ local Blip_options = menu.list(Other_options, "标记点选项", {}, "")
 ------------------
 local Blip_all = menu.list(Blip_options, "地图全部标记点", {}, "")
 
-blip_count = 0 -- 获取到的标记点数量
-blip_menu_list = {} -- 标记点列表 menu.list
+local blip_count = 0 -- 获取到的标记点数量
+local blip_menu_list = {} -- 标记点列表 menu.list
 
 local function Init_blip_menu_list()
     if next(blip_menu_list) ~= nil then
@@ -4550,9 +4685,7 @@ menu.action(Other_options, "Clear Tick Handler", {}, "用于解决控制实体�
     , function()
     Clear_control_ent_tick_handler()
 end)
-menu.toggle_loop(Other_options, "Wanted Level Time Multiplier", {}, "", function()
-    SET_FLOAT_GLOBAL(262145 + 9388, 1.0)
-end)
+
 
 
 
@@ -4967,42 +5100,43 @@ local PlayerFunctions = function(pId)
     -----------------------------
     local Friendly_options = menu.list(Player_MainMenu, "友好选项", {}, "")
 
-    menu.action(Friendly_options, "生成医药包", {}, "", function()
+    local Friendly_Generete_Pickup = menu.list(Friendly_options, "生成拾取物", {}, "")
+    menu.action(Friendly_Generete_Pickup, "生成医药包", {}, "", function()
         local modelHash = util.joaat("prop_ld_health_pack")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
         local pickupHash = 2406513688
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 100)
     end)
-    menu.action(Friendly_options, "生成护甲", {}, "", function()
+    menu.action(Friendly_Generete_Pickup, "生成护甲", {}, "", function()
         local modelHash = util.joaat("prop_armour_pickup")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
         local pickupHash = 1274757841
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 100)
     end)
-    menu.action(Friendly_options, "生成零食(PQ豆)", {}, "", function()
+    menu.action(Friendly_Generete_Pickup, "生成零食(PQ豆)", {}, "", function()
         local modelHash = util.joaat("PROP_CHOC_PQ")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
         local pickupHash = 483577702
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 30)
     end)
-    menu.action(Friendly_options, "生成降落伞", {}, "", function()
+    menu.action(Friendly_Generete_Pickup, "生成降落伞", {}, "", function()
         local modelHash = util.joaat("p_parachute_s_shop")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
         local pickupHash = 1735599485
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 2)
     end)
-    menu.action(Friendly_options, "生成呼吸器", {}, "", function()
+    menu.action(Friendly_Generete_Pickup, "生成呼吸器", {}, "", function()
         local modelHash = util.joaat("PROP_LD_HEALTH_PACK")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
         local pickupHash = 3889104844
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 20)
     end)
-    menu.action(Friendly_options, "生成火神机枪", {}, "", function()
+    menu.action(Friendly_Generete_Pickup, "生成火神机枪", {}, "", function()
         local modelHash = util.joaat("W_MG_Minigun")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
@@ -5014,6 +5148,29 @@ local PlayerFunctions = function(pId)
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 9999)
     end)
 
+    local Friendly_Give_Pickup = menu.list(Friendly_options, "给予拾取物", {}, "")
+    local Pickup_Reward_ListItem = {
+        { "REWARD_HEALTH" },
+        { "REWARD_HEALTH_ENTER_VEHICLE" },
+        { "REWARD_ARMOUR" },
+        { "REWARD_MONEY_VARIABLE" },
+        { "REWARD_HEALTH_VARIABLE" },
+        { "REWARD_STAT_WEAPON" },
+        { "REWARD_STAT_HEALTH" },
+        { "REWARD_STAT_HEALTH_VARIABLE" },
+        { "REWARD_VEHICLE_FIX" },
+        { "REWARD_PARACHUTE" },
+    }
+    local Pickup_Reward_select = 1
+    menu.list_select(Friendly_Give_Pickup, "选择", {}, "", Pickup_Reward_ListItem,
+        1, function(value)
+        Pickup_Reward_select = value
+    end)
+    menu.action(Friendly_Give_Pickup, "给予拾取物", {}, "Only works on remote players.", function()
+        local reward = Pickup_Reward_ListItem[Pickup_Reward_select][1]
+        players.give_pickup_reward(pId, reward)
+    end)
+
     menu.toggle_loop(Friendly_options, "循环称赞", {}, "", function()
         if pId ~= players.user() then
             local player_name = players.get_name(pId)
@@ -5022,6 +5179,8 @@ local PlayerFunctions = function(pId)
         end
         util.yield(500)
     end)
+
+
 
 
     -------------------------

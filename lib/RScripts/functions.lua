@@ -293,7 +293,7 @@ end
 function IS_HOSTILE_ENTITY(entity)
     if ENTITY.DOES_ENTITY_EXIST(entity) then
         local blip = HUD.GET_BLIP_FROM_ENTITY(entity)
-        if blip > 0 then
+        if HUD.DOES_BLIP_EXIST(blip) then
             local blip_color = HUD.GET_BLIP_COLOUR(blip)
             if isInTable(Blip_Color_Red, blip_color) then
                 return true
@@ -468,6 +468,13 @@ function GetEntity_ByModelHash(Type, isMission, ...)
     return entity_list
 end
 
+---@param ent Entity
+---@param toggle boolean
+function Set_Entity_Godmode(ent, toggle)
+    ENTITY.SET_ENTITY_INVINCIBLE(ent, toggle)
+    ENTITY.SET_ENTITY_PROOFS(ent, toggle, toggle, toggle, toggle, toggle, toggle, toggle, toggle)
+end
+
 -----------------------------------
 -- Create Entity Functions
 -----------------------------------
@@ -511,7 +518,6 @@ function Create_Network_Vehicle(modelHash, x, y, z, heading)
 
     VEHICLE.SET_VEHICLE_ENGINE_ON(veh, true, true, false)
     VEHICLE.SET_VEHICLE_STAYS_FROZEN_WHEN_CLEANED_UP(veh, true)
-    VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(veh, 5.0)
     VEHICLE.SET_VEHICLE_DIRT_LEVEL(veh, 0.0)
     VEHICLE.SET_VEHICLE_IS_STOLEN(veh, false)
     VEHICLE.SET_CLEAR_FREEZE_WAITING_ON_COLLISION_ONCE_PLAYER_ENTERS(veh, false)
