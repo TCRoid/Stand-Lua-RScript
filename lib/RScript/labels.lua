@@ -71,10 +71,10 @@ DrivingStyle_List = {
 
 -- 实体类型
 EntityType_ListItem = {
-    { "Ped", {}, "NPC" },
+    { "Ped",     {}, "NPC" },
     { "Vehicle", {}, "载具" },
-    { "Object", {}, "物体" },
-    { "Pickup", {}, "拾取物" }
+    { "Object",  {}, "物体" },
+    { "Pickup",  {}, "拾取物" }
 }
 
 -- enum
@@ -167,6 +167,23 @@ enum_BlipType = {
     "Area", -- 11
 }
 
+enum_LanguageType = {
+    "Undefined", -- -1
+    "English", -- 0
+    "French", -- 1
+    "German", -- 2
+    "Italian", -- 3
+    "Spanish", -- 4
+    "Portuguese", -- 5
+    "Polish", -- 6
+    "Russian", -- 7
+    "Korean", -- 8
+    "Chinese Traditional", -- 9
+    "Japanese", -- 10
+    "Mexican", -- 11
+    "Chinese Simplified", -- 12
+}
+
 -- 直升机模式 [id] = { name, {}, comment }
 HeliMode_ListItem = {
     [0] = { "None", {}, "" },
@@ -219,20 +236,20 @@ Vehicle_MissionType_ListItem = {
 Ped_FirePattern_ListItem = {
     [1073727030] = { "Burst Fire" },
     [40051185] = { "Burst Fire In Cover" },
-    [-753768974] = { "Burst Fire Driveby" },
+    [ -753768974] = { "Burst Fire Driveby" },
     [577037782] = { "From Ground" },
     [2055493265] = { "Delay Fire By One Sec" },
-    [-957453492] = { "Full Auto" },
+    [ -957453492] = { "Full Auto" },
     [1566631136] = { "Single Shot" },
-    [-1608983670] = { "Burst Fire Pistol" },
+    [ -1608983670] = { "Burst Fire Pistol" },
     [1863348768] = { "Burst Fire Smg" },
-    [-1670073338] = { "Burst Fire Rifle" },
-    [-1250703948] = { "Burst Fire Mg" },
+    [ -1670073338] = { "Burst Fire Rifle" },
+    [ -1250703948] = { "Burst Fire Mg" },
     [12239771] = { "Burst Fire Pumpshotgun" },
-    [-1857128337] = { "Burst Fire Heli" },
+    [ -1857128337] = { "Burst Fire Heli" },
     [1122960381] = { "Burst Fire Micro" },
     [445831135] = { "Short Bursts" },
-    [-490063247] = { "Slow Fire Tank" },
+    [ -490063247] = { "Slow Fire Tank" },
 }
 
 -- NPC作战属性 [id] = { name, comment }
@@ -1250,8 +1267,8 @@ Blip_DisplayID_ListItem = {
     { "Doesn't show up, ever, anywhere." }, -- 0
     { "Doesn't show up, ever, anywhere." }, -- 1
     { "Shows on both main map and minimap.", {}, "Selectable on map" }, -- 2
-    { "Shows on main map only.", {}, "Selectable on map" }, -- 3
-    { "Shows on main map only.", {}, "Selectable on map" }, -- 4
+    { "Shows on main map only.",             {}, "Selectable on map" }, -- 3
+    { "Shows on main map only.",             {}, "Selectable on map" }, -- 4
     { "Shows on minimap only." }, -- 5
     { "Shows on both main map and minimap.", {}, "Selectable on map" }, -- 6
     { "Doesn't show up, ever, anywhere." }, -- 7
@@ -1372,25 +1389,25 @@ end
 -- 载具武器
 VehicleWeapons = {
     -- { model_name, label_key }
-    { "VEHICLE_WEAPON_TANK", "WT_V_TANK" },
-    { "VEHICLE_WEAPON_SPACE_ROCKET", "WT_V_PLANEMSL" },
-    { "VEHICLE_WEAPON_PLANE_ROCKET", "WT_V_PLANEMSL" },
-    { "VEHICLE_WEAPON_PLAYER_LASER", "WT_V_PLRLSR" },
-    { "VEHICLE_WEAPON_PLAYER_BULLET", "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_PLAYER_BUZZARD", "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_PLAYER_HUNTER", "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_PLAYER_LAZER", "WT_V_LZRCAN" },
-    { "VEHICLE_WEAPON_ENEMY_LASER", "WT_A_ENMYLSR" },
-    { "VEHICLE_WEAPON_TURRET_INSURGENT", "WT_V_TURRET" },
-    { "VEHICLE_WEAPON_TURRET_TECHNICAL", "WT_V_TURRET" },
+    { "VEHICLE_WEAPON_TANK",                 "WT_V_TANK" },
+    { "VEHICLE_WEAPON_SPACE_ROCKET",         "WT_V_PLANEMSL" },
+    { "VEHICLE_WEAPON_PLANE_ROCKET",         "WT_V_PLANEMSL" },
+    { "VEHICLE_WEAPON_PLAYER_LASER",         "WT_V_PLRLSR" },
+    { "VEHICLE_WEAPON_PLAYER_BULLET",        "WT_V_PLRBUL" },
+    { "VEHICLE_WEAPON_PLAYER_BUZZARD",       "WT_V_PLRBUL" },
+    { "VEHICLE_WEAPON_PLAYER_HUNTER",        "WT_V_PLRBUL" },
+    { "VEHICLE_WEAPON_PLAYER_LAZER",         "WT_V_LZRCAN" },
+    { "VEHICLE_WEAPON_ENEMY_LASER",          "WT_A_ENMYLSR" },
+    { "VEHICLE_WEAPON_TURRET_INSURGENT",     "WT_V_TURRET" },
+    { "VEHICLE_WEAPON_TURRET_TECHNICAL",     "WT_V_TURRET" },
     { "VEHICLE_WEAPON_NOSE_TURRET_VALKYRIE", "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_TURRET_VALKYRIE", "WT_V_TURRET" },
-    { "VEHICLE_WEAPON_PLAYER_SAVAGE", "WT_V_LZRCAN" },
-    { "VEHICLE_WEAPON_TURRET_LIMO", "WT_V_TURRET" },
-    { "VEHICLE_WEAPON_TURRET_BOXVILLE", "WT_V_TURRET" },
-    { "VEHICLE_WEAPON_CANNON_BLAZER", "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_RUINER_BULLET", "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_RUINER_ROCKET", "WT_V_PLANEMSL" },
+    { "VEHICLE_WEAPON_TURRET_VALKYRIE",      "WT_V_TURRET" },
+    { "VEHICLE_WEAPON_PLAYER_SAVAGE",        "WT_V_LZRCAN" },
+    { "VEHICLE_WEAPON_TURRET_LIMO",          "WT_V_TURRET" },
+    { "VEHICLE_WEAPON_TURRET_BOXVILLE",      "WT_V_TURRET" },
+    { "VEHICLE_WEAPON_CANNON_BLAZER",        "WT_V_PLRBUL" },
+    { "VEHICLE_WEAPON_RUINER_BULLET",        "WT_V_PLRBUL" },
+    { "VEHICLE_WEAPON_RUINER_ROCKET",        "WT_V_PLANEMSL" },
 }
 
 All_VehicleWeapons_ListItem = {
