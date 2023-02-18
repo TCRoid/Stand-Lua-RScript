@@ -6,7 +6,7 @@ util.keep_running()
 util.require_natives("natives-1672190175")
 
 -- 脚本版本
-local Script_Version <const> = "2023/2/14"
+local Script_Version <const> = "2023/2/18"
 
 -- 支持的GTA线上版本
 local Support_GTAO <const> = 1.66
@@ -1129,8 +1129,8 @@ function Entity_Control.ped_combat(menu_parent, ped, index)
     end)
     for id, data in pairs(Ped_CombatAttributes_List) do
         combat_attributes_menus[id] = menu.toggle(combat_attributes_options, data[1], {}, data[2], function(toggle)
-                PED.SET_PED_COMBAT_ATTRIBUTES(ped, id, toggle)
-            end)
+            PED.SET_PED_COMBAT_ATTRIBUTES(ped, id, toggle)
+        end)
     end
 
     local combat_float_options = menu.list(ped_combat_options, "Ped Combat Float", {}, "")
@@ -1142,11 +1142,10 @@ function Entity_Control.ped_combat(menu_parent, ped, index)
             default_num = 0
         end
 
-        combat_float_menus[id] = menu.click_slider_float(combat_float_options, data[1], {}, data[2], -50000, 50000,
-                math.floor(default_num),
-                10, function(value)
-                PED.SET_COMBAT_FLOAT(ped, id, value * 0.01)
-            end)
+        combat_float_menus[id] = menu.click_slider_float(combat_float_options, data[1], {}, data[2],
+            -50000, 50000, math.floor(default_num), 10, function(value)
+            PED.SET_COMBAT_FLOAT(ped, id, value * 0.01)
+        end)
     end
 end
 
@@ -2671,8 +2670,8 @@ for _, v in pairs(fast_animation.task_list) do
     fast_animation.toggles[id] = false
 
     local menu_toggle = menu.toggle(Fast_Animation, name, {}, "", function(toggle)
-            fast_animation.toggles[id] = toggle
-        end)
+        fast_animation.toggles[id] = toggle
+    end)
     fast_animation.toggle_meuns[id] = menu_toggle
 end
 
@@ -2944,7 +2943,7 @@ function Cam_Gun.Fire()
     local cam_pos = result.endCoords
     if result.didHit and cam_pos ~= nil then
         local fire_id = FIRE.START_SCRIPT_FIRE(cam_pos.x, cam_pos.y, cam_pos.z, Cam_Gun.fire_setting.maxChildren,
-                Cam_Gun.fire_setting.isGasFire)
+            Cam_Gun.fire_setting.isGasFire)
         table.insert(Cam_Gun.fire_setting.fire_ids, fire_id)
     end
 end
@@ -4487,7 +4486,7 @@ end)
 
 -----
 local Population_Density_Sphere = menu.list(Population_Density, "覆盖交通人口密度", {},
-        "添加一个新的交通人口密度范围覆盖当前交通人口密度")
+    "添加一个新的交通人口密度范围覆盖当前交通人口密度")
 local population_density_sphere = {
     id = 0,
     pedDensity = 1.0,
@@ -4499,8 +4498,8 @@ menu.toggle(Population_Density_Sphere, "覆盖范围", {}, "切换战局后会�
     function(toggle)
         if toggle then
             population_density_sphere.id = MISC.ADD_POP_MULTIPLIER_SPHERE(1.1, 1.1, 1.1, 15000.0,
-                    population_density_sphere.pedDensity
-                    , population_density_sphere.trafficDensity, population_density_sphere.localOnly, true)
+                population_density_sphere.pedDensity
+                , population_density_sphere.trafficDensity, population_density_sphere.localOnly, true)
             MISC.CLEAR_AREA(1.1, 1.1, 1.1, 19999.9, true, false, false, true)
         else
             if MISC.DOES_POP_MULTIPLIER_SPHERE_EXIST(population_density_sphere.id) then
@@ -5703,11 +5702,11 @@ menu.toggle(Chat_options, "发送到团队", {}, "", function(toggle)
     typing_text_send_to_team = toggle
 end)
 typing_text_list_action = menu.list_action(Chat_options, "查看记录内容", {}, "点击即可弹出输入框",
-        typing_text_list_item, function(value)
-        local text = typing_text_list_item[value][1]
-        chat.ensure_open_with_empty_draft(typing_text_send_to_team)
-        chat.add_to_draft(text)
-    end)
+    typing_text_list_item, function(value)
+    local text = typing_text_list_item[value][1]
+    chat.ensure_open_with_empty_draft(typing_text_send_to_team)
+    chat.add_to_draft(text)
+end)
 
 
 -----
@@ -6275,25 +6274,25 @@ local PlayerFunctions = function(pId)
 
     --menu.divider(CustomModel_Generate, "")
     CustomModel_Generate_Saved = menu.list_select(CustomModel_Generate, "保存的Hash", {}, "",
-            Saved_Hash_List.get_list_item_data2(), 1, function(value)
-            if value == 1 then
-                --None
-                CustomModel_Generate_Data.is_select = false
-            elseif value == 2 then
-                --Refresh List
-                CustomModel_Generate_Data.is_select = false
+        Saved_Hash_List.get_list_item_data2(), 1, function(value)
+        if value == 1 then
+            --None
+            CustomModel_Generate_Data.is_select = false
+        elseif value == 2 then
+            --Refresh List
+            CustomModel_Generate_Data.is_select = false
 
-                menu.set_list_action_options(CustomModel_Generate_Saved, Saved_Hash_List.get_list_item_data2())
-                util.toast("已刷新，请重新打开该列表")
-            else
-                CustomModel_Generate_Data.is_select = true
+            menu.set_list_action_options(CustomModel_Generate_Saved, Saved_Hash_List.get_list_item_data2())
+            util.toast("已刷新，请重新打开该列表")
+        else
+            CustomModel_Generate_Data.is_select = true
 
-                local Name = Saved_Hash_List.get_list()[value - 2]
-                local Hash, Type = Saved_Hash_List.read(Name)
-                CustomModel_Generate_Data.select_hash = Hash
-                CustomModel_Generate_Data.select_type = GET_ENTITY_TYPE_INDEX(Type)
-            end
-        end)
+            local Name = Saved_Hash_List.get_list()[value - 2]
+            local Hash, Type = Saved_Hash_List.read(Name)
+            CustomModel_Generate_Data.select_hash = Hash
+            CustomModel_Generate_Data.select_type = GET_ENTITY_TYPE_INDEX(Type)
+        end
+    end)
 
     menu.action(CustomModel_Generate, "生成实体", {}, "", function()
         local hash = CustomModel_Generate_Data.hash
@@ -6307,7 +6306,7 @@ local PlayerFunctions = function(pId)
         if hash ~= nil and STREAMING.IS_MODEL_VALID(hash) then
             local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
             local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, CustomModel_Generate_Data.x,
-                    CustomModel_Generate_Data.y, CustomModel_Generate_Data.z)
+                CustomModel_Generate_Data.y, CustomModel_Generate_Data.z)
             local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
 
             local ent

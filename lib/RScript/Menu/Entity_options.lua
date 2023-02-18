@@ -1052,8 +1052,8 @@ menu.toggle(Nearby_Ped_Combat_Attributes, "全部开/关", {}, "", function(togg
 end)
 for i, name in pairs(Ped_CombatAttributes_Title) do
     Nearby_Ped_Combat_Attributes_menu[i] = menu.toggle(Nearby_Ped_Combat_Attributes, name, {}, "", function(toggle)
-            nearby_ped_combat_attr[i] = toggle
-        end)
+        nearby_ped_combat_attr[i] = toggle
+    end)
 end
 
 
@@ -1109,8 +1109,8 @@ menu.toggle(Nearby_Ped_Combat_toggles, "全部开/关", {}, "", function(toggle)
 end, true)
 for i, name in pairs(Ped_CombatAttributes_Title) do
     Nearby_Ped_Combat_toggles_menu[i] = menu.toggle(Nearby_Ped_Combat_toggles, name, {}, "", function(toggle)
-            nearby_ped_combat_attr_toggle[i] = toggle
-        end, true)
+        nearby_ped_combat_attr_toggle[i] = toggle
+    end, true)
 end
 
 
@@ -1810,20 +1810,20 @@ menu.action(Special_Cargo, "卢佩：水下货箱 获取", {}, "先获取到才�
     menu.set_max_value(menu_Water_Cargo_TP, num)
 end)
 menu_Water_Cargo_TP = menu.click_slider(Special_Cargo, "卢佩：水下货箱 传送到那里", {}, "",
-        0, 0, 0, 1, function(value)
-        if value > 0 then
-            local ent = water_cargo_ent[value]
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                if ENTITY.IS_ENTITY_ATTACHED(ent) then
-                    local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
-                    TP_TO_ENTITY(attached_ent, 0.0, -2.5, 0.0)
-                    SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), attached_ent)
-                end
-            else
-                util.toast("实体不存在")
+    0, 0, 0, 1, function(value)
+    if value > 0 then
+        local ent = water_cargo_ent[value]
+        if ENTITY.DOES_ENTITY_EXIST(ent) then
+            if ENTITY.IS_ENTITY_ATTACHED(ent) then
+                local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
+                TP_TO_ENTITY(attached_ent, 0.0, -2.5, 0.0)
+                SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), attached_ent)
             end
+        else
+            util.toast("实体不存在")
         end
-    end)
+    end
+end)
 
 menu.action(Special_Cargo, "传送到 仓库助理", {}, "让他去拉货", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(480)
@@ -1865,24 +1865,24 @@ menu.action(Special_Cargo, "载具货物 传送到我", { "tpme_vehcargo" }, "",
 end)
 local Vehicle_Cargo_ListAction
 Vehicle_Cargo_ListAction = menu.list_action(Special_Cargo, "任务载具列表", {}, "点击目标载具即可传送到我",
-        { [ -1] = { "刷新列表" } }, function(value)
-        if value == -1 then
-            local list_item = { [ -1] = { "刷新列表" } }
-            for k, veh in pairs(entities.get_all_vehicles_as_handles()) do
-                if ENTITY.IS_ENTITY_A_MISSION_ENTITY(veh) then
-                    local model_hash = ENTITY.GET_ENTITY_MODEL(veh)
-                    local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(model_hash))
+    { [ -1] = { "刷新列表" } }, function(value)
+    if value == -1 then
+        local list_item = { [ -1] = { "刷新列表" } }
+        for k, veh in pairs(entities.get_all_vehicles_as_handles()) do
+            if ENTITY.IS_ENTITY_A_MISSION_ENTITY(veh) then
+                local model_hash = ENTITY.GET_ENTITY_MODEL(veh)
+                local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(model_hash))
 
-                    list_item[veh] = display_name
-                end
-            end
-            menu.set_list_action_options(Vehicle_Cargo_ListAction, list_item)
-        else
-            if ENTITY.DOES_ENTITY_EXIST(value) then
-                TP_VEHICLE_TO_ME(value, "", "delete")
+                list_item[veh] = display_name
             end
         end
-    end)
+        menu.set_list_action_options(Vehicle_Cargo_ListAction, list_item)
+    else
+        if ENTITY.DOES_ENTITY_EXIST(value) then
+            TP_VEHICLE_TO_ME(value, "", "delete")
+        end
+    end
+end)
 
 
 
@@ -1916,7 +1916,7 @@ menu.action(Bunker, "原材料 传送到我", { "tpme_bsupplies" }, "", function
                 TP_TO_ME(ent, 0.0, 2.0, 0.0)
             end
         else
-            util.toast("No Vehicle Cargo Found")
+            util.toast("No Bunker Supplies Found")
         end
     else
         local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
@@ -2184,29 +2184,29 @@ menu.action(Cayo_Perico_other, "获取豪宅内黄金数量", {},
     menu.set_max_value(menu_Gold_Vault_TP2, num)
 end)
 menu_Gold_Vault_TP = menu.click_slider(Cayo_Perico_other, "黄金 传送到我", {}, "很容易卡住，最好第三人称，在干掉主要目标之前拿"
-        , 0, 0, 0, 1, function(value)
-        if value > 0 then
-            local ent = gold_vault_ent[value]
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                TP_TO_ME(ent, 0.0, 1.0, 0.0)
-                SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
-            else
-                util.toast("实体不存在")
-            end
+    , 0, 0, 0, 1, function(value)
+    if value > 0 then
+        local ent = gold_vault_ent[value]
+        if ENTITY.DOES_ENTITY_EXIST(ent) then
+            TP_TO_ME(ent, 0.0, 1.0, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
+        else
+            util.toast("实体不存在")
         end
-    end)
+    end
+end)
 menu_Gold_Vault_TP2 = menu.click_slider(Cayo_Perico_other, "传送到 黄金", {}, "",
-        0, 0, 0, 1, function(value)
-        if value > 0 then
-            local ent = gold_vault_ent[value]
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                TP_TO_ENTITY(ent, 0.0, -1.0, 0.0)
-                SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
-            else
-                util.toast("实体不存在")
-            end
+    0, 0, 0, 1, function(value)
+    if value > 0 then
+        local ent = gold_vault_ent[value]
+        if ENTITY.DOES_ENTITY_EXIST(ent) then
+            TP_TO_ENTITY(ent, 0.0, -1.0, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
+        else
+            util.toast("实体不存在")
         end
-    end)
+    end
+end)
 
 menu.action(Cayo_Perico_other, "干掉主要目标玻璃柜、保险箱", {},
     "会在豪宅外生成主要目标包裹", function()
@@ -2521,17 +2521,17 @@ menu.action(Diamond_Casino, "获取金库内推车数量", {},
     menu.set_max_value(Casino_Vault_Trolley_menu, num)
 end)
 Casino_Vault_Trolley_menu = menu.click_slider(Diamond_Casino, "金库内推车 传送到那里", {}, "",
-        0, 0, 0, 1, function(value)
-        if value > 0 then
-            local ent = Casino_Vault_Trolley_ent[value]
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                TP_TO_ENTITY(ent, 0.0, 0.0, 0.5)
-                SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
-            else
-                util.toast("实体不存在")
-            end
+    0, 0, 0, 1, function(value)
+    if value > 0 then
+        local ent = Casino_Vault_Trolley_ent[value]
+        if ENTITY.DOES_ENTITY_EXIST(ent) then
+            TP_TO_ENTITY(ent, 0.0, 0.0, 0.5)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
+        else
+            util.toast("实体不存在")
         end
-    end)
+    end
+end)
 
 
 
@@ -3671,7 +3671,7 @@ All_Mission_Entity.count_divider = menu.divider(Mission_Entity_All, "实体列�
 ------------------------
 --- 自定义 Model Hash ---
 ------------------------
-local Mission_Entity_custom = menu.list(All_Entity_Manage, "自定义 Model Hash", {}, "")
+local Mission_Entity_CustomHash = menu.list(All_Entity_Manage, "自定义 Model Hash", {}, "")
 
 local Custom_Hash_Entity = {
     hash = 0,
@@ -3679,26 +3679,24 @@ local Custom_Hash_Entity = {
     is_mission = true,
 }
 
-menu.text_input(Mission_Entity_custom, "Model Hash ", { "custom_model_hash" }, "", function(value)
+menu.text_input(Mission_Entity_CustomHash, "Model Hash ", { "custom_model_hash" }, "", function(value)
     Custom_Hash_Entity.hash = tonumber(value)
 end)
-menu.action(Mission_Entity_custom, "转换复制内容", {}, "删除Model Hash: \n自动填充到Hash输入框",
+menu.action(Mission_Entity_CustomHash, "转换复制内容", {}, "删除Model Hash: \n自动填充到Hash输入框",
     function()
         local text = util.get_clipboard_text()
         local num = string.gsub(text, "Model Hash: ", "")
         menu.trigger_commands("custommodelhash " .. num)
     end)
 
-Custom_Hash_Entity.menu_type = menu.list_select(Mission_Entity_custom, "实体类型", {}, "", EntityType_ListItem,
+Custom_Hash_Entity.menu_type =
+    menu.list_select(Mission_Entity_CustomHash, "实体类型", {}, "", EntityType_ListItem,
         1, function(value)
         Custom_Hash_Entity.type = EntityType_ListItem[value][1]
     end)
-menu.toggle(Mission_Entity_custom, "任务实体", {}, "是否为任务实体", function(toggle)
-    Custom_Hash_Entity.is_mission = toggle
-end, true)
 
-Saved_Hash_List.Mission_Entity_custom = menu.list_action(Mission_Entity_custom, "已保存的 Hash", {},
-        "点击填充到Hash输入框和选择实体类型",
+Saved_Hash_List.Mission_Entity_CustomHash =
+    menu.list_action(Mission_Entity_CustomHash, "已保存的 Hash", {}, "点击填充到Hash输入框和选择实体类型",
         Saved_Hash_List.get_list_item_data(), function(value)
         local Name = Saved_Hash_List.get_list()[value]
         local Hash, Type = Saved_Hash_List.read(Name)
@@ -3706,46 +3704,59 @@ Saved_Hash_List.Mission_Entity_custom = menu.list_action(Mission_Entity_custom, 
         menu.set_value(Custom_Hash_Entity.menu_type, GET_ENTITY_TYPE_INDEX(Type))
     end)
 
-menu.divider(Mission_Entity_custom, "")
+menu.toggle(Mission_Entity_CustomHash, "任务实体", {}, "是否为任务实体", function(toggle)
+    Custom_Hash_Entity.is_mission = toggle
+end, true)
 
-local function Init_custom_hash_ent_list()
-    -- 自定义hash的实体 list
-    custom_hash_ent_list = {}
-    -- 自定义hash实体列表 menu.list
-    custom_hash_ent_menu_list = {}
-    -- 自定义hash所有实体 menu.list
-    custom_hash_all_ent_menu_list = {}
-    -- 自定义hash的实体数量
-    custom_hash_ent_count = 0
+
+-- 初始化数据
+function Custom_Hash_Entity.Init_Entity_List_Data()
+    -- 实体 list
+    Custom_Hash_Entity.entity_list = {}
+    -- 实体的 menu.list()
+    Custom_Hash_Entity.entity_menu_list = {}
+    -- 操作全部实体的 menu.list()
+    Custom_Hash_Entity.all_entities_menu_list = {}
+    -- 实体数量
+    Custom_Hash_Entity.entity_count = 0
 end
 
-Init_custom_hash_ent_list()
-local function Clear_custom_hash_ent_list()
-    if next(custom_hash_all_ent_menu_list) ~= nil then
-        menu.delete(custom_hash_all_ent_menu_list[1])
-        menu.delete(custom_hash_all_ent_menu_list[2])
+Custom_Hash_Entity.Init_Entity_List_Data()
+
+-- 清理并初始化数据
+function Custom_Hash_Entity.Clear_Entity_List_Data()
+    -- 操作全部实体的 menu.list()
+    if next(Custom_Hash_Entity.all_entities_menu_list) ~= nil then
+        for i = 1, 2 do
+            local v = Custom_Hash_Entity.all_entities_menu_list[i]
+            if menu.is_ref_valid(v) then
+                menu.delete(v)
+            end
+        end
     end
-    for _, v in pairs(custom_hash_ent_menu_list) do
+    -- 实体的 menu.list()
+    for k, v in pairs(Custom_Hash_Entity.entity_menu_list) do
         if v ~= nil and menu.is_ref_valid(v) then
             menu.delete(v)
         end
     end
-    Init_custom_hash_ent_list()
-    menu.set_menu_name(Mission_Entity_custom_divider, "实体列表")
+    -- 初始化
+    Custom_Hash_Entity.Init_Entity_List_Data()
+    menu.set_menu_name(Custom_Hash_Entity.count_divider, "实体列表")
 end
 
-menu.action(Mission_Entity_custom, "获取所有实体列表", {}, "", function()
-    Clear_custom_hash_ent_list()
-    ---
-    local custom_all_entity = get_all_entities(custom_hash_entity.type)
+menu.action(Mission_Entity_CustomHash, "获取实体列表", {}, "", function()
+    Custom_Hash_Entity.Clear_Entity_List_Data()
 
-    ---
-    if tonumber(custom_hash_entity.hash) ~= nil and STREAMING.IS_MODEL_VALID(tonumber(custom_hash_entity.hash)) then
-        for k, ent2 in pairs(custom_all_entity) do
+    local all_entities = get_all_entities(Custom_Hash_Entity.type)
+    local custom_hash = tonumber(Custom_Hash_Entity.hash)
+
+    if custom_hash ~= nil and STREAMING.IS_MODEL_VALID(custom_hash) then
+        for k, ent2 in pairs(all_entities) do
             local modelHash = ENTITY.GET_ENTITY_MODEL(ent2)
-            if modelHash == custom_hash_entity.hash then
+            if modelHash == custom_hash then
                 local ent
-                if custom_hash_entity.is_mission then
+                if Custom_Hash_Entity.is_mission then
                     if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent2) then
                         ent = ent2
                     end
@@ -3754,44 +3765,45 @@ menu.action(Mission_Entity_custom, "获取所有实体列表", {}, "", function(
                 end
                 -----
                 if ent ~= nil then
-                    table.insert(custom_hash_ent_list, ent) -- entity list
+                    table.insert(Custom_Hash_Entity.entity_list, ent) -- 实体 list
 
+                    -- 实体的 menu.list()
                     local menu_name, help_text = Entity_Control.get_menu_info(ent, k)
-
-                    -- 实体菜单列表 menu.list
-                    local menu_list = menu.list(Mission_Entity_custom, menu_name, {}, help_text)
-                    table.insert(custom_hash_ent_menu_list, menu_list)
+                    local menu_list = menu.list(Mission_Entity_CustomHash, menu_name, {}, help_text)
+                    table.insert(Custom_Hash_Entity.entity_menu_list, menu_list)
 
                     -- 创建对应实体的menu操作
                     local index = "c" .. k
                     Entity_Control.generate_menu(menu_list, ent, index)
 
                     -- 实体数量
-                    custom_hash_ent_count = custom_hash_ent_count + 1
+                    Custom_Hash_Entity.entity_count = Custom_Hash_Entity.entity_count + 1
                 end
             end
         end
 
         -- 全部实体
-        if custom_hash_ent_count == 0 then
-            menu.set_menu_name(Mission_Entity_custom_divider, "实体列表")
-            util.toast("No this entity !")
+        if Custom_Hash_Entity.entity_count == 0 then
+            menu.set_menu_name(Custom_Hash_Entity.count_divider, "实体列表")
+            util.toast("未找到此Hash的实体")
         else
-            menu.set_menu_name(Mission_Entity_custom_divider, "实体列表 (" .. custom_hash_ent_count .. ")")
+            menu.set_menu_name(Custom_Hash_Entity.count_divider, "实体列表 (" ..
+            Custom_Hash_Entity.entity_count .. ")")
 
-            custom_hash_all_ent_menu_list[1] = menu.divider(Mission_Entity_custom, "")
-            custom_hash_all_ent_menu_list[2] = menu.list(Mission_Entity_custom, "全部实体管理", {}, "")
-            Entity_Control.entities(custom_hash_all_ent_menu_list[2], custom_hash_ent_list)
+            Custom_Hash_Entity.all_entities_menu_list[1] = menu.divider(Mission_Entity_CustomHash, "")
+            Custom_Hash_Entity.all_entities_menu_list[2] = menu.list(Mission_Entity_CustomHash, "全部实体管理", {},
+                "")
+            Entity_Control.entities(Custom_Hash_Entity.all_entities_menu_list[2], Custom_Hash_Entity.entity_list)
         end
     else
-        util.toast("Wrong model hash !")
+        util.toast("Hash值错误")
     end
 end)
 
-menu.action(Mission_Entity_custom, "清空列表", {}, "", function()
-    Clear_custom_hash_ent_list()
+menu.action(Mission_Entity_CustomHash, "清空列表", {}, "", function()
+    Custom_Hash_Entity.Clear_Entity_List_Data()
 end)
-Mission_Entity_custom_divider = menu.divider(Mission_Entity_custom, "实体列表")
+Custom_Hash_Entity.count_divider = menu.divider(Mission_Entity_CustomHash, "实体列表")
 
 
 ----------------------
@@ -3824,7 +3836,7 @@ menu.action(Manage_Hash_List_Menu_add, "添加", {}, "", function()
             Saved_Hash_List.write(manage_hash_list_add.name, manage_hash_list_add.hash, manage_hash_list_add.type)
             util.toast("已添加")
         else
-            util.toast("Wrong Hash !")
+            util.toast("Hash值错误")
         end
     else
         util.toast("请输入名称")
@@ -3874,11 +3886,11 @@ end, true)
 
 menu.divider(Entity_Info_Gun, "")
 ent_info_menu_list_action = menu.list_action(Entity_Info_Gun, "查看实体信息", {}, "", ent_info_item_data,
-        function(value)
-            local name = ent_info_item_data[value][1]
-            util.copy_to_clipboard(name, false)
-            util.toast("Copied!\n" .. name)
-        end)
+    function(value)
+        local name = ent_info_item_data[value][1]
+        util.copy_to_clipboard(name, false)
+        util.toast("Copied!\n" .. name)
+    end)
 
 menu.action(Entity_Info_Gun, "复制实体信息", {}, "", function()
     local text = ""

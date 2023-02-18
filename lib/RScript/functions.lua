@@ -247,8 +247,8 @@ end
 function TP_VEHICLE_TO_ME(vehicle, door, driver)
     if ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         SET_ENTITY_HEAD_TO_ENTITY(vehicle, players.user_ped())
-        TP_TO_ME(players.user_ped(), 0.0, 0.0, 0.0)
-        TP_INTO_VEHICLE(players.user_ped(), door, driver)
+        TP_TO_ME(vehicle, 0.0, 0.0, 0.0)
+        TP_INTO_VEHICLE(vehicle, door, driver)
     end
 end
 

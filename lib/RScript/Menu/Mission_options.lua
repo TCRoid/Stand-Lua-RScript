@@ -5,7 +5,9 @@
 local Mission_options = menu.list(menu.my_root(), "任务选项", {}, "")
 
 
------ 分红编辑 -----
+---------------------
+-- 分红编辑
+---------------------
 local Heist_Cut_Editor = menu.list(Mission_options, "分红编辑", {}, "")
 
 local cut_global_base = 1977693 + 823 + 56
@@ -32,7 +34,9 @@ menu.click_slider(Heist_Cut_Editor, "玩家4", { "cut4edit" }, "", 0, 300, 85, 5
 end)
 
 
------ 赌场抢劫 -----
+---------------------
+-- 赌场抢劫
+---------------------
 local Casion_Heist = menu.list(Mission_options, "赌场抢劫", {}, "")
 
 menu.divider(Casion_Heist, "第二面板")
@@ -96,11 +100,12 @@ menu.action(Casion_Heist, "写入 BITSET0 值", {}, "写入到 H3OPT_BITSET0", f
 end)
 
 
-
------ 资产监视 -----
+---------------------
+-- 资产监视
+---------------------
 local Business_Monitor = menu.list(Mission_options, "资产监视", { "business_monitor" }, "")
 
-Business = {}
+local Business = {}
 function Business.GetOrgOffset()
     return (1892703 + 1 + (players.user() * 599) + 10)
 end
@@ -216,175 +221,231 @@ Business_Monitor_Menu.drug_supplies = menu.readonly(Business_Monitor, "原材料
 Business_Monitor_Menu.drug_product = menu.readonly(Business_Monitor, "产品")
 
 
-
------ Local Editor -----
+---------------------
+-- Local Editor
+---------------------
 local Local_Editor = menu.list(Mission_options, "Local Editor", { "local_editor" }, "")
 
-local mission_script = "fm_mission_controller"
+local local_editor = {
+    script = "fm_mission_controller",
+    address = 0,
+    type = "int",
+    write = "",
+}
+
 menu.list_select(Local_Editor, "选择脚本", {}, "", {
     { "fm_mission_controller" },
-    { "fm_mission_controller_2020" }
+    { "fm_mission_controller_2020" },
 }, 1, function(index)
     if index == 1 then
-        mission_script = "fm_mission_controller"
+        local_editor.script = "fm_mission_controller"
     elseif index == 2 then
-        mission_script = "fm_mission_controller_2020"
+        local_editor.script = "fm_mission_controller_2020"
     end
 end)
 
-local local_address = 0
-menu.slider(Local_Editor, "Local 地址", { "local_address" }, "输入计算总和", 0, 16777216, 0, 1,
-    function(value)
-        local_address = value
-    end)
-local local_type = "int"
-menu.list_select(Local_Editor, "数据类型", {}, "", { { "INT" }, { "FLOAT" } }, 1, function(value)
+menu.slider(Local_Editor, "地址", { "local_address" }, "输入计算总和",
+    0, 16777216, 0, 1, function(value)
+    local_editor.address = value
+end)
+menu.list_select(Local_Editor, "数值类型", {}, "", { { "INT" }, { "FLOAT" } }, 1, function(value)
     if value == 1 then
-        local_type = "int"
+        local_editor.type = "int"
     elseif value == 2 then
-        local_type = "float"
-    end
-end)
-menu.action(Local_Editor, "读取 Local", {}, "", function()
-    if local_address > 0 then
-        if SCRIPT.HAS_SCRIPT_LOADED(mission_script) then
-            local value
-            if local_type == "int" then
-                value = GET_INT_LOCAL(mission_script, local_address)
-            elseif local_type == "float" then
-                value = GET_FLOAT_LOCAL(mission_script, local_address)
-            end
-
-            if value ~= nil then
-                util.toast(value)
-            else
-                util.toast("No Data")
-            end
-        else
-            util.toast("This Script Has Not Loaded")
-        end
+        local_editor.type = "float"
     end
 end)
 
-menu.divider(Local_Editor, "写入")
-local local_write = 0
-menu.text_input(Local_Editor, "要写入的值", { "local_write" }, "务必注意int类型和float类型的格式",
-    function(value)
-        local_write = value
-    end)
-menu.action(Local_Editor, "写入 Local", {}, "", function()
-    if local_address > 0 and tonumber(local_write) ~= nil then
-        if SCRIPT.HAS_SCRIPT_LOADED(mission_script) then
-            if local_type == "int" then
-                SET_INT_LOCAL(mission_script, local_address, local_write)
-            elseif local_type == "float" then
-                SET_FLOAT_LOCAL(mission_script, local_address, local_write)
-            end
-        else
-            util.toast("This Script Has Not Loaded")
-        end
-    end
-end)
-menu.toggle_loop(Local_Editor, "锁定写入 Local", {}, "", function()
-    if local_address > 0 and tonumber(local_write) ~= nil then
-        if SCRIPT.HAS_SCRIPT_LOADED(mission_script) then
-            if local_type == "int" then
-                SET_INT_LOCAL(mission_script, local_address, local_write)
-            elseif local_type == "float" then
-                SET_FLOAT_LOCAL(mission_script, local_address, local_write)
-            end
-        else
-            util.toast("This Script Has Not Loaded")
-            return
-        end
-    end
-end)
-
-
------ Global Editor -----
-local Global_Editor = menu.list(Mission_options, "Global Editor", { "global_editor" }, "")
-
-local global_address = 0
-menu.slider(Global_Editor, "Global 地址", { "global_address" }, "输入计算总和", 0, 16777216, 0, 1,
-    function(value)
-        global_address = value
-    end)
-local global_type = "int"
-menu.list_select(Global_Editor, "数据类型", {}, "", { { "INT" }, { "FLOAT" } }, 1,
-    function(value)
-        if value == 1 then
-            global_type = "int"
-        elseif value == 2 then
-            global_type = "float"
-        end
-    end)
-menu.action(Global_Editor, "读取 Global", {}, "", function()
-    if global_address > 0 then
+menu.divider(Local_Editor, "读")
+menu.action(Local_Editor, "读取", {}, "", function()
+    local script = local_editor.script
+    local address = local_editor.address
+    if SCRIPT.HAS_SCRIPT_LOADED(script) then
         local value
-        if global_type == "int" then
-            value = GET_INT_GLOBAL(global_address)
-        elseif global_type == "float" then
-            value = GET_FLOAT_GLOBAL(global_address)
+        if local_editor.type == "int" then
+            value = GET_INT_LOCAL(script, address)
+        elseif local_editor.type == "float" then
+            value = GET_FLOAT_LOCAL(script, address)
         end
 
         if value ~= nil then
-            util.toast(value)
+            menu.set_value(local_editor.readonly, value)
         else
-            util.toast("No Data")
+            menu.set_value(local_editor.readonly, "NULL")
+        end
+    else
+        util.toast("This Script Has Not Loaded")
+    end
+end)
+local_editor.readonly = menu.readonly(Local_Editor, "值")
+
+menu.divider(Local_Editor, "写")
+menu.text_input(Local_Editor, "要写入的值", { "local_write" }, "务必注意int类型和float类型的格式",
+    function(value)
+        local_editor.write = value
+    end)
+menu.action(Local_Editor, "写入", {}, "", function()
+    local script = local_editor.script
+    local address = local_editor.address
+    local value = tonumber(local_editor.write)
+    if value ~= nil then
+        if SCRIPT.HAS_SCRIPT_LOADED(script) then
+            if local_editor.type == "int" then
+                SET_INT_LOCAL(script, address, value)
+            elseif local_editor.type == "float" then
+                SET_FLOAT_LOCAL(script, address, value)
+            end
+        else
+            util.toast("This Script Has Not Loaded")
+        end
+    end
+end)
+menu.toggle_loop(Local_Editor, "锁定写入", {}, "更改地址类型，锁定的也会跟着改变", function()
+    local script = local_editor.script
+    local address = local_editor.address
+    local value = tonumber(local_editor.write)
+    if value ~= nil then
+        if SCRIPT.HAS_SCRIPT_LOADED(script) then
+            if local_editor.type == "int" then
+                SET_INT_LOCAL(script, address, value)
+            elseif local_editor.type == "float" then
+                SET_FLOAT_LOCAL(script, address, value)
+            end
         end
     end
 end)
 
-menu.divider(Global_Editor, "写入")
-local global_write = 0
+
+---------------------
+-- Global Editor
+---------------------
+local Global_Editor = menu.list(Mission_options, "Global Editor", { "global_editor" }, "")
+
+local global_editor = {
+    address1 = 262145,
+    address2 = 0,
+    type = "int",
+    write = "",
+}
+
+menu.slider(Global_Editor, "地址1", { "global_address1" }, "", 0, 16777216, 262145, 1, function(value)
+    global_editor.address1 = value
+end)
+menu.slider(Global_Editor, "地址2", { "global_address2" }, "", 0, 16777216, 0, 1, function(value)
+    global_editor.address2 = value
+end)
+menu.list_select(Global_Editor, "数值类型", {}, "", { { "INT" }, { "FLOAT" } }, 1, function(value)
+    if value == 1 then
+        global_editor.type = "int"
+    elseif value == 2 then
+        global_editor.type = "float"
+    end
+end)
+
+menu.divider(Global_Editor, "读")
+menu.action(Global_Editor, "读取", {}, "", function()
+    local address = global_editor.address1 + global_editor.address2
+    local value
+    if global_editor.type == "int" then
+        value = GET_INT_GLOBAL(address)
+    elseif global_editor.type == "float" then
+        value = GET_FLOAT_GLOBAL(address)
+    end
+
+    if value ~= nil then
+        menu.set_value(global_editor.readonly, value)
+    else
+        menu.set_value(global_editor.readonly, "NULL")
+    end
+end)
+global_editor.readonly = menu.readonly(Global_Editor, "值")
+
+menu.divider(Global_Editor, "写")
 menu.text_input(Global_Editor, "要写入的值", { "global_write" }, "务必注意int类型和float类型的格式",
     function(value)
-        global_write = value
+        global_editor.write = value
     end)
-menu.action(Global_Editor, "写入 Global", {}, "", function()
-    if global_address > 0 and tonumber(global_write) ~= nil then
-        if global_type == "int" then
-            SET_INT_GLOBAL(global_address, global_write)
-        elseif global_type == "float" then
-            SET_FLOAT_GLOBAL(global_address, global_write)
+menu.action(Global_Editor, "写入", {}, "", function()
+    local address = global_editor.address1 + global_editor.address2
+    local value = tonumber(global_editor.write)
+    if value ~= nil then
+        if global_editor.type == "int" then
+            SET_INT_GLOBAL(address, value)
+        elseif global_editor.type == "float" then
+            SET_FLOAT_GLOBAL(address, value)
         end
     end
 end)
-menu.toggle_loop(Global_Editor, "锁定写入 Global", {}, "", function()
-    if global_address > 0 and tonumber(global_write) ~= nil then
-        if global_type == "int" then
-            SET_INT_GLOBAL(global_address, global_write)
-        elseif global_type == "float" then
-            SET_FLOAT_GLOBAL(global_address, global_write)
+menu.toggle_loop(Global_Editor, "锁定写入", {}, "更改地址类型，锁定的也会跟着改变", function()
+    local address = global_editor.address1 + global_editor.address2
+    local value = tonumber(global_editor.write)
+    if value ~= nil then
+        if global_editor.type == "int" then
+            SET_INT_GLOBAL(address, value)
+        elseif global_editor.type == "float" then
+            SET_FLOAT_GLOBAL(address, value)
         end
     end
 end)
 
 
------ Stat Editor -----
+---------------------
+-- Stat Editor
+---------------------
 local Stat_Editor = menu.list(Mission_options, "Stat Editor", { "stat_editor" }, "")
------
+
+local stat_editor = {
+    playtime = {
+        method = 1,
+        year = 0,
+        day = 0,
+        hour = 0,
+        min = 0,
+        stat_select = 1,
+    },
+    date = {
+        year = 2013,
+        month = 1,
+        day = 1,
+        hour = 0,
+        min = 0,
+        stat_select = 1,
+    },
+    skill = {
+        stat_select = 1,
+        value = 100,
+    },
+}
+
+----- 游玩时间 -----
 local Stat_Playtime = menu.list(Stat_Editor, "游玩时间", {}, "")
 
-local Stat_Playtime_Method = menu.list_select(Stat_Playtime, "选择方式", {}, "", {
-        { "覆盖", {}, "会将时间修改成所设置的时间\n最大24.8天" },
-        { "增加", {}, "会在当前时间的基础上增加设置的时间\n最大50000天" }
-    }, 1, function()
-    end)
+menu.list_select(Stat_Playtime, "选择方式", {}, "", {
+    { "覆盖", {}, "会将时间修改成所设置的时间\n最大24.8天" },
+    { "增加", {}, "会在当前时间的基础上增加设置的时间\n最大50000天" }
+}, 1, function(value)
+    stat_editor.playtime.method = value
+end)
 menu.divider(Stat_Playtime, "设置时间")
-local Stat_Playtime_Year = menu.slider(Stat_Playtime, "年", { "stat_playtime_year" }, "", 0, 100, 0, 1, function()
-    end)
-local Stat_Playtime_Day = menu.slider(Stat_Playtime, "天", { "stat_playtime_day" }, "", 0, 50000, 0, 1, function()
-    end)
-local Stat_Playtime_Hour = menu.slider(Stat_Playtime, "小时", { "stat_playtime_hour" }, "", 0, 50000, 0, 1,
-        function()
-        end)
-local Stat_Playtime_Min = menu.slider(Stat_Playtime, "分钟", { "stat_playtime_min" }, "", 0, 50000, 0, 1,
-        function()
-        end)
+menu.slider(Stat_Playtime, "年", { "stat_playtime_year" }, "",
+    0, 100, 0, 1, function(value)
+    stat_editor.playtime.year = value
+end)
+menu.slider(Stat_Playtime, "天", { "stat_playtime_day" }, "",
+    0, 50000, 0, 1, function(value)
+    stat_editor.playtime.day = value
+end)
+menu.slider(Stat_Playtime, "小时", { "stat_playtime_hour" }, "",
+    0, 50000, 0, 1, function(value)
+    stat_editor.playtime.hour = value
+end)
+menu.slider(Stat_Playtime, "分钟", { "stat_playtime_min" }, "",
+    0, 50000, 0, 1, function(value)
+    stat_editor.playtime.min = value
+end)
 
-menu.divider(Stat_Playtime, "")
-local Stat_Playtime_ListItem_Stat = {
+menu.divider(Stat_Playtime, "选择Stat设置")
+stat_editor.playtime.list_item_data = {
     { "GTA在线模式中花费的时间",          {}, "MP_PLAYING_TIME" },
     { "以第一人称视角进行游戏的时间", {}, "MP_FIRST_PERSON_CAM_TIME" },
     { "第三人称视角游戏时间",             {}, "TOTAL_PLAYING_TIME" },
@@ -416,84 +477,97 @@ local Stat_Playtime_ListItem_Stat = {
     { "Total Time spent in Start Menu",             {}, "TOTAL_STARTMENU_TIME" },
     { "Total Time spent shopping",                  {}, "TOTAL_SHOP_TIME" },
 }
-local Stat_Playtime_Select = menu.list_select(Stat_Playtime, "Stat", {}, "", Stat_Playtime_ListItem_Stat, 1,
-        function()
-        end)
+menu.list_select(Stat_Playtime, "Stat", {}, "", stat_editor.playtime.list_item_data, 1, function(value)
+    stat_editor.playtime.stat_select = value
+end)
 menu.action(Stat_Playtime, "设置", {}, "", function()
-    local stat = Stat_Playtime_ListItem_Stat[menu.get_value(Stat_Playtime_Select)][3]
-    local year = menu.get_value(Stat_Playtime_Year) * 365 * 24 * 60 * 60 * 1000
-    local day = menu.get_value(Stat_Playtime_Day) * 24 * 60 * 60 * 1000
-    local hour = menu.get_value(Stat_Playtime_Hour) * 60 * 60 * 1000
-    local min = menu.get_value(Stat_Playtime_Min) * 60 * 1000
+    local stat = stat_editor.playtime.list_item_data[stat_editor.playtime.stat_select][3]
+    local year = stat_editor.playtime.year * 365 * 24 * 60 * 60 * 1000
+    local day = stat_editor.playtime.day * 24 * 60 * 60 * 1000
+    local hour = stat_editor.playtime.hour * 60 * 60 * 1000
+    local min = stat_editor.playtime.min * 60 * 1000
 
-    if menu.get_value(Stat_Playtime_Method) == 1 then
+    if menu.get_value(stat_editor.playtime.method) == 1 then
         STAT_SET_INT(stat, year + day + hour + min)
     else
         STAT_SET_INCREMENT(stat, year + day + hour + min)
     end
 
-    util.toast("设置完成!\n请等待云保存完成!")
     menu.trigger_commands("forcecloudsave")
+    util.toast("设置完成!\n请等待云保存完成!")
 end)
 menu.action(Stat_Playtime, "读取", {}, "", function()
-    local stat = Stat_Playtime_ListItem_Stat[menu.get_value(Stat_Playtime_Select)][3]
+    local stat = stat_editor.playtime.list_item_data[stat_editor.playtime.stat_select][3]
     local value = STAT_GET_INT(stat)
     util.toast(value)
 end)
 
------
+
+----- 日期 -----
 local Stat_Date = menu.list(Stat_Editor, "日期", {}, "")
 
 menu.divider(Stat_Date, "设置日期")
-local Stat_Date_Year = menu.slider(Stat_Date, "年", { "stat_date_year" }, "", 2013, os.date("%Y"), 2013, 1,
-        function()
-        end)
-local Stat_Date_Month = menu.slider(Stat_Date, "月", { "stat_date_month" }, "", 1, 12, 1, 1, function()
-    end)
-local Stat_Date_Day = menu.slider(Stat_Date, "日", { "stat_date_day" }, "", 1, 31, 1, 1, function()
-    end)
-local Stat_Date_Hour = menu.slider(Stat_Date, "时", { "stat_date_hour" }, "", 0, 24, 0, 1, function()
-    end)
-local Stat_Date_Min = menu.slider(Stat_Date, "分", { "stat_date_min" }, "", 0, 60, 0, 1, function()
-    end)
+menu.slider(Stat_Date, "年", { "stat_date_year" }, "",
+    2013, os.date("%Y"), 2013, 1, function(value)
+    stat_editor.date.year = value
+end)
+menu.slider(Stat_Date, "月", { "stat_date_month" }, "",
+    1, 12, 1, 1, function(value)
+    stat_editor.date.month = value
+end)
+menu.slider(Stat_Date, "日", { "stat_date_day" }, "",
+    1, 31, 1, 1, function(value)
+    stat_editor.date.day = value
+end)
+menu.slider(Stat_Date, "时", { "stat_date_hour" }, "",
+    0, 24, 0, 1, function(value)
+    stat_editor.date.hour = value
+end)
+menu.slider(Stat_Date, "分", { "stat_date_min" }, "",
+    0, 60, 0, 1, function(value)
+    stat_editor.date.min = value
+end)
 
-menu.divider(Stat_Date, "")
-local Stat_Date_ListItem_Stat = {
+menu.divider(Stat_Date, "选择Stat设置")
+stat_editor.date.list_item_data = {
     { "制作的角色时间",    {}, "CHAR_DATE_CREATED" },
     { "最后一次升级时间", {}, "CHAR_DATE_RANKUP" },
-
     { "MPPLY_STARTED_MP",         {}, "MPPLY_STARTED_MP" },
     { "MPPLY_NON_CHEATER_CASH",   {}, "MPPLY_NON_CHEATER_CASH" },
     { "CHAR_LAST_PLAY_TIME",      {}, "CHAR_LAST_PLAY_TIME" },
     { "CLOUD_TIME_CHAR_CREATED",  {}, "CLOUD_TIME_CHAR_CREATED" },
     { "PS_TIME_CHAR_CREATED",     {}, "PS_TIME_CHAR_CREATED" },
 }
-local Stat_Date_Select = menu.list_select(Stat_Date, "Stat", {}, "", Stat_Date_ListItem_Stat, 1, function()
-    end)
+menu.list_select(Stat_Date, "Stat", {}, "", stat_editor.date.list_item_data, 1, function(value)
+    stat_editor.date.stat_select = value
+end)
 menu.action(Stat_Date, "设置", {}, "", function()
-    local stat = Stat_Date_ListItem_Stat[menu.get_value(Stat_Date_Select)][3]
-    local year = menu.get_value(Stat_Date_Year)
-    local month = menu.get_value(Stat_Date_Month)
-    local day = menu.get_value(Stat_Date_Day)
-    local hour = menu.get_value(Stat_Date_Hour)
-    local min = menu.get_value(Stat_Date_Min)
+    local stat = stat_editor.date.list_item_data[stat_editor.date.stat_select][3]
+    local year = stat_editor.date.year
+    local month = stat_editor.date.month
+    local day = stat_editor.date.day
+    local hour = stat_editor.date.hour
+    local min = stat_editor.date.min
+
     STAT_SET_DATE(stat, year, month, day, hour, min)
-    util.toast("设置完成!\n请等待云保存完成!")
+
     menu.trigger_commands("forcecloudsave")
+    util.toast("设置完成!\n请等待云保存完成!")
 end)
 menu.action(Stat_Date, "读取", {}, "", function()
-    local stat = Stat_Date_ListItem_Stat[menu.get_value(Stat_Date_Select)][3]
-    util.toast(STAT_GET_DATE(stat, "Year") ..
-    "年" ..
-    STAT_GET_DATE(stat, "Month") ..
-    "月" .. STAT_GET_DATE(stat, "Day") .. "日" .. STAT_GET_DATE(stat, "Hour") ..
-    "时" .. STAT_GET_DATE(stat, "Min") .. "分")
+    local stat = stat_editor.date.list_item_data[stat_editor.date.stat_select][3]
+    util.toast(STAT_GET_DATE(stat, "Year") .. "年" ..
+    STAT_GET_DATE(stat, "Month") .. "月" ..
+    STAT_GET_DATE(stat, "Day") .. "日" ..
+    STAT_GET_DATE(stat, "Hour") .. "时" ..
+    STAT_GET_DATE(stat, "Min") .. "分")
 end)
 
------
+
+----- 属性技能 -----
 local Stat_Skill = menu.list(Stat_Editor, "属性技能", {}, "")
 
-local Stat_Skill_ListItem_Stat = {
+stat_editor.skill.list_item_data = {
     { "体力",    {}, "SCRIPT_INCREASE_STAM" },
     { "射击",    {}, "SCRIPT_INCREASE_SHO" },
     { "力量",    {}, "SCRIPT_INCREASE_STRN" },
@@ -502,25 +576,32 @@ local Stat_Skill_ListItem_Stat = {
     { "驾驶",    {}, "SCRIPT_INCREASE_DRIV" },
     { "肺活量", {}, "SCRIPT_INCREASE_LUNG" }
 }
-local Stat_Skill_Select = menu.list_select(Stat_Skill, "技能", {}, "", Stat_Skill_ListItem_Stat, 1, function()
-    end)
+menu.list_select(Stat_Skill, "技能", {}, "", stat_editor.skill.list_item_data, 1, function(value)
+    stat_editor.skill.stat_select = value
+end)
 menu.action(Stat_Skill, "读取", {}, "", function()
-    local stat = Stat_Skill_ListItem_Stat[menu.get_value(Stat_Skill_Select)][3]
+    local stat = stat_editor.skill.list_item_data[stat_editor.skill.stat_select][3]
     util.toast(STAT_GET_INT(stat))
 end)
 menu.divider(Stat_Skill, "")
-local Stat_Skill_INT = menu.slider(Stat_Skill, "值", { "stat_skill_int" }, "", 0, 100, 100, 1, function()
-    end)
+menu.slider(Stat_Skill, "值", { "stat_skill_value" }, "",
+    0, 100, 100, 1, function(value)
+    stat_editor.skill.value = value
+end)
 menu.action(Stat_Skill, "设置", {}, "", function()
-    local stat = Stat_Skill_ListItem_Stat[menu.get_value(Stat_Skill_Select)][3]
-    STAT_SET_INT(stat, menu.get_value(Stat_Skill_INT))
-    util.toast("设置完成!\n请等待云保存完成!")
+    local stat = stat_editor.skill.list_item_data[stat_editor.skill.stat_select][3]
+    STAT_SET_INT(stat, stat_editor.skill.value)
+
     menu.trigger_commands("forcecloudsave")
+    util.toast("设置完成!\n请等待云保存完成!")
 end)
 
 
 
------- 任务助手 ------
+
+---------------------
+-- 任务助手
+---------------------
 local Mission_Assistant = menu.list(Mission_options, "任务助手", {}, "")
 
 --- 附近街道 ---
@@ -623,7 +704,7 @@ local function generate_MPA_player_commands(menu_parent, pid)
 
     local neayby_veh = menu.list(menu_parent, "在玩家附近生成载具", {}, "")
     local nearby_veh_godmod = menu.toggle(neayby_veh, "生成载具为无敌", {}, "", function(toggle)
-        end, true)
+    end, true)
     for k, data in pairs(Nearby_Road_ListItem) do
         local name = "生成" .. data[1]
         local model = data[2]
@@ -922,15 +1003,15 @@ end
 
 local Mission_Assistant_Prison_player = 0
 Mission_Assistant_Prison_PlayerSelect = menu.list_select(Mission_Assistant_Prison_rashcosvki, "选择玩家", {}, "",
-        Get_Players_ListItem(), 2, function(index)
-        if index == 1 then
-            Mission_Assistant_Prison_player = -1
-            menu.set_list_action_options(Mission_Assistant_Prison_PlayerSelect, Get_Players_ListItem())
-            util.toast("已刷新，请重新打开该列表")
-        else
-            Mission_Assistant_Prison_player = Get_Players_ListItem()[index][3]
-        end
-    end)
+    Get_Players_ListItem(), 2, function(index)
+    if index == 1 then
+        Mission_Assistant_Prison_player = -1
+        menu.set_list_action_options(Mission_Assistant_Prison_PlayerSelect, Get_Players_ListItem())
+        util.toast("已刷新，请重新打开该列表")
+    else
+        Mission_Assistant_Prison_player = Get_Players_ListItem()[index][3]
+    end
+end)
 menu.action(Mission_Assistant_Prison_rashcosvki, "传送到玩家/玩家载具", {}, "", function()
     if players.exists(Mission_Assistant_Prison_player) then
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(Mission_Assistant_Prison_player)
