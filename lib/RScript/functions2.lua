@@ -26,99 +26,100 @@ end
 -- Stat Functions
 --------------------------
 
-function MP_INDEX()
-    return "MP" .. util.get_char_slot() .. "_"
-end
-
-function IS_MPPLY(Stat)
-    if string.find(Stat, "MPPLY_") or string.find(Stat, "MP_") then
-        return true
-    else
-        return false
+function ADD_MP_INDEX(stat)
+    local Exceptions = {
+        "MP_CHAR_STAT_RALLY_ANIM",
+        "MP_CHAR_ARMOUR_1_COUNT",
+        "MP_CHAR_ARMOUR_2_COUNT",
+        "MP_CHAR_ARMOUR_3_COUNT",
+        "MP_CHAR_ARMOUR_4_COUNT",
+        "MP_CHAR_ARMOUR_5_COUNT",
+    }
+    for _, exception in pairs(Exceptions) do
+        if stat == exception then
+            return "MP" .. util.get_char_slot() .. "_" .. stat
+        end
     end
-end
 
-function ADD_MP_INDEX(Stat)
-    if not IS_MPPLY(Stat) then
-        Stat = MP_INDEX() .. Stat
+    if not string.contains(stat, "MP_") and not string.contains(stat, "MPPLY_") then
+        return "MP" .. util.get_char_slot() .. "_" .. stat
     end
-    return Stat
+    return stat
 end
 
-function STAT_SET_INT(Stat, Value)
-    STATS.STAT_SET_INT(util.joaat(ADD_MP_INDEX(Stat)), Value, true)
+function STAT_SET_INT(stat, value)
+    STATS.STAT_SET_INT(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
-function STAT_SET_FLOAT(Stat, Value)
-    STATS.STAT_SET_FLOAT(util.joaat(ADD_MP_INDEX(Stat)), Value, true)
+function STAT_SET_FLOAT(stat, value)
+    STATS.STAT_SET_FLOAT(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
-function STAT_SET_BOOL(Stat, Value)
-    STATS.STAT_SET_BOOL(util.joaat(ADD_MP_INDEX(Stat)), Value, true)
+function STAT_SET_BOOL(stat, value)
+    STATS.STAT_SET_BOOL(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
-function STAT_SET_STRING(Stat, Value)
-    STATS.STAT_SET_STRING(util.joaat(ADD_MP_INDEX(Stat)), Value, true)
+function STAT_SET_STRING(stat, value)
+    STATS.STAT_SET_STRING(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
-function STAT_SET_DATE(Stat, Year, Month, Day, Hour, Min)
-    local DatePTR = memory.alloc(7 * 8)
-    memory.write_int(DatePTR, Year)
-    memory.write_int(DatePTR + 8, Month)
-    memory.write_int(DatePTR + 16, Day)
-    memory.write_int(DatePTR + 24, Hour)
-    memory.write_int(DatePTR + 32, Min)
-    memory.write_int(DatePTR + 40, 0) -- Second
-    memory.write_int(DatePTR + 48, 0) -- Millisecond
-    STATS.STAT_SET_DATE(util.joaat(ADD_MP_INDEX(Stat)), DatePTR, 7, true)
+function STAT_SET_DATE(stat, year, month, day, hour, min)
+    local DatePTR = memory.alloc(8 * 7)
+    memory.write_int(DatePTR, year)
+    memory.write_int(DatePTR + 8, month)
+    memory.write_int(DatePTR + 16, day)
+    memory.write_int(DatePTR + 24, hour)
+    memory.write_int(DatePTR + 32, min)
+    memory.write_int(DatePTR + 40, 0) -- Seconds
+    memory.write_int(DatePTR + 48, 0) -- Milliseconds
+    STATS.STAT_SET_DATE(util.joaat(ADD_MP_INDEX(stat)), DatePTR, 7, true)
 end
 
-function STAT_SET_INCREMENT(Stat, Value)
-    STATS.STAT_INCREMENT(util.joaat(ADD_MP_INDEX(Stat)), Value, true)
+function STAT_INCREMENT(stat, value)
+    STATS.STAT_INCREMENT(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
-function STAT_GET_INT(Stat)
+function STAT_GET_INT(stat)
     local IntPTR = memory.alloc_int()
-    STATS.STAT_GET_INT(util.joaat(ADD_MP_INDEX(Stat)), IntPTR, -1)
+    STATS.STAT_GET_INT(util.joaat(ADD_MP_INDEX(stat)), IntPTR, -1)
     return memory.read_int(IntPTR)
 end
 
-function STAT_GET_FLOAT(Stat)
+function STAT_GET_FLOAT(stat)
     local FloatPTR = memory.alloc_int()
-    STATS.STAT_GET_FLOAT(util.joaat(ADD_MP_INDEX(Stat)), FloatPTR, -1)
+    STATS.STAT_GET_FLOAT(util.joaat(ADD_MP_INDEX(stat)), FloatPTR, -1)
     return tonumber(string.format("%.3f", memory.read_float(FloatPTR)))
 end
 
-function STAT_GET_BOOL(Stat)
-    if STAT_GET_INT(Stat) == 0 then
-        return "false"
-    elseif STAT_GET_INT(Stat) == 1 then
+function STAT_GET_BOOL(stat)
+    if STAT_GET_INT(stat) ~= 0 then
         return "true"
     else
-        return "STAT_UNKNOWN"
+        return "false"
     end
 end
 
-function STAT_GET_STRING(Stat)
-    return STATS.STAT_GET_STRING(util.joaat(ADD_MP_INDEX(Stat)), -1)
+function STAT_GET_STRING(stat)
+    return STATS.STAT_GET_STRING(util.joaat(ADD_MP_INDEX(stat)), -1)
 end
 
-function STAT_GET_DATE(Stat, Sort)
-    local DatePTR = memory.alloc(7 * 8)
-    STATS.STAT_GET_DATE(util.joaat(ADD_MP_INDEX(Stat)), DatePTR, 7, true)
-    local Add = 0
-    if Sort == "Year" then
-        Add = 0
-    elseif Sort == "Month" then
-        Add = 8
-    elseif Sort == "Day" then
-        Add = 16
-    elseif Sort == "Hour" then
-        Add = 24
-    elseif Sort == "Min" then
-        Add = 32
+function STAT_GET_DATE(stat, type)
+    local DatePTR = memory.alloc(8 * 7)
+    STATS.STAT_GET_DATE(util.joaat(ADD_MP_INDEX(stat)), DatePTR, 7, true)
+    local DateTypes = {
+        "Years",
+        "Months",
+        "Days",
+        "Hours",
+        "Mins",
+        -- Seconds,
+        -- Milliseconds,
+    }
+    for i = 1, #DateTypes do
+        if type == DateTypes[i] then
+            return memory.read_int(DatePTR + 8 * (i - 1))
+        end
     end
-    return memory.read_int(DatePTR + Add)
 end
 
 ----------------------------
@@ -172,5 +173,16 @@ function GET_FLOAT_LOCAL(Script, Local)
         if Value ~= nil then
             return Value
         end
+    end
+end
+
+function SET_BIT(Bits, Place)
+    return (Bits | (1 << Place))
+end
+
+function SET_LOCAL_BIT(script, script_local, bit)
+    if memory.script_local(script, script_local) ~= 0 then
+        local Addr = memory.script_local(script, script_local)
+        memory.write_int(Addr, SET_BIT(memory.read_int(Addr), bit))
     end
 end

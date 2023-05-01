@@ -9,7 +9,7 @@ function SET_ENTITY_COORDS(entity, coords)
 end
 
 ---@param vehicle Vehicle
----@param seat number
+---@param seat integer
 ---@return Ped
 function GET_PED_IN_VEHICLE_SEAT(vehicle, seat)
     if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, seat, false) then
@@ -47,19 +47,19 @@ function DRAW_MARKER_SPHERE(coords, radius, colour)
 end
 
 ---Creates an explosion at the co-ordinates.
----Default `explosionType` = 2
 ---@param coords v3
----@param explosionType? integer
----@param add_explosion_Params? table
----@class add_explosion_Params
----@field damageScale float
----@field isAudible boolean
----@field isVisible boolean
----@field cameraShake float
----@field noDamage boolean
-function add_explosion(coords, explosionType, add_explosion_Params)
-    if explosionType == nil then explosionType = 2 end
-    Params = add_explosion_Params or {}
+---@param explosionType? integer [default = 2]
+---@param optionalParams? table<key, value>
+--- - - -
+--- **optionalParams:**
+--- - `damageScale` *float* [default = 1.0]
+--- - `isAudible` *boolean* [default = true]
+--- - `isInvisible` *boolean* [default = false]
+--- - `cameraShake` *float* [default = 0.0]
+--- - `noDamage` *boolean* [default = false]
+function add_explosion(coords, explosionType, optionalParams)
+    explosionType = explosionType or 2
+    local Params = optionalParams or {}
     Params.damageScale = Params.damageScale or 1.0
     if Params.isAudible == nil then Params.isAudible = true end
     Params.cameraShake = Params.cameraShake or 0.0
@@ -70,19 +70,19 @@ function add_explosion(coords, explosionType, add_explosion_Params)
 end
 
 ---Creates an explosion at the co-ordinates owned by a specific ped.
----Default `explosionType` = 2
 ---@param owner Ped
 ---@param coords v3
----@param explosionType? integer
----@param add_own_explosion_Params? table
----@class add_own_explosion_Params
----@field damageScale float
----@field isAudible boolean
----@field isVisible boolean
----@field cameraShake float
-function add_owned_explosion(owner, coords, explosionType, add_own_explosion_Params)
-    if explosionType == nil then explosionType = 2 end
-    Params = add_own_explosion_Params or {}
+---@param explosionType? integer [default = 2]
+---@param optionalParams? table<key, value>
+--- - - -
+--- **optionalParams:**
+--- - `damageScale` *float* [default = 1.0]
+--- - `isAudible` *boolean* [default = true]
+--- - `isInvisible` *boolean* [default = false]
+--- - `cameraShake` *float* [default = 0.0]
+function add_owned_explosion(owner, coords, explosionType, optionalParams)
+    explosionType = explosionType or 2
+    local Params = optionalParams or {}
     Params.damageScale = Params.damageScale or 1.0
     if Params.isAudible == nil then Params.isAudible = true end
     Params.cameraShake = Params.cameraShake or 0.0
@@ -92,33 +92,77 @@ function add_owned_explosion(owner, coords, explosionType, add_own_explosion_Par
         Params.damageScale, Params.isAudible, Params.isInvisible, Params.cameraShake)
 end
 
+---!!! DON'T USE
+---
 ---Fires an instant hit bullet between the two points taking into account an entity to ignore for damage.
 ---@param startCoords v3
 ---@param endCoords v3
----@param shoot_single_bullet_Params? table
----@class shoot_single_bullet_Params
----@field damage integer
----@field perfectAccuracy boolean
----@field weaponHash Hash
----@field owner Ped
----@field CreateTraceVfx boolean
----@field AllowRumble boolean
----@field speed integer
----@field ignoreEntity Entity
-function shoot_single_bullet(startCoords, endCoords, shoot_single_bullet_Params)
-    Params = shoot_single_bullet_Params or {}
+---@param optionalParams? table<key, value>
+--- - - -
+--- **optionalParams:**
+--- - `damage` *integer* [default = 1000]
+--- - `perfectAccuracy` *boolean* [default = false]
+--- - `weaponHash` *Hash* [default = 4058111347(WEAPON_APPISTOL)]
+--- - `owner` *Ped* [default = NULL]
+--- - `createTraceVfx` *boolean* [default = true]
+--- - `allowRumble` *boolean* [default = true]
+--- - `speed` *integer* [default = 1000]
+--- - `ignoreEntity` *Entity* [default = 0]
+function shoot_single_bullet(startCoords, endCoords, optionalParams)
+    local Params = optionalParams or {}
     Params.damage = Params.damage or 1000
     Params.weaponHash = Params.weaponHash or 4058111347
     Params.owner = Params.owner or 0
-    if Params.CreateTraceVfx == nil then Params.CreateTraceVfx = true end
-    if Params.AllowRumble == nil then Params.AllowRumble = true end
+    if Params.createTraceVfx == nil then Params.createTraceVfx = true end
+    if Params.allowRumble == nil then Params.allowRumble = true end
     Params.speed = Params.speed or 1000
     Params.ignoreEntity = Params.ignoreEntity or 0
 
-    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(startCoords.x, startCoords.y, startCoords.z,
+    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
+        startCoords.x, startCoords.y, startCoords.z,
         endCoords.x, endCoords.y, endCoords.z,
         Params.damage, Params.perfectAccuracy, Params.weaponHash, Params.owner,
-        Params.CreateTraceVfx, Params.AllowRumble, Params.speed, Params.ignoreEntity)
+        Params.createTraceVfx, Params.allowRumble, Params.speed, Params.ignoreEntity)
+end
+
+---Trigger a set piece (non looped) particle effect on an entity with an offset position and orientation.
+---@param fxName string
+---@param entity Entity
+---@param offset v3?
+---@param rotation v3?
+---@param scale float?
+---@param invertAxis table<key, boolean>?
+function start_ptfx_on_entity(fxName, entity, offset, rotation, scale, invertAxis)
+    offset = offset or v3(0, 0, 0)
+    rotation = rotation or v3(0, 0, 0)
+    scale = scale or 1.0
+    invertAxis = invertAxis or { x = false, y = false, z = false }
+
+    GRAPHICS.START_NETWORKED_PARTICLE_FX_NON_LOOPED_ON_ENTITY(fxName, entity,
+        offset.x, offset.y, offset.z,
+        rotation.x, rotation.y, rotation.z,
+        scale,
+        invertAxis.x, invertAxis.y, invertAxis.z)
+end
+
+---Trigger a set piece (non looped) particle effect at a world position and orientation.
+---@param fxName string
+---@param coords v3
+---@param rotation v3?
+---@param scale float?
+---@param invertAxis table<key, boolean>?
+---@param ignoreScopeChecks boolean? use this ONLY for the ion cannon effects, otherwise request permission from network code
+function start_ptfx_at_coord(fxName, coords, rotation, scale, invertAxis, ignoreScopeChecks)
+    rotation = rotation or v3(0, 0, 0)
+    scale = scale or 1.0
+    invertAxis = invertAxis or { x = false, y = false, z = false }
+
+    GRAPHICS.START_NETWORKED_PARTICLE_FX_NON_LOOPED_AT_COORD(fxName,
+        coords.x, coords.y, coords.z,
+        rotation.x, rotation.y, rotation.z,
+        scale,
+        invertAxis.x, invertAxis.y, invertAxis.z,
+        ignoreScopeChecks)
 end
 
 ----------------------------------------
@@ -275,6 +319,13 @@ function RequestControl(entity, tick)
     return NETWORK.NETWORK_HAS_CONTROL_OF_ENTITY(entity)
 end
 
+---是否已控制实体
+---@param entity Entity
+---@return boolean
+function hasControl(entity)
+    return NETWORK.NETWORK_HAS_CONTROL_OF_ENTITY(entity)
+end
+
 ---判断是否为玩家
 ---@param Ped Ped
 ---@return boolean
@@ -336,21 +387,23 @@ end
 ---@return boolean
 function IS_HOSTILE_ENTITY(entity)
     if ENTITY.DOES_ENTITY_EXIST(entity) then
-        local blip = HUD.GET_BLIP_FROM_ENTITY(entity)
-        if HUD.DOES_BLIP_EXIST(blip) then
-            local blip_color = HUD.GET_BLIP_COLOUR(blip)
-            if isInTable(Blip_Color_Red, blip_color) then
+        if ENTITY.IS_ENTITY_A_PED(entity) then
+            if is_hostile_ped(entity) then
                 return true
             end
         end
 
-        if ENTITY.IS_ENTITY_A_PED(entity) then
-            if PED.IS_PED_IN_COMBAT(entity, players.user_ped()) then
+        if ENTITY.IS_ENTITY_A_VEHICLE(entity) then
+            local driver = GET_PED_IN_VEHICLE_SEAT(entity, -1)
+            if is_hostile_ped(entity) then
                 return true
             end
-        elseif ENTITY.IS_ENTITY_A_VEHICLE(entity) then
-            local driver = GET_PED_IN_VEHICLE_SEAT(entity, -1)
-            if driver and PED.IS_PED_IN_COMBAT(driver, players.user_ped()) then
+        end
+
+        local blip = HUD.GET_BLIP_FROM_ENTITY(entity)
+        if HUD.DOES_BLIP_EXIST(blip) then
+            local blip_color = HUD.GET_BLIP_COLOUR(blip)
+            if isInTable(Blip_Color_Red, blip_color) then
                 return true
             end
         end
@@ -423,6 +476,8 @@ end
 ---@param to_ent Entity
 ---@param angle? float
 ---要设置的实体，要朝向的实体，角度差
+---
+---最终设置：要朝向的实体的角度 + 角度差
 function SET_ENTITY_HEAD_TO_ENTITY(set_ent, to_ent, angle)
     if angle == nil then angle = 0.0 end
     local Head = ENTITY.GET_ENTITY_HEADING(to_ent)
@@ -446,7 +501,7 @@ end
 ---@param ent Entity
 ---@param canMigrate? boolean
 ---@return boolean
-function Set_Entity_Networked(ent, canMigrate)
+function set_entity_networked(ent, canMigrate)
     if ENTITY.DOES_ENTITY_EXIST(ent) then
         if canMigrate == nil then canMigrate = true end
 
@@ -467,7 +522,7 @@ end
 
 ---获取对应类型的所有实体
 ---@param Type string
----@return table
+---@return table<int, entity>
 function get_all_entities(Type)
     local all_entity = {}
     Type = string.lower(Type)
@@ -486,7 +541,8 @@ end
 ---通过model hash寻找实体
 ---@param Type string
 ---@param isMission boolean
----@return table
+---@param ... Hash
+---@return table<int, entity>
 function get_entities_by_hash(Type, isMission, ...)
     local all_entity = get_all_entities(Type)
 
@@ -513,11 +569,14 @@ end
 
 ---@param ent Entity
 ---@param toggle boolean
-function Set_Entity_Godmode(ent, toggle)
+function set_entity_godmode(ent, toggle)
     ENTITY.SET_ENTITY_INVINCIBLE(ent, toggle)
     ENTITY.SET_ENTITY_PROOFS(ent, toggle, toggle, toggle, toggle, toggle, toggle, toggle, toggle)
 end
 
+---@param entity Entity
+---@param target Entity
+---@return float
 function get_distance_between_entities(entity, target)
     if not ENTITY.DOES_ENTITY_EXIST(entity) or not ENTITY.DOES_ENTITY_EXIST(target) then
         return 0.0
@@ -538,7 +597,7 @@ end
 ---@param heading float
 ---@return Ped
 function Create_Network_Ped(pedType, modelHash, x, y, z, heading)
-    Request_Model(modelHash)
+    request_model(modelHash)
     local ped = PED.CREATE_PED(pedType, modelHash, x, y, z, heading, true, true)
 
     ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(ped, true)
@@ -549,8 +608,8 @@ function Create_Network_Ped(pedType, modelHash, x, y, z, heading)
     local net_id = NETWORK.PED_TO_NET(ped)
     NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(net_id, true)
     NETWORK.SET_NETWORK_ID_CAN_MIGRATE(net_id, true)
-    for _, player in pairs(players.list(true, true, true)) do
-        NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, player, true)
+    for _, pid in pairs(players.list()) do
+        NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, pid, true)
     end
 
     STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(modelHash)
@@ -564,7 +623,7 @@ end
 ---@param heading float
 ---@return Vehicle
 function Create_Network_Vehicle(modelHash, x, y, z, heading)
-    Request_Model(modelHash)
+    request_model(modelHash)
     local veh = VEHICLE.CREATE_VEHICLE(modelHash, x, y, z, heading, true, true, true)
 
     VEHICLE.SET_VEHICLE_ENGINE_ON(veh, true, true, false)
@@ -581,8 +640,8 @@ function Create_Network_Vehicle(modelHash, x, y, z, heading)
     local net_id = NETWORK.VEH_TO_NET(veh)
     NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(net_id, true)
     NETWORK.SET_NETWORK_ID_CAN_MIGRATE(net_id, true)
-    for _, player in pairs(players.list(true, true, true)) do
-        NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, player, true)
+    for _, pid in pairs(players.list()) do
+        NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, pid, true)
     end
 
     STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(modelHash)
@@ -597,7 +656,7 @@ end
 ---@param value int
 ---@return Pickup
 function Create_Network_Pickup(pickupHash, x, y, z, modelHash, value)
-    Request_Model(modelHash)
+    request_model(modelHash)
     local pickup = OBJECT.CREATE_AMBIENT_PICKUP(pickupHash, x, y, z, 4, value, modelHash, false, true)
 
     OBJECT.SET_PICKUP_OBJECT_COLLECTABLE_IN_VEHICLE(pickup)
@@ -610,8 +669,8 @@ function Create_Network_Pickup(pickupHash, x, y, z, modelHash, value)
     local net_id = NETWORK.OBJ_TO_NET(pickup)
     NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(net_id, true)
     NETWORK.SET_NETWORK_ID_CAN_MIGRATE(net_id, true)
-    for _, player in pairs(players.list(true, true, true)) do
-        NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, player, true)
+    for _, pid in pairs(players.list()) do
+        NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, pid, true)
     end
 
     STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(modelHash)
@@ -624,7 +683,7 @@ end
 ---@param z float
 ---@return Object
 function Create_Network_Object(modelHash, x, y, z)
-    Request_Model(modelHash)
+    request_model(modelHash)
     local obj = OBJECT.CREATE_OBJECT_NO_OFFSET(modelHash, x, y, z, true, true, false)
 
     ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(obj, true)
@@ -635,8 +694,8 @@ function Create_Network_Object(modelHash, x, y, z)
     local net_id = NETWORK.OBJ_TO_NET(obj)
     NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(net_id, true)
     NETWORK.SET_NETWORK_ID_CAN_MIGRATE(net_id, true)
-    for _, player in pairs(players.list(true, true, true)) do
-        NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, player, true)
+    for _, pid in pairs(players.list()) do
+        NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, pid, true)
     end
 
     STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(modelHash)
@@ -719,7 +778,7 @@ end
 
 ---升级载具（排除涂装、车轮）
 ---@param vehicle Vehicle
-function Upgrade_Vehicle(vehicle)
+function upgrade_vehicle(vehicle)
     if ENTITY.DOES_ENTITY_EXIST(vehicle) and ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         VEHICLE.SET_VEHICLE_MOD_KIT(vehicle, 0)
         for i = 0, 50 do
@@ -750,7 +809,7 @@ end
 
 ---修复载具
 ---@param vehicle Vehicle
-function Fix_Vehicle(vehicle)
+function fix_vehicle(vehicle)
     if ENTITY.DOES_ENTITY_EXIST(vehicle) and ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         VEHICLE.SET_VEHICLE_FIXED(vehicle)
         VEHICLE.SET_VEHICLE_DEFORMATION_FIXED(vehicle)
@@ -761,7 +820,7 @@ end
 
 ---强化载具
 ---@param vehicle Vehicle
-function Enhance_Vehicle(vehicle)
+function strong_vehicle(vehicle)
     if ENTITY.DOES_ENTITY_EXIST(vehicle) and ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         VEHICLE.SET_VEHICLE_CAN_BREAK(vehicle, false)
         VEHICLE.SET_VEHICLE_TYRES_CAN_BURST(vehicle, false)
@@ -796,12 +855,16 @@ function Enhance_Vehicle(vehicle)
         --MP Only
         VEHICLE.SET_PLANE_RESIST_TO_EXPLOSION(vehicle, true)
         VEHICLE.SET_HELI_RESIST_TO_EXPLOSION(vehicle, true)
+
+        --Remove Check
+        VEHICLE.REMOVE_VEHICLE_UPSIDEDOWN_CHECK(vehicle)
+        VEHICLE.REMOVE_VEHICLE_STUCK_CHECK(vehicle)
     end
 end
 
 ---解锁载具车门
 ---@param vehicle Vehicle
-function Unlock_Vehicle_Doors(vehicle)
+function unlock_vehicle_doors(vehicle)
     if ENTITY.DOES_ENTITY_EXIST(vehicle) and ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, 1)
         VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_PLAYERS(vehicle, false)
@@ -812,30 +875,43 @@ function Unlock_Vehicle_Doors(vehicle)
 end
 
 ---获取最近的载具生成点
----
+--- - - -
 ---`nodeType`: 0 = main roads, 1 = any dry path, 3 = water
----@param pos v3
+---@param coords v3
 ---@param nodeType integer
 ---@return boolean, v3, float
-function Get_Closest_Vehicle_Node(pos, nodeType)
+function get_closest_vehicle_node(coords, nodeType)
     local outCoords = v3.new()
     local outHeading = memory.alloc(4)
-    if PATHFIND.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(pos.x, pos.y, pos.z, memory.addrof(outCoords), outHeading, nodeType
-            , 3.0,
-            0) then
+    if PATHFIND.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(coords.x, coords.y, coords.z,
+            memory.addrof(outCoords), outHeading, nodeType, 3.0, 0) then
         return true, outCoords, memory.read_float(outHeading)
     else
         return false
     end
 end
 
+---获取随机的载具生成点
+---@param coords v3
+---@param radius float
+---@return boolean, v3, integer
+function get_random_vehicle_node(coords, radius)
+    local vecReturn = v3.new()
+    local NodeAddress = memory.alloc_int()
+    if PATHFIND.GET_RANDOM_VEHICLE_NODE(coords.x, coords.y, coords.z, radius,
+            0, false, false, memory.addrof(vecReturn), NodeAddress) then
+        return true, vecReturn, memory.read_int(NodeAddress)
+    else
+        return false
+    end
+end
+
 ---获取载具内所有Ped
----
+--- - - -
 ---返回 ped num 和 ped table
 ---@param vehicle Vehicle
----@return integer
----@return table
-function Get_Peds_In_Vehicle(vehicle)
+---@return integer, table<int, ped>
+function get_vehicle_peds(vehicle)
     local num = 0
     local peds = {}
     if ENTITY.DOES_ENTITY_EXIST(vehicle) and ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
@@ -906,9 +982,9 @@ end
 
 ---增强NPC作战能力
 ---@param ped Ped
----@param isGodmode boolean?
----@param canRagdoll boolean?
-function Increase_Ped_Combat_Ability(ped, isGodmode, canRagdoll)
+---@param isGodmode boolean? [default = false]
+---@param canRagdoll boolean? [default = true]
+function increase_ped_combat_ability(ped, isGodmode, canRagdoll)
     if isGodmode == nil then isGodmode = false end
     if canRagdoll == nil then canRagdoll = true end
 
@@ -934,10 +1010,10 @@ function Increase_Ped_Combat_Ability(ped, isGodmode, canRagdoll)
         PED.SET_PED_SHOOT_RATE(ped, 1000)
         PED.SET_PED_ACCURACY(ped, 100)
         --COMBAT
-        PED.SET_PED_COMBAT_ABILITY(ped, 2) --Professional
-        PED.SET_PED_COMBAT_RANGE(ped, 2) --Far
+        PED.SET_PED_COMBAT_ABILITY(ped, 2)          --Professional
+        PED.SET_PED_COMBAT_RANGE(ped, 2)            --Far
         -- PED.SET_PED_COMBAT_MOVEMENT(ped, 2) --WillAdvance
-        PED.SET_PED_TARGET_LOSS_RESPONSE(ped, 1) --NeverLoseTarget
+        PED.SET_PED_TARGET_LOSS_RESPONSE(ped, 1)    --NeverLoseTarget
         --FLEE ATTRIBUTES
         PED.SET_PED_FLEE_ATTRIBUTES(ped, 512, true) -- NEVER_FLEE
         --TASK
@@ -951,39 +1027,39 @@ end
 
 ---增强NPC作战属性
 ---@param ped Ped
-function Increase_Ped_Combat_Attributes(ped)
+function increase_ped_combat_attributes(ped)
     if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 4, true) --Can Use Dynamic Strafe Decisions
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true) --Always Fight
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 6, false) --Flee Whilst In Vehicle
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 13, true) --Aggressive
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 14, true) --Can Investigate
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 4, true)   --Can Use Dynamic Strafe Decisions
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true)   --Always Fight
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 6, false)  --Flee Whilst In Vehicle
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 13, true)  --Aggressive
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 14, true)  --Can Investigate
         PED.SET_PED_COMBAT_ATTRIBUTES(ped, 17, false) --Always Flee
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true) --Can Taunt In Vehicle
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true) --Can Chase Target On Foot
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 22, true) --Will Drag Injured Peds to Safety
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 24, true) --Use Proximity Firing Rate
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, true) --Perfect Accuracy
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 28, true) --Can Use Frustrated Advance
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 29, true) --Move To Location Before Cover Search
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 38, true) --Disable Bullet Reactions
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 39, true) --Can Bust
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true) --Can Commandeer Vehicles
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 42, true) --Can Flank
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) --Can Fight Armed Peds When Not Armed
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true)  --Can Taunt In Vehicle
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true)  --Can Chase Target On Foot
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 22, true)  --Will Drag Injured Peds to Safety
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 24, true)  --Use Proximity Firing Rate
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, true)  --Perfect Accuracy
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 28, true)  --Can Use Frustrated Advance
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 29, true)  --Move To Location Before Cover Search
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 38, true)  --Disable Bullet Reactions
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 39, true)  --Can Bust
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true)  --Can Commandeer Vehicles
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 42, true)  --Can Flank
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true)  --Can Fight Armed Peds When Not Armed
         PED.SET_PED_COMBAT_ATTRIBUTES(ped, 49, false) --Use Enemy Accuracy Scaling
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 52, true) --Use Vehicle Attack
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 53, true) --Use Vehicle Attack If Vehicle Has Mounted Guns
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 54, true) --Always Equip Best Weapon
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true) --Can See Underwater Peds
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) --Disable Flee From Combat
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 60, true) --Can Throw Smoke Grenade
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true) --Disable All Randoms Flee
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 52, true)  --Use Vehicle Attack
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 53, true)  --Use Vehicle Attack If Vehicle Has Mounted Guns
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 54, true)  --Always Equip Best Weapon
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true)  --Can See Underwater Peds
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true)  --Disable Flee From Combat
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 60, true)  --Can Throw Smoke Grenade
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true)  --Disable All Randoms Flee
     end
 end
 
 ---@param ped Ped
-function Clear_Ped_All_Tasks(ped)
+function clear_ped_all_tasks(ped)
     if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
         TASK.CLEAR_PED_TASKS(ped)
         TASK.CLEAR_DEFAULT_PRIMARY_TASK(ped)
@@ -1000,16 +1076,77 @@ function Clear_Ped_All_Tasks(ped)
 end
 
 ---@param ped Ped
-function Disable_Ped_Flee(ped)
+function disable_ped_flee_attributes(ped)
     if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 6, false) -- FLEE_WHILST_IN_VEHICLE
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 6, false)  -- FLEE_WHILST_IN_VEHICLE
         PED.SET_PED_COMBAT_ATTRIBUTES(ped, 17, false) -- ALWAYS_FLEE
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) -- CAN_FIGHT_ARMED_PEDS_WHEN_NOT_ARMED
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) -- DISABLE_FLEE_FROM_COMBAT
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true) -- DISABLE_ALL_RANDOMS_FLEE
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true)  -- CAN_FIGHT_ARMED_PEDS_WHEN_NOT_ARMED
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true)  -- DISABLE_FLEE_FROM_COMBAT
+        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true)  -- DISABLE_ALL_RANDOMS_FLEE
 
-        PED.SET_PED_FLEE_ATTRIBUTES(ped, 512, true) -- NEVER_FLEE
+        PED.SET_PED_FLEE_ATTRIBUTES(ped, 512, true)   -- NEVER_FLEE
     end
+end
+
+---是否为敌对NPC
+---@param ped Ped
+---@return boolean
+function is_hostile_ped(ped)
+    if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
+        if PED.IS_PED_IN_COMBAT(ped, players.user_ped()) then
+            return true
+        end
+
+        local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ped, players.user_ped())
+        if rel == 4 or rel == 5 then -- Wanted or Hate
+            return true
+        end
+    end
+    return false
+end
+
+---是否为友好NPC
+---@param ped Ped
+---@return boolean
+function is_friendly_ped(ped)
+    if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
+        local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ent, players.user_ped())
+        if rel == 0 or rel == 1 then -- Respect or Like
+            return true
+        end
+    end
+    return false
+end
+
+-----------------------------
+-- Weapon Functions
+-----------------------------
+
+---获取Ped当前的武器Hash
+---@param ped Ped
+---@return Hash
+function get_ped_weapon(ped)
+    local weaponHash = 0
+    if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
+        local ptr = memory.alloc_int()
+        WEAPON.GET_CURRENT_PED_WEAPON(ped, ptr, true)
+        weaponHash = memory.read_int(ptr)
+    end
+    return weaponHash
+end
+
+---获取Ped当前的载具武器Hash
+---@param ped Ped
+---@return Hash
+function get_ped_vehicle_weapon(ped)
+    local weaponHash = 0
+    if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
+        local ptr = memory.alloc_int()
+        if WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(ped, ptr) then
+            weaponHash = memory.read_int(ptr)
+        end
+    end
+    return weaponHash
 end
 
 -----------------------------
@@ -1044,7 +1181,7 @@ function GET_BLIP_TYPE(blip)
     end
 
     local blip_type = HUD.GET_BLIP_INFO_ID_TYPE(blip)
-    return enum_BlipType[blip_type + 1]
+    return enum_BlipType[blip_type]
 end
 
 ---判断标记点是否为实体
@@ -1086,7 +1223,7 @@ function add_blip_for_entity(entity, blipSprite, colour)
     return blip
 end
 
----为实体添加标记点并显示一段时间
+---为实体添加标记点并显示一段时间，已有标记点则闪烁一段时间
 ---@param ent Entity
 ---@param blipSprite integer
 ---@param colour integer
@@ -1095,12 +1232,14 @@ function SHOW_BLIP_TIMER(ent, blipSprite, colour, time)
     util.create_thread(function()
         local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
         --no blip
-        if blip == 0 then
+        if not HUD.DOES_BLIP_EXIST(blip) then
             blip = HUD.ADD_BLIP_FOR_ENTITY(ent)
             HUD.SET_BLIP_SPRITE(blip, blipSprite)
             HUD.SET_BLIP_COLOUR(blip, colour)
             util.yield(time)
             util.remove_blip(blip)
+        else
+            HUD.SET_BLIP_FLASH_TIMER(blip, time)
         end
     end)
 end
@@ -1109,9 +1248,9 @@ end
 -- Streaming Functions
 -------------------------------
 
----请求模型
+---请求模型资源
 ---@param Hash Hash
-function Request_Model(Hash)
+function request_model(Hash)
     if STREAMING.IS_MODEL_VALID(Hash) then
         STREAMING.REQUEST_MODEL(Hash)
         while not STREAMING.HAS_MODEL_LOADED(Hash) do
@@ -1123,7 +1262,7 @@ end
 
 ---请求武器资源
 ---@param Hash Hash
-function Request_Weapon_Asset(Hash)
+function request_weapon_asset(Hash)
     if WEAPON.IS_WEAPON_VALID(Hash) then
         WEAPON.REQUEST_WEAPON_ASSET(Hash, 31, 0)
         while not WEAPON.HAS_WEAPON_ASSET_LOADED(Hash) do
@@ -1131,6 +1270,16 @@ function Request_Weapon_Asset(Hash)
             util.yield()
         end
     end
+end
+
+---请求粒子资源
+---@param asset string
+function request_ptfx_asset(asset)
+    STREAMING.REQUEST_NAMED_PTFX_ASSET(asset)
+    while not STREAMING.HAS_NAMED_PTFX_ASSET_LOADED(asset) do
+        util.yield()
+    end
+    GRAPHICS.USE_PARTICLE_FX_ASSET(asset)
 end
 
 -----------------------------
@@ -1203,8 +1352,8 @@ end
 ---@param text string
 ---@param x float
 ---@param y float
----@param scale? float
----@param margin? float
+---@param scale? float [default = 0.5]
+---@param margin? float [default = 0.01]
 ---@param text_color? Color
 ---@param background_color? Color
 function draw_text_box(text, x, y, scale, margin, text_color, background_color)
@@ -1219,7 +1368,7 @@ function draw_text_box(text, x, y, scale, margin, text_color, background_color)
 end
 
 ---@param text string
----@param scale? float
+---@param scale? float [default = 0.5]
 function DrawString(text, scale)
     scale = scale or 0.5
     local background = {
@@ -1245,36 +1394,38 @@ end
 -----------------------------
 
 ---坐标计算
-vect = {
+Vector = {
     ['new'] = function(x, y, z)
-        return { ['x'] = x,['y'] = y,['z'] = z }
+        return { ['x'] = x, ['y'] = y, ['z'] = z }
     end,
+    --return a - b
     ['subtract'] = function(a, b)
-        return vect.new(a.x - b.x, a.y - b.y, a.z - b.z)
+        return Vector.new(a.x - b.x, a.y - b.y, a.z - b.z)
     end,
+    --return a + b
     ['add'] = function(a, b)
-        return vect.new(a.x + b.x, a.y + b.y, a.z + b.z)
+        return Vector.new(a.x + b.x, a.y + b.y, a.z + b.z)
     end,
     ['mag'] = function(a)
         return math.sqrt(a.x ^ 2 + a.y ^ 2 + a.z ^ 2)
     end,
     ['norm'] = function(a)
-        local mag = vect.mag(a)
-        return vect.div(a, mag)
+        local mag = Vector.mag(a)
+        return Vector.div(a, mag)
     end,
+    --return a * b
     ['mult'] = function(a, b)
-        return vect.new(a.x * b, a.y * b, a.z * b)
+        return Vector.new(a.x * b, a.y * b, a.z * b)
     end,
+    --return a / b
     ['div'] = function(a, b)
-        return vect.new(a.x / b, a.y / b, a.z / b)
+        return Vector.new(a.x / b, a.y / b, a.z / b)
     end,
+    --return the distance between two vectors
     ['dist'] = function(a, b)
-        --returns the distance between two vectors
-        return vect.mag(vect.subtract(a, b))
+        return Vector.mag(Vector.subtract(a, b))
     end
 }
-
----@class Colour
 
 ---@return Colour
 function get_random_colour()
@@ -1345,7 +1496,7 @@ function get_raycast_result(dist, flag)
     local offset = get_offset_from_cam(dist)
 
     local handle = SHAPETEST.START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE(camPos.x, camPos.y, camPos.z, offset.x,
-            offset.y, offset.z, flag, players.user_ped(), 7)
+        offset.y, offset.z, flag, players.user_ped(), 7)
     SHAPETEST.GET_SHAPE_TEST_RESULT(handle, didHit, memory.addrof(endCoords), memory.addrof(normal), hitEntity)
 
     result.didHit = memory.read_byte(didHit) ~= 0
@@ -1358,7 +1509,7 @@ end
 ---返回玩家正在瞄准的实体
 ---@param player player
 ---@return Entity|nil
-function GetEntity_PlayerIsAimingAt(player)
+function get_entity_player_is_aiming_at(player)
     local ent = nil
     if PLAYER.IS_PLAYER_FREE_AIMING(player) then
         local ptr = memory.alloc_int()
@@ -1405,6 +1556,18 @@ function newTableValue(pos, value)
 end
 
 -----------------------------
+-- Notification Functions
+-----------------------------
+
+THEFEED_POST = {}
+
+---@param message string
+function THEFEED_POST.TEXT(message)
+    util.BEGIN_TEXT_COMMAND_THEFEED_POST(message)
+    HUD.END_TEXT_COMMAND_THEFEED_POST_TICKER(false, false)
+end
+
+-----------------------------
 -- Fun Functions
 -----------------------------
 
@@ -1419,7 +1582,7 @@ function fall_entity_explosion(entity, owner)
         TASK.CLEAR_PED_TASKS_IMMEDIATELY(entity)
         PED.SET_PED_TO_RAGDOLL(entity, 500, 500, 0, false, false, false)
     end
-    ENTITY.APPLY_FORCE_TO_ENTITY(entity, 1, 0.0, 0.0, 30.0, math.random( -2, 2), math.random( -2, 2), 0.0, 0, false,
+    ENTITY.APPLY_FORCE_TO_ENTITY(entity, 1, 0.0, 0.0, 30.0, math.random(-2, 2), math.random(-2, 2), 0.0, 0, false,
         false
         , true, false, false)
     util.yield(1000)

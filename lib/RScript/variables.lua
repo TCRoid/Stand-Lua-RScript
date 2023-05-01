@@ -4,7 +4,6 @@
 
 Globals = {
     IsUsingComputerScreen = 75693,
-
     -- appHackerTruck
     SpecialCargoBuyScreenString = "appHackerTruck",
     SpecialCargoBuyScreenArgs = 4592, -- arg count needed to properly start the script, possibly outdated
@@ -12,22 +11,22 @@ Globals = {
     CEO_Ability = {
         -- global, default_value
         Cost = {
-            { 12847, 1000 }, -- Drop Ammo
-            { 12848, 1500 }, -- Drop Armor
-            { 12849, 1000 }, -- Drop Bull Shark
+            { 12847, 1000 },  -- Drop Ammo
+            { 12848, 1500 },  -- Drop Armor
+            { 12849, 1000 },  -- Drop Bull Shark
             { 12850, 12000 }, -- Ghost Organization
             { 12851, 15000 }, -- Bribe Authorities
-            { 15890, 5000 }, -- Request Luxury Helicopter
+            { 15890, 5000 },  -- Request Luxury Helicopter
         },
         Cooldown = {
-            { 12834, 30000 }, -- Drop Ammo
-            { 12835, 30000 }, -- Drop Armor
-            { 12836, 30000 }, -- Drop Bull Shark
+            { 12834, 30000 },  -- Drop Ammo
+            { 12835, 30000 },  -- Drop Armor
+            { 12836, 30000 },  -- Drop Bull Shark
             { 12837, 600000 }, -- Ghost Organization
             { 12838, 600000 }, -- Bribe Authorities
         },
     },
-
+    
     CEO_Vehicle_Request_Cost = {
         -- global, default_value
         { 12842, 20000 }, { 12843, 5000 }, { 12844, 5000 }, { 12845, 5000 }, { 12846, 25000 },
@@ -36,17 +35,16 @@ Globals = {
         { 19302, 5000 }, { 19304, 10000 },
     },
 
-    RC_Bandito = 2793046 + 6874, -- freemode.c, (..., joaat("rcbandito"), 1)
-    RC_Tank = 2793046 + 6875, -- freemode.c, (..., joaat("minitank"), 1)
+    RC_Bandito = 2793046 + 6874,     -- freemode.c, (..., joaat("rcbandito"), 1)
+    RC_Tank = 2793046 + 6875,        -- freemode.c, (..., joaat("minitank"), 1)
     Ballistic_Armor = 2793046 + 896, -- freemode.c, (!NETWORK::NETWORK_IS_SCRIPT_ACTIVE("AM_AMMO_DROP", PLAYER::PLAYER_ID(), true, 0))
-
+   
     -- 无视犯罪
     NCOPS = {
         type = 2793046 + 4654,
         flag = 2793046 + 4655,
         time = 2793046 + 4657,
     },
-
     GB_GHOST_ORG_DURATION = 262145 + 13149,
     GB_BRIBE_AUTHORITIES_DURATION = 262145 + 13150,
     FIXER_SECURITY_CONTRACT_REFRESH_TIME = 262145 + 31700,
@@ -112,8 +110,6 @@ end
 Locals = {
     -- fm_mission_controller_2020
     MC_TLIVES_2020 = 48647 + 868 + 1,
-
-
     -- fm_mission_controller
     MC_TLIVES = 26133 + 1325 + 1,
 }

@@ -3,19 +3,19 @@
 ---------------------------
 
 util.keep_running()
-util.require_natives("natives-1672190175")
+util.require_natives("1681379138")
 
--- 脚本版本
-local Script_Version <const> = "2023/2/18"
+local SCRIPT_VERSION <const> = "2023/5/1"
 
--- 支持的GTA线上版本
-local Support_GTAO <const> = 1.66
+local SUPPORT_GTAO <const> = 1.66
+
 
 
 
 ------------------------------
 --------- File & Dir ---------
 ------------------------------
+
 -- Store
 local StoreDir <const> = filesystem.store_dir() .. "RScript\\"
 if not filesystem.exists(StoreDir) then
@@ -52,6 +52,7 @@ local Required_Files <const> = {
     "lib\\RScript\\Menu\\Mission_options.lua",
     "lib\\RScript\\Menu\\Dev_options.lua",
     "lib\\RScript\\Menu\\Fun_options.lua",
+    "lib\\RScript\\Menu\\Player_options.lua",
 }
 for _, file in pairs(Required_Files) do
     local file_path = ScriptDir .. file
@@ -67,6 +68,7 @@ require "RScript.labels"
 require "RScript.variables"
 require "RScript.functions"
 require "RScript.functions2"
+
 
 
 
@@ -135,12 +137,12 @@ function GetEntityInfo_ListItem(ent)
         table.insert(ent_info_item_data, newTableValue(1, t))
 
         --Distance
-        local distance = vect.dist(my_pos, ent_pos)
+        local distance = Vector.dist(my_pos, ent_pos)
         t = "Distance: " .. string.format("%.4f", distance)
         table.insert(ent_info_item_data, newTableValue(1, t))
 
         --Subtract with your position
-        local pos_sub = vect.subtract(my_pos, ent_pos)
+        local pos_sub = Vector.subtract(my_pos, ent_pos)
         t = "Subtract Coords X: " ..
             string.format("%.2f", pos_sub.x) ..
             ", Y: " .. string.format("%.2f", pos_sub.y) .. ", Z: " .. string.format("%.2f", pos_sub.z)
@@ -213,7 +215,7 @@ function GetEntityInfo_ListItem(ent)
 
             --Ped Type
             local ped_type = PED.GET_PED_TYPE(ent)
-            t = "Ped Type: " .. enum_PedType[ped_type + 1]
+            t = "Ped Type: " .. enum_PedType[ped_type]
             ent_info = newTableValue(1, t)
             table.insert(ent_info_item_data, ent_info)
 
@@ -224,6 +226,12 @@ function GetEntityInfo_ListItem(ent)
 
             --Money
             t = "Money: " .. PED.GET_PED_MONEY(ent)
+            ent_info = newTableValue(1, t)
+            table.insert(ent_info_item_data, ent_info)
+
+            --Relationship
+            local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ent, players.user_ped())
+            t = "Relationship: " .. enum_RelationshipType[rel]
             ent_info = newTableValue(1, t)
             table.insert(ent_info_item_data, ent_info)
 
@@ -249,20 +257,20 @@ function GetEntityInfo_ListItem(ent)
 
             --Combat Movement
             local combat_movement = PED.GET_PED_COMBAT_MOVEMENT(ent)
-            t = "Combat Movement: " .. enum_CombatMovement[combat_movement + 1]
+            t = "Combat Movement: " .. enum_CombatMovement[combat_movement]
             ent_info = newTableValue(1, t)
             table.insert(ent_info_item_data, ent_info)
 
             --Combat Range
             local combat_range = PED.GET_PED_COMBAT_RANGE(ent)
-            t = "Combat Range: " .. enum_CombatRange[combat_range + 1]
+            t = "Combat Range: " .. enum_CombatRange[combat_range]
             ent_info = newTableValue(1, t)
             table.insert(ent_info_item_data, ent_info)
 
             --Alertness
             local alertness = PED.GET_PED_ALERTNESS(ent)
             if alertness >= 0 then
-                t = "Alertness: " .. enum_Alertness[alertness + 1]
+                t = "Alertness: " .. enum_Alertness[alertness]
                 ent_info = newTableValue(1, t)
                 table.insert(ent_info_item_data, ent_info)
             end
@@ -354,7 +362,7 @@ function GetEntityInfo_ListItem(ent)
 
             --Door Lock Status
             local door_lock_status = VEHICLE.GET_VEHICLE_DOOR_LOCK_STATUS(ent)
-            t = "Door Lock Status: " .. enum_VehicleLockStatus[door_lock_status + 1]
+            t = "Door Lock Status: " .. enum_VehicleLockStatus[door_lock_status]
             ent_info = newTableValue(1, t)
             table.insert(ent_info_item_data, ent_info)
         end
@@ -489,11 +497,8 @@ end)
 
 Entity_Control = {}
 
------- 创建对应实体的menu操作 ------
-
---- 返回 menu_name, help_text
+-- 返回 menu_name, help_text
 function Entity_Control.get_menu_info(ent, k)
-    -- menu_name
     local modelHash = ENTITY.GET_ENTITY_MODEL(ent)
     local modelName = util.reverse_joaat(modelHash)
     local menu_name = k .. ". "
@@ -503,7 +508,6 @@ function Entity_Control.get_menu_info(ent, k)
         menu_name = menu_name .. modelHash
     end
 
-    -- help_text
     local help_text = ""
 
     if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
@@ -530,6 +534,7 @@ function Entity_Control.get_menu_info(ent, k)
     return menu_name, help_text
 end
 
+-- 创建对应实体的menu操作
 function Entity_Control.generate_menu(menu_parent, ent, index)
     Entity_Control.entity(menu_parent, ent, index)
 
@@ -546,7 +551,9 @@ function Entity_Control.generate_menu(menu_parent, ent, index)
     end
 end
 
---- Entity ---
+----------------
+-- Entity
+----------------
 
 function Entity_Control.entity(menu_parent, ent, index)
     menu.divider(menu_parent, menu.get_menu_name(menu_parent))
@@ -566,22 +573,6 @@ function Entity_Control.entity(menu_parent, ent, index)
             end
         end
     end)
-    menu.toggle(menu_parent, "描绘实体边界框", {}, "", function(toggle)
-        if toggle then
-            if control_ent_tick_handler.draw_bounding_box.toggle then
-                util.toast("正在描绘其它的实体")
-            else
-                control_ent_tick_handler.draw_bounding_box.ent = ent
-                control_ent_tick_handler.draw_bounding_box.toggle = true
-            end
-        else
-            if control_ent_tick_handler.draw_bounding_box.toggle and
-                control_ent_tick_handler.draw_bounding_box.ent ~= ent then
-            else
-                control_ent_tick_handler.draw_bounding_box.toggle = false
-            end
-        end
-    end)
     menu.toggle(menu_parent, "显示实体信息", {}, "", function(toggle)
         if toggle then
             if control_ent_tick_handler.show_info.toggle then
@@ -597,7 +588,31 @@ function Entity_Control.entity(menu_parent, ent, index)
             end
         end
     end)
-    menu.action(menu_parent, "复制实体信息", {}, "", function()
+
+
+    ----- 实体信息 -----
+    local ent_info = menu.list(menu_parent, "实体信息", {}, "")
+
+    menu.readonly(ent_info, "实体 Index:", ent)
+    menu.readonly(ent_info, "实体 Hash:", ENTITY.GET_ENTITY_MODEL(ent))
+
+    menu.toggle(ent_info, "描绘实体边界框", {}, "", function(toggle)
+        if toggle then
+            if control_ent_tick_handler.draw_bounding_box.toggle then
+                util.toast("正在描绘其它的实体")
+            else
+                control_ent_tick_handler.draw_bounding_box.ent = ent
+                control_ent_tick_handler.draw_bounding_box.toggle = true
+            end
+        else
+            if control_ent_tick_handler.draw_bounding_box.toggle and
+                control_ent_tick_handler.draw_bounding_box.ent ~= ent then
+            else
+                control_ent_tick_handler.draw_bounding_box.toggle = false
+            end
+        end
+    end)
+    menu.action(ent_info, "复制实体信息", {}, "", function()
         local ent_info_item_data = GetEntityInfo_ListItem(ent)
         local text = ""
         for _, info in pairs(ent_info_item_data) do
@@ -608,13 +623,19 @@ function Entity_Control.entity(menu_parent, ent, index)
         util.copy_to_clipboard(text, false)
         util.toast("完成")
     end)
-    menu.action(menu_parent, "复制Hash", {}, "", function()
-        local text = ENTITY.GET_ENTITY_MODEL(ent)
-        util.copy_to_clipboard(text, false)
-        util.toast(text)
+    menu.action(ent_info, "保存实体信息到日志", {}, "", function()
+        local ent_info_item_data = GetEntityInfo_ListItem(ent)
+        local text = ""
+        for _, info in pairs(ent_info_item_data) do
+            if info[1] ~= nil then
+                text = text .. info[1] .. "\n"
+            end
+        end
+        util.log(text)
+        util.toast("完成")
     end)
 
-    local save_hash = menu.list(menu_parent, "保存到 Hash 列表", {}, "")
+    local save_hash = menu.list(ent_info, "保存到 Hash 列表", {}, "")
     local save_ent_hash_name = util.reverse_joaat(ENTITY.GET_ENTITY_MODEL(ent))
     menu.text_input(save_hash, "名称", { "save_ent_hash" .. index }, "", function(value)
         save_ent_hash_name = value
@@ -623,17 +644,22 @@ function Entity_Control.entity(menu_parent, ent, index)
         Saved_Hash_List.save(save_ent_hash_name, ent)
     end)
 
-    menu.click_slider(menu_parent, "请求控制实体", { "request_ctrl_ent" .. index }, "发送请求控制的次数",
-        1, 100
-        , 20, 1, function(value)
-        if RequestControl(ent, value) then
-            util.toast("请求控制成功！")
-        else
-            util.toast("请求控制失败")
-        end
-    end)
 
+
+    menu.click_slider(menu_parent, "请求控制实体", { "request_ctrl_ent" .. index }, "发送请求控制的次数",
+        1, 100, 20, 1, function(value)
+            if RequestControl(ent, value) then
+                util.toast("请求控制成功！")
+            else
+                util.toast("请求控制失败")
+            end
+        end)
+
+
+
+    ----- Entity 选项 -----
     local entity_options = menu.list(menu_parent, "Entity 选项", {}, "")
+
     menu.toggle(entity_options, "无敌", {}, "", function(toggle)
         ENTITY.SET_ENTITY_INVINCIBLE(ent, toggle)
         ENTITY.SET_ENTITY_PROOFS(ent, toggle, toggle, toggle, toggle, toggle, toggle, toggle, toggle)
@@ -654,11 +680,11 @@ function Entity_Control.entity(menu_parent, ent, index)
     menu.toggle(entity_options, "无重力", {}, "", function(toggle)
         ENTITY.SET_ENTITY_HAS_GRAVITY(ent, not toggle)
     end)
-    menu.toggle(entity_options, "添加地图标记", {}, "", function(toggle)
+    menu.toggle(entity_options, "地图标记点", {}, "", function(toggle)
         if toggle then
             local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
             --no blip
-            if blip == 0 then
+            if not HUD.DOES_BLIP_EXIST(blip) then
                 local color = 27
                 --ped combat
                 if ENTITY.IS_ENTITY_A_PED(ent) then
@@ -675,37 +701,25 @@ function Entity_Control.entity(menu_parent, ent, index)
                         end
                     end
                 end
-                --
+
                 blip = HUD.ADD_BLIP_FOR_ENTITY(ent)
                 HUD.SET_BLIP_COLOUR(blip, color)
-                util.create_tick_handler(function()
-                    if not toggle then
-                        return false
-                    elseif ENTITY.DOES_ENTITY_EXIST(ent) and not ENTITY.IS_ENTITY_DEAD(ent) then
-                        local heading = ENTITY.GET_ENTITY_HEADING(ent)
-                        HUD.SET_BLIP_ROTATION(blip, round(heading))
-                    elseif not HUD.DOES_BLIP_EXIST(blip) then
-                        return false
-                    else
-                        util.remove_blip(blip)
-                        return false
-                    end
-                end)
             end
         else
             local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
-            if blip > 0 then
+            if HUD.DOES_BLIP_EXIST(blip) then
                 util.remove_blip(blip)
             end
         end
     end)
     menu.click_slider(entity_options, "设置透明度", { "ctrl_ent" .. index .. "_alpha" },
-        "Ranging from 0 to 255 but chnages occur after every 20 percent (after every 51).", 0, 255, 0, 5,
+        "Ranging from 0 to 255 but chnages occur after every 20 percent (after every 51).",
+        0, 255, 0, 5,
         function(value)
             ENTITY.SET_ENTITY_ALPHA(ent, value, false)
         end)
-    menu.click_slider(entity_options, "设置最大速度", { "ctrl_ent" .. index .. "_max_speed" }, "", 0.0, 1000.0, 0.0
-        , 10.0,
+    menu.click_slider(entity_options, "设置最大速度", { "ctrl_ent" .. index .. "_max_speed" }, "",
+        0, 1000, 0, 10,
         function(value)
             ENTITY.SET_ENTITY_MAX_SPEED(ent, value)
         end)
@@ -719,14 +733,17 @@ function Entity_Control.entity(menu_parent, ent, index)
         util.toast(ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent))
     end)
     menu.action(entity_options, "设置为网络实体", {}, "可将本地实体同步给其他玩家", function()
-        util.toast(Set_Entity_Networked(ent))
+        util.toast(set_entity_networked(ent))
     end)
     menu.action(entity_options, "删除", {}, "", function()
         entities.delete_by_handle(ent)
     end)
 
-    ----- Health -----
+
+
+    ----- Health 选项 -----
     local health_options = menu.list(menu_parent, "实体血量", {}, "")
+
     local readonly_ent_health = menu.readonly(health_options, "血量")
     menu.on_tick_in_viewport(readonly_ent_health, function()
         local health = ENTITY.GET_ENTITY_HEALTH(ent)
@@ -746,13 +763,16 @@ function Entity_Control.entity(menu_parent, ent, index)
         ENTITY.SET_ENTITY_MAX_HEALTH(ent, ctrl_ent_health)
     end)
 
+
+
     Entity_Control.teleport(menu_parent, ent, index)
     Entity_Control.movement(menu_parent, ent, index)
 end
 
 function Entity_Control.teleport(menu_parent, ent, index)
-    ----- Teleport -----
+    ----- Teleport 选项 -----
     local teleport_options = menu.list(menu_parent, "传送 选项", {}, "")
+
     local tp = {
         x = 0.0,
         y = 2.0,
@@ -818,24 +838,26 @@ function Entity_Control.teleport(menu_parent, ent, index)
 end
 
 function Entity_Control.movement(menu_parent, ent, index)
-    ----- Movement -----
+    ----- Movement 选项 -----
     local movement_options = menu.list(menu_parent, "移动 选项", {}, "")
-    menu.click_slider_float(movement_options, "前/后 移动", { "ctrl_ent" .. index .. "_move_y" }, "", -10000, 10000,
-        0, 50, function(value)
-        value = value * 0.01
-        SET_ENTITY_MOVE(ent, 0.0, value, 0.0)
-    end)
-    menu.click_slider_float(movement_options, "左/右 移动", { "ctrl_ent" .. index .. "_move_x" }, "", -10000, 10000,
-        0, 50, function(value)
-        value = value * 0.01
-        SET_ENTITY_MOVE(ent, value, 0.0, 0.0)
-    end)
-    menu.click_slider_float(movement_options, "上/下 移动", { "ctrl_ent" .. index .. "_move_z" }, "", -10000, 10000,
-        0, 50, function(value)
-        value = value * 0.01
-        SET_ENTITY_MOVE(ent, 0.0, 0.0, value)
-    end)
-    menu.click_slider_float(movement_options, "朝向", { "ctrl_ent" .. index .. "_head" }, "", -36000, 36000, 0, 100,
+
+    menu.click_slider_float(movement_options, "前/后 移动", { "ctrl_ent" .. index .. "_move_y" }, "",
+        -10000, 10000, 0, 50, function(value)
+            value = value * 0.01
+            SET_ENTITY_MOVE(ent, 0.0, value, 0.0)
+        end)
+    menu.click_slider_float(movement_options, "左/右 移动", { "ctrl_ent" .. index .. "_move_x" }, "",
+        -10000, 10000, 0, 50, function(value)
+            value = value * 0.01
+            SET_ENTITY_MOVE(ent, value, 0.0, 0.0)
+        end)
+    menu.click_slider_float(movement_options, "上/下 移动", { "ctrl_ent" .. index .. "_move_z" }, "",
+        -10000, 10000, 0, 50, function(value)
+            value = value * 0.01
+            SET_ENTITY_MOVE(ent, 0.0, 0.0, value)
+        end)
+    menu.click_slider_float(movement_options, "朝向", { "ctrl_ent" .. index .. "_head" }, "",
+        -36000, 36000, 0, 100,
         function(value)
             value = value * 0.01
             local head = ENTITY.GET_ENTITY_HEADING(ent)
@@ -859,30 +881,34 @@ function Entity_Control.movement(menu_parent, ent, index)
     pos.x = string.format("%.2f", coords.x) * 100
     pos.y = string.format("%.2f", coords.y) * 100
     pos.z = string.format("%.2f", coords.z) * 100
-    menu.slider_float(movement_options, "X:", { "ctrl_ent" .. index .. "_x" }, "", -1000000, 1000000,
-        math.ceil(pos.x), 50, function(value)
-        local coords = ENTITY.GET_ENTITY_COORDS(ent)
-        coords.x = value * 0.01
-        SET_ENTITY_COORDS(ent, coords)
-    end)
-    menu.slider_float(movement_options, "Y:", { "ctrl_ent" .. index .. "_y" }, "", -1000000, 1000000,
-        math.ceil(pos.y), 50, function(value)
-        local coords = ENTITY.GET_ENTITY_COORDS(ent)
-        coords.y = value * 0.01
-        SET_ENTITY_COORDS(ent, coords)
-    end)
-    menu.slider_float(movement_options, "Z:", { "ctrl_ent" .. index .. "_z" }, "", -1000000, 1000000,
-        math.ceil(pos.z), 50, function(value)
-        local coords = ENTITY.GET_ENTITY_COORDS(ent)
-        coords.z = value * 0.01
-        SET_ENTITY_COORDS(ent, coords)
-    end)
+    menu.slider_float(movement_options, "X:", { "ctrl_ent" .. index .. "_x" }, "",
+        -1000000, 1000000, math.ceil(pos.x), 50, function(value)
+            local coords = ENTITY.GET_ENTITY_COORDS(ent)
+            coords.x = value * 0.01
+            SET_ENTITY_COORDS(ent, coords)
+        end)
+    menu.slider_float(movement_options, "Y:", { "ctrl_ent" .. index .. "_y" }, "",
+        -1000000, 1000000, math.ceil(pos.y), 50, function(value)
+            local coords = ENTITY.GET_ENTITY_COORDS(ent)
+            coords.y = value * 0.01
+            SET_ENTITY_COORDS(ent, coords)
+        end)
+    menu.slider_float(movement_options, "Z:", { "ctrl_ent" .. index .. "_z" }, "",
+        -1000000, 1000000, math.ceil(pos.z), 50, function(value)
+            local coords = ENTITY.GET_ENTITY_COORDS(ent)
+            coords.z = value * 0.01
+            SET_ENTITY_COORDS(ent, coords)
+        end)
 end
 
---- Ped ---
+----------------
+-- Ped
+----------------
 
 function Entity_Control.ped(menu_parent, ped, index)
+    ----- Ped 选项 -----
     local ped_options = menu.list(menu_parent, "Ped 选项", {}, "")
+
     menu.toggle(ped_options, "燃烧", {}, "", function(toggle)
         if toggle then
             FIRE.START_ENTITY_FIRE(ped)
@@ -898,8 +924,8 @@ function Entity_Control.ped(menu_parent, ped, index)
             end
         end
     end)
-    menu.list_action(ped_options, "给予武器", {}, "", WeaponName_ListItem, function(value)
-        local weaponHash = util.joaat(WeaponModel_List[value])
+    menu.list_action(ped_options, "给予武器", {}, "", Weapon_Common.ListItem, function(value)
+        local weaponHash = util.joaat(Weapon_Common.ModelList[value])
         WEAPON.GIVE_WEAPON_TO_PED(ped, weaponHash, -1, false, true)
         WEAPON.SET_CURRENT_PED_WEAPON(ped, weaponHash, false)
     end)
@@ -934,168 +960,173 @@ function Entity_Control.ped(menu_parent, ped, index)
         PED.RESURRECT_PED(ped)
     end)
 
+
+
     Entity_Control.ped_attribute(menu_parent, ped, index)
     Entity_Control.ped_combat(menu_parent, ped, index)
     Entity_Control.ped_task(menu_parent, ped, index)
 end
 
 function Entity_Control.ped_attribute(menu_parent, ped, index)
+    ----- Ped Attribute 选项 -----
     local ped_attribute_options = menu.list(menu_parent, "Ped Attribute 选项", {}, "")
 
     local Alive_Status = menu.list(ped_attribute_options, "Alive Status", {}, "")
     menu.toggle(Alive_Status, "DIES_WHEN_INJURED", {},
         "Sets the ped will die when injured.", function(toggle)
-        PED.SET_PED_DIES_WHEN_INJURED(ped, toggle)
-    end)
+            PED.SET_PED_DIES_WHEN_INJURED(ped, toggle)
+        end)
     menu.toggle(Alive_Status, "ENABLE_WEAPON_BLOCKING", {},
         "Allows this non-player ped to use weapon blocked behavior.", function(toggle)
-        PED.SET_PED_ENABLE_WEAPON_BLOCKING(ped, toggle)
-    end)
+            PED.SET_PED_ENABLE_WEAPON_BLOCKING(ped, toggle)
+        end)
     menu.toggle(Alive_Status, "DIES_IN_VEHICLE", {},
         "Sets the ped to die in the vehicle or play a special anim outside the vehicle.", function(toggle)
-        PED.SET_PED_DIES_IN_VEHICLE(ped, toggle)
-    end)
+            PED.SET_PED_DIES_IN_VEHICLE(ped, toggle)
+        end)
 
     local Movment_Attribute = menu.list(ped_attribute_options, "Movment Attribute", {}, "")
     menu.toggle(Movment_Attribute, "ALLOWED_TO_DUCK", {},
         "Sets if the ped is allowed to duck.", function(toggle)
-        PED.SET_PED_ALLOWED_TO_DUCK(ped, toggle)
-    end)
+            PED.SET_PED_ALLOWED_TO_DUCK(ped, toggle)
+        end)
     menu.toggle(Movment_Attribute, "DUCKING", {},
         "Sets a ped to a ducking pose. \nMake sure that SET_PED_ALLOWED_TO_DUCK is set true.", function(toggle)
-        PED.SET_PED_DUCKING(ped, toggle)
-    end)
+            PED.SET_PED_DUCKING(ped, toggle)
+        end)
 
     local Damage_Status = menu.list(ped_attribute_options, "Damage Status", {}, "")
     menu.toggle(Damage_Status, "STAY_IN_VEHICLE_WHEN_JACKED", {},
         "Sets a passenger ped will stay in the vehicle when jacked.", function(toggle)
-        PED.SET_PED_STAY_IN_VEHICLE_WHEN_JACKED(ped, toggle)
-    end)
+            PED.SET_PED_STAY_IN_VEHICLE_WHEN_JACKED(ped, toggle)
+        end)
     menu.toggle(Damage_Status, "SET_DISABLE_HIGH_FALL_DEATH", {},
         "Sets the ped to not be instantly killed when falling from above 10m.", function(toggle)
-        PED.SET_DISABLE_HIGH_FALL_DEATH(ped, toggle)
-    end)
+            PED.SET_DISABLE_HIGH_FALL_DEATH(ped, toggle)
+        end)
 
     local Water_Status = menu.list(ped_attribute_options, "Water Status", {}, "")
     menu.toggle(Water_Status, "DIES_IN_WATER", {},
         "Sets whether a ped takes damage in deep water.", function(toggle)
-        PED.SET_PED_DIES_IN_WATER(ped, toggle)
-    end)
+            PED.SET_PED_DIES_IN_WATER(ped, toggle)
+        end)
     menu.toggle(Water_Status, "DIES_IN_SINKING_VEHICLE", {},
         "Sets whether a ped takes damage in a sinking vehicle.", function(toggle)
-        PED.SET_PED_DIES_IN_SINKING_VEHICLE(ped, toggle)
-    end)
+            PED.SET_PED_DIES_IN_SINKING_VEHICLE(ped, toggle)
+        end)
     menu.toggle(Water_Status, "DIES_INSTANTLY_IN_WATER", {},
         "Sets whether the ped will die instantly if it finds itself in a body of water.", function(toggle)
-        PED.SET_PED_DIES_INSTANTLY_IN_WATER(ped, toggle)
-    end)
+            PED.SET_PED_DIES_INSTANTLY_IN_WATER(ped, toggle)
+        end)
 
     local Combat_Status = menu.list(ped_attribute_options, "Combat Status", {}, "")
     menu.toggle(Combat_Status, "SUFFERS_CRITICAL_HITS", {},
         "Sets if a healthy character can be killed by a single bullet (e.g. head shot).", function(toggle)
-        PED.SET_PED_SUFFERS_CRITICAL_HITS(ped, toggle)
-    end)
+            PED.SET_PED_SUFFERS_CRITICAL_HITS(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "UPPER_BODY_DAMAGE_ONLY", {},
         "Don't allow full body damage (e.g. fall over anims).", function(toggle)
-        PED.SET_PED_UPPER_BODY_DAMAGE_ONLY(ped, toggle)
-    end)
+            PED.SET_PED_UPPER_BODY_DAMAGE_ONLY(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "CAN_BE_SHOT_IN_VEHICLE", {},
         "Sets if a character can be killed while in a vehicle.", function(toggle)
-        PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(ped, toggle)
-    end)
+            PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "SET_TREAT_AS_AMBIENT_PED_FOR_DRIVER_LOCKON", {},
         "Treats ped as ambient ped for driver lock on tests (e.g. mission peds we don't want to lock on to)."
         , function(toggle)
-        PED.SET_TREAT_AS_AMBIENT_PED_FOR_DRIVER_LOCKON(ped, toggle)
-    end)
+            PED.SET_TREAT_AS_AMBIENT_PED_FOR_DRIVER_LOCKON(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "CAN_BE_TARGETTED", {},
         "Sets if a ped can be targetted.", function(toggle)
-        PED.SET_PED_CAN_BE_TARGETTED(ped, toggle)
-    end)
+            PED.SET_PED_CAN_BE_TARGETTED(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "SET_ALLOW_LOCKON_TO_PED_IF_FRIENDLY", {},
         "Sets if a ped can be targetted.", function(toggle)
-        PED.SET_ALLOW_LOCKON_TO_PED_IF_FRIENDLY(ped, toggle)
-    end)
+            PED.SET_ALLOW_LOCKON_TO_PED_IF_FRIENDLY(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "SET_ENABLE_HANDCUFFS", {},
         "Set whether hands should be cuffed when ragdolling.", function(toggle)
-        PED.SET_ENABLE_HANDCUFFS(ped, toggle)
-    end)
+            PED.SET_ENABLE_HANDCUFFS(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "SET_ENABLE_BOUND_ANKLES", {},
         "Set whether ankles should be cuffed when ragdolling.", function(toggle)
-        PED.SET_ENABLE_BOUND_ANKLES(ped, toggle)
-    end)
+            PED.SET_ENABLE_BOUND_ANKLES(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "SET_ENABLE_SCUBA", {},
         "Set whether scuba gear is equipped to adjust swimming behavior.", function(toggle)
-        PED.SET_ENABLE_SCUBA(ped, toggle)
-    end)
+            PED.SET_ENABLE_SCUBA(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "CAN_EVASIVE_DIVE", {},
         "Set if a ped steps or dives out of the way of running peds or moving vehicles.", function(toggle)
-        PED.SET_PED_CAN_EVASIVE_DIVE(ped, toggle)
-    end)
+            PED.SET_PED_CAN_EVASIVE_DIVE(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "WILL_ONLY_ATTACK_WANTED_PLAYER", {},
         "Sets the ped will attack the player only is they have a wanted level.", function(toggle)
-        PED.SET_PED_WILL_ONLY_ATTACK_WANTED_PLAYER(ped, toggle)
-    end)
+            PED.SET_PED_WILL_ONLY_ATTACK_WANTED_PLAYER(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "CAN_BE_TARGETED_WHEN_INJURED", {},
         "Sets an injured ped can be targetted.", function(toggle)
-        PED.SET_PED_CAN_BE_TARGETED_WHEN_INJURED(ped, toggle)
-    end)
+            PED.SET_PED_CAN_BE_TARGETED_WHEN_INJURED(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "CAN_PEEK_IN_COVER", {},
         "Sets the ped can peek whilst in cover.", function(toggle)
-        PED.SET_PED_CAN_PEEK_IN_COVER(ped, toggle)
-    end)
+            PED.SET_PED_CAN_PEEK_IN_COVER(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "CAN_COWER_IN_COVER", {},
         "Sets the ped can cower whilst in cover.", function(toggle)
-        PED.SET_PED_CAN_COWER_IN_COVER(ped, toggle)
-    end)
+            PED.SET_PED_CAN_COWER_IN_COVER(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "CAN_BE_TARGETED_WITHOUT_LOS", {},
         "The ped can be targetted through walls.", function(toggle)
-        PED.SET_PED_CAN_BE_TARGETED_WITHOUT_LOS(ped, toggle)
-    end)
+            PED.SET_PED_CAN_BE_TARGETED_WITHOUT_LOS(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "CAN_SWITCH_WEAPON", {},
         "Set if a ped can swap weapons.", function(toggle)
-        PED.SET_PED_CAN_SWITCH_WEAPON(ped, toggle)
-    end)
+            PED.SET_PED_CAN_SWITCH_WEAPON(ped, toggle)
+        end)
     menu.toggle(Combat_Status, "CAN_BE_DRAGGED_OUT", {},
         "Sets if a ped can be dragged out of a vehicle.", function(toggle)
-        PED.SET_PED_CAN_BE_DRAGGED_OUT(ped, toggle)
-    end)
+            PED.SET_PED_CAN_BE_DRAGGED_OUT(ped, toggle)
+        end)
 
     local Natural_Motion = menu.list(ped_attribute_options, "Natural Motion", {}, "")
     menu.toggle(Natural_Motion, "RAGDOLL_ON_COLLISION", {},
         "Set the ped to ragdoll on collision with geometry.", function(toggle)
-        PED.SET_PED_RAGDOLL_ON_COLLISION(ped, toggle)
-    end)
+            PED.SET_PED_RAGDOLL_ON_COLLISION(ped, toggle)
+        end)
     menu.toggle(Natural_Motion, "CAN_RAGDOLL", {},
         "Sets if a ped can ragdoll. Ragdolls are swtiched on by default.", function(toggle)
-        PED.SET_PED_CAN_RAGDOLL(ped, toggle)
-    end)
+            PED.SET_PED_CAN_RAGDOLL(ped, toggle)
+        end)
     menu.toggle(Natural_Motion, "CAN_RAGDOLL_FROM_PLAYER_IMPACT", {},
         "Sets if the ped will ragdoll if the player collides with then.", function(toggle)
-        PED.SET_PED_CAN_RAGDOLL_FROM_PLAYER_IMPACT(ped, toggle)
-    end)
+            PED.SET_PED_CAN_RAGDOLL_FROM_PLAYER_IMPACT(ped, toggle)
+        end)
 
     local General = menu.list(ped_attribute_options, "General", {}, "")
     menu.toggle(General, "ALLOW_MINOR_REACTIONS_AS_MISSION_PED", {},
         "Sets a ped will react to minor events like the player crashing their car as a mission ped.", function(toggle)
-        PED.SET_PED_ALLOW_MINOR_REACTIONS_AS_MISSION_PED(ped, toggle)
-    end)
+            PED.SET_PED_ALLOW_MINOR_REACTIONS_AS_MISSION_PED(ped, toggle)
+        end)
     menu.toggle(General, "GET_OUT_UPSIDE_DOWN_VEHICLE", {},
         "Sets the ped so that the police will always go after them if they drive past.", function(toggle)
-        PED.SET_PED_GET_OUT_UPSIDE_DOWN_VEHICLE(ped, toggle)
-    end)
+            PED.SET_PED_GET_OUT_UPSIDE_DOWN_VEHICLE(ped, toggle)
+        end)
     menu.toggle(General, "PLAYS_HEAD_ON_HORN_ANIM_WHEN_DIES_IN_VEHICLE", {},
         "Set ped playes head on horn anim when they die in a vehicle.", function(toggle)
-        PED.SET_PED_PLAYS_HEAD_ON_HORN_ANIM_WHEN_DIES_IN_VEHICLE(ped, toggle)
-    end)
+            PED.SET_PED_PLAYS_HEAD_ON_HORN_ANIM_WHEN_DIES_IN_VEHICLE(ped, toggle)
+        end)
 end
 
 function Entity_Control.ped_combat(menu_parent, ped, index)
+    ----- Ped Combat 选项 -----
     local ped_combat_options = menu.list(menu_parent, "Ped Combat 选项", {}, "")
+
     menu.action(ped_combat_options, "一键无敌强化NPC", {}, "适用于友方NPC", function()
-        Increase_Ped_Combat_Ability(ped, true, false)
-        Increase_Ped_Combat_Attributes(ped)
-        util.toast("Done!")
+        increase_ped_combat_ability(ped, true, false)
+        increase_ped_combat_attributes(ped)
+        util.toast("完成！")
     end)
     menu.click_slider(ped_combat_options, "射击频率", {}, "", 0, 1000, 100, 10, function(value)
         PED.SET_PED_SHOOT_RATE(ped, value)
@@ -1104,22 +1135,23 @@ function Entity_Control.ped_combat(menu_parent, ped, index)
         PED.SET_PED_ACCURACY(ped, value)
     end)
     menu.slider_text(ped_combat_options, "战斗能力", {}, "", enum_CombatAbility, function(value)
-        PED.SET_PED_COMBAT_ABILITY(ped, value - 1)
+        PED.SET_PED_COMBAT_ABILITY(ped, value)
     end)
     menu.slider_text(ped_combat_options, "战斗范围", {}, "", enum_CombatRange, function(value)
-        PED.SET_PED_COMBAT_RANGE(ped, value - 1)
+        PED.SET_PED_COMBAT_RANGE(ped, value)
     end)
     menu.slider_text(ped_combat_options, "战斗走位", {}, "", enum_CombatMovement, function(value)
-        PED.SET_PED_COMBAT_MOVEMENT(ped, value - 1)
+        PED.SET_PED_COMBAT_MOVEMENT(ped, value)
     end)
     menu.slider_text(ped_combat_options, "警觉度", {}, "", enum_Alertness, function(value)
-        PED.SET_PED_ALERTNESS(ped, value - 1)
+        PED.SET_PED_ALERTNESS(ped, value)
     end)
-    menu.list_action(ped_combat_options, "射击模式", {}, "", Ped_FirePattern_ListItem, function(value)
-        PED.SET_PED_FIRING_PATTERN(ped, value)
+    menu.list_action(ped_combat_options, "射击模式", {}, "", Ped_FirePattern.ListItem, function(value)
+        PED.SET_PED_FIRING_PATTERN(ped, Ped_FirePattern.ValueList[value])
     end)
 
 
+    --- Ped Combat Attributes ---
     local combat_attributes_options = menu.list(ped_combat_options, "Ped Combat Attributes", {}, "")
     local combat_attributes_menus = {}
     menu.toggle(combat_attributes_options, "全部开/关", {}, "", function(toggle)
@@ -1127,37 +1159,43 @@ function Entity_Control.ped_combat(menu_parent, ped, index)
             menu.set_value(the_menu, toggle)
         end
     end)
-    for id, data in pairs(Ped_CombatAttributes_List) do
-        combat_attributes_menus[id] = menu.toggle(combat_attributes_options, data[1], {}, data[2], function(toggle)
+    for key, data in pairs(Ped_CombatAttributes.List) do
+        local id = Ped_CombatAttributes.ValueList[key]
+        combat_attributes_menus[key] = menu.toggle(combat_attributes_options, data[1], {}, data[2], function(toggle)
             PED.SET_PED_COMBAT_ATTRIBUTES(ped, id, toggle)
         end)
     end
 
+
+    --- Ped Combat Float ---
     local combat_float_options = menu.list(ped_combat_options, "Ped Combat Float", {}, "")
     local combat_float_menus = {}
-    for id, data in pairs(Ped_CombatFloat_List) do
+    for key, data in pairs(Ped_CombatFloat.List) do
         local default_num = string.format("%.2f", PED.GET_COMBAT_FLOAT(ped, id))
         default_num = tonumber(default_num) * 100
         if default_num > 50000 or default_num < -50000 then
             default_num = 0
         end
+        local id = Ped_CombatFloat.ValueList[key]
 
         combat_float_menus[id] = menu.click_slider_float(combat_float_options, data[1], {}, data[2],
             -50000, 50000, math.floor(default_num), 10, function(value)
-            PED.SET_COMBAT_FLOAT(ped, id, value * 0.01)
-        end)
+                PED.SET_COMBAT_FLOAT(ped, id, value * 0.01)
+            end)
     end
 end
 
 function Entity_Control.ped_task(menu_parent, ped, index)
+    ----- Ped Task 选项 -----
     local ped_task_options = menu.list(menu_parent, "Ped Task 选项", {}, "")
 
     menu.action(ped_task_options, "Clear Ped Tasks Immediately", {}, "", function()
         TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
     end)
     menu.action(ped_task_options, "Clear Ped All Tasks", {}, "", function()
-        Clear_Ped_All_Tasks(ped)
+        clear_ped_all_tasks(ped)
     end)
+
 
     --- Ped Task Follow ---
     local task_follow = menu.list(ped_task_options, "NPC 跟随", {}, "")
@@ -1182,9 +1220,8 @@ function Entity_Control.ped_task(menu_parent, ped, index)
         function(value)
             ped_follow.z = value * 0.01
         end)
-    menu.slider_float(task_follow, "移动速度", { "task_ped" .. index .. "follow_movementSpeed" }, "", 0, 100000, 700
-        , 100,
-        function(value)
+    menu.slider_float(task_follow, "移动速度", { "task_ped" .. index .. "follow_movementSpeed" }, "",
+        0, 100000, 700, 100, function(value)
             ped_follow.movementSpeed = value * 0.01
         end)
     menu.slider(task_follow, "超时时间", { "task_ped" .. index .. "follow_timeout" }, "", -1, 10000, -1, 1,
@@ -1192,8 +1229,7 @@ function Entity_Control.ped_task(menu_parent, ped, index)
             ped_follow.timeout = value
         end)
     menu.slider_float(task_follow, "停止跟随的最远距离", { "task_ped" .. index .. "follow_stoppingRange" }, "",
-        0, 100000, 1000, 100,
-        function(value)
+        0, 100000, 1000, 100, function(value)
             ped_follow.stoppingRange = value * 0.01
         end)
     menu.toggle(task_follow, "持续跟随", {}, "", function(toggle)
@@ -1203,8 +1239,9 @@ function Entity_Control.ped_task(menu_parent, ped, index)
         TASK.TASK_FOLLOW_TO_OFFSET_OF_ENTITY(ped, players.user_ped(), ped_follow.x, ped_follow.y, ped_follow.z,
             ped_follow.movementSpeed,
             ped_follow.timeout, ped_follow.stoppingRange, ped_follow.persistFollowing)
-        util.toast("Done!")
+        util.toast("完成！")
     end)
+
 
     menu.action(ped_task_options, "躲在掩体处", {}, "", function()
         TASK.TASK_STAY_IN_COVER(ped)
@@ -1218,51 +1255,54 @@ function Entity_Control.ped_task(menu_parent, ped, index)
     end)
     menu.click_slider_float(ped_task_options, "讨厌附近目标", { "task_ped" .. index .. "hated_around" }, "",
         0, 50000, 0, 10, function(value)
-        TASK.TASK_COMBAT_HATED_TARGETS_AROUND_PED(ped, value * 0.01, 0)
-    end)
+            TASK.TASK_COMBAT_HATED_TARGETS_AROUND_PED(ped, value * 0.01, 0)
+        end)
 end
 
---- Vehicle ---
+----------------
+-- Vehicle
+----------------
 
 function Entity_Control.vehicle(menu_parent, vehicle, index)
+    ----- Vehicle 选项 -----
     local vehicle_options = menu.list(menu_parent, "Vehicle 选项", {}, "")
 
     menu.slider_text(vehicle_options, "传送到载具内", {}, "会将原座位的NPC传送出去",
         { "空座位", "驾驶位", "副驾驶位" }, function(value)
-        if value == 1 then
-            if VEHICLE.ARE_ANY_VEHICLE_SEATS_FREE(vehicle) then
-                PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, -2)
-            else
-                util.toast("载具已无空座位")
-            end
-        elseif value == 2 then
-            if VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
-                PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, -1)
-            else
-                local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
-                if ped ~= 0 then
-                    SET_ENTITY_MOVE(ped, 0.0, 0.0, 3.0)
-                    PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, -1)
-                end
-            end
-        elseif value == 3 then
-            if VEHICLE.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS(vehicle) > 1 then
-                if VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, 0, false) then
-                    PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, 0)
+            if value == 1 then
+                if VEHICLE.ARE_ANY_VEHICLE_SEATS_FREE(vehicle) then
+                    PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, -2)
                 else
-                    local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, 0)
+                    util.toast("载具已无空座位")
+                end
+            elseif value == 2 then
+                if VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
+                    PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, -1)
+                else
+                    local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
                     if ped ~= 0 then
                         SET_ENTITY_MOVE(ped, 0.0, 0.0, 3.0)
-                        PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, 0)
+                        PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, -1)
                     end
                 end
-            else
-                util.toast("载具无副驾驶位")
+            elseif value == 3 then
+                if VEHICLE.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS(vehicle) > 1 then
+                    if VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, 0, false) then
+                        PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, 0)
+                    else
+                        local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, 0)
+                        if ped ~= 0 then
+                            SET_ENTITY_MOVE(ped, 0.0, 0.0, 3.0)
+                            PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, 0)
+                        end
+                    end
+                else
+                    util.toast("载具无副驾驶位")
+                end
             end
-        end
-    end)
+        end)
     menu.action(vehicle_options, "清空载具", {}, "将NPC全部传送出去", function()
-        local num, peds = Get_Peds_In_Vehicle(vehicle)
+        local num, peds = get_vehicle_peds(vehicle)
         if num > 0 then
             for k, ped in pairs(peds) do
                 SET_ENTITY_MOVE(ped, 0.0, 0.0, 3.0)
@@ -1272,21 +1312,21 @@ function Entity_Control.vehicle(menu_parent, vehicle, index)
 
     menu.click_slider(vehicle_options, "向前加速", { "ctrl_veh" .. index .. "_forward_speed" },
         "", 0, 1000, 30, 10, function(value)
-        VEHICLE.SET_VEHICLE_FORWARD_SPEED(vehicle, value)
-    end)
+            VEHICLE.SET_VEHICLE_FORWARD_SPEED(vehicle, value)
+        end)
     menu.click_slider(vehicle_options, "向前加速XY", { "ctrl_veh" .. index .. "_forward_speed_xy" },
         "if the vehicle is in the air this will only set the xy speed.", 0, 1000, 30, 10, function(value)
-        VEHICLE.SET_VEHICLE_FORWARD_SPEED_XY(vehicle, value)
-    end)
+            VEHICLE.SET_VEHICLE_FORWARD_SPEED_XY(vehicle, value)
+        end)
 
     menu.action(vehicle_options, "修复载具", {}, "", function()
-        Fix_Vehicle(vehicle)
+        fix_vehicle(vehicle)
     end)
     menu.action(vehicle_options, "升级载具", {}, "", function()
-        Upgrade_Vehicle(vehicle)
+        upgrade_vehicle(vehicle)
     end)
     menu.action(vehicle_options, "强化载具", {}, "", function()
-        Enhance_Vehicle(vehicle)
+        strong_vehicle(vehicle)
     end)
 
     menu.list_action(vehicle_options, "车窗", {}, "", {
@@ -1341,6 +1381,13 @@ function Entity_Control.vehicle(menu_parent, vehicle, index)
         end
     end)
 
+    menu.slider_text(vehicle_options, "引擎", {}, "", { "打开", "关闭" }, function(value)
+        if value == 1 then
+            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
+        elseif value == 2 then
+            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, false, true, false)
+        end
+    end)
     menu.slider_text(vehicle_options, "车门锁", {}, "", { "解锁", "上锁" }, function(value)
         VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, value)
     end)
@@ -1355,22 +1402,22 @@ function Entity_Control.vehicle(menu_parent, vehicle, index)
             end
         end
     end)
-    menu.slider_text(vehicle_options, "引擎", {}, "", { "打开", "关闭" }, function(value)
-        if value == 1 then
-            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
-        elseif value == 2 then
-            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, false, true, false)
+    menu.action(vehicle_options, "分离车轮", {}, "", function(value)
+        local ptr = entities.handle_to_pointer(vehicle)
+        for i = 0, 7 do
+            entities.detach_wheel(ptr, i)
         end
     end)
 
     menu.click_slider(vehicle_options, "Modify Top Speed (%)", { "ctrl_veh" .. index .. "_top_speed" },
         "", -100, 100, 0, 10, function(value)
-        VEHICLE.MODIFY_VEHICLE_TOP_SPEED(vehicle, value)
-    end)
+            VEHICLE.MODIFY_VEHICLE_TOP_SPEED(vehicle, value)
+        end)
     menu.click_slider(vehicle_options, "Set Max Speed", { "ctrl_veh" .. index .. "_max_speed" },
         "", 0, 10000, 500, 50, function(value)
-        VEHICLE.SET_VEHICLE_MAX_SPEED(vehicle, value)
-    end)
+            VEHICLE.SET_VEHICLE_MAX_SPEED(vehicle, value)
+        end)
+
 
 
     Entity_Control.vehicle_attribute(menu_parent, vehicle, index)
@@ -1380,187 +1427,190 @@ function Entity_Control.vehicle(menu_parent, vehicle, index)
 end
 
 function Entity_Control.vehicle_attribute(menu_parent, vehicle, index)
+    ----- Vehicle Attribute 选项 -----
     local vehicle_attribute_options = menu.list(menu_parent, "Vehicle Attribute 选项", {}, "")
 
     menu.divider(vehicle_attribute_options, "SET_VEHICLE")
     menu.toggle(vehicle_attribute_options, "DISABLE_TOWING", {},
         "Stop a tow truck from automatically picking up a vehicle.", function(toggle)
-        VEHICLE.SET_VEHICLE_DISABLE_TOWING(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_DISABLE_TOWING(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "IS_RACING", {},
         "If set to true, vehicle will use more aggressive avoidance parameters when avoiding other vehicles that are also racing."
         , function(toggle)
-        VEHICLE.SET_VEHICLE_IS_RACING(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_IS_RACING(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "SET_CAN_RESPRAY_VEHICLE", {},
         "Set the vehicle can be resparyed.", function(toggle)
-        VEHICLE.SET_CAN_RESPRAY_VEHICLE(vehicle, toggle)
-    end)
+            VEHICLE.SET_CAN_RESPRAY_VEHICLE(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "SET_GOON_BOSS_VEHICLE", {},
         "Enable special enter/exit vehicle functionality. Only when holding enter input, the Boss will enter rear seat, while the Goon will not be able to leave or enter it."
         , function(toggle)
-        VEHICLE.SET_GOON_BOSS_VEHICLE(vehicle, toggle)
-    end)
+            VEHICLE.SET_GOON_BOSS_VEHICLE(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "SET_OPEN_REAR_DOORS_ON_EXPLOSION", {},
         "Prevents or allows the rear doors of the vehicle from opening from a sticky bomb explosion."
         , function(toggle)
-        VEHICLE.SET_OPEN_REAR_DOORS_ON_EXPLOSION(vehicle, toggle)
-    end)
+            VEHICLE.SET_OPEN_REAR_DOORS_ON_EXPLOSION(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "UNDRIVEABLE", {},
         "Sets the vehicle to be undriveable (but still enterable).", function(toggle)
-        VEHICLE.SET_VEHICLE_UNDRIVEABLE(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_UNDRIVEABLE(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "PROVIDES_COVER", {},
         "Sets if a vehicle provides cover.", function(toggle)
-        VEHICLE.SET_VEHICLE_PROVIDES_COVER(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_PROVIDES_COVER(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "CAN_BE_TARGETTED", {},
         "Sets if a vehicle can be targetted.", function(toggle)
-        VEHICLE.SET_VEHICLE_CAN_BE_TARGETTED(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_CAN_BE_TARGETTED(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "NEEDS_TO_BE_HOTWIRED", {},
         "Makes the player play the hotwire anim. \nSets the vehicle must be hotwired.", function(toggle)
-        VEHICLE.SET_VEHICLE_NEEDS_TO_BE_HOTWIRED(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_NEEDS_TO_BE_HOTWIRED(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "IN_CAR_MOD_SHOP", {},
         "Set if a vehicle is in the car mod shop.", function(toggle)
-        VEHICLE.SET_VEHICLE_IN_CAR_MOD_SHOP(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_IN_CAR_MOD_SHOP(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "IS_CONSIDERED_BY_PLAYER", {},
         "Passing FALSE to this command will make the player not consider this vehicle when pressing triangle(F) to enter a vehicle. The player will instead pick the next closest vehicle to steal/enter."
         , function(toggle)
-        VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "LIMIT_SPEED_WHEN_PLAYER_INACTIVE", {},
         "Sets whether a player controlled vehicle will limit it's speed when the player's control is disabled (used in cutscenes etc). \nDefault is to limit. \nDisable the limiting of player vehicle speed when the player loses control."
         , function(toggle)
-        VEHICLE.SET_VEHICLE_LIMIT_SPEED_WHEN_PLAYER_INACTIVE(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_LIMIT_SPEED_WHEN_PLAYER_INACTIVE(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "STOP_INSTANTLY_WHEN_PLAYER_INACTIVE", {},
         "Sets whether a player controlled vehicle will stop instantly when the player's control is disabled (used in cutscenes etc). \nDefault is to stop instantly \nAllow/prevent the player vheicle loss all its velocity instantly when the player loses control."
         , function(toggle)
-        VEHICLE.SET_VEHICLE_STOP_INSTANTLY_WHEN_PLAYER_INACTIVE(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_STOP_INSTANTLY_WHEN_PLAYER_INACTIVE(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "HAS_BEEN_OWNED_BY_PLAYER", {},
         "If vehicle has not been owned by player, the player will get a wanted level when entering (if spotted by police). \nIf the player has already owned a vehicle he is free to use it. (The game will set this flag to true first time the player drives a vehicle). \nMission vehicles will default to true. \nSets a vehicle owned by the player so he wont get a wanted level when entering it."
         , function(toggle)
-        VEHICLE.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "SET_POLICE_FOCUS_WILL_TRACK_VEHICLE", {},
         "If this is set to True the police focus circle is always focussed on the car. If this is False the player has a chance to escape police attention if undetected. \nBy default law enforcement vehicles have this bit set to true and all other cars have false. \nSets the police focus on the vehicle."
         , function(toggle)
-        VEHICLE.SET_POLICE_FOCUS_WILL_TRACK_VEHICLE(vehicle, toggle)
-    end)
+            VEHICLE.SET_POLICE_FOCUS_WILL_TRACK_VEHICLE(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "INFLUENCES_WANTED_LEVEL", {},
         "Sets whether or not a vehicle has an effect on the wanted level if that vehicle is specified as the \"victim\"."
         , function(toggle)
-        VEHICLE.SET_VEHICLE_INFLUENCES_WANTED_LEVEL(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_INFLUENCES_WANTED_LEVEL(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "IS_WANTED", {},
         "Sets whether or not a vehicle is wanted. Cops can identify peds in wanted vehicles easier.", function(toggle)
-        VEHICLE.SET_VEHICLE_IS_WANTED(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_IS_WANTED(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "NOT_STEALABLE_AMBIENTLY", {},
         "Sets a vehicle so that it can't be stealable by an ambient ped.", function(toggle)
-        VEHICLE.SET_VEHICLE_NOT_STEALABLE_AMBIENTLY(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_NOT_STEALABLE_AMBIENTLY(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "IS_STOLEN", {},
         "Toggle whether a vehicle is considered stolen.", function(toggle)
-        VEHICLE.SET_VEHICLE_IS_STOLEN(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_IS_STOLEN(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "USED_FOR_PILOT_SCHOOL", {},
         "Mark the vehicle as used for pilot school.", function(toggle)
-        VEHICLE.SET_VEHICLE_USED_FOR_PILOT_SCHOOL(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_USED_FOR_PILOT_SCHOOL(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "CAN_BE_USED_BY_FLEEING_PEDS", {},
         "Allows the vehicle to be used by fleeing peds.", function(toggle)
-        VEHICLE.SET_VEHICLE_CAN_BE_USED_BY_FLEEING_PEDS(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_CAN_BE_USED_BY_FLEEING_PEDS(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "KEEP_ENGINE_ON_WHEN_ABANDONED", {},
         "Flags the vehicle to keep the engine on after being abandoned.", function(toggle)
-        VEHICLE.SET_VEHICLE_KEEP_ENGINE_ON_WHEN_ABANDONED(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_KEEP_ENGINE_ON_WHEN_ABANDONED(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "WHEELS_CAN_BREAK_OFF_WHEN_BLOW_UP", {},
         "Allow wheels breaking off when car blows up.", function(toggle)
-        VEHICLE.SET_VEHICLE_WHEELS_CAN_BREAK_OFF_WHEN_BLOW_UP(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_WHEELS_CAN_BREAK_OFF_WHEN_BLOW_UP(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "NO_EXPLOSION_DAMAGE_FROM_DRIVER", {},
         "Don't allow vehicle to take explosion damage from explosions generated by owner.", function(toggle)
-        VEHICLE.SET_VEHICLE_NO_EXPLOSION_DAMAGE_FROM_DRIVER(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_NO_EXPLOSION_DAMAGE_FROM_DRIVER(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "SET_DONT_PROCESS_VEHICLE_GLASS", {},
         "Stops vehicle glass from being processed - should enable this for vehicles with window protectors."
         , function(toggle)
-        VEHICLE.SET_DONT_PROCESS_VEHICLE_GLASS(vehicle, toggle)
-    end)
+            VEHICLE.SET_DONT_PROCESS_VEHICLE_GLASS(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "SET_INVERT_VEHICLE_CONTROLS", {},
         "Sets whether to invert the vehicle controls.", function(toggle)
-        VEHICLE.SET_INVERT_VEHICLE_CONTROLS(vehicle, toggle)
-    end)
+            VEHICLE.SET_INVERT_VEHICLE_CONTROLS(vehicle, toggle)
+        end)
     menu.toggle(vehicle_attribute_options, "SET_DISABLE_PED_STAND_ON_TOP", {},
         "Disables map collision on the vehicle.", function(toggle)
-        VEHICLE.SET_DISABLE_PED_STAND_ON_TOP(vehicle, toggle)
-    end)
+            VEHICLE.SET_DISABLE_PED_STAND_ON_TOP(vehicle, toggle)
+        end)
 
     menu.divider(vehicle_attribute_options, "SET_BIKE")
     menu.toggle(vehicle_attribute_options, "EASY_TO_LAND", {},
         "Sets whether peds will stay on bikes after heavy landings.", function(toggle)
-        VEHICLE.SET_BIKE_EASY_TO_LAND(vehicle, toggle)
-    end)
+            VEHICLE.SET_BIKE_EASY_TO_LAND(vehicle, toggle)
+        end)
 end
 
 function Entity_Control.vehicle_health(menu_parent, vehicle, index)
-    local hash = ENTITY.GET_ENTITY_MODEL(vehicle)
+    ----- Vehicle Health 选项 -----
     local vehicle_health_options = menu.list(menu_parent, "Vehicle Health 选项", {}, "")
+
+    local hash = ENTITY.GET_ENTITY_MODEL(vehicle)
 
     menu.click_slider(vehicle_health_options, "引擎血量", { "ctrl_veh" .. index .. "_engine_health" },
         "1000.0 = full, 0.0 = go on fire, -1000.0 = burnt out", -1000, 1000,
         1000, 100, function(value)
-        VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, value)
-    end)
+            VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, value)
+        end)
     menu.click_slider(vehicle_health_options, "油箱血量", { "ctrl_veh" .. index .. "_petrol_tank_health" },
         "1000.0 = full, 0.0 = go on fire, -1000.0 = burnt out", -1000, 1000,
         1000, 100, function(value)
-        VEHICLE.SET_VEHICLE_PETROL_TANK_HEALTH(vehicle, value)
-    end)
+            VEHICLE.SET_VEHICLE_PETROL_TANK_HEALTH(vehicle, value)
+        end)
     menu.click_slider(vehicle_health_options, "外观血量", { "ctrl_veh" .. index .. "_body_health" },
         "1000.0 = full, 0.0 = damaged", -1000, 1000,
         1000, 100, function(value)
-        VEHICLE.SET_VEHICLE_BODY_HEALTH(vehicle, value)
-    end)
+            VEHICLE.SET_VEHICLE_BODY_HEALTH(vehicle, value)
+        end)
 
     if VEHICLE.IS_THIS_MODEL_A_PLANE(hash) then
         menu.click_slider(vehicle_health_options, "飞机引擎血量", { "ctrl_veh" .. index .. "_plane_engine_health" }
             ,
             "the same as the above function but it allows the engine health on planes to be set higher than the max health."
             , -1000, 10000, 1000, 100, function(value)
-            VEHICLE.SET_PLANE_ENGINE_HEALTH(vehicle, value)
-        end)
+                VEHICLE.SET_PLANE_ENGINE_HEALTH(vehicle, value)
+            end)
     end
 
     if VEHICLE.IS_THIS_MODEL_A_HELI(hash) then
         menu.click_slider(vehicle_health_options, "直升机主旋翼血量",
             { "ctrl_veh" .. index .. "_main_rotor_health" },
             "", -1000, 1000, 1000, 100, function(value)
-            VEHICLE.SET_HELI_MAIN_ROTOR_HEALTH(vehicle, value)
-        end)
+                VEHICLE.SET_HELI_MAIN_ROTOR_HEALTH(vehicle, value)
+            end)
         menu.click_slider(vehicle_health_options, "直升机尾旋翼血量",
             { "ctrl_veh" .. index .. "_tail_rotor_health" },
             "", -1000, 1000, 1000, 100, function(value)
-            VEHICLE.SET_HELI_TAIL_ROTOR_HEALTH(vehicle, value)
-        end)
+                VEHICLE.SET_HELI_TAIL_ROTOR_HEALTH(vehicle, value)
+            end)
     end
 
 
     local vehicle_other_attribute = menu.list(vehicle_health_options, "其它属性", {}, "")
     menu.toggle(vehicle_other_attribute, "强化载具", {},
         "Sets the vehicle so it only takes 25% of the normal damage when hit.", function(toggle)
-        VEHICLE.SET_VEHICLE_STRONG(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_STRONG(vehicle, toggle)
+        end)
     menu.toggle(vehicle_other_attribute, "Strong Axles", {},
         "Sets so that axles don't break easily.", function(toggle)
-        VEHICLE.SET_VEHICLE_HAS_STRONG_AXLES(vehicle, toggle)
-    end)
+            VEHICLE.SET_VEHICLE_HAS_STRONG_AXLES(vehicle, toggle)
+        end)
     menu.toggle(vehicle_other_attribute, "禁止发动机故障失火", {}, "", function(toggle)
         VEHICLE.SET_VEHICLE_CAN_ENGINE_MISSFIRE(vehicle, not toggle)
     end)
@@ -1600,8 +1650,8 @@ function Entity_Control.vehicle_health(menu_parent, vehicle, index)
         end)
         menu.toggle(vehicle_other_attribute, "提高直升机防炸性", {},
             "(MP Only) Heli might survive from 2 or more explosions when set", function(toggle)
-            VEHICLE.SET_HELI_RESIST_TO_EXPLOSION(vehicle, toggle)
-        end)
+                VEHICLE.SET_HELI_RESIST_TO_EXPLOSION(vehicle, toggle)
+            end)
         menu.toggle(vehicle_other_attribute, "禁止直升机身体损坏而爆炸", {}, "", function(toggle)
             VEHICLE.SET_DISABLE_HELI_EXPLODE_FROM_BODY_DAMAGE(vehicle, toggle)
         end)
@@ -1610,12 +1660,13 @@ function Entity_Control.vehicle_health(menu_parent, vehicle, index)
     if VEHICLE.IS_THIS_MODEL_A_PLANE(hash) then
         menu.toggle(vehicle_other_attribute, "提高飞机防炸性", {},
             "(MP Only) Plane might survive from 2 or more explosions when set", function(toggle)
-            VEHICLE.SET_PLANE_RESIST_TO_EXPLOSION(vehicle, toggle)
-        end)
+                VEHICLE.SET_PLANE_RESIST_TO_EXPLOSION(vehicle, toggle)
+            end)
     end
 end
 
 function Entity_Control.vehicle_appearance(menu_parent, vehicle, index)
+    ----- Vehicle Appearance 选项 -----
     local vehicle_appearance_options = menu.list(menu_parent, "Vehicle Appearance 选项", {}, "")
 
     menu.action(vehicle_appearance_options, "修复外观", {}, "只修复外观，不修复受到的伤害",
@@ -1624,8 +1675,8 @@ function Entity_Control.vehicle_appearance(menu_parent, vehicle, index)
         end)
     menu.click_slider(vehicle_appearance_options, "灰尘程度", { "ctrl_veh" .. index .. "_dirt_level" },
         "", 0, 15, 0, 1, function(value)
-        VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, value)
-    end)
+            VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, value)
+        end)
 
     menu.divider(vehicle_appearance_options, "颜色")
     menu.action(vehicle_appearance_options, "随机喷漆", {}, "", function()
@@ -1633,20 +1684,20 @@ function Entity_Control.vehicle_appearance(menu_parent, vehicle, index)
         VEHICLE.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR(vehicle, primary.r, primary.g, primary.b)
         VEHICLE.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR(vehicle, secundary.r, secundary.g, secundary.b)
     end)
-    menu.colour(vehicle_appearance_options, "主色调", { "ctrl_veh" .. index .. "_primary_colour" }, ""
-        , 0, 0, 0, 1, false, function(colour)
-        local r = math.ceil(255 * colour.r)
-        local g = math.ceil(255 * colour.g)
-        local b = math.ceil(255 * colour.b)
-        VEHICLE.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR(vehicle, r, g, b)
-    end)
-    menu.colour(vehicle_appearance_options, "副色调", { "ctrl_veh" .. index .. "_secondary_colour" }, ""
-        , 0, 0, 0, 1, false, function(colour)
-        local r = math.ceil(255 * colour.r)
-        local g = math.ceil(255 * colour.g)
-        local b = math.ceil(255 * colour.b)
-        VEHICLE.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR(vehicle, r, g, b)
-    end)
+    menu.colour(vehicle_appearance_options, "主色调", { "ctrl_veh" .. index .. "_primary_colour" }, "",
+        0, 0, 0, 1, false, function(colour)
+            local r = math.ceil(255 * colour.r)
+            local g = math.ceil(255 * colour.g)
+            local b = math.ceil(255 * colour.b)
+            VEHICLE.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR(vehicle, r, g, b)
+        end)
+    menu.colour(vehicle_appearance_options, "副色调", { "ctrl_veh" .. index .. "_secondary_colour" }, "",
+        0, 0, 0, 1, false, function(colour)
+            local r = math.ceil(255 * colour.r)
+            local g = math.ceil(255 * colour.g)
+            local b = math.ceil(255 * colour.b)
+            VEHICLE.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR(vehicle, r, g, b)
+        end)
     menu.action(vehicle_appearance_options, "清除主色调", {}, "", function()
         VEHICLE.CLEAR_VEHICLE_CUSTOM_PRIMARY_COLOUR(vehicle)
     end)
@@ -1656,6 +1707,7 @@ function Entity_Control.vehicle_appearance(menu_parent, vehicle, index)
 end
 
 function Entity_Control.vehicle_task(menu_parent, vehicle, index)
+    ----- Vehicle Task 选项 -----
     local ped = GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
     if ped ~= 0 then
         local veh_task_options = menu.list(menu_parent, "Vehicle Task 选项", {}, "")
@@ -1664,8 +1716,9 @@ function Entity_Control.vehicle_task(menu_parent, vehicle, index)
             TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
         end)
         menu.action(veh_task_options, "Clear Driver All Tasks", {}, "", function()
-            Clear_Ped_All_Tasks(ped)
+            clear_ped_all_tasks(ped)
         end)
+
 
         --- Vehicle Task Follow ---
         local task_follow = menu.list(veh_task_options, "载具 跟随", {}, "")
@@ -1674,25 +1727,23 @@ function Entity_Control.vehicle_task(menu_parent, vehicle, index)
             drivingStyle = 786603,
             minDistance = 5.0
         }
-        menu.slider_float(task_follow, "速度", { "task_veh" .. index .. "follow_speed" }, "", 0, 100000, 3000
-            , 100,
-            function(value)
+        menu.slider_float(task_follow, "速度", { "task_veh" .. index .. "follow_speed" }, "",
+            0, 100000, 3000, 100, function(value)
                 veh_follow.speed = value * 0.01
             end)
-        menu.list_select(task_follow, "驾驶风格", {}, "", DrivingStyleName_ListItem, 1, function(value)
-            veh_follow.drivingStyle = DrivingStyle_List[value]
+        menu.list_select(task_follow, "驾驶风格", {}, "", Vehicle_DrivingStyle.ListItem, 1, function(value)
+            veh_follow.drivingStyle = Vehicle_DrivingStyle.ValueList[value]
         end)
-        menu.slider_float(task_follow, "最小跟随距离", { "task_veh" .. index .. "follow_minDistance" }, "", 0
-            , 100000, 500
-            , 100,
-            function(value)
+        menu.slider_float(task_follow, "最小跟随距离", { "task_veh" .. index .. "follow_minDistance" }, "",
+            0, 100000, 500, 100, function(value)
                 veh_follow.minDistance = value * 0.01
             end)
         menu.action(task_follow, "设置任务", {}, "", function()
             TASK.TASK_VEHICLE_FOLLOW(ped, vehicle, players.user_ped(), veh_follow.speed, veh_follow.drivingStyle,
                 veh_follow.minDistance)
-            util.toast("Done!")
+            util.toast("完成！")
         end)
+
 
 
         --- Vehicle Task Escort ---
@@ -1714,49 +1765,44 @@ function Entity_Control.vehicle_task(menu_parent, vehicle, index)
             { "后右边" }, -- 4
         }
         menu.list_select(task_escort, "护送模式", {},
-            "The mode defines the relative position to the targetVehicle. The ped will try to position its vehicle there."
-            , task_veh_escort_mode_list, 1, function(value)
-            veh_escort.mode = value - 2
-        end)
-        menu.slider_float(task_escort, "速度", { "task_veh" .. index .. "escort_speed" }, "", 0, 100000, 3000
-            , 100,
-            function(value)
+            "The mode defines the relative position to the targetVehicle. The ped will try to position its vehicle there.",
+            task_veh_escort_mode_list, 1, function(value)
+                veh_escort.mode = value - 2
+            end)
+        menu.slider_float(task_escort, "速度", { "task_veh" .. index .. "escort_speed" }, "",
+            0, 100000, 3000, 100, function(value)
                 veh_escort.speed = value * 0.01
             end)
-        menu.list_select(task_escort, "驾驶风格", {}, "", DrivingStyleName_ListItem, 1, function(value)
-            veh_escort.drivingStyle = DrivingStyle_List[value]
+        menu.list_select(task_escort, "驾驶风格", {}, "", Vehicle_DrivingStyle.ListItem, 1, function(value)
+            veh_escort.drivingStyle = Vehicle_DrivingStyle.ValueList[value]
         end)
         menu.slider_float(task_escort, "最小跟随距离", { "task_veh" .. index .. "escort_minDistance" },
-            "minDistance is ignored if drivingstyle is avoiding traffic, but Rushed is fine.", 0
-            , 100000, 500
-            , 100,
-            function(value)
+            "minDistance is ignored if drivingstyle is avoiding traffic, but Rushed is fine.",
+            0, 100000, 500, 100, function(value)
                 veh_escort.minDistance = value * 0.01
             end)
         menu.slider(task_escort, "离地面最小高度", { "task_veh" .. index .. "escort_minHeightAboveTerrain" }, "",
             0, 1000, 20, 1, function(value)
-            veh_escort.minHeightAboveTerrain = value
-        end)
+                veh_escort.minHeightAboveTerrain = value
+            end)
         menu.slider_float(task_escort, "No Roads Distance", { "task_veh" .. index .. "escort_noRoadsDistance" },
-            "if the target is closer than noRoadsDistance, the driver will ignore pathing/roads and follow you directly."
-            , 0
-            , 100000, 500
-            , 100,
-            function(value)
+            "if the target is closer than noRoadsDistance, the driver will ignore pathing/roads and follow you directly.",
+            0, 100000, 500, 100, function(value)
                 veh_escort.noRoadsDistance = value * 0.01
             end)
         menu.action(task_escort, "设置任务", {},
             "Makes a ped follow the targetVehicle with <minDistance> in between.", function()
-            if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-                local target_vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
-                TASK.TASK_VEHICLE_ESCORT(ped, vehicle, target_vehicle, veh_escort.mode, veh_escort.speed,
-                    veh_escort.drivingStyle, veh_escort.minDistance, veh_escort.minHeightAboveTerrain,
-                    veh_escort.noRoadsDistance)
-                util.toast("Done!")
-            else
-                util.toast("你需要先进入一辆载具后才能设置任务")
-            end
-        end)
+                if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+                    local target_vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
+                    TASK.TASK_VEHICLE_ESCORT(ped, vehicle, target_vehicle, veh_escort.mode, veh_escort.speed,
+                        veh_escort.drivingStyle, veh_escort.minDistance, veh_escort.minHeightAboveTerrain,
+                        veh_escort.noRoadsDistance)
+                    util.toast("完成！")
+                else
+                    util.toast("你需要先进入一辆载具后才能设置任务")
+                end
+            end)
+
 
 
         --- Vehicle Task Mission ---
@@ -1770,38 +1816,40 @@ function Entity_Control.vehicle_task(menu_parent, vehicle, index)
             DriveAgainstTraffic = true,
         }
 
-        menu.list_select(task_mission, "任务类型", {}, "", Vehicle_MissionType_ListItem, 7, function(value)
-            veh_mission.missionType = value
+        menu.list_select(task_mission, "任务类型", {}, "", Vehicle_MissionType.ListItem, 7, function(value)
+            veh_mission.missionType = Vehicle_MissionType.ValueList[value]
         end)
         menu.slider(task_mission, "最大速度", { "task_veh" .. index .. "mission_maxSpeed" }, "", 0, 1000, 500, 10,
             function(value)
                 veh_mission.maxSpeed = value
             end)
-        menu.list_select(task_mission, "驾驶风格", {}, "", DrivingStyleName_ListItem, 1, function(value)
-            veh_mission.drivingStyle = DrivingStyle_List[value]
+        menu.list_select(task_mission, "驾驶风格", {}, "", Vehicle_DrivingStyle.ListItem, 1, function(value)
+            veh_mission.drivingStyle = Vehicle_DrivingStyle.ValueList[value]
         end)
-        menu.slider_float(task_mission, "最小距离", { "task_veh" .. index .. "mission_minDistance" }, "", 0,
-            100000, 500, 100, function(value)
-            veh_mission.minDistance = value * 0.01
-        end)
-        menu.slider_float(task_mission, "直线距离", { "task_veh" .. index .. "mission_straightLineDistance" }, "", 0
-            , 100000, 0, 100, function(value)
-            veh_mission.straightLineDistance = value * 0.01
-        end)
+        menu.slider_float(task_mission, "最小距离", { "task_veh" .. index .. "mission_minDistance" }, "",
+            0, 100000, 500, 100, function(value)
+                veh_mission.minDistance = value * 0.01
+            end)
+        menu.slider_float(task_mission, "直线距离", { "task_veh" .. index .. "mission_straightLineDistance" }, "",
+            0, 100000, 0, 100, function(value)
+                veh_mission.straightLineDistance = value * 0.01
+            end)
         menu.toggle(task_mission, "DriveAgainstTraffic", {}, "", function(toggle)
             veh_mission.DriveAgainstTraffic = toggle
         end, true)
         menu.action(task_mission, "设置任务", {}, "", function()
             TASK.TASK_VEHICLE_MISSION_PED_TARGET(ped, vehicle, players.user_ped(), veh_mission.missionType,
-                veh_mission.maxSpeed, veh_mission.drivingStyle, veh_mission.minDistance, veh_mission
-            .straightLineDistance
-                , veh_mission.DriveAgainstTraffic)
-            util.toast("Done!")
+                veh_mission.maxSpeed, veh_mission.drivingStyle,
+                veh_mission.minDistance, veh_mission.straightLineDistance,
+                veh_mission.DriveAgainstTraffic)
+            util.toast("完成！")
         end)
     end
 end
 
---- Pickup ---
+----------------
+-- Pickup
+----------------
 
 function Entity_Control.pickup(menu_parent, pickup, index)
     local pickup_options = menu.list(menu_parent, "Pickup 选项", {}, "")
@@ -1813,8 +1861,8 @@ function Entity_Control.pickup(menu_parent, pickup, index)
     menu.click_slider(pickup_options, "玩家最大携带量", { "ctrl_pickup" .. index .. "max_carried" },
         "If the local player is carrying some pickups when you call this, he will drop some if he has too many.",
         0, 1000, 1, 1, function(value)
-        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(modelHash, value)
-    end)
+            OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(modelHash, value)
+        end)
     menu.toggle(pickup_options, "不可收集", {}, "Sets a pickup as locally uncollectable.", function(toggle)
         OBJECT.SET_PICKUP_UNCOLLECTABLE(pickup, toggle)
     end)
@@ -1823,24 +1871,26 @@ function Entity_Control.pickup(menu_parent, pickup, index)
     end)
 end
 
---- All Entities ---
+---------------------
+-- All Entities
+---------------------
 
 function Entity_Control.entities(menu_parent, entity_list)
     menu.click_slider(menu_parent, "请求控制实体", { "request_ctrl_ents" }, "发送请求控制的次数",
         1, 100, 20, 1, function(value)
-        local success_num = 0
-        local fail_num = 0
-        for k, ent in pairs(entity_list) do
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                if RequestControl(ent, value) then
-                    success_num = success_num + 1
-                else
-                    fail_num = fail_num + 1
+            local success_num = 0
+            local fail_num = 0
+            for k, ent in pairs(entity_list) do
+                if ENTITY.DOES_ENTITY_EXIST(ent) then
+                    if RequestControl(ent, value) then
+                        success_num = success_num + 1
+                    else
+                        fail_num = fail_num + 1
+                    end
                 end
             end
-        end
-        util.toast("Done!\nSuccess : " .. success_num .. "\nFail : " .. fail_num)
-    end)
+            util.toast("完成！\nSuccess : " .. success_num .. "\nFail : " .. fail_num)
+        end)
     menu.toggle(menu_parent, "无敌", {}, "", function(toggle)
         for k, ent in pairs(entity_list) do
             if ENTITY.DOES_ENTITY_EXIST(ent) then
@@ -1848,7 +1898,7 @@ function Entity_Control.entities(menu_parent, entity_list)
                 ENTITY.SET_ENTITY_PROOFS(ent, toggle, toggle, toggle, toggle, toggle, toggle, toggle, toggle)
             end
         end
-        util.toast("Done!")
+        util.toast("完成！")
     end)
     menu.toggle(menu_parent, "冻结", {}, "", function(toggle)
         for k, ent in pairs(entity_list) do
@@ -1856,7 +1906,7 @@ function Entity_Control.entities(menu_parent, entity_list)
                 ENTITY.FREEZE_ENTITY_POSITION(ent, toggle)
             end
         end
-        util.toast("Done!")
+        util.toast("完成！")
     end)
     menu.toggle(menu_parent, "燃烧", {}, "", function(toggle)
         for k, ent in pairs(entity_list) do
@@ -1868,7 +1918,7 @@ function Entity_Control.entities(menu_parent, entity_list)
                 end
             end
         end
-        util.toast("Done!")
+        util.toast("完成！")
     end)
     menu.list_action(menu_parent, "爆炸", {}, "选择爆炸类型", ExplosionType_ListItem, function(value)
         for k, ent in pairs(entity_list) do
@@ -1877,41 +1927,43 @@ function Entity_Control.entities(menu_parent, entity_list)
                 add_explosion(pos, value - 2)
             end
         end
-        util.toast("Done!")
+        util.toast("完成！")
     end)
     menu.click_slider(menu_parent, "设置实体血量", { "ctrl_ents_health" }, "",
         0, 100000, 100, 100, function(value)
-        for k, ent in pairs(entity_list) do
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                ENTITY.SET_ENTITY_HEALTH(ent, value)
+            for k, ent in pairs(entity_list) do
+                if ENTITY.DOES_ENTITY_EXIST(ent) then
+                    ENTITY.SET_ENTITY_HEALTH(ent, value)
+                end
             end
-        end
-        util.toast("Done!")
-    end)
+            util.toast("完成！")
+        end)
     menu.click_slider(menu_parent, "设置最大速度", { "ctrl_ents_max_speed" }, "",
         0.0, 1000.0, 0.0, 10.0, function(value)
-        for k, ent in pairs(entity_list) do
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                ENTITY.SET_ENTITY_MAX_SPEED(ent, value)
+            for k, ent in pairs(entity_list) do
+                if ENTITY.DOES_ENTITY_EXIST(ent) then
+                    ENTITY.SET_ENTITY_MAX_SPEED(ent, value)
+                end
             end
-        end
-        util.toast("Done!")
-    end)
+            util.toast("完成！")
+        end)
     menu.action(menu_parent, "删除", {}, "", function()
         for k, ent in pairs(entity_list) do
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 entities.delete_by_handle(ent)
             end
         end
-        util.toast("Done!")
+        util.toast("完成！")
     end)
+
+
 
     Entity_Control.entities_teleport(menu_parent, entity_list)
     Entity_Control.entities_movement(menu_parent, entity_list)
 end
 
 function Entity_Control.entities_teleport(menu_parent, entity_list)
-    ----- Teleport -----
+    ----- Teleport 选项 -----
     local teleport_options = menu.list(menu_parent, "传送 选项", {}, "")
     local tp = {
         x = 0.0,
@@ -1944,55 +1996,55 @@ function Entity_Control.entities_teleport(menu_parent, entity_list)
                 util.yield(tp_delay)
             end
         end
-        util.toast("Done!")
+        util.toast("完成！")
     end)
 end
 
 function Entity_Control.entities_movement(menu_parent, entity_list)
-    ----- Movement -----
+    ----- Movement 选项 -----
     local movement_options = menu.list(menu_parent, "移动 选项", {}, "")
 
     menu.click_slider_float(movement_options, "前/后 移动", { "ctrl_ents_move_y" }, "",
         -10000, 10000, 0, 50, function(value)
-        value = value * 0.01
-        for k, ent in pairs(entity_list) do
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                SET_ENTITY_MOVE(ent, 0.0, value, 0.0)
+            value = value * 0.01
+            for k, ent in pairs(entity_list) do
+                if ENTITY.DOES_ENTITY_EXIST(ent) then
+                    SET_ENTITY_MOVE(ent, 0.0, value, 0.0)
+                end
             end
-        end
-        util.toast("Done!")
-    end)
+            util.toast("完成！")
+        end)
     menu.click_slider_float(movement_options, "左/右 移动", { "ctrl_ents_move_x" }, "",
         -10000, 10000, 0, 50, function(value)
-        value = value * 0.01
-        for k, ent in pairs(entity_list) do
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                SET_ENTITY_MOVE(ent, value, 0.0, 0.0)
+            value = value * 0.01
+            for k, ent in pairs(entity_list) do
+                if ENTITY.DOES_ENTITY_EXIST(ent) then
+                    SET_ENTITY_MOVE(ent, value, 0.0, 0.0)
+                end
             end
-        end
-        util.toast("Done!")
-    end)
+            util.toast("完成！")
+        end)
     menu.click_slider_float(movement_options, "上/下 移动", { "ctrl_ents_move_z" }, "",
         -10000, 10000, 0, 50, function(value)
-        value = value * 0.01
-        for k, ent in pairs(entity_list) do
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                SET_ENTITY_MOVE(ent, 0.0, 0.0, value)
+            value = value * 0.01
+            for k, ent in pairs(entity_list) do
+                if ENTITY.DOES_ENTITY_EXIST(ent) then
+                    SET_ENTITY_MOVE(ent, 0.0, 0.0, value)
+                end
             end
-        end
-        util.toast("Done!")
-    end)
+            util.toast("完成！")
+        end)
     menu.click_slider_float(movement_options, "朝向", { "ctrl_ents_head" }, "",
         -36000, 36000, 0, 100, function(value)
-        value = value * 0.01
-        for k, ent in pairs(entity_list) do
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                local head = ENTITY.GET_ENTITY_HEADING(ent)
-                ENTITY.SET_ENTITY_HEADING(ent, head + value)
+            value = value * 0.01
+            for k, ent in pairs(entity_list) do
+                if ENTITY.DOES_ENTITY_EXIST(ent) then
+                    local head = ENTITY.GET_ENTITY_HEADING(ent)
+                    ENTITY.SET_ENTITY_HEADING(ent, head + value)
+                end
             end
-        end
-        util.toast("Done!")
-    end)
+            util.toast("完成！")
+        end)
 end
 
 ----------------- END --------------------
@@ -2193,11 +2245,14 @@ function Saved_Hash_List.refresh()
     end
 end
 
+------------------------
 ----- SCRIPT START -----
+------------------------
+
 if not SCRIPT_SILENT_START then
     local GTAO = tonumber(NETWORK.GET_ONLINE_VERSION())
-    if Support_GTAO ~= GTAO then
-        util.toast("支持的GTA线上版本: " .. Support_GTAO .. "\n当前GTA线上版本: " .. GTAO)
+    if SUPPORT_GTAO ~= GTAO then
+        util.toast("支持的GTA线上版本: " .. SUPPORT_GTAO .. "\n当前GTA线上版本: " .. GTAO)
     end
 end
 
@@ -2213,9 +2268,9 @@ menu.divider(menu.my_root(), "RScript")
 --------------------------------
 local Self_options = menu.list(menu.my_root(), "自我选项", {}, "")
 
--------------------
+--------------------
 --- 自定义血量护甲 ---
--------------------
+--------------------
 local Self_Custom_options = menu.list(Self_options, "自定义血量护甲", {}, "")
 
 --- 自定义最大生命值 ---
@@ -2224,12 +2279,12 @@ menu.divider(Self_Custom_options, "生命")
 local defaultHealth = ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID())
 local moddedHealth = defaultHealth
 menu.slider(Self_Custom_options, "自定义最大生命值", { "set_max_health" }, "生命值将被修改为指定的数值"
-    , 50, 100000, defaultHealth, 50, function(value)
+, 50, 100000, defaultHealth, 50, function(value)
     moddedHealth = value
 end)
 
 menu.toggle_loop(Self_Custom_options, "开启", {}, "改变你的最大生命值。一些菜单会将你标记为作弊者。当它被禁用时，它会返回到默认的最大生命值。"
-    , function()
+, function()
     if PED.GET_PED_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) ~= moddedHealth then
         PED.SET_PED_MAX_HEALTH(PLAYER.PLAYER_PED_ID(), moddedHealth)
         ENTITY.SET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID(), moddedHealth)
@@ -2250,12 +2305,12 @@ menu.divider(Self_Custom_options, "护甲")
 local defaultArmour = PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID())
 local moddedArmour = defaultArmour
 menu.slider(Self_Custom_options, "自定义最大护甲值", { "set_max_armour" }, "护甲将被修改为指定的数值"
-    , 50, 100000, defaultArmour, 50, function(value)
+, 50, 100000, defaultArmour, 50, function(value)
     moddedArmour = value
 end)
 
 menu.toggle_loop(Self_Custom_options, "开启", {}, "改变你的最大护甲值。一些菜单会将你标记为作弊者。当它被禁用时，它会返回到默认的最大护甲值。"
-    , function()
+, function()
     if PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID()) ~= moddedArmour then
         PLAYER.SET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID(), moddedArmour)
         PED.SET_PED_ARMOUR(PLAYER.PLAYER_PED_ID(), moddedArmour)
@@ -2271,9 +2326,9 @@ menu.click_slider(Self_Custom_options, "设置当前护甲值", { "set_armour" }
     end)
 
 
--------------------
+--------------------
 --- 自定义生命恢复 ---
--------------------
+--------------------
 local Self_Custom_recharge_options = menu.list(Self_options, "自定义生命恢复", {}, "")
 
 local custom_recharge = {
@@ -2289,13 +2344,13 @@ local custom_recharge = {
 
 menu.slider(Self_Custom_recharge_options, "恢复程度(%)", { "fast_recharge_limit" }, "恢复到血量的多少(%)",
     1, 100, 100, 10, function(value)
-    custom_recharge.fast_limit = value * 0.01
-end)
+        custom_recharge.fast_limit = value * 0.01
+    end)
 menu.slider(Self_Custom_recharge_options, "恢复速度", { "fast_recharge_mult" }, "血量恢复的速度",
     1, 100, 20, 1, function(value)
-    custom_recharge.fast_mult = value
-end)
-menu.toggle_loop(Self_Custom_recharge_options, "快速恢复", { "fast_recharge" }, "", function()
+        custom_recharge.fast_mult = value
+    end)
+menu.toggle_loop(Self_Custom_recharge_options, "快速恢复", { "enable_fast_recharge" }, "", function()
     if PLAYER.GET_PLAYER_HEALTH_RECHARGE_MAX_PERCENT(players.user()) ~= custom_recharge.fast_limit then
         PLAYER.SET_PLAYER_HEALTH_RECHARGE_MAX_PERCENT(players.user(), custom_recharge.fast_limit)
     end
@@ -2328,48 +2383,48 @@ local Self_Custom_recharge_setting = menu.list(Self_Custom_recharge_options, "�
 menu.divider(Self_Custom_recharge_setting, "通用")
 menu.slider(Self_Custom_recharge_setting, "恢复程度(%)", { "recharge_normal_limit" }, "",
     1, 100, 50, 10, function(value)
-    custom_recharge.normal_limit = value * 0.01
-end)
+        custom_recharge.normal_limit = value * 0.01
+    end)
 menu.slider(Self_Custom_recharge_setting, "恢复速度", { "recharge_normal_mult" }, "",
     1, 100, 1, 1, function(value)
-    custom_recharge.normal_mult = value
-end)
+        custom_recharge.normal_mult = value
+    end)
 
 menu.divider(Self_Custom_recharge_setting, "掩体内")
 menu.slider(Self_Custom_recharge_setting, "恢复程度(%)", { "recharge_cover_limit" }, "",
     1, 100, 50, 10, function(value)
-    custom_recharge.cover_limit = value * 0.01
-end)
+        custom_recharge.cover_limit = value * 0.01
+    end)
 menu.slider(Self_Custom_recharge_setting, "恢复速度", { "recharge_cover_mult" }, "",
     1, 100, 1, 1, function(value)
-    custom_recharge.cover_mult = value
-end)
+        custom_recharge.cover_mult = value
+    end)
 
 menu.divider(Self_Custom_recharge_setting, "载具内")
 menu.slider(Self_Custom_recharge_setting, "恢复程度(%)", { "recharge_vehicle_limit" }, "",
     1, 100, 50, 10, function(value)
-    custom_recharge.vehicle_limit = value * 0.01
-end)
+        custom_recharge.vehicle_limit = value * 0.01
+    end)
 menu.slider(Self_Custom_recharge_setting, "恢复速度", { "recharge_vehicle_mult" }, "",
     1, 100, 1, 1, function(value)
-    custom_recharge.vehicle_mult = value
-end)
+        custom_recharge.vehicle_mult = value
+    end)
 
 
 
--------------------
+--------------------
 --- 自定义血量下限 ---
--------------------
+--------------------
 local Self_Custom_low_limit = menu.list(Self_options, "自定义血量下限", {}, "")
 
 local low_health_limit = 0.5
 menu.slider(Self_Custom_low_limit, "设置血量下限(%)", { "low_health_limit" }, "可以到达的最低血量，单位%"
-    , 10, 100, 50, 10
-    , function(value)
+, 10, 100, 50, 10
+, function(value)
     low_health_limit = value * 0.01
 end)
 menu.toggle_loop(Self_Custom_low_limit, "锁定血量", {}, "当你的血量到达你设置的血量下限值后，锁定你的血量，防不住爆炸"
-    , function()
+, function()
     if not PLAYER.IS_PLAYER_DEAD(players.user()) then
         local maxHealth = ENTITY.GET_ENTITY_MAX_HEALTH(players.user_ped()) - 100
         local toLock_health = math.ceil(maxHealth * low_health_limit + 100)
@@ -2379,7 +2434,7 @@ menu.toggle_loop(Self_Custom_low_limit, "锁定血量", {}, "当你的血量到�
     end
 end)
 menu.toggle_loop(Self_Custom_low_limit, "补满血量", {}, "当你的血量到达你设置的血量下限值后，补满你的血量"
-    , function()
+, function()
     if not PLAYER.IS_PLAYER_DEAD(players.user()) then
         local maxHealth = ENTITY.GET_ENTITY_MAX_HEALTH(players.user_ped()) - 100
         local toLock_health = math.ceil(maxHealth * low_health_limit + 100)
@@ -2390,222 +2445,49 @@ menu.toggle_loop(Self_Custom_low_limit, "补满血量", {}, "当你的血量到�
 end)
 
 
--------------------
---- 自定义死亡反应 ---
--------------------
-local Self_Death_Reaction = menu.list(Self_options, "自定义死亡反应", {}, "")
-
-local self_death_reaction = {
-    flag = false,
-    killer = {
-        exclude_player = true,
-        explosion = 0,
-        rpg = 0,
-        fall_explosion = 0,
-        dead = false,
-        freeze = false,
-        fire = false,
-        blip = false,
-        blip_list = {},
-    },
-    position = {
-        explosion = 0,
-        blip = false,
-        blip_list = {},
-    },
-}
-menu.toggle_loop(Self_Death_Reaction, "启用", {}, "", function()
-    local player_ped = players.user_ped()
-
-    if PLAYER.IS_PLAYER_DEAD(players.user()) then
-        if not self_death_reaction.flag then
-            --- 击杀者 ---
-            local ent = PED.GET_PED_SOURCE_OF_DEATH(player_ped)
-            if IS_AN_ENTITY(ent) and ent ~= player_ped then
-                --排除玩家
-                if self_death_reaction.killer.exclude_player and IS_PED_PLAYER(ent) then
-                else
-                    local pos = ENTITY.GET_ENTITY_COORDS(ent)
-
-                    --爆炸
-                    if self_death_reaction.killer.explosion then
-                        util.create_thread(function()
-                            for i = 1, self_death_reaction.killer.explosion, 1 do
-                                local coords = ENTITY.GET_ENTITY_COORDS(ent)
-                                add_owned_explosion(player_ped, coords, 4)
-                                util.yield(300)
-                            end
-                        end)
-                    end
-
-                    --坠落爆炸
-                    if self_death_reaction.killer.fall_explosion > 0 then
-                        util.create_thread(function()
-                            ENTITY.FREEZE_ENTITY_POSITION(ent, false)
-                            ENTITY.SET_ENTITY_MAX_SPEED(ent, 99999.0)
-                            if ENTITY.IS_ENTITY_A_PED(ent) then
-                                TASK.CLEAR_PED_TASKS_IMMEDIATELY(ent)
-                            end
-                            for i = 1, self_death_reaction.killer.fall_explosion, 1 do
-                                if ENTITY.IS_ENTITY_A_PED(ent) then
-                                    PED.SET_PED_TO_RAGDOLL(ent, 500, 500, 0, false, false, false)
-                                end
-                                ENTITY.APPLY_FORCE_TO_ENTITY(ent, 1, 0.0, 0.0, 30.0, math.random( -2, 2),
-                                    math.random( -2, 2), 0.0, 0, false,
-                                    false, true, false, false)
-                                util.yield(1000)
-                                ENTITY.APPLY_FORCE_TO_ENTITY(ent, 1, 0.0, 0.0, -100.0, 0.0, 0.0, 0.0, 0, false
-                                    , false, true, false, false)
-                                util.yield(300)
-                            end
-                            local coords = ENTITY.GET_ENTITY_COORDS(ent)
-                            FIRE.ADD_OWNED_EXPLOSION(player_ped, coords.x, coords.y, coords.z, 4, 1.0, true,
-                                false, 0.0)
-                        end)
-                    end
-
-                    --RPG轰炸
-                    if self_death_reaction.killer.rpg > 0 then
-                        util.create_thread(function()
-                            local weaponHash = util.joaat("WEAPON_RPG")
-                            for i = 1, self_death_reaction.killer.rpg, 1 do
-                                local coords = ENTITY.GET_ENTITY_COORDS(ent)
-                                MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(coords.x, coords.y, coords.z + 5.0, coords.x,
-                                    coords.y, coords.z,
-                                    1000,
-                                    false, weaponHash, player_ped, true, false, 1000)
-                                util.yield(300)
-                            end
-                        end)
-                    end
-
-                    --死亡
-                    if self_death_reaction.killer.dead then
-                        ENTITY.SET_ENTITY_HEALTH(ent, 0)
-                    end
-
-                    --冻结
-                    if self_death_reaction.killer.freeze then
-                        ENTITY.FREEZE_ENTITY_POSITION(ent, true)
-                    end
-
-                    --燃烧
-                    if self_death_reaction.killer.fire then
-                        FIRE.START_ENTITY_FIRE(ent)
-                    end
-
-                    --标记点
-                    if self_death_reaction.killer.blip then
-                        local blip = add_blip_for_entity(ent, 303, 1)
-                        table.insert(self_death_reaction.killer.blip_list, blip)
-                    end
-                end
-            end
-
-
-            --- 死亡位置 ---
-            local dead_pos = ENTITY.GET_ENTITY_COORDS(player_ped)
-
-            if self_death_reaction.position.explosion > 0 then
-                util.create_thread(function()
-                    for i = 1, self_death_reaction.position.explosion, 1 do
-                        add_owned_explosion(player_ped, dead_pos, 4)
-                        util.yield(300)
-                    end
-                end)
-            end
-
-            if self_death_reaction.position.blip then
-                local blip = HUD.ADD_BLIP_FOR_COORD(dead_pos.x, dead_pos.y, dead_pos.z)
-                HUD.SET_BLIP_SPRITE(blip, 274)
-                HUD.SET_BLIP_COLOUR(blip, 0)
-                table.insert(self_death_reaction.position.blip_list, blip)
-            end
-
-
-            self_death_reaction.flag = true
-        end
-    else
-        self_death_reaction.flag = false
-    end
-end)
-
-menu.divider(Self_Death_Reaction, "击杀者")
-menu.toggle(Self_Death_Reaction, "排除玩家", {}, "", function(toggle)
-    self_death_reaction.killer.exclude_player = toggle
-end, true)
-menu.slider(Self_Death_Reaction, "爆炸", { "death_reaction_killer_explosion" }, "爆炸次数", 0, 10, 0, 1,
-    function(value)
-        self_death_reaction.killer.explosion = value
-    end)
-menu.slider(Self_Death_Reaction, "坠落爆炸", { "death_reaction_killer_fall_explosion" }, "坠落次数", 0, 10, 0, 1
-    , function(value)
-    self_death_reaction.killer.fall_explosion = value
-end)
-menu.slider(Self_Death_Reaction, "RPG轰炸", { "death_reaction_killer_rpg" }, "轰炸次数", 0, 10, 0, 1,
-    function(value)
-        self_death_reaction.killer.rpg = value
-    end)
-menu.toggle(Self_Death_Reaction, "死亡", {}, "", function(toggle)
-    self_death_reaction.killer.dead = toggle
-end)
-menu.toggle(Self_Death_Reaction, "冻结", {}, "", function(toggle)
-    self_death_reaction.killer.freeze = toggle
-end)
-menu.toggle(Self_Death_Reaction, "燃烧", {}, "", function(toggle)
-    self_death_reaction.killer.fire = toggle
-end)
-menu.toggle(Self_Death_Reaction, "标记点", {}, "", function(toggle)
-    self_death_reaction.killer.blip = toggle
-end)
-menu.action(Self_Death_Reaction, "清空标记点", {}, "", function()
-    for k, v in pairs(self_death_reaction.killer.blip_list) do
-        if HUD.DOES_BLIP_EXIST(v) then
-            util.remove_blip(v)
-        end
-    end
-    self_death_reaction.killer.blip_list = {}
-end)
-
-menu.divider(Self_Death_Reaction, "死亡位置")
-menu.slider(Self_Death_Reaction, "爆炸", { "death_reaction_position_explosion" }, "爆炸次数", 0, 10, 0, 1,
-    function(value)
-        self_death_reaction.position.explosion = value
-    end)
-menu.toggle(Self_Death_Reaction, "标记点", {}, "", function(toggle)
-    self_death_reaction.position.blip = toggle
-end)
-menu.action(Self_Death_Reaction, "清空标记点", {}, "", function()
-    for k, v in pairs(self_death_reaction.position.blip_list) do
-        if HUD.DOES_BLIP_EXIST(v) then
-            util.remove_blip(v)
-        end
-    end
-    self_death_reaction.position.blip_list = {}
-end)
-
 
 -------------------
------ 通缉反应 -----
+----- 通缉选项 -----
 -------------------
-local Self_Wanted_Level = menu.list(Self_options, "通缉反应", {}, "")
+local Self_Wanted_options = menu.list(Self_options, "通缉选项", {}, "")
 
 local self_wanted_level = {
-    multiplier = 0,
+    multiplier = 0.0,
+    difficulty = 0.0,
 }
 
-menu.slider_float(Self_Wanted_Level, "Wanted Level Multiplier", {},
-    "If you set the wanted multiplier to a low value 0.01 and a cop see you shoot a ped in face you wil still get a wanted level. \n1.0f is the default value and it will automatically be reset when MISSION_HAS_FINISHED is called. \nA value of 2.0f means that the player’s wanted level will go up twice as fast when he commits crimes."
+menu.action(Self_Wanted_options, "Force Start Hidden Evasion", {},
+    "Can be used at any point that police 'know' where the player is to force hidden evasion to start (i.e. flashing stars, cops use vision cones)"
+    , function()
+        PLAYER.FORCE_START_HIDDEN_EVASION(players.user())
+    end)
+menu.toggle_loop(Self_Wanted_options, "Suppress Crime", {},
+    "Can be use to disable all instances of a crime type on this frame.", function()
+        for i = 1, 50 do
+            PLAYER.SUPPRESS_CRIME_THIS_FRAME(players.user(), i)
+        end
+    end)
+
+menu.divider(Self_Wanted_options, "Multiplier")
+menu.slider_float(Self_Wanted_options, "Wanted Level Multiplier", {},
+    "If you set the wanted multiplier to a low value 0.01 and a cop see you shoot a ped in face you wil still get a wanted level. \n1.0f is the default value and it will automatically be reset when MISSION_HAS_FINISHED is called. \nA value of 2.0f means that the player's wanted level will go up twice as fast when he commits crimes."
     , 0, 1000, 0, 10, function(value)
-    self_wanted_level.multiplier = value * 0.01
-end)
-menu.toggle_loop(Self_Wanted_Level, "Set Wanted Level Multiplier", {}, "", function()
+        self_wanted_level.multiplier = value * 0.01
+    end)
+menu.toggle_loop(Self_Wanted_options, "Set Wanted Level Multiplier", {}, "", function()
     PLAYER.SET_WANTED_LEVEL_MULTIPLIER(self_wanted_level.multiplier)
 end)
-menu.action(Self_Wanted_Level, "Force Start Hidden Evasion", {},
-    "Can be used at any point that police \"know\" where the player is to force hidden evasion to start (i.e. flashing stars, cops use vision cones)"
-    , function()
-    PLAYER.FORCE_START_HIDDEN_EVASION(PLAYER.PLAYER_ID())
+
+menu.divider(Self_Wanted_options, "Difficulty")
+menu.slider_float(Self_Wanted_options, "Wanted Level Difficulty", {},
+    "Sets the difficulty for the wanted system.", 0, 100, 0, 10, function(value)
+        self_wanted_level.difficulty = value * 0.01
+    end)
+menu.toggle_loop(Self_Wanted_options, "Set Wanted Level Difficulty", {}, "", function()
+    PLAYER.SET_WANTED_LEVEL_DIFFICULTY(players.user(), self_wanted_level.difficulty)
+end)
+menu.action(Self_Wanted_options, "Reset Wanted Level Difficulty", {}, "", function()
+    PLAYER.RESET_WANTED_LEVEL_DIFFICULTY(players.user())
 end)
 
 
@@ -2677,18 +2559,40 @@ end
 
 
 
+-------------------
+----- 跌落选项 -----
+-------------------
+local Self_Fall_options = menu.list(Self_options, "跌落选项", {}, "")
 
-------
+menu.toggle_loop(Self_Fall_options, "禁止高处跌落直接死亡", {}, "如果血量过低仍然会直接摔死",
+    function()
+        PED.SET_DISABLE_HIGH_FALL_DEATH(players.user_ped(), true)
+    end, function()
+        PED.SET_DISABLE_HIGH_FALL_DEATH(players.user_ped(), false)
+    end)
+
+local self_fall_distance = 8.0
+menu.slider_float(Self_Fall_options, "触发跌落动作高度", { "self_fall_distance" }, "", 0, 10000, 800, 100,
+    function(value)
+        self_fall_distance = value * 0.01
+    end)
+menu.toggle_loop(Self_Fall_options, "设置触发跌落高度", {}, "", function()
+    PLAYER.SET_PLAYER_FALL_DISTANCE_TO_TRIGGER_RAGDOLL_OVERRIDE(players.user(), self_fall_distance)
+end)
+
+
+
+
+----------------
 menu.toggle_loop(Self_options, "显示血量和护甲", {}, "信息显示位置", function()
     local current_health = ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID())
     local max_health = PED.GET_PED_MAX_HEALTH(PLAYER.PLAYER_PED_ID())
     local current_armour = PED.GET_PED_ARMOUR(PLAYER.PLAYER_PED_ID())
     local max_armour = PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID())
-    local text = "血量： " .. current_health .. "/" .. max_health .. "\n护甲： " ..
-        current_armour .. "/" .. max_armour
+    local text = "血量: " .. current_health .. "/" .. max_health ..
+        "\n护甲: " .. current_armour .. "/" .. max_armour
     util.draw_debug_text(text)
 end)
-
 menu.toggle_loop(Self_options, "警察无视", {}, "", function()
     PLAYER.SET_POLICE_IGNORE_PLAYER(PLAYER.PLAYER_ID(), true)
 end, function()
@@ -2708,16 +2612,16 @@ menu.toggle_loop(Self_options, "不会被帮派骚乱", {}, "", function()
 end, function()
     PLAYER.SET_PLAYER_CAN_BE_HASSLED_BY_GANGS(PLAYER.PLAYER_ID(), true)
 end)
+menu.toggle_loop(Self_options, "禁止为玩家调度警察", { "disable_dispatch_cops" }, "不会一直刷出新的警察，最好在被通缉前开启"
+, function()
+    PLAYER.SET_DISPATCH_COPS_FOR_PLAYER(PLAYER.PLAYER_ID(), false)
+end, function()
+    PLAYER.SET_DISPATCH_COPS_FOR_PLAYER(PLAYER.PLAYER_ID(), true)
+end)
 menu.toggle_loop(Self_options, "载具内不可被射击", {}, "在载具内不会受伤", function()
     PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(PLAYER.PLAYER_PED_ID(), false)
 end, function()
     PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(PLAYER.PLAYER_PED_ID(), true)
-end)
-menu.toggle_loop(Self_options, "禁止为玩家调度警察", { "disable_dispatch_cops" }, "不会一直刷出新的警察，最好在被通缉前开启"
-    , function()
-    PLAYER.SET_DISPATCH_COPS_FOR_PLAYER(PLAYER.PLAYER_ID(), false)
-end, function()
-    PLAYER.SET_DISPATCH_COPS_FOR_PLAYER(PLAYER.PLAYER_ID(), true)
 end)
 menu.toggle_loop(Self_options, "禁用NPC伤害", { "disable_ai_damage" }, "", function()
     PED.SET_AI_WEAPON_DAMAGE_MODIFIER(0.0)
@@ -2726,6 +2630,8 @@ end, function()
     PED.RESET_AI_WEAPON_DAMAGE_MODIFIER()
     PED.RESET_AI_MELEE_WEAPON_DAMAGE_MODIFIER()
 end)
+
+
 
 
 
@@ -2743,8 +2649,8 @@ menu.toggle_loop(Weapon_options, "无限弹药", { "inf_clip" }, "锁定弹夹�
     function()
         WEAPON.SET_PED_INFINITE_AMMO_CLIP(PLAYER.PLAYER_PED_ID(), true)
     end, function()
-    WEAPON.SET_PED_INFINITE_AMMO_CLIP(PLAYER.PLAYER_PED_ID(), false)
-end)
+        WEAPON.SET_PED_INFINITE_AMMO_CLIP(PLAYER.PLAYER_PED_ID(), false)
+    end)
 menu.toggle_loop(Weapon_options, "锁定最大弹药", { "lock_ammo" }, "锁定当前武器为最大弹药", function()
     local user_ped = players.user_ped()
     if PED.IS_PED_SHOOTING(user_ped) then
@@ -2847,8 +2753,8 @@ function Cam_Gun.Shoot_Pos(pos, state)
         WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(user_ped, pWeapon)
         weaponHash = memory.read_int(pWeapon)
     end
-    if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHashHash) then
-        Request_Weapon_Asset(weaponHash)
+    if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHash) then
+        request_weapon_asset(weaponHash)
     end
 
     local owner = 0
@@ -3101,8 +3007,8 @@ local Cam_Gun_fire = menu.list(Weapon_Cam_Gun, "燃烧", {}, "有火焰数量生
 
 menu.slider(Cam_Gun_fire, "max Children", { "cam_gun_fire_maxChildren" },
     "The max amount of times a fire can spread to other objects.", 0, 25, 25, 1, function(value)
-    Cam_Gun.fire_setting.maxChildren = value
-end)
+        Cam_Gun.fire_setting.maxChildren = value
+    end)
 menu.toggle(Cam_Gun_fire, "is Gas Fire", {}, "Whether or not the fire is powered by gasoline.", function(toggle)
     Cam_Gun.fire_setting.isGasFire = toggle
 end)
@@ -3114,6 +3020,7 @@ menu.action(Cam_Gun_fire, "移除生成的火焰", {}, "", function()
         Cam_Gun.fire_setting.fire_ids = {}
     end
 end)
+
 
 
 
@@ -3151,7 +3058,7 @@ end
 local function Init_control_ent_list()
     -- 所有控制的实体
     control_ent_list = {}
-    -- 所有控制实体的menu.list
+    -- 所有控制实体的 menu.list
     control_ent_menu_list = {}
     -- 控制实体的索引
     control_ent_index = 1
@@ -3165,7 +3072,7 @@ menu.toggle_loop(Weapon_Entity_Control, "开启", { "ctrl_gun" }, "", function()
     draw_point_in_center()
     local ent
     local Type = entity_control_data.entity_type
-    local temp_ent = GetEntity_PlayerIsAimingAt(players.user())
+    local temp_ent = get_entity_player_is_aiming_at(players.user())
     if temp_ent ~= nil then
         if Type == "全部" then
             if IS_AN_ENTITY(temp_ent) then
@@ -3235,231 +3142,14 @@ Weapon_Entity_Control_divider = menu.divider(Weapon_Entity_Control, "实体控�
 
 
 
+
+
+
+
 --------------------------------
 ------------ 载具选项 ------------
 --------------------------------
 local Vehicle_options = menu.list(menu.my_root(), "载具选项", {}, "")
-
----------------
---- 载具改装 ---
----------------
-local Vehicle_Mod_options = menu.list(Vehicle_options, "载具改装", {}, "")
-
-local vehicle_mod = {
-    performance = 2,
-    turbo = true,
-    spoilers = 1,
-    suspension = 1,
-    xenon = -1,
-    extra_types = 1,
-    neon = {
-        toggle = false,
-        r = 0,
-        g = 0,
-        b = 0,
-        left = true,
-        right = true,
-        front = true,
-        rear = true,
-    },
-    tyre_smoke = {
-        toggle = false,
-        r = 255,
-        g = 255,
-        b = 255,
-    },
-    plate = {
-        toggle = false,
-        text = "ROCKSTAR",
-    },
-    bullet_tyre = true,
-    unbreakable_doors = false,
-    unbreakable_lights = false,
-}
-
-local Vehicle_Mod_Kits = menu.list(Vehicle_Mod_options, "改装选项", {}, "")
-local VehicleMOD_ListItem = {
-    { "默认", {}, "不进行改装" },
-    { "顶级" }
-}
-menu.list_select(Vehicle_Mod_Kits, "主要性能", {}, "引擎、刹车、变速箱、防御", VehicleMOD_ListItem, 2,
-    function(value)
-        vehicle_mod.performance = value
-    end)
-menu.toggle(Vehicle_Mod_Kits, "涡轮增压", {}, "", function(toggle)
-    vehicle_mod.turbo = toggle
-end, true)
-menu.list_select(Vehicle_Mod_Kits, "尾翼", {}, "", VehicleMOD_ListItem, 1, function(value)
-    vehicle_mod.spoilers = value
-end)
-menu.list_select(Vehicle_Mod_Kits, "悬挂", {}, "", VehicleMOD_ListItem, 1, function(value)
-    vehicle_mod.suspension = value
-end)
-menu.slider(Vehicle_Mod_Kits, "前车灯", { "vehicle_mod_xenon_light" }, "", -1, 12, -1, 1, function(value)
-    vehicle_mod.xenon = value
-
-    if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-        local veh = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
-        if veh ~= 0 then
-            if vehicle_mod.xenon >= 0 then
-                VEHICLE.TOGGLE_VEHICLE_MOD(veh, 22, true)
-                VEHICLE.SET_VEHICLE_XENON_LIGHT_COLOR_INDEX(veh, vehicle_mod.xenon)
-            else
-                VEHICLE.TOGGLE_VEHICLE_MOD(veh, 22, false)
-            end
-        end
-    end
-end)
-menu.list_select(Vehicle_Mod_Kits, "其它改装配件", {}, "侧裙、保险杠等，排除涂装、车轮、喇叭",
-    VehicleMOD_ListItem, 1, function(value)
-    vehicle_mod.extra_types = value
-end)
-
-local Vehicle_Mod_neon = menu.list(Vehicle_Mod_Kits, "霓虹灯", {}, "")
-menu.toggle(Vehicle_Mod_neon, "开启", {}, "", function(toggle)
-    vehicle_mod.neon.toggle = toggle
-end)
-menu.colour(Vehicle_Mod_neon, "颜色", { "vehicle_mod_neon_colour" }, "",
-    1, 1, 1, 1, false, function(colour)
-    vehicle_mod.neon.r = math.ceil(255 * colour.r)
-    vehicle_mod.neon.g = math.ceil(255 * colour.g)
-    vehicle_mod.neon.b = math.ceil(255 * colour.b)
-end)
-menu.toggle(Vehicle_Mod_neon, "左", {}, "", function(toggle)
-    vehicle_mod.neon.left = toggle
-end, true)
-menu.toggle(Vehicle_Mod_neon, "右", {}, "", function(toggle)
-    vehicle_mod.neon.right = toggle
-end, true)
-menu.toggle(Vehicle_Mod_neon, "前", {}, "", function(toggle)
-    vehicle_mod.neon.front = toggle
-end, true)
-menu.toggle(Vehicle_Mod_neon, "后", {}, "", function(toggle)
-    vehicle_mod.neon.rear = toggle
-end, true)
-
-local Vehicle_Mod_tyre_smoke = menu.list(Vehicle_Mod_Kits, "轮胎烟雾", {}, "")
-menu.toggle(Vehicle_Mod_tyre_smoke, "开启", {}, "", function(toggle)
-    vehicle_mod.tyre_smoke.toggle = toggle
-end)
-menu.colour(Vehicle_Mod_tyre_smoke, "颜色", { "vehicle_mod_tyre_smoke_colour" }, "设置R,G,B都为0会使载具轮胎烟雾为独立日颜色"
-    , 1, 1, 1, 1, false, function(colour)
-    vehicle_mod.tyre_smoke.r = math.ceil(255 * colour.r)
-    vehicle_mod.tyre_smoke.g = math.ceil(255 * colour.g)
-    vehicle_mod.tyre_smoke.b = math.ceil(255 * colour.b)
-end)
-
-local Vehicle_Mod_plate = menu.list(Vehicle_Mod_Kits, "车牌", {}, "")
-menu.toggle(Vehicle_Mod_plate, "开启", {}, "", function(toggle)
-    vehicle_mod.plate.toggle = toggle
-end)
-menu.text_input(Vehicle_Mod_plate, "内容", { "vehicle_mod_plate_text" }, "最大8个字符", function(value)
-    vehicle_mod.plate.text = value
-end, "ROCKSTAR")
-
-local Vehicle_Mod_Extra = menu.list(Vehicle_Mod_options, "其它改装选项", {}, "")
-menu.toggle(Vehicle_Mod_Extra, "防弹轮胎", {}, "", function(toggle)
-    vehicle_mod.bullet_tyre = toggle
-end, true)
-menu.toggle(Vehicle_Mod_Extra, "不可损坏的车门", {}, "", function(toggle)
-    vehicle_mod.unbreakable_doors = toggle
-end)
-menu.toggle(Vehicle_Mod_Extra, "不可损坏的车灯", {}, "", function(toggle)
-    vehicle_mod.unbreakable_lights = toggle
-end)
-
--- 改装 --
-local function Custom_Mod_Vehicle(vehicle)
-    VEHICLE.SET_VEHICLE_MOD_KIT(vehicle, 0)
-
-    if vehicle_mod.performance == 2 then
-        for k, v in pairs({ 11, 12, 13, 16 }) do
-            local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, v)
-            VEHICLE.SET_VEHICLE_MOD(vehicle, v, mod_num - 1, false)
-        end
-    end
-
-    if vehicle_mod.turbo then
-        VEHICLE.TOGGLE_VEHICLE_MOD(vehicle, 18, true)
-    end
-
-    if vehicle_mod.spoilers == 2 then
-        local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, 0)
-        VEHICLE.SET_VEHICLE_MOD(vehicle, 0, mod_num - 1, false)
-    end
-
-    if vehicle_mod.suspension == 2 then
-        local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, 15)
-        VEHICLE.SET_VEHICLE_MOD(vehicle, 15, mod_num - 1, false)
-    end
-
-    if vehicle_mod.extra_types == 2 then
-        local extra_type_list = {
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-            25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
-            39, 40, 41, 42, 43, 44, 45, 46
-        }
-        for k, v in pairs(extra_type_list) do
-            local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, v)
-            if mod_num > 0 then
-                VEHICLE.SET_VEHICLE_MOD(vehicle, v, mod_num - 1, false)
-            end
-        end
-    end
-
-    if vehicle_mod.xenon >= 0 then
-        VEHICLE.TOGGLE_VEHICLE_MOD(vehicle, 22, true)
-        VEHICLE.SET_VEHICLE_XENON_LIGHT_COLOR_INDEX(vehicle, vehicle_mod.xenon)
-    end
-
-    if vehicle_mod.neon.toggle then
-        VEHICLE.SET_VEHICLE_NEON_ENABLED(vehicle, 0, vehicle_mod.neon.left)
-        VEHICLE.SET_VEHICLE_NEON_ENABLED(vehicle, 1, vehicle_mod.neon.right)
-        VEHICLE.SET_VEHICLE_NEON_ENABLED(vehicle, 2, vehicle_mod.neon.front)
-        VEHICLE.SET_VEHICLE_NEON_ENABLED(vehicle, 3, vehicle_mod.neon.rear)
-        VEHICLE.SET_VEHICLE_NEON_COLOUR(vehicle, vehicle_mod.neon.r, vehicle_mod.neon.g,
-            vehicle_mod.neon.b)
-    end
-
-    if vehicle_mod.tyre_smoke.toggle then
-        VEHICLE.TOGGLE_VEHICLE_MOD(vehicle, 20, true)
-        VEHICLE.SET_VEHICLE_TYRE_SMOKE_COLOR(vehicle, vehicle_mod.tyre_smoke.r, vehicle_mod.tyre_smoke.g
-            , vehicle_mod.tyre_smoke.b)
-    end
-
-    if vehicle_mod.plate.toggle then
-        VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT(vehicle, vehicle_mod.plate.text)
-    end
-
-    -- 其它改装选项
-    if vehicle_mod.bullet_tyre then
-        VEHICLE.SET_VEHICLE_TYRES_CAN_BURST(vehicle, false)
-    end
-    if vehicle_mod.unbreakable_doors then
-        for i = 0, 3 do
-            VEHICLE.SET_DOOR_ALLOWED_TO_BE_BROKEN_OFF(vehicle, i, false)
-        end
-    end
-    if vehicle_mod.unbreakable_lights then
-        VEHICLE.SET_VEHICLE_HAS_UNBREAKABLE_LIGHTS(vehicle, true)
-    end
-end
-
-menu.toggle_loop(Vehicle_Mod_options, "开启自动改装", { "auto_mod_vehicle" }, "自动改装正在进入的载具",
-    function()
-        if PED.IS_PED_GETTING_INTO_A_VEHICLE(players.user_ped()) then
-            local veh = PED.GET_VEHICLE_PED_IS_ENTERING(players.user_ped())
-            if veh ~= 0 then
-                Custom_Mod_Vehicle(veh)
-            end
-        end
-    end)
-menu.action(Vehicle_Mod_options, "改装载具", { "mod_vehicle" }, "改装当前载具或上一辆载具", function()
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        Custom_Mod_Vehicle(vehicle)
-    end
-end)
 
 
 ---------------
@@ -3469,12 +3159,12 @@ local Vehicle_Window_options = menu.list(Vehicle_options, "载具车窗", {}, ""
 
 local VehicleWindows_ListItem = {
     { "全部" },
-    { "左前车窗" }, -- 0
-    { "右前车窗" }, -- 1
-    { "左后车窗" }, -- 2
-    { "右后车窗" }, -- 3
-    { "前挡风车窗" }, -- 4
-    { "后挡风车窗" } -- 5
+    { "左前车窗" },         -- 0
+    { "右前车窗" },         -- 1
+    { "左后车窗" },         -- 2
+    { "右后车窗" },         -- 3
+    { "前挡风车窗" },      -- 4
+    { "后挡风车窗" }       -- 5
 }
 local vehicle_window_select = 1 --选择的车窗
 menu.list_select(Vehicle_Window_options, "选择车窗", {}, "", VehicleWindows_ListItem, 1, function(value)
@@ -3537,12 +3227,12 @@ local Vehicle_Door_options = menu.list(Vehicle_options, "载具车门", {}, "")
 
 local VehicleDoors_ListItem = {
     { "全部",   {}, "两侧的四个车门" },
-    { "左前门" }, -- VEH_EXT_DOOR_DSIDE_F = 0
-    { "右前门" }, -- VEH_EXT_DOOR_DSIDE_R = 1
-    { "左后门" }, -- VEH_EXT_DOOR_PSIDE_F = 2
-    { "右后门" }, -- VEH_EXT_DOOR_PSIDE_R = 3
-    { "引擎盖" }, -- VEH_EXT_BONNET = 4
-    { "后备箱" } -- VEH_EXT_BOOT = 5
+    { "左前门" },          -- VEH_EXT_DOOR_DSIDE_F = 0
+    { "右前门" },          -- VEH_EXT_DOOR_DSIDE_R = 1
+    { "左后门" },          -- VEH_EXT_DOOR_PSIDE_F = 2
+    { "右后门" },          -- VEH_EXT_DOOR_PSIDE_R = 3
+    { "引擎盖" },          -- VEH_EXT_BONNET = 4
+    { "后备箱" }           -- VEH_EXT_BOOT = 5
 }
 local vehicle_door_select = 1 --选择的车门
 menu.list_select(Vehicle_Door_options, "选择车门", {}, "", VehicleDoors_ListItem, 1, function(value)
@@ -3610,18 +3300,7 @@ menu.toggle(Vehicle_Door_options, "车门不可损坏", {}, "", function(toggle)
         end
     end
 end)
-menu.toggle(Vehicle_Door_options, "自动锁门", {}, "当车门关闭后自动上锁", function(toggle)
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        if vehicle_door_select == 1 then
-            for i = 0, 3 do
-                VEHICLE.SET_VEHICLE_DOOR_AUTO_LOCK(vehicle, i, toggle)
-            end
-        elseif vehicle_door_select > 1 then
-            VEHICLE.SET_VEHICLE_DOOR_AUTO_LOCK(vehicle, vehicle_door_select - 2, toggle)
-        end
-    end
-end)
+
 
 
 ---------------
@@ -3630,18 +3309,18 @@ end)
 local Vehicle_DoorLock_options = menu.list(Vehicle_options, "载具锁门", {}, "")
 
 local VehicleDoorsLock_ListItem = {
-    { "解锁" }, --VEHICLELOCK_UNLOCKED == 1
-    { "上锁" }, --VEHICLELOCK_LOCKED
+    { "解锁" },                                 --VEHICLELOCK_UNLOCKED == 1
+    { "上锁" },                                 --VEHICLELOCK_LOCKED
     { "LOCKOUT PLAYER ONLY",     {}, "只对玩家锁门？" }, --VEHICLELOCK_LOCKOUT_PLAYER_ONLY
-    { "玩家锁定在里面" }, --VEHICLELOCK_LOCKED_PLAYER_INSIDE
-    { "LOCKED INITIALLY" }, --VEHICLELOCK_LOCKED_INITIALLY
-    { "强制关闭车门" }, --VEHICLELOCK_FORCE_SHUT_DOORS
+    { "玩家锁定在里面" },                  --VEHICLELOCK_LOCKED_PLAYER_INSIDE
+    { "LOCKED INITIALLY" },                       --VEHICLELOCK_LOCKED_INITIALLY
+    { "强制关闭车门" },                     --VEHICLELOCK_FORCE_SHUT_DOORS
     { "上锁但可被破坏",   {}, "可以破开车窗开门" }, --VEHICLELOCK_LOCKED_BUT_CAN_BE_DAMAGED
-    { "上锁但后备箱解锁" }, --VEHICLELOCK_LOCKED_BUT_BOOT_UNLOCKED
-    { "上锁无乘客" }, --VEHICLELOCK_LOCKED_NO_PASSENGERS
+    { "上锁但后备箱解锁" },               --VEHICLELOCK_LOCKED_BUT_BOOT_UNLOCKED
+    { "上锁无乘客" },                        --VEHICLELOCK_LOCKED_NO_PASSENGERS
     { "不能进入",            {}, "按F无上车动作" } --VEHICLELOCK_CANNOT_ENTER
 }
-local vehicle_door_lock_select = 1 --选择的锁门类型
+local vehicle_door_lock_select = 1                --选择的锁门类型
 menu.list_select(Vehicle_DoorLock_options, "锁门类型", {}, "", VehicleDoorsLock_ListItem, 1, function(value)
     vehicle_door_lock_select = value
 end)
@@ -3673,11 +3352,11 @@ end)
 local Vehicle_Light_options = menu.list(Vehicle_options, "载具车灯", {}, "")
 
 local VehicleLightState_ListItem = {
-    { "正常" }, -- 0
+    { "正常" },           -- 0
     { "强制关灯", {}, "总是关灯" }, -- 1
     { "强制开灯", {}, "总是开灯" }, -- 2
-    { "开灯" }, -- 3
-    { "关灯" }, -- 4
+    { "开灯" },           -- 3
+    { "关灯" },           -- 4
 }
 menu.list_select(Vehicle_Light_options, "设置车灯状态", {}, "", VehicleLightState_ListItem, 1, function(value)
     local vehicle = entities.get_user_vehicle_as_handle()
@@ -3694,11 +3373,11 @@ local VehicleHeadlightShadow_ListItem = {
 }
 menu.list_select(Vehicle_Light_options, "设置前照灯阴影", {}, "", VehicleHeadlightShadow_ListItem,
     1, function(value)
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_LIGHTS(vehicle, value - 1)
-    end
-end)
+        local vehicle = entities.get_user_vehicle_as_handle()
+        if vehicle ~= 0 then
+            VEHICLE.SET_VEHICLE_LIGHTS(vehicle, value - 1)
+        end
+    end)
 
 menu.toggle(Vehicle_Light_options, "车灯不可损坏", {}, "", function(toggle)
     local vehicle = entities.get_user_vehicle_as_handle()
@@ -3708,11 +3387,11 @@ menu.toggle(Vehicle_Light_options, "车灯不可损坏", {}, "", function(toggle
 end)
 menu.toggle(Vehicle_Light_options, "内饰灯光", {},
     "Forces the vehicles interior lights (regardless of time-of-day)", function(toggle)
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_FORCE_INTERIORLIGHT(vehicle, toggle)
-    end
-end)
+        local vehicle = entities.get_user_vehicle_as_handle()
+        if vehicle ~= 0 then
+            VEHICLE.SET_VEHICLE_FORCE_INTERIORLIGHT(vehicle, toggle)
+        end
+    end)
 
 
 ---------------
@@ -3720,45 +3399,8 @@ end)
 ---------------
 local Vehicle_Radio_options = menu.list(Vehicle_options, "载具电台", {}, "")
 
--- 载具电台 Labels
-local Vehicle_Radio_Stations = {
-    "RADIO_11_TALK_02", -- Blaine County Radio
-    "RADIO_12_REGGAE", -- The Blue Ark
-    "RADIO_13_JAZZ", -- Worldwide FM
-    "RADIO_14_DANCE_02", -- FlyLo FM
-    "RADIO_15_MOTOWN", -- The Lowdown 9.11
-    "RADIO_20_THELAB", -- The Lab
-    "RADIO_16_SILVERLAKE", -- Radio Mirror Park
-    "RADIO_17_FUNK", -- Space 103.2
-    "RADIO_18_90S_ROCK", -- Vinewood Boulevard Radio
-    "RADIO_21_DLC_XM17", -- Blonded Los Santos 97.8 FM
-    "RADIO_22_DLC_BATTLE_MIX1_RADIO", -- Los Santos Underground Radio
-    "RADIO_23_DLC_XM19_RADIO", -- iFruit Radio
-    "RADIO_19_USER", -- Self Radio
-    "RADIO_01_CLASS_ROCK", -- Los Santos Rock Radio
-    "RADIO_02_POP", -- Non-Stop-Pop FM
-    "RADIO_03_HIPHOP_NEW", -- Radio Los Santos
-    "RADIO_04_PUNK", -- Channel X
-    "RADIO_05_TALK_01", -- West Coast Talk Radio
-    "RADIO_06_COUNTRY", -- Rebel Radio
-    "RADIO_07_DANCE_01", -- Soulwax FM
-    "RADIO_08_MEXICAN", -- East Los FM
-    "RADIO_09_HIPHOP_OLD", -- West Coast Classics
-    "RADIO_36_AUDIOPLAYER", -- Media Player
-    "RADIO_35_DLC_HEI4_MLR", -- The Music Locker
-    "RADIO_34_DLC_HEI4_KULT", -- Kult FM
-    "RADIO_27_DLC_PRHEI4", -- Still Slipping Los Santos
-}
-local VehicleRadio_ListItem = { { "关闭", {}, "OFF" } }
-for k, name in pairs(Vehicle_Radio_Stations) do
-    local temp = { "", {}, "" }
-    temp[1] = util.get_label_text(name)
-    temp[3] = name
-    table.insert(VehicleRadio_ListItem, temp)
-end
-
 local vehicle_radio_station_select = 1
-menu.list_select(Vehicle_Radio_options, "选择电台", {}, "", VehicleRadio_ListItem, 1, function(value)
+menu.list_select(Vehicle_Radio_options, "选择电台", {}, "", Vehicle_RadioStation.ListItem, 1, function(value)
     vehicle_radio_station_select = value
 end)
 menu.toggle_loop(Vehicle_Radio_options, "自动更改电台", { "auto_veh_radio" }, "当你进入一辆载具时，更改载具的电台",
@@ -3766,18 +3408,18 @@ menu.toggle_loop(Vehicle_Radio_options, "自动更改电台", { "auto_veh_radio"
         if PED.IS_PED_GETTING_INTO_A_VEHICLE(players.user_ped()) then
             local veh = PED.GET_VEHICLE_PED_IS_ENTERING(players.user_ped())
             if veh ~= 0 then
-                local stationName = VehicleRadio_ListItem[vehicle_radio_station_select][3]
+                local stationName = Vehicle_RadioStation.LabelList[vehicle_radio_station_select]
                 AUDIO.SET_VEH_RADIO_STATION(veh, stationName)
             end
         end
     end)
 menu.toggle(Vehicle_Radio_options, "关闭电台", { "close_veh_radio" },
     "关闭后当前载具将无法选择更改电台", function(toggle)
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        AUDIO.SET_VEHICLE_RADIO_ENABLED(vehicle, not toggle)
-    end
-end)
+        local vehicle = entities.get_user_vehicle_as_handle()
+        if vehicle ~= 0 then
+            AUDIO.SET_VEHICLE_RADIO_ENABLED(vehicle, not toggle)
+        end
+    end)
 
 
 ---------------
@@ -3786,16 +3428,16 @@ end)
 local Vehicle_Personal_options = menu.list(Vehicle_options, "个人载具", {}, "")
 menu.action(Vehicle_Personal_options, "开启载具引擎", { "veh_engine_on" },
     "个人载具和上一辆载具", function()
-    local vehicle = entities.get_user_personal_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
-    end
+        local vehicle = entities.get_user_personal_vehicle_as_handle()
+        if vehicle ~= 0 then
+            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
+        end
 
-    local last_vehicle = entities.get_user_vehicle_as_handle()
-    if last_vehicle ~= 0 and last_vehicle ~= vehicle then
-        VEHICLE.SET_VEHICLE_ENGINE_ON(last_vehicle, true, true, false)
-    end
-end)
+        local last_vehicle = entities.get_user_vehicle_as_handle()
+        if last_vehicle ~= 0 and last_vehicle ~= vehicle then
+            VEHICLE.SET_VEHICLE_ENGINE_ON(last_vehicle, true, true, false)
+        end
+    end)
 menu.action(Vehicle_Personal_options, "打开引擎和左车门", {}, "", function()
     local vehicle = entities.get_user_personal_vehicle_as_handle()
     if vehicle ~= 0 then
@@ -3829,11 +3471,11 @@ menu.list_action(Vehicle_Personal_options, "传送到附近", { "veh_tp_near" },
     end
     if vehicle ~= 0 then
         local pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-        local bool, coords, heading = Get_Closest_Vehicle_Node(pos, 0)
+        local bool, coords, heading = get_closest_vehicle_node(pos, 0)
         if bool then
             SET_ENTITY_COORDS(vehicle, coords)
             ENTITY.SET_ENTITY_HEADING(vehicle, heading)
-            Fix_Vehicle(vehicle)
+            fix_vehicle(vehicle)
             VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle, 5.0)
             VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
             --show blip
@@ -3845,7 +3487,6 @@ menu.list_action(Vehicle_Personal_options, "传送到附近", { "veh_tp_near" },
 end)
 menu.toggle(Vehicle_Personal_options, "锁门", { "veh_lock" }, "", function(toggle)
     local vehicle = entities.get_user_personal_vehicle_as_handle()
-    util.toast(vehicle)
     if vehicle ~= 0 then
         VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_PLAYERS(vehicle, toggle)
         if toggle then
@@ -3867,7 +3508,7 @@ local Vehicle_Weapon_options = menu.list(Vehicle_options, "载具武器", {}, ""
 local veh_weapon_data = {
     delay = 100,
     direction = {
-        [1] = true, -- front
+        [1] = true,  -- front
         [2] = false, -- rear
         [3] = false, -- left
         [4] = false, -- right
@@ -3921,8 +3562,8 @@ local function Vehicle_Weapon_Shoot(vehicle, direction, state)
         WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(user_ped, pWeapon)
         weaponHash = memory.read_int(pWeapon)
     end
-    if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHashHash) then
-        Request_Weapon_Asset(weaponHash)
+    if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHash) then
+        request_weapon_asset(weaponHash)
     end
 
     local owner = 0
@@ -3954,7 +3595,7 @@ local function Vehicle_Weapon_Shoot(vehicle, direction, state)
         offsets[2] = v3.new(min.x, get_middle_num(min.y, max.y), offset_z)
         offsets[3] = v3.new(min.x, min.y, offset_z)
         -- left
-        end_offset = v3.new( -1.0, 0.0, 0.0)
+        end_offset = v3.new(-1.0, 0.0, 0.0)
     elseif direction == 4 then
         offsets[1] = v3.new(max.x, max.y, offset_z)
         offsets[2] = v3.new(max.x, get_middle_num(min.y, max.y), offset_z)
@@ -4142,7 +3783,6 @@ menu.toggle_loop(Vehicle_Info_options, "开启", {}, "", function()
     end
 end)
 
-
 local Vehicle_Info_Show_Setting = menu.list(Vehicle_Info_options, "显示设置", {}, "")
 menu.toggle(Vehicle_Info_Show_Setting, "只显示当前载具信息", {}, "", function(toggle)
     vehicle_info.only_current_vehicle = toggle
@@ -4155,8 +3795,8 @@ menu.slider_float(Vehicle_Info_Show_Setting, "位置Y", { "vehicle_info_y" }, ""
 end)
 menu.slider_float(Vehicle_Info_Show_Setting, "文字大小", { "vehicle_info_scale" }, "",
     0, 1000, 65, 1, function(value)
-    vehicle_info.scale = value * 0.01
-end)
+        vehicle_info.scale = value * 0.01
+    end)
 
 menu.divider(Vehicle_Info_options, "显示的信息")
 menu.toggle(Vehicle_Info_options, "载具名称", {}, "", function(toggle)
@@ -4178,16 +3818,16 @@ end)
 
 
 
-----------
+----------------
 local veh_dirt_level = 0.0
 menu.click_slider(Vehicle_options, "载具灰尘程度", { "veh_dirt_level" }, "载具全身灰尘程度",
     0.0, 15.0, 0.0, 1.0, function(value)
-    veh_dirt_level = value
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, veh_dirt_level)
-    end
-end)
+        veh_dirt_level = value
+        local vehicle = entities.get_user_vehicle_as_handle()
+        if vehicle ~= 0 then
+            VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, veh_dirt_level)
+        end
+    end)
 menu.toggle_loop(Vehicle_options, "锁定载具灰尘程度", {}, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= 0 then
@@ -4219,7 +3859,7 @@ menu.toggle_loop(Vehicle_options, "解锁正在进入的载具", {}, "解锁载�
 
     if vehicle ~= 0 then
         if RequestControl(vehicle) then
-            Unlock_Vehicle_Doors(vehicle)
+            unlock_vehicle_doors(vehicle)
             VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, true)
             VEHICLE.SET_VEHICLE_UNDRIVEABLE(vehicle, false)
             ENTITY.FREEZE_ENTITY_POSITION(vehicle, false)
@@ -4241,30 +3881,26 @@ end, function()
 end)
 menu.toggle_loop(Vehicle_options, "移除翻车卡住的检测", { "remove_veh_check" },
     "避免因载具翻车、卡住导致任务失败", function()
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.REMOVE_VEHICLE_UPSIDEDOWN_CHECK(vehicle)
-        VEHICLE.REMOVE_VEHICLE_STUCK_CHECK(vehicle)
-    end
-end)
+        local vehicle = entities.get_user_vehicle_as_handle()
+        if vehicle ~= 0 then
+            VEHICLE.REMOVE_VEHICLE_UPSIDEDOWN_CHECK(vehicle)
+            VEHICLE.REMOVE_VEHICLE_STUCK_CHECK(vehicle)
+        end
+    end)
 
 menu.click_slider(Vehicle_options, "强化载具", { "strong_vehicle" }, "设置实体血量加倍倍数\n提高载具防御能力",
-    1, 20, 1, 1, function(value)
-    if value > 0 then
+    1, 20, 5, 1, function(value)
         local vehicle = entities.get_user_vehicle_as_handle()
         if vehicle ~= 0 then
             local max_health = ENTITY.GET_ENTITY_MAX_HEALTH(vehicle) * value
             ENTITY.SET_ENTITY_MAX_HEALTH(vehicle, max_health)
             ENTITY.SET_ENTITY_HEALTH(vehicle, max_health)
 
-            Enhance_Vehicle(vehicle)
-            VEHICLE.REMOVE_VEHICLE_UPSIDEDOWN_CHECK(vehicle)
-            VEHICLE.REMOVE_VEHICLE_STUCK_CHECK(vehicle)
+            strong_vehicle(vehicle)
 
-            util.toast("Done!")
+            util.toast("完成！")
         end
-    end
-end)
+    end)
 
 
 
@@ -4275,6 +3911,8 @@ end)
 ------------ 世界实体选项 -----------
 -----------------------------------
 require "RScript.Menu.Entity_options"
+
+
 
 
 
@@ -4311,11 +3949,12 @@ local block_area_data = {
         obj = 1,
         visible = true,
         freeze = true,
-    }
+        no_collision = false,
+    },
 }
 
 local block_area_AreaData = {
-    -- x, y, z
+    -- { x, y, z }
     {
         -- radar_car_mod_shop 72
         { 1174.7074,  2644.4497,  36.7552 },
@@ -4412,7 +4051,7 @@ menu.action(BlockArea_options, "阻挡", {}, "", function()
     local ent = 0
     local area = block_area_AreaData[block_area_data.setting.area]
 
-    Request_Model(hash)
+    request_model(hash)
     for k, pos in pairs(area) do
         if Type == "object" then
             ent = entities.create_object(hash, v3.new(pos[1], pos[2], pos[3] + 1.0))
@@ -4423,7 +4062,13 @@ menu.action(BlockArea_options, "阻挡", {}, "", function()
             ENTITY.SET_ENTITY_VISIBLE(ent, block_area_data.setting.visible, 0)
             ENTITY.SET_ENTITY_AS_MISSION_ENTITY(ent, true, false)
             ENTITY.SET_ENTITY_INVINCIBLE(ent, true)
-            Set_Entity_Networked(ent, false)
+            set_entity_networked(ent, false)
+
+            if block_area_data.setting.no_collision then
+                ENTITY.SET_ENTITY_NO_COLLISION_ENTITY(ent, players.user_ped(), false)
+                ENTITY.SET_ENTITY_NO_COLLISION_ENTITY(players.user_ped(), ent, false)
+            end
+
             count = count + 1
         end
     end
@@ -4443,11 +4088,40 @@ end, true)
 menu.toggle(BlockArea_options, "可见", {}, "", function(toggle)
     block_area_data.setting.visible = toggle
 end, true)
+menu.toggle(BlockArea_options, "与玩家自身没有碰撞", {}, "玩家自身可以穿过这些阻挡物",
+    function(toggle)
+        block_area_data.setting.no_collision = toggle
+    end)
+
+
+----------------
+-- 其它阻挡
+----------------
+local BlockArea_Other = menu.list(Session_options, "其它阻挡", {}, "")
+
+menu.action(BlockArea_Other, "阻挡天基炮", {}, "会生成一个阻挡天基炮房间的铁门", function()
+    local hash = util.joaat("h4_prop_h4_garage_door_01a")
+    local coords = v3(335.9, 4833.9, -59.0)
+
+    request_model(hash)
+    local ent = entities.create_object(hash, coords)
+    set_entity_networked(ent, false)
+    ENTITY.SET_ENTITY_HEADING(ent, 125.0)
+    ENTITY.FREEZE_ENTITY_POSITION(ent, true)
+    ENTITY.SET_ENTITY_AS_MISSION_ENTITY(ent, true, false)
+
+    ENTITY.SET_ENTITY_NO_COLLISION_ENTITY(ent, players.user_ped(), false)
+    ENTITY.SET_ENTITY_NO_COLLISION_ENTITY(players.user_ped(), ent, false)
+
+    STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(hash)
+    util.toast("完成！")
+end)
+
 
 
 -------------------
 -- 交通人口密度
-------------------
+-------------------
 local Population_Density = menu.list(Session_options, "交通人口密度", {}, "")
 
 menu.action(Population_Density, "立刻充满行人", { "fill_ped_population" }, "", function()
@@ -4472,16 +4146,16 @@ menu.toggle_loop(Population_Density_Frame, "开启", {}, "", function()
 end)
 menu.slider_float(Population_Density_Frame, "Ped", { "population_density_frame_ped" }, "",
     0, 100, 100, 10, function(value)
-    population_density_frame.ped = value * 0.01
-end)
+        population_density_frame.ped = value * 0.01
+    end)
 menu.slider_float(Population_Density_Frame, "Random Vehicle", { "population_density_frame_random_vehicle" }, "",
     0, 100, 100, 10, function(value)
-    population_density_frame.random_vehicle = value * 0.01
-end)
+        population_density_frame.random_vehicle = value * 0.01
+    end)
 menu.slider_float(Population_Density_Frame, "Parked Vehicle", { "population_density_frame_parked_vehicle" }, "",
     0, 100, 100, 10, function(value)
-    population_density_frame.parked_vehicle = value * 0.01
-end)
+        population_density_frame.parked_vehicle = value * 0.01
+    end)
 
 
 -----
@@ -4510,15 +4184,74 @@ menu.toggle(Population_Density_Sphere, "覆盖范围", {}, "切换战局后会�
 menu.divider(Population_Density_Sphere, "设置")
 menu.slider_float(Population_Density_Sphere, "人口密度", { "population_density_sphere_pedDensity" }, "",
     0, 100, 100, 10, function(value)
-    population_density_sphere.pedDensity = value * 0.01
-end)
+        population_density_sphere.pedDensity = value * 0.01
+    end)
 menu.slider_float(Population_Density_Sphere, "交通密度", { "population_density_sphere_trafficDensity" }, "",
     0, 100, 100, 10, function(value)
-    population_density_sphere.trafficDensity = value * 0.01
-end)
+        population_density_sphere.trafficDensity = value * 0.01
+    end)
 menu.toggle(Population_Density_Sphere, "仅本地有效", {}, "", function(toggle)
     population_density_sphere.localOnly = toggle
 end)
+
+
+
+-------------------
+-- 玩家语言
+-------------------
+local Player_Language = menu.list(Session_options, "玩家语言", {}, "获取玩家游戏使用的语言")
+
+local player_language_data = {
+    language = {
+        [-1] = "未定义",
+        [0] = "英语",
+        [1] = "法语",
+        [2] = "德语",
+        [3] = "意大利语",
+        [4] = "西班牙语",
+        [5] = "葡萄牙语",
+        [6] = "波兰语",
+        [7] = "俄语",
+        [8] = "韩语",
+        [9] = "繁体中文",
+        [10] = "日语",
+        [11] = "墨西哥语",
+        [12] = "简体中文"
+    },
+    menu_list = {},
+    notify = true,
+}
+
+menu.action(Player_Language, "获取玩家语言列表", { "player_language" }, "", function()
+    for k, v in pairs(player_language_data.menu_list) do
+        if menu.is_ref_valid(v) then
+            menu.delete(v)
+        end
+    end
+    player_language_data.menu_list = {}
+
+    local text = ""
+    for k, pid in pairs(players.list()) do
+        local name                          = players.get_name(pid)
+        local rank                          = players.get_rank(pid)
+        local lang                          = players.get_language(pid)
+        local lang_text                     = player_language_data.language[lang]
+        local title                         = name .. " (" .. rank .. "级)"
+
+        player_language_data.menu_list[pid] = menu.readonly(Player_Language, title, lang_text)
+
+        text                                = text .. title .. "     " .. lang_text .. "\n"
+    end
+    if player_language_data.notify then
+        util.toast(text)
+    end
+end)
+menu.toggle(Player_Language, "通知", {}, "", function(toggle)
+    player_language_data.notify = toggle
+end, true)
+menu.divider(Player_Language, "列表")
+
+
 
 
 
@@ -4528,16 +4261,19 @@ menu.toggle_loop(Session_options, "新生成的NPC携带零食", {}, "", functio
 end)
 menu.toggle_loop(Session_options, "周围NPC死亡时掉钱", {},
     "Sets whether ambient peds drop any money when killed. This is switched off by default in MP.", function()
-    PED.SET_AMBIENT_PEDS_DROP_MONEY(true)
-end)
+        PED.SET_AMBIENT_PEDS_DROP_MONEY(true)
+    end)
 menu.toggle_loop(Session_options, "阻止周围NPC临时事件", {},
     "Blocks non temp events for ambient peds this frame.\nExcludes law enforcement peds.", function()
-    PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS_FOR_AMBIENT_PEDS_THIS_FRAME(true)
-end)
+        PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS_FOR_AMBIENT_PEDS_THIS_FRAME(true)
+    end)
 menu.toggle_loop(Session_options, "周围执法NPC降低精准度", {},
     "Sets global ambient law ped accuracy modifier (only works in MP).", function()
-    PED.SET_AMBIENT_LAW_PED_ACCURACY_MODIFIER(0.0)
-end)
+        PED.SET_AMBIENT_LAW_PED_ACCURACY_MODIFIER(0.0)
+    end)
+
+
+
 
 
 
@@ -4588,7 +4324,7 @@ function Group:pushMember(ped)
     --PED.SET_GROUP_FORMATION(groupID, self.formation)
 end
 
-Bodyguard = {
+local Bodyguard = {
     setting = {},
 }
 
@@ -4685,34 +4421,34 @@ function Bodyguard.set_npc_attribute(ped)
     PED.SET_PED_COMBAT_MOVEMENT(ped, Bodyguard.setting.npc.combat_movement)
     PED.SET_PED_TARGET_LOSS_RESPONSE(ped, Bodyguard.setting.npc.target_loss_response)
     --COMBAT ATTRIBUTES
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 4, true) --Can Use Dynamic Strafe Decisions
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true) --Always Fight
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 6, false) --Flee Whilst In Vehicle
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 13, true) --Aggressive
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 14, true) --Can Investigate
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 4, true)   --Can Use Dynamic Strafe Decisions
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true)   --Always Fight
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 6, false)  --Flee Whilst In Vehicle
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 13, true)  --Aggressive
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 14, true)  --Can Investigate
     PED.SET_PED_COMBAT_ATTRIBUTES(ped, 17, false) --Always Flee
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true) --Can Taunt In Vehicle
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true) --Can Chase Target On Foot
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 22, true) --Will Drag Injured Peds to Safety
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 24, true) --Use Proximity Firing Rate
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, true) --Perfect Accuracy
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 28, true) --Can Use Frustrated Advance
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 29, true) --Move To Location Before Cover Search
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 38, true) --Disable Bullet Reactions
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 39, true) --Can Bust
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true) --Can Commandeer Vehicles
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 42, true) --Can Flank
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true) --Can Fight Armed Peds When Not Armed
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 20, true)  --Can Taunt In Vehicle
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 21, true)  --Can Chase Target On Foot
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 22, true)  --Will Drag Injured Peds to Safety
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 24, true)  --Use Proximity Firing Rate
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, true)  --Perfect Accuracy
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 28, true)  --Can Use Frustrated Advance
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 29, true)  --Move To Location Before Cover Search
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 38, true)  --Disable Bullet Reactions
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 39, true)  --Can Bust
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 41, true)  --Can Commandeer Vehicles
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 42, true)  --Can Flank
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true)  --Can Fight Armed Peds When Not Armed
     PED.SET_PED_COMBAT_ATTRIBUTES(ped, 49, false) --Use Enemy Accuracy Scaling
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 52, true) --Use Vehicle Attack
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 53, true) --Use Vehicle Attack If Vehicle Has Mounted Guns
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 54, true) --Always Equip Best Weapon
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true) --Can See Underwater Peds
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true) --Disable Flee From Combat
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 60, true) --Can Throw Smoke Grenade
-    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true) --Disable All Randoms Flee
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 52, true)  --Use Vehicle Attack
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 53, true)  --Use Vehicle Attack If Vehicle Has Mounted Guns
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 54, true)  --Always Equip Best Weapon
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 55, true)  --Can See Underwater Peds
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true)  --Disable Flee From Combat
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 60, true)  --Can Throw Smoke Grenade
+    PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true)  --Disable All Randoms Flee
     --FLEE ATTRIBUTES
-    PED.SET_PED_FLEE_ATTRIBUTES(ped, 512, true) -- NEVER_FLEE
+    PED.SET_PED_FLEE_ATTRIBUTES(ped, 512, true)   -- NEVER_FLEE
     --TASK
     TASK.SET_PED_PATH_CAN_USE_CLIMBOVERS(ped, true)
     TASK.SET_PED_PATH_CAN_USE_LADDERS(ped, true)
@@ -4780,7 +4516,7 @@ local Bodyguard_NPC_model_list = {
 }
 
 menu.list_select(Bodyguard_NPC_options, "选择模型", {}, "", Bodyguard_NPC_name_ListItem, 1
-    , function(value)
+, function(value)
     Bodyguard.npc.model_select = value
 end)
 
@@ -4822,14 +4558,14 @@ local Bodyguard_NPC_manage_all = menu.list(Bodyguard_NPC_options, "所有保镖"
 menu.toggle(Bodyguard_NPC_manage_all, "无敌", {}, "", function(toggle)
     for k, ent in pairs(Bodyguard.npc.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
-            Set_Entity_Godmode(ent, toggle)
+            set_entity_godmode(ent, toggle)
         end
     end
 end)
-menu.list_action(Bodyguard_NPC_manage_all, "给予武器", {}, "", WeaponName_ListItem, function(value)
+menu.list_action(Bodyguard_NPC_manage_all, "给予武器", {}, "", Weapon_Common.ListItem, function(value)
     for k, ent in pairs(Bodyguard.npc.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
-            local weaponHash = util.joaat(WeaponModel_List[value])
+            local weaponHash = util.joaat(Weapon_Common.ModelList[value])
             WEAPON.GIVE_WEAPON_TO_PED(ent, weaponHash, -1, false, true)
             WEAPON.SET_CURRENT_PED_WEAPON(ent, weaponHash, false)
         end
@@ -4856,7 +4592,7 @@ menu.action(Bodyguard_NPC_manage_all, "删除", {}, "", function()
             menu.delete(v)
         end
     end
-    Bodyguard.npc.list = {} --生成的保镖NPC list
+    Bodyguard.npc.list = {}      --生成的保镖NPC list
     Bodyguard.npc.menu_list = {} --生成的保镖直升机对应的menu list
 end)
 
@@ -4878,16 +4614,16 @@ local Bodyguard_Heli_model_list = {
 
 menu.list_select(Bodyguard_Heli_options, "直升机类型", {}, "", Bodyguard_Heli_name_ListItem,
     1, function(value)
-    Bodyguard.heli.model_select = value
-end)
+        Bodyguard.heli.model_select = value
+    end)
 
 menu.action(Bodyguard_Heli_options, "生成保镖直升机", {}, "", function()
     local heli_hash = util.joaat(Bodyguard_Heli_model_list[Bodyguard.heli.model_select])
     local ped_hash = util.joaat("s_m_y_blackops_01")
 
     local pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-    pos.x = pos.x + math.random( -10, 10)
-    pos.y = pos.y + math.random( -10, 10)
+    pos.x = pos.x + math.random(-10, 10)
+    pos.y = pos.y + math.random(-10, 10)
     pos.z = pos.z + 30
 
     local heli = Create_Network_Vehicle(heli_hash, pos.x, pos.y, pos.z, CAM.GET_GAMEPLAY_CAM_ROT(0).z)
@@ -4960,19 +4696,19 @@ local Bodyguard_Heli_manage_all = menu.list(Bodyguard_Heli_options, "所有保�
 menu.toggle(Bodyguard_Heli_manage_all, "无敌", {}, "", function(toggle)
     for k, ent in pairs(Bodyguard.heli.npc_list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
-            Set_Entity_Godmode(ent, toggle)
+            set_entity_godmode(ent, toggle)
         end
     end
     for k, ent in pairs(Bodyguard.heli.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
-            Set_Entity_Godmode(ent, toggle)
+            set_entity_godmode(ent, toggle)
         end
     end
 end)
 menu.action(Bodyguard_Heli_manage_all, "传送到我", {}, "", function()
     for k, ent in pairs(Bodyguard.heli.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
-            TP_TO_ME(ent, math.random( -10, 10), math.random( -10, 10), 30)
+            TP_TO_ME(ent, math.random(-10, 10), math.random(-10, 10), 30)
         end
     end
 end)
@@ -4993,8 +4729,8 @@ menu.action(Bodyguard_Heli_manage_all, "删除", {}, "", function()
         end
     end
 
-    Bodyguard.heli.list = {} --生成的保镖直升机 list
-    Bodyguard.heli.npc_list = {} --生成的保镖直升机里面的NPC list
+    Bodyguard.heli.list = {}      --生成的保镖直升机 list
+    Bodyguard.heli.npc_list = {}  --生成的保镖直升机里面的NPC list
     Bodyguard.heli.menu_list = {} --生成的保镖直升机对应的menu list
     Bodyguard.heli.index = 1
 end)
@@ -5017,14 +4753,14 @@ menu.slider(Bodyguard_npc_setting, "生命", { "bodyguard_npc_health" }, "", 100
 menu.toggle(Bodyguard_npc_setting, "不会摔倒", {}, "", function(toggle)
     Bodyguard.setting.npc.no_ragdoll = toggle
 end)
-menu.list_select(Bodyguard_npc_setting, "武器", {}, "", WeaponName_ListItem, 4, function(value)
-    Bodyguard.setting.npc.weapon = WeaponModel_List[value]
+menu.list_select(Bodyguard_npc_setting, "武器", {}, "", Weapon_Common.ListItem, 4, function(value)
+    Bodyguard.setting.npc.weapon = Weapon_Common.ModelList[value]
 end)
 menu.divider(Bodyguard_npc_setting, "作战能力")
 menu.slider(Bodyguard_npc_setting, "视力听觉范围", { "bodyguard_npc_see_hear_range" }, "", 10, 1000, 500,
     100, function(value)
-    Bodyguard.setting.npc.see_hear_range = value
-end)
+        Bodyguard.setting.npc.see_hear_range = value
+    end)
 menu.slider(Bodyguard_npc_setting, "精确度", { "bodyguard_npc_accuracy" }, "", 0, 100, 100, 10,
     function(value)
         Bodyguard.setting.npc.accuracy = value
@@ -5038,7 +4774,7 @@ menu.list_select(Bodyguard_npc_setting, "作战技能", {}, "", { { "弱" }, { "
         Bodyguard.setting.npc.combat_ability = value - 1
     end)
 menu.list_select(Bodyguard_npc_setting, "作战范围", {}, "", { { "近" }, { "中等" }, { "远" }, { "非常远" } }
-    , 3, function(value)
+, 3, function(value)
     Bodyguard.setting.npc.combat_range = value - 1
 end)
 menu.list_select(Bodyguard_npc_setting, "作战走位", {}, "", { { "站立" }, { "防卫" }, { "会前进" },
@@ -5049,8 +4785,8 @@ menu.list_select(Bodyguard_npc_setting, "失去目标时反应", {}, "", { { "�
     { "寻找目标" } }, 2, function(value)
     Bodyguard.setting.npc.target_loss_response = value - 1
 end)
-menu.list_select(Bodyguard_npc_setting, "射击模式", {}, "", Ped_FirePattern_ListItem, -957453492, function(value)
-    Bodyguard.setting.npc.fire_pattern = value
+menu.list_select(Bodyguard_npc_setting, "射击模式", {}, "", Ped_FirePattern.ListItem, 1, function(value)
+    Bodyguard.setting.npc.fire_pattern = Ped_FirePattern.ValueList[value]
 end)
 
 ----- 保镖直升机 -----
@@ -5067,21 +4803,23 @@ menu.slider(Bodyguard_heli_setting, "速度", { "bodyguard_heli_Speed" }, "", 0,
     function(value)
         Bodyguard.setting.heli.Speed = value
     end)
-menu.list_select(Bodyguard_heli_setting, "驾驶风格", {}, "", DrivingStyleName_ListItem, 1, function(value)
-    Bodyguard.setting.heli.drivingStyle = DrivingStyle_List[value]
+menu.list_select(Bodyguard_heli_setting, "驾驶风格", {}, "", Vehicle_DrivingStyle.ListItem, 1, function(value)
+    Bodyguard.setting.heli.drivingStyle = Vehicle_DrivingStyle.ValueList[value]
 end)
 menu.slider_float(Bodyguard_heli_setting, "Custom Offset", { "bodyguard_heli_CustomOffset" }, "", -100000, 100000, -100,
     10, function(value)
-    Bodyguard.setting.heli.CustomOffsets = value
-end)
+        Bodyguard.setting.heli.CustomOffsets = value
+    end)
 menu.slider(Bodyguard_heli_setting, "地面上的最小高度", { "bodyguard_heli_MinHeightAboveTerrain" }, "", 0, 10000
     , 20, 1,
     function(value)
         Bodyguard.setting.heli.MinHeightAboveTerrain = value
     end)
-menu.list_select(Bodyguard_heli_setting, "直升机模式", {}, "", HeliMode_ListItem, 0, function(value)
-    Bodyguard.setting.heli.HeliMode = value
+menu.list_select(Bodyguard_heli_setting, "直升机模式", {}, "", Vehicle_HeliMode.ListItem, 1, function(value)
+    Bodyguard.setting.heli.HeliMode = Vehicle_HeliMode.ValueList[value]
 end)
+
+
 
 
 
@@ -5090,6 +4828,7 @@ end)
 ------------ 娱乐选项 ------------
 --------------------------------
 require "RScript.Menu.Fun_options"
+
 
 
 
@@ -5110,7 +4849,7 @@ menu.toggle_loop(Protect_options, "移除粒子效果", {}, "范围: 10", functi
     GRAPHICS.REMOVE_PARTICLE_FX_IN_RANGE(pos.x, pos.y, pos.z, 10.0)
     GRAPHICS.REMOVE_PARTICLE_FX_FROM_ENTITY(players.user_ped())
 end)
-menu.toggle_loop(Protect_options, "移除防空区域", {}, "", function()
+menu.toggle_loop(Protect_options, "移除防空区域", {}, "不知有何作用(?)", function()
     WEAPON.REMOVE_ALL_AIR_DEFENCE_SPHERES()
 end)
 menu.toggle_loop(Protect_options, "移除载具上的黏弹", {}, "", function()
@@ -5124,6 +4863,8 @@ menu.toggle_loop(Protect_options, "停止所有声音", {}, "", function()
         AUDIO.STOP_SOUND(i)
     end
 end)
+
+
 
 
 
@@ -5150,9 +4891,9 @@ require "RScript.Menu.Dev_options"
 ------------------
 --- 零食护甲编辑 ---
 ------------------
-local Other_options_SnackArmour = menu.list(Other_options, "零食护甲编辑", {}, "")
+local Snack_Armour_Editor = menu.list(Other_options, "零食护甲编辑", {}, "")
 
-menu.action(Other_options_SnackArmour, "补满全部零食", {}, "", function()
+menu.action(Snack_Armour_Editor, "补满全部零食", {}, "", function()
     STAT_SET_INT("NO_BOUGHT_YUM_SNACKS", 30)
     STAT_SET_INT("NO_BOUGHT_HEALTH_SNACKS", 15)
     STAT_SET_INT("NO_BOUGHT_EPIC_SNACKS", 5)
@@ -5163,7 +4904,7 @@ menu.action(Other_options_SnackArmour, "补满全部零食", {}, "", function()
     STAT_SET_INT("NUMBER_OF_SPRUNK_BOUGHT", 10)
     util.toast("完成！")
 end)
-menu.action(Other_options_SnackArmour, "补满全部护甲", {}, "", function()
+menu.action(Snack_Armour_Editor, "补满全部护甲", {}, "", function()
     STAT_SET_INT("MP_CHAR_ARMOUR_1_COUNT", 10)
     STAT_SET_INT("MP_CHAR_ARMOUR_2_COUNT", 10)
     STAT_SET_INT("MP_CHAR_ARMOUR_3_COUNT", 10)
@@ -5171,45 +4912,45 @@ menu.action(Other_options_SnackArmour, "补满全部护甲", {}, "", function()
     STAT_SET_INT("MP_CHAR_ARMOUR_5_COUNT", 10)
     util.toast("完成！")
 end)
-menu.action(Other_options_SnackArmour, "补满呼吸器", {}, "", function()
+menu.action(Snack_Armour_Editor, "补满呼吸器", {}, "", function()
     STAT_SET_INT("BREATHING_APPAR_BOUGHT", 20)
     util.toast("完成！")
 end)
 
-menu.divider(Other_options_SnackArmour, "零食")
-menu.click_slider(Other_options_SnackArmour, "PQ豆", { "snack_yum" }, "+15 Health", 0, 999, 30, 1, function(value)
+menu.divider(Snack_Armour_Editor, "零食")
+menu.click_slider(Snack_Armour_Editor, "PQ豆", { "snack_yum" }, "+15 Health", 0, 999, 30, 1, function(value)
     STAT_SET_INT("NO_BOUGHT_YUM_SNACKS", value)
     util.toast("完成！")
 end)
-menu.click_slider(Other_options_SnackArmour, "宝力旺", { "snack_health" }, "+45 Health", 0, 999, 15, 1,
+menu.click_slider(Snack_Armour_Editor, "宝力旺", { "snack_health" }, "+45 Health", 0, 999, 15, 1,
     function(value)
         STAT_SET_INT("NO_BOUGHT_HEALTH_SNACKS", value)
         util.toast("完成！")
     end)
-menu.click_slider(Other_options_SnackArmour, "麦提来", { "snack_epic" }, "+30 Health", 0, 999, 5, 1,
+menu.click_slider(Snack_Armour_Editor, "麦提来", { "snack_epic" }, "+30 Health", 0, 999, 5, 1,
     function(value)
         STAT_SET_INT("NO_BOUGHT_EPIC_SNACKS", value)
         util.toast("完成！")
     end)
-menu.click_slider(Other_options_SnackArmour, "易可乐", { "snack_orange" }, "+36 Health", 0, 999, 10, 1,
+menu.click_slider(Snack_Armour_Editor, "易可乐", { "snack_orange" }, "+36 Health", 0, 999, 10, 1,
     function(value)
         STAT_SET_INT("NUMBER_OF_ORANGE_BOUGHT", value)
         util.toast("完成！")
     end)
-menu.click_slider(Other_options_SnackArmour, "尿汤啤", { "snack_bourge" }, "", 0, 999, 10, 1, function(value)
+menu.click_slider(Snack_Armour_Editor, "尿汤啤", { "snack_bourge" }, "", 0, 999, 10, 1, function(value)
     STAT_SET_INT("NUMBER_OF_BOURGE_BOUGHT", value)
     util.toast("完成！")
 end)
-menu.click_slider(Other_options_SnackArmour, "蓝醉香槟", { "snack_champ" }, "", 0, 999, 5, 1, function(value)
+menu.click_slider(Snack_Armour_Editor, "蓝醉香槟", { "snack_champ" }, "", 0, 999, 5, 1, function(value)
     STAT_SET_INT("NUMBER_OF_CHAMP_BOUGHT", value)
     util.toast("完成！")
 end)
-menu.click_slider(Other_options_SnackArmour, "香烟", { "snack_cigarettes" }, "-5 Health", 0, 999, 20, 1,
+menu.click_slider(Snack_Armour_Editor, "香烟", { "snack_cigarettes" }, "-5 Health", 0, 999, 20, 1,
     function(value)
         STAT_SET_INT("CIGARETTES_BOUGHT", value)
         util.toast("完成！")
     end)
-menu.click_slider(Other_options_SnackArmour, "霜碧", { "snack_sprunk" }, "+36 Health", 0, 999, 10, 1,
+menu.click_slider(Snack_Armour_Editor, "霜碧", { "snack_sprunk" }, "+36 Health", 0, 999, 10, 1,
     function(value)
         STAT_SET_INT("NUMBER_OF_SPRUNK_BOUGHT", value)
         util.toast("完成！")
@@ -5226,7 +4967,7 @@ local Blip_options = menu.list(Other_options, "标记点选项", {}, "")
 ------------------
 local Blip_all = menu.list(Blip_options, "地图全部标记点", {}, "")
 
-local blip_count = 0 -- 获取到的标记点数量
+local blip_count = 0      -- 获取到的标记点数量
 local blip_menu_list = {} -- 标记点列表 menu.list
 
 local function Init_blip_menu_list()
@@ -5287,7 +5028,7 @@ local function generate_blip_menu(menu_parent, blip)
             HUD.SET_BLIP_COLOUR(blip, value)
         end)
     menu.list_select(blip_setting, "Set Display", {}, "", Blip_DisplayID_ListItem, HUD.GET_BLIP_INFO_ID_DISPLAY(blip) + 1
-        , function(value)
+    , function(value)
         HUD.SET_BLIP_DISPLAY(blip, value - 1)
     end)
     menu.toggle(blip_setting, "Flashs", {}, "", function(toggle)
@@ -5410,7 +5151,7 @@ local Blip_custom = menu.list(Blip_options, "自定义标记点", {}, "")
 
 local waypoint_blip_sprite = 8
 menu.slider_text(Blip_custom, "标记点类型", {}, "点击应用修改\n只作用于第一个标记的大头针位置"
-    , { "标记点位置", "大头针位置" }, function(value)
+, { "标记点位置", "大头针位置" }, function(value)
     if value == 1 then
         waypoint_blip_sprite = 8
     elseif value == 2 then
@@ -5470,9 +5211,9 @@ for k, data in pairs(Waypoint_Vehicle_ListItem) do
                 local hash = util.joaat(data[2])
                 local vehicle = Create_Network_Vehicle(hash, pos.x, pos.y, pos.z + 1.0, 0)
                 if vehicle ~= 0 then
-                    Upgrade_Vehicle(vehicle)
+                    upgrade_vehicle(vehicle)
                     ENTITY.SET_ENTITY_INVINCIBLE(vehicle, true)
-                    util.toast("Done!")
+                    util.toast("完成！")
                 end
             end
         end
@@ -5498,7 +5239,7 @@ for k, data in pairs(Waypoint_Pickup_ListItem) do
                 local modelHash = util.joaat(data[2])
                 local pickupHash = data[3]
                 Create_Network_Pickup(pickupHash, pos.x, pos.y, pos.z, modelHash, data[4])
-                util.toast("Done!")
+                util.toast("完成！")
             end
         end
     end)
@@ -5590,7 +5331,7 @@ menu.toggle(Request_Service_Remove, "CEO载具请求费用", {}, "", function(to
 end)
 
 
----
+----------------
 menu.action(Request_Service_options, "请求重型装甲", { "ammo_drop" }, "请求弹道装甲和火神机枪",
     function()
         SET_INT_GLOBAL(Globals.Ballistic_Armor, 1)
@@ -5632,7 +5373,7 @@ end)
 menu.click_slider(Request_Service_options, "贿赂当局 倒计时时间", {}, "单位:分钟", 1, 60, 2, 1,
     function(value)
         SET_INT_GLOBAL(Globals.GB_BRIBE_AUTHORITIES_DURATION, value * 60 * 1000)
-        util.toast("Done!")
+        util.toast("完成！")
     end)
 menu.toggle(Request_Service_options, "贿赂当局", {}, "CEO技能", function(toggle)
     if toggle then
@@ -5648,7 +5389,7 @@ menu.divider(Request_Service_options, "幽灵组织")
 menu.click_slider(Request_Service_options, "倒计时时间", {}, "单位:分钟", 1, 60, 3, 1,
     function(value)
         SET_INT_GLOBAL(Globals.GB_GHOST_ORG_DURATION, value * 60 * 1000)
-        util.toast("Done!")
+        util.toast("完成！")
     end)
 -- menu.action(Request_Service_options, "幽灵组织", { "ghost_org" }, "CEO技能\n~Not Working~", function() end)
 
@@ -5666,8 +5407,8 @@ menu.toggle_loop(Chat_options, "打字时禁用来电电话", {}, "避免在打�
             menu.trigger_commands("nophonespam off")
         end
     end, function()
-    menu.trigger_commands("nophonespam off")
-end)
+        menu.trigger_commands("nophonespam off")
+    end)
 
 menu.divider(Chat_options, "记录打字输入内容")
 local typing_text_list = {}
@@ -5703,13 +5444,14 @@ menu.toggle(Chat_options, "发送到团队", {}, "", function(toggle)
 end)
 typing_text_list_action = menu.list_action(Chat_options, "查看记录内容", {}, "点击即可弹出输入框",
     typing_text_list_item, function(value)
-    local text = typing_text_list_item[value][1]
-    chat.ensure_open_with_empty_draft(typing_text_send_to_team)
-    chat.add_to_draft(text)
-end)
+        local text = typing_text_list_item[value][1]
+        chat.ensure_open_with_empty_draft(typing_text_send_to_team)
+        chat.add_to_draft(text)
+    end)
 
 
------
+
+----------------
 menu.toggle_loop(Other_options, "跳到下一条对话", { "skip_talk" }, "快速跳过对话", function()
     if AUDIO.IS_SCRIPTED_CONVERSATION_ONGOING() then
         AUDIO.SKIP_TO_NEXT_SCRIPTED_CONVERSATION_LINE()
@@ -5732,10 +5474,14 @@ menu.slider(Other_options, "模拟点击延迟", { "delay_left_click" }, "单位
     function(value)
         simulate_left_click_delay = value
     end)
+menu.action(Other_options, "清除帮助文本信息", { "clear_help_message" }, "", function()
+    HUD.CLEAR_ALL_HELP_MESSAGES()
+end)
 menu.action(Other_options, "Clear Tick Handler", {}, "用于解决控制实体的描绘连线、显示信息、锁定传送等问题"
-    , function()
+, function()
     Clear_control_ent_tick_handler()
 end)
+
 
 
 
@@ -5748,8 +5494,8 @@ local About_options = menu.list(menu.my_root(), "关于", {}, "")
 
 menu.readonly(About_options, "Author", "Rostal")
 menu.hyperlink(About_options, "Github", "https://github.com/TCRoid/Stand-Lua-RScript")
-menu.readonly(About_options, "Version", Script_Version)
-menu.readonly(About_options, "Support GTAO Version", Support_GTAO)
+menu.readonly(About_options, "Version", SCRIPT_VERSION)
+menu.readonly(About_options, "Support GTAO Version", SUPPORT_GTAO)
 
 
 ---------------------------------------------------------------
@@ -5758,592 +5504,9 @@ menu.readonly(About_options, "Support GTAO Version", Support_GTAO)
 
 
 
-------------------------------------
------------- 玩家列表选项 ------------
-------------------------------------
 
-local PlayerFunctions = function(pId)
-    local Player_MainMenu = menu.list(menu.player_root(pId), "RScript", {}, "")
+--------------------------------
+------------ 玩家选项 -----------
+--------------------------------
 
-    -----------------------------
-    ---------- 恶搞选项 ----------
-    -----------------------------
-    local Trolling_options = menu.list(Player_MainMenu, "恶搞选项", {}, "")
-
-    menu.action(Trolling_options, "小笼子", {}, "", function()
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        if not PED.IS_PED_IN_ANY_VEHICLE(player_ped) then
-            local modelHash = util.joaat("prop_gold_cont_01")
-            local pos = ENTITY.GET_ENTITY_COORDS(player_ped)
-            local obj = Create_Network_Object(modelHash, pos.x, pos.y, pos.z - 1.0)
-            ENTITY.FREEZE_ENTITY_POSITION(obj, true)
-        end
-    end)
-
-    menu.action(Trolling_options, "小查攻击", {}, "", function()
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        local modelHash = util.joaat("A_C_Chop")
-        local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, -1.0, 0.0)
-        local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
-
-        local g_ped = Create_Network_Ped(28, modelHash, coords.x, coords.y, coords.z, heading)
-
-        PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
-        TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
-        TASK.TASK_COMBAT_PED(g_ped, player_ped, 0, 16)
-        PED.SET_PED_KEEP_TASK(g_ped, true)
-
-        PED.SET_PED_MONEY(g_ped, 2000)
-        ENTITY.SET_ENTITY_MAX_HEALTH(g_ped, 30000)
-        ENTITY.SET_ENTITY_HEALTH(g_ped, 30000)
-
-        Increase_Ped_Combat_Ability(g_ped, false, false)
-        Increase_Ped_Combat_Attributes(g_ped)
-    end)
-
-    menu.action(Trolling_options, "载具内敌人攻击", {}, "", function()
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        local vehicle = PED.GET_VEHICLE_PED_IS_IN(player_ped, true)
-        if vehicle ~= 0 then
-            local modelHash = util.joaat("A_M_M_ACult_01")
-            local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 2.0)
-            local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
-
-            local g_ped = Create_Network_Ped(26, modelHash, coords.x, coords.y, coords.z, heading)
-            PED.SET_PED_INTO_VEHICLE(g_ped, vehicle, -2)
-
-            PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
-            TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
-            TASK.TASK_COMBAT_PED(g_ped, player_ped, 0, 16)
-            PED.SET_PED_KEEP_TASK(g_ped, true)
-
-            PED.SET_PED_MONEY(g_ped, 2000)
-            ENTITY.SET_ENTITY_MAX_HEALTH(g_ped, 30000)
-            ENTITY.SET_ENTITY_HEALTH(g_ped, 30000)
-            PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(g_ped, false)
-
-            local weaponHash = util.joaat("WEAPON_MICROSMG")
-            WEAPON.GIVE_WEAPON_TO_PED(g_ped, weaponHash, -1, false, true)
-            WEAPON.SET_CURRENT_PED_WEAPON(g_ped, weaponHash, true)
-
-            Increase_Ped_Combat_Ability(g_ped, false, false)
-            Increase_Ped_Combat_Attributes(g_ped)
-            PED.SET_PED_COMBAT_ATTRIBUTES(g_ped, 3, false) --CanLeaveVehicle
-        else
-            util.toast("未找到玩家的载具")
-        end
-    end)
-
-    menu.action(Trolling_options, "生成敌人抢夺载具", {}, "", function()
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        local vehicle = PED.GET_VEHICLE_PED_IS_IN(player_ped, true)
-        if vehicle ~= 0 then
-            local modelHash = util.joaat("A_M_M_ACult_01")
-            local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(vehicle, -2.0, 0.0, 0.0)
-            local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
-
-            local g_ped = Create_Network_Ped(26, modelHash, coords.x, coords.y, coords.z, heading)
-
-            PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
-            TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(g_ped, true)
-            TASK.TASK_COMBAT_PED(g_ped, player_ped, 0, 16)
-            PED.SET_PED_KEEP_TASK(g_ped, true)
-
-            PED.SET_PED_MONEY(g_ped, 2000)
-            ENTITY.SET_ENTITY_MAX_HEALTH(g_ped, 30000)
-            ENTITY.SET_ENTITY_HEALTH(g_ped, 30000)
-            PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(g_ped, false)
-
-            local weaponHash = util.joaat("WEAPON_MICROSMG")
-            WEAPON.GIVE_WEAPON_TO_PED(g_ped, weaponHash, -1, false, true)
-            WEAPON.SET_CURRENT_PED_WEAPON(g_ped, weaponHash, true)
-
-            Increase_Ped_Combat_Ability(g_ped, false, false)
-            Increase_Ped_Combat_Attributes(g_ped)
-
-            TASK.TASK_ENTER_VEHICLE(g_ped, vehicle, -1, -1, 5.0, 16, 0)
-            TASK.TASK_VEHICLE_DRIVE_TO_COORD(g_ped, vehicle, math.random(1000), math.random(1000), math.random(100),
-                100
-                , 1, ENTITY.GET_ENTITY_MODEL(vehicle), 786996, 5, 0)
-        else
-            util.toast("未找到玩家的载具")
-        end
-    end)
-
-
-    --- 传送所有实体 ---
-    local Trolling_options_AllEntities = menu.list(Trolling_options, "传送所有实体", {}, "")
-
-    local TPtoPlayer_delay = 100 --ms
-    local is_TPtoPlayer_run = false
-    local is_Exclude_mission = true
-    local function TP_Entities_TO_Player(entity_list, player_ped, Type)
-        local i = 0
-        for k, ent in pairs(entity_list) do
-            if is_TPtoPlayer_run then
-                if is_Exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
-                else
-                    if ENTITY.IS_ENTITY_A_PED(ent) then
-                        if not IS_PED_PLAYER(ent) then
-                            RequestControl(ent)
-                            TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
-                            i = i + 1
-                        end
-                    elseif ENTITY.IS_ENTITY_A_VEHICLE(ent) then
-                        if not IS_PLAYER_VEHICLE(ent) then
-                            RequestControl(ent)
-                            TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
-                            i = i + 1
-                        end
-                    else
-                        RequestControl(ent)
-                        TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
-                        i = i + 1
-                    end
-                end
-                util.yield(TPtoPlayer_delay)
-            else
-                -- 停止传送
-                util.toast("Done!\n" .. Type .. " Number : " .. i)
-                return false
-            end
-        end
-        -- 完成传送
-        util.toast("Done!\n" .. Type .. " Number : " .. i)
-        is_TPtoPlayer_run = false
-        return true
-    end
-
-    menu.slider(Trolling_options_AllEntities, "传送延时", { "TP_delay" }, "单位: ms", 0, 5000, 100, 100,
-        function(value)
-            TPtoPlayer_delay = value
-        end)
-    menu.toggle(Trolling_options_AllEntities, "排除任务实体", {}, "", function()
-        is_Exclude_mission = value
-    end, true)
-
-    menu.action(Trolling_options_AllEntities, "传送所有 行人 到此玩家", {}, "", function()
-        if is_TPtoPlayer_run then
-            util.toast("上次的还未传送完成呢")
-        else
-            is_TPtoPlayer_run = true
-            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-            TP_Entities_TO_Player(entities.get_all_peds_as_handles(), player_ped, "Ped")
-        end
-    end)
-    menu.action(Trolling_options_AllEntities, "传送所有 载具 到此玩家", {}, "", function()
-        if is_TPtoPlayer_run then
-            util.toast("上次的还未传送完成呢")
-        else
-            is_TPtoPlayer_run = true
-            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-            TP_Entities_TO_Player(entities.get_all_vehicles_as_handles(), player_ped, "Vehicle")
-        end
-    end)
-    menu.action(Trolling_options_AllEntities, "传送所有 物体 到此玩家", {}, "", function()
-        if is_TPtoPlayer_run then
-            util.toast("上次的还未传送完成呢")
-        else
-            is_TPtoPlayer_run = true
-            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-            TP_Entities_TO_Player(entities.get_all_objects_as_handles(), player_ped, "Object")
-        end
-    end)
-    menu.action(Trolling_options_AllEntities, "传送所有 拾取物 到此玩家", {}, "", function()
-        if is_TPtoPlayer_run then
-            util.toast("上次的还未传送完成呢")
-        else
-            is_TPtoPlayer_run = true
-            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-            TP_Entities_TO_Player(entities.get_all_pickups_as_handles(), player_ped, "Pickup")
-        end
-    end)
-    menu.action(Trolling_options_AllEntities, "停止传送", {}, "", function()
-        is_TPtoPlayer_run = false
-    end)
-
-
-    --- 此玩家附近载具 ---
-    local Trolling_options_NearbyVeh = menu.list(Trolling_options, "此玩家附近载具", {}, "")
-
-    local Player_NearbyVeh_radius = 60.0
-    menu.slider(Trolling_options_NearbyVeh, "范围半径", { "nearby_veh_radius" }, "", 0.0, 1000.0, 60.0, 10.0,
-        function(value)
-            Player_NearbyVeh_radius = value
-        end)
-
-    menu.toggle_loop(Trolling_options_NearbyVeh, "附近司机追赶此玩家", {}, "", function()
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        for _, vehicle in pairs(GET_NEARBY_VEHICLES(pId, Player_NearbyVeh_radius)) do
-            if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
-                local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
-                if not IS_PED_PLAYER(driver) and not TASK.GET_IS_TASK_ACTIVE(driver, 363) then
-                    RequestControl(driver)
-                    PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
-                    TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
-                    TASK.TASK_VEHICLE_CHASE(driver, player_ped)
-                    PED.SET_PED_KEEP_TASK(driver, true)
-                    PED.SET_PED_FLEE_ATTRIBUTES(driver, 0, false)
-                    PED.SET_PED_COMBAT_ATTRIBUTES(driver, 46, true)
-                end
-            end
-        end
-    end)
-
-    local veh_mission_type = 6
-    menu.list_select(Trolling_options_NearbyVeh, "Vehicle Mission Type", {}, "", Vehicle_MissionType_ListItem, 6,
-        function(value)
-            veh_mission_type = value
-        end)
-    menu.toggle_loop(Trolling_options_NearbyVeh, "Task Vehicle Mission Target Player", {}, "", function()
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        for _, vehicle in pairs(GET_NEARBY_VEHICLES(pId, Player_NearbyVeh_radius)) do
-            if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
-                local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
-                if not IS_PED_PLAYER(driver) and TASK.GET_ACTIVE_VEHICLE_MISSION_TYPE(vehicle) ~= veh_mission_type then
-                    RequestControl(driver)
-                    PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
-                    TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
-                    TASK.TASK_VEHICLE_MISSION_PED_TARGET(driver, vehicle, player_ped, veh_mission_type, 500.0, 0, 0.0,
-                        0.0, true)
-                    PED.SET_PED_KEEP_TASK(driver, true)
-                    PED.SET_PED_FLEE_ATTRIBUTES(driver, 0, false)
-                    PED.SET_PED_COMBAT_ATTRIBUTES(driver, 46, true)
-                end
-            end
-        end
-    end)
-
-
-    --- 此玩家附近行人 ---
-    local Trolling_options_NearbyPed = menu.list(Trolling_options, "此玩家附近行人", {}, "")
-
-    local Player_NearbyPed_radius = 60.0
-    menu.slider(Trolling_options_NearbyPed, "范围半径", { "nearby_ped_radius" }, "", 0.0, 1000.0, 60.0, 10.0,
-        function(value)
-            Player_NearbyPed_radius = value
-        end)
-
-    menu.toggle_loop(Trolling_options_NearbyPed, "附近行人逮捕此玩家", {}, "", function()
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        for _, ped in pairs(GET_NEARBY_PEDS(pId, Player_NearbyPed_radius)) do
-            if not IS_PED_PLAYER(ped) and not TASK.IS_PED_RUNNING_ARREST_TASK(ped) then
-                RequestControl(ped)
-                PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
-                TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
-                TASK.TASK_ARREST_PED(ped, player_ped)
-                PED.SET_PED_KEEP_TASK(ped, true)
-                PED.SET_PED_FLEE_ATTRIBUTES(driver, 0, false)
-                PED.SET_PED_COMBAT_ATTRIBUTES(driver, 46, true)
-            end
-        end
-    end)
-
-    menu.divider(Trolling_options_NearbyPed, "附近行人敌对此玩家")
-    local Player_NearbyPed_Combat = {
-        weapon = util.joaat(WeaponModel_List[1]),
-        is_enhance = false,
-        is_drop_money = false,
-        health_mult = 1
-    }
-    menu.toggle_loop(Trolling_options_NearbyPed, "开启", {}, "", function()
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        local weapon_smoke = util.joaat("WEAPON_SMOKEGRENADE")
-        for _, ped in pairs(GET_NEARBY_PEDS(pId, Player_NearbyPed_radius)) do
-            if not IS_PED_PLAYER(ped) and not PED.IS_PED_IN_COMBAT(ped, player_ped) then
-                RequestControl(ped)
-
-                WEAPON.GIVE_WEAPON_TO_PED(ped, weapon_smoke, -1, false, false)
-                WEAPON.GIVE_WEAPON_TO_PED(ped, Player_NearbyPed_Combat.weapon, -1, false, true)
-                WEAPON.SET_CURRENT_PED_WEAPON(ped, Player_NearbyPed_Combat.weapon, false)
-
-                local health = ENTITY.GET_ENTITY_MAX_HEALTH(ped)
-                ENTITY.SET_ENTITY_HEALTH(ped, health * Player_NearbyPed_Combat.health_mult)
-
-                PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
-                TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
-                TASK.TASK_COMBAT_PED(ped, player_ped, 0, 16)
-                PED.SET_PED_KEEP_TASK(ped, true)
-                WEAPON.SET_PED_DROPS_WEAPONS_WHEN_DEAD(ped, false)
-
-                Disable_Ped_Flee(ped)
-
-                --强化作战能力
-                if Player_NearbyPed_Combat.is_enhance then
-                    Increase_Ped_Combat_Ability(ped)
-                    Increase_Ped_Combat_Attributes(ped)
-                end
-                --掉落现金为2000
-                if Player_NearbyPed_Combat.is_drop_money then
-                    PED.SET_PED_MONEY(ped, 2000)
-                end
-            end
-        end
-    end)
-
-    menu.list_select(Trolling_options_NearbyPed, "设置武器", {}, "", WeaponName_ListItem, 1,
-        function(value)
-            Player_NearbyPed_Combat.weapon = util.joaat(WeaponModel_List[value])
-        end)
-    menu.toggle(Trolling_options_NearbyPed, "强化作战能力", {}, "如果npc会逃跑的话，开启这个",
-        function(toggle)
-            Player_NearbyPed_Combat.is_enhance = toggle
-        end)
-    menu.slider(Trolling_options_NearbyPed, "血量加倍", { "nearbyped_health_mult" }, "", 1, 100, 1, 1,
-        function(value)
-            Player_NearbyPed_Combat.health_mult = value
-        end)
-    menu.toggle(Trolling_options_NearbyPed, "掉落现金为2000", {}, "当做击杀奖励", function(toggle)
-        Player_NearbyPed_Combat.is_drop_money = toggle
-    end)
-
-    menu.toggle_loop(Trolling_options, "循环举报", { "rs_report" }, "", function()
-        if pId ~= players.user() then
-            local player_name = players.get_name(pId)
-            menu.trigger_commands("reportvcannoying " .. player_name)
-            menu.trigger_commands("reportvchate " .. player_name)
-            menu.trigger_commands("reportannoying " .. player_name)
-            menu.trigger_commands("reporthate " .. player_name)
-            menu.trigger_commands("reportexploits " .. player_name)
-            menu.trigger_commands("reportbugabuse " .. player_name)
-        end
-        util.yield(500)
-    end)
-
-
-
-    -----------------------------
-    ---------- 友好选项 ----------
-    -----------------------------
-    local Friendly_options = menu.list(Player_MainMenu, "友好选项", {}, "")
-
-    local Friendly_Generete_Pickup = menu.list(Friendly_options, "生成拾取物", {}, "")
-    menu.action(Friendly_Generete_Pickup, "生成医药包", {}, "", function()
-        local modelHash = util.joaat("prop_ld_health_pack")
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
-        local pickupHash = 2406513688
-        Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 100)
-    end)
-    menu.action(Friendly_Generete_Pickup, "生成护甲", {}, "", function()
-        local modelHash = util.joaat("prop_armour_pickup")
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
-        local pickupHash = 1274757841
-        Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 100)
-    end)
-    menu.action(Friendly_Generete_Pickup, "生成零食(PQ豆)", {}, "", function()
-        local modelHash = util.joaat("PROP_CHOC_PQ")
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
-        local pickupHash = 483577702
-        Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 30)
-    end)
-    menu.action(Friendly_Generete_Pickup, "生成降落伞", {}, "", function()
-        local modelHash = util.joaat("p_parachute_s_shop")
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
-        local pickupHash = 1735599485
-        Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 2)
-    end)
-    menu.action(Friendly_Generete_Pickup, "生成呼吸器", {}, "", function()
-        local modelHash = util.joaat("PROP_LD_HEALTH_PACK")
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
-        local pickupHash = 3889104844
-        Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 20)
-    end)
-    menu.action(Friendly_Generete_Pickup, "生成火神机枪", {}, "", function()
-        local modelHash = util.joaat("W_MG_Minigun")
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-        local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
-        local pickupHash = 792114228
-        Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 100)
-
-        modelHash = util.joaat("prop_ld_ammo_pack_02")
-        pickupHash = 4065984953
-        Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 9999)
-    end)
-
-    local Friendly_Give_Pickup = menu.list(Friendly_options, "给予拾取物", {}, "")
-    local Pickup_Reward_ListItem = {
-        { "REWARD_HEALTH" },
-        { "REWARD_HEALTH_ENTER_VEHICLE" },
-        { "REWARD_ARMOUR" },
-        { "REWARD_MONEY_VARIABLE" },
-        { "REWARD_HEALTH_VARIABLE" },
-        { "REWARD_STAT_WEAPON" },
-        { "REWARD_STAT_HEALTH" },
-        { "REWARD_STAT_HEALTH_VARIABLE" },
-        { "REWARD_VEHICLE_FIX" },
-        { "REWARD_PARACHUTE" },
-    }
-    local Pickup_Reward_select = 1
-    menu.list_select(Friendly_Give_Pickup, "选择", {}, "", Pickup_Reward_ListItem,
-        1, function(value)
-        Pickup_Reward_select = value
-    end)
-    menu.action(Friendly_Give_Pickup, "给予拾取物", {}, "Only works on remote players.", function()
-        local reward = Pickup_Reward_ListItem[Pickup_Reward_select][1]
-        players.give_pickup_reward(pId, reward)
-    end)
-
-    menu.toggle_loop(Friendly_options, "循环称赞", {}, "", function()
-        if pId ~= players.user() then
-            local player_name = players.get_name(pId)
-            menu.trigger_commands("commendhelpful " .. player_name)
-            menu.trigger_commands("commendfriendly " .. player_name)
-        end
-        util.yield(500)
-    end)
-
-
-
-
-    -------------------------
-    --- 自定义Model生成实体 ---
-    -------------------------
-    local CustomModel_Generate = menu.list(Player_MainMenu, "自定义Model生成实体", {}, "")
-    local CustomModel_Generate_Data = {
-        hash = 0,
-        type = 1,
-        x = 0.0,
-        y = 0.0,
-        z = 0.0,
-        is_invincible = false,
-        is_freeze = false,
-        is_invisible = false,
-        cant_migrate = false,
-        no_collision = false,
-        --saved hash
-        is_select = false,
-        select_hash = 0,
-        select_type = 1,
-    }
-
-    menu.text_input(CustomModel_Generate, "Model Hash ", { "generate_custom_model" }, "",
-        function(value)
-            CustomModel_Generate_Data.hash = tonumber(value)
-        end)
-    menu.action(CustomModel_Generate, "转换复制内容", {}, "删除Model Hash: \n便于直接粘贴Ctrl+V",
-        function()
-            local text = util.get_clipboard_text()
-            local num = string.gsub(text, "Model Hash: ", "")
-            util.copy_to_clipboard(num, false)
-            util.toast("Copied!\n" .. num)
-        end)
-
-    local EntityType_ListItem = {
-        { "Ped" }, --1
-        { "Vehicle" }, --2
-        { "Object" }, --3
-    }
-    menu.list_select(CustomModel_Generate, "实体类型", {}, "", EntityType_ListItem, 1,
-        function(index)
-            CustomModel_Generate_Data.type = index
-        end)
-    menu.slider_float(CustomModel_Generate, "左/右", { "generate_custom_model_x" }, "", -10000, 10000, 0, 100,
-        function(value)
-            CustomModel_Generate_Data.x = value * 0.01
-        end)
-    menu.slider_float(CustomModel_Generate, "前/后", { "generate_custom_model_y" }, "", -10000, 10000, 0, 100,
-        function(value)
-            CustomModel_Generate_Data.y = value * 0.01
-        end)
-    menu.slider_float(CustomModel_Generate, "上/下", { "generate_custom_model_z" }, "", -10000, 10000, 0, 100,
-        function(value)
-            CustomModel_Generate_Data.z = value * 0.01
-        end)
-
-    local CustomModel_Generate_Setting = menu.list(CustomModel_Generate, "属性", {}, "")
-    menu.toggle(CustomModel_Generate_Setting, "无敌", {}, "", function(toggle)
-        CustomModel_Generate_Data.is_invincible = toggle
-    end)
-    menu.toggle(CustomModel_Generate_Setting, "冻结", {}, "", function(toggle)
-        CustomModel_Generate_Data.is_freeze = toggle
-    end)
-    menu.toggle(CustomModel_Generate_Setting, "不可见", {}, "", function(toggle)
-        CustomModel_Generate_Data.is_invisible = toggle
-    end)
-    menu.toggle(CustomModel_Generate_Setting, "不可控制", {}, "", function(toggle)
-        CustomModel_Generate_Data.cant_migrate = toggle
-    end)
-    menu.toggle(CustomModel_Generate_Setting, "无碰撞", {}, "", function(toggle)
-        CustomModel_Generate_Data.no_collision = toggle
-    end)
-
-    --menu.divider(CustomModel_Generate, "")
-    CustomModel_Generate_Saved = menu.list_select(CustomModel_Generate, "保存的Hash", {}, "",
-        Saved_Hash_List.get_list_item_data2(), 1, function(value)
-        if value == 1 then
-            --None
-            CustomModel_Generate_Data.is_select = false
-        elseif value == 2 then
-            --Refresh List
-            CustomModel_Generate_Data.is_select = false
-
-            menu.set_list_action_options(CustomModel_Generate_Saved, Saved_Hash_List.get_list_item_data2())
-            util.toast("已刷新，请重新打开该列表")
-        else
-            CustomModel_Generate_Data.is_select = true
-
-            local Name = Saved_Hash_List.get_list()[value - 2]
-            local Hash, Type = Saved_Hash_List.read(Name)
-            CustomModel_Generate_Data.select_hash = Hash
-            CustomModel_Generate_Data.select_type = GET_ENTITY_TYPE_INDEX(Type)
-        end
-    end)
-
-    menu.action(CustomModel_Generate, "生成实体", {}, "", function()
-        local hash = CustomModel_Generate_Data.hash
-        local Type = CustomModel_Generate_Data.type
-        if CustomModel_Generate_Data.is_select then
-            hash = CustomModel_Generate_Data.select_hash
-            Type = CustomModel_Generate_Data.select_type
-        end
-
-        hash = tonumber(hash)
-        if hash ~= nil and STREAMING.IS_MODEL_VALID(hash) then
-            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pId)
-            local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, CustomModel_Generate_Data.x,
-                CustomModel_Generate_Data.y, CustomModel_Generate_Data.z)
-            local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
-
-            local ent
-            if Type == 1 then
-                ent = Create_Network_Ped(26, hash, coords.x, coords.y, coords.z, heading)
-            elseif Type == 2 then
-                ent = Create_Network_Vehicle(hash, coords.x, coords.y, coords.z, heading)
-            elseif Type == 3 then
-                ent = Create_Network_Object(hash, coords.x, coords.y, coords.z)
-            else
-                util.toast("不支持生成该类型实体")
-            end
-
-            if ent ~= nil then
-                ENTITY.SET_ENTITY_INVINCIBLE(ent, CustomModel_Generate_Data.is_invincible)
-                ENTITY.FREEZE_ENTITY_POSITION(ent, CustomModel_Generate_Data.is_freeze)
-                ENTITY.SET_ENTITY_VISIBLE(ent, not CustomModel_Generate_Data.is_invisible, 0)
-                if CustomModel_Generate_Data.cant_migrate then
-                    entities.set_can_migrate(entities.handle_to_pointer(ent), false)
-                end
-                if CustomModel_Generate_Data.no_collision then
-                    ENTITY.SET_ENTITY_COLLISION(ent, false, false)
-                end
-            end
-        else
-            util.toast("Wrong model hash !")
-        end
-    end)
-
-
-    ----- END -----
-end
-
------ 玩家列表 -----
-local PlayersList = players.list(true, true, true)
-for i = 1, #PlayersList do
-    PlayerFunctions(PlayersList[i])
-end
-
-players.on_join(PlayerFunctions)
+require "RScript.Menu.Player_options"
