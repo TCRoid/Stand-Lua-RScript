@@ -260,10 +260,12 @@ end)
 
 local Vehicle_Bone_Select = "wheel_lf"
 local Vehicle_Bone_ListItem = {
-    { "wheel_lf", {}, "" },
-    { "wheel_rf", {}, "" },
-    { "wheel_lr", {}, "" },
-    { "wheel_rr", {}, "" },
+    { "wheel_lf",     {}, "" },
+    { "wheel_rf",     {}, "" },
+    { "wheel_lr",     {}, "" },
+    { "wheel_rr",     {}, "" },
+    { "windscreen",   {}, "" },
+    { "windscreen_r", {}, "" },
 }
 menu.list_select(ent_ctrl, "选择骨骼", {}, "", Vehicle_Bone_ListItem, 1, function(index, value)
     Vehicle_Bone_Select = value
@@ -405,7 +407,3 @@ menu.toggle_loop(Dev_options, "Event Network Entity Damage", {}, "", function()
         end
     end
 end)
-
-
-
-

@@ -1,11 +1,11 @@
----------------------------
---- Author: Rostal
----------------------------
+-------------------------------
+--- Author: Rostal#9913
+-------------------------------
 
 util.keep_running()
 util.require_natives("1681379138")
 
-local SCRIPT_VERSION <const> = "2023/5/1"
+local SCRIPT_VERSION <const> = "2023/5/2"
 
 local SUPPORT_GTAO <const> = 1.66
 
@@ -2645,7 +2645,7 @@ local Weapon_options = menu.list(menu.my_root(), "武器选项", {}, "")
 menu.toggle(Weapon_options, "可以射击队友", {}, "使你在游戏中能够射击队友", function(toggle)
     PED.SET_CAN_ATTACK_FRIENDLY(PLAYER.PLAYER_PED_ID(), toggle, false)
 end)
-menu.toggle_loop(Weapon_options, "无限弹药", { "inf_clip" }, "锁定弹夹，可以避免子弹过多的检测",
+menu.toggle_loop(Weapon_options, "无限弹夹", { "inf_clip" }, "锁定弹夹，无需换弹",
     function()
         WEAPON.SET_PED_INFINITE_AMMO_CLIP(PLAYER.PLAYER_PED_ID(), true)
     end, function()
@@ -3152,69 +3152,262 @@ Weapon_Entity_Control_divider = menu.divider(Weapon_Entity_Control, "实体控�
 local Vehicle_options = menu.list(menu.my_root(), "载具选项", {}, "")
 
 
+------------------
+--- 载具升级强化 ---
+------------------
+local Vehicle_Upgrade_options = menu.list(Vehicle_options, "载具升级强化", {}, "")
+
+local vehicle_upgrade = {
+    performance = true,
+    turbo = true,
+    ---
+    bulletproof_tyre = true,
+    unbreakable_door = true,
+    unbreakable_light = true,
+    unbreak = true,
+    ---
+    health_multiplier = 1,
+    no_driver_explosion_damage = true,
+    other_strong = true,
+}
+
+function vehicle_upgrade.upgrade(vehicle)
+    -- 引擎、刹车、变速箱、防御
+    if vehicle_upgrade.performance then
+        for k, v in pairs({ 11, 12, 13, 16 }) do
+            local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, v)
+            VEHICLE.SET_VEHICLE_MOD(vehicle, v, mod_num - 1, false)
+        end
+    end
+
+    -- 涡轮增压
+    if vehicle_upgrade.turbo then
+        VEHICLE.TOGGLE_VEHICLE_MOD(vehicle, 18, true)
+    end
+
+    -- 防弹轮胎
+    if vehicle_upgrade.bulletproof_tyre then
+        if VEHICLE.GET_VEHICLE_TYRES_CAN_BURST(vehicle) then
+            VEHICLE.SET_VEHICLE_TYRES_CAN_BURST(vehicle, false)
+        end
+    end
+
+    -- 车门不可损坏
+    if vehicle_upgrade.unbreakable_door then
+        for i = 0, 5 do
+            if VEHICLE.GET_IS_DOOR_VALID(vehicle, i) then
+                VEHICLE.SET_DOOR_ALLOWED_TO_BE_BROKEN_OFF(vehicle, i, false)
+            end
+        end
+    end
+
+    -- 车灯不可损坏
+    if vehicle_upgrade.unbreakable_light then
+        VEHICLE.SET_VEHICLE_HAS_UNBREAKABLE_LIGHTS(vehicle, true)
+    end
+
+    -- 部件不可分离
+    if vehicle_upgrade.unbreakable_light then
+        VEHICLE.SET_VEHICLE_CAN_BREAK(vehicle, false)
+    end
+
+    -- 血量加倍
+    if vehicle_upgrade.health_multiplier > 1 then
+        local max_health = ENTITY.GET_ENTITY_MAX_HEALTH(vehicle) * vehicle_upgrade.health_multiplier
+        ENTITY.SET_ENTITY_MAX_HEALTH(vehicle, max_health)
+        ENTITY.SET_ENTITY_HEALTH(vehicle, max_health)
+    end
+
+    -- 无视载具司机的爆炸
+    if vehicle_upgrade.no_driver_explosion_damage then
+        VEHICLE.SET_VEHICLE_NO_EXPLOSION_DAMAGE_FROM_DRIVER(vehicle, true)
+    end
+
+    -- 其它属性增强
+    if vehicle_upgrade.other_strong then
+        VEHICLE.SET_VEHICLE_WHEELS_CAN_BREAK(vehicle, false)
+
+        VEHICLE.SET_VEHICLE_CAN_ENGINE_MISSFIRE(vehicle, false)
+        VEHICLE.SET_VEHICLE_CAN_LEAK_OIL(vehicle, false)
+        VEHICLE.SET_VEHICLE_CAN_LEAK_PETROL(vehicle, false)
+
+        VEHICLE.SET_DISABLE_VEHICLE_ENGINE_FIRES(vehicle, true)
+        VEHICLE.SET_DISABLE_VEHICLE_PETROL_TANK_FIRES(vehicle, true)
+        VEHICLE.SET_DISABLE_VEHICLE_PETROL_TANK_DAMAGE(vehicle, true)
+
+        VEHICLE.SET_VEHICLE_STRONG(vehicle, true)
+        VEHICLE.SET_VEHICLE_HAS_STRONG_AXLES(vehicle, true)
+
+        --Damage
+        VEHICLE.VEHICLE_SET_RAMP_AND_RAMMING_CARS_TAKE_DAMAGE(vehicle, false)
+        VEHICLE.SET_INCREASE_WHEEL_CRUSH_DAMAGE(vehicle, false)
+        VEHICLE.SET_DISABLE_DAMAGE_WITH_PICKED_UP_ENTITY(vehicle, true)
+        VEHICLE.SET_VEHICLE_USES_MP_PLAYER_DAMAGE_MULTIPLIER(vehicle, true)
+
+        --Explode
+        VEHICLE.SET_DISABLE_EXPLODE_FROM_BODY_DAMAGE_ON_COLLISION(vehicle, 1)
+        VEHICLE.SET_VEHICLE_EXPLODES_ON_HIGH_EXPLOSION_DAMAGE(vehicle, false)
+        VEHICLE.SET_VEHICLE_EXPLODES_ON_EXPLOSION_DAMAGE_AT_ZERO_BODY_HEALTH(vehicle, false)
+
+        --Heli
+        VEHICLE.SET_HELI_TAIL_BOOM_CAN_BREAK_OFF(vehicle, false)
+        VEHICLE.SET_DISABLE_HELI_EXPLODE_FROM_BODY_DAMAGE(vehicle, true)
+
+        --MP Only
+        VEHICLE.SET_PLANE_RESIST_TO_EXPLOSION(vehicle, true)
+        VEHICLE.SET_HELI_RESIST_TO_EXPLOSION(vehicle, true)
+
+        --Remove Check
+        VEHICLE.REMOVE_VEHICLE_UPSIDEDOWN_CHECK(vehicle)
+        VEHICLE.REMOVE_VEHICLE_STUCK_CHECK(vehicle)
+    end
+end
+
+menu.action(Vehicle_Upgrade_options, "升级强化载具", { "up_strong_veh" }, "升级强化当前或上一辆载具", function()
+    local vehicle = entities.get_user_vehicle_as_handle()
+    if ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
+        vehicle_upgrade.upgrade(vehicle)
+        util.toast("载具升级强化完成!")
+    end
+end)
+menu.toggle_loop(Vehicle_Upgrade_options, "自动升级强化载具", { "auto_up_strong_veh" },
+    "自动升级强化正在进入驾驶位的载具", function()
+        local user_ped = players.user_ped()
+        if PED.IS_PED_GETTING_INTO_A_VEHICLE(user_ped) then
+            local veh = PED.GET_VEHICLE_PED_IS_TRYING_TO_ENTER(user_ped)
+            if ENTITY.IS_ENTITY_A_VEHICLE(veh) and PED.GET_SEAT_PED_IS_TRYING_TO_ENTER(user_ped) == -1 then
+                -- RequestControl(veh)
+                vehicle_upgrade.upgrade(veh)
+
+                -- 通知
+                local veh_name = get_vehicle_display_name(veh)
+                local text = "进入载具: " .. veh_name
+                if hasControl(veh) then
+                    THEFEED_POST.TEXT(text .. "\n升级强化完成!")
+                else
+                    THEFEED_POST.TEXT(text .. "\n升级强化未完成: 未能成功控制载具")
+                end
+
+                util.yield(50)
+            end
+        end
+    end)
+
+menu.divider(Vehicle_Upgrade_options, "载具性能")
+menu.toggle(Vehicle_Upgrade_options, "主要性能", {}, "引擎、刹车、变速箱、防御", function(toggle)
+    vehicle_upgrade.performance = toggle
+end, true)
+menu.toggle(Vehicle_Upgrade_options, "涡轮增压", {}, "", function(toggle)
+    vehicle_upgrade.turbo = toggle
+end, true)
+
+menu.divider(Vehicle_Upgrade_options, "载具部件")
+menu.toggle(Vehicle_Upgrade_options, "防弹轮胎", {}, "", function(toggle)
+    vehicle_upgrade.bulletproof_tyre = toggle
+end, true)
+menu.toggle(Vehicle_Upgrade_options, "车门不可损坏", {}, "全部车门", function(toggle)
+    vehicle_upgrade.unbreakable_door = toggle
+end, true)
+menu.toggle(Vehicle_Upgrade_options, "车灯不可损坏", {}, "", function(toggle)
+    vehicle_upgrade.unbreakable_light = toggle
+end, true)
+menu.toggle(Vehicle_Upgrade_options, "部件不可分离", {}, "", function(toggle)
+    vehicle_upgrade.unbreak = toggle
+end, true)
+
+menu.divider(Vehicle_Upgrade_options, "载具生命")
+menu.slider(Vehicle_Upgrade_options, "血量加倍", {}, "", 1, 20, 1, 1, function(value)
+    vehicle_upgrade.health_multiplier = value
+end)
+menu.toggle(Vehicle_Upgrade_options, "无视载具司机的爆炸", {}, "司机投掷的炸弹不会对载具造成伤害",
+    function(toggle)
+        vehicle_upgrade.no_driver_explosion_damage = toggle
+    end, true)
+menu.toggle(Vehicle_Upgrade_options, "其它属性增强", {}, "其它属性的提高,可以提高防炸性等",
+    function(toggle)
+        vehicle_upgrade.other_strong = toggle
+    end, true)
+
+
+
 ---------------
 --- 载具车窗 ---
 ---------------
 local Vehicle_Window_options = menu.list(Vehicle_options, "载具车窗", {}, "")
 
-local VehicleWindows_ListItem = {
-    { "全部" },
-    { "左前车窗" },         -- 0
-    { "右前车窗" },         -- 1
-    { "左后车窗" },         -- 2
-    { "右后车窗" },         -- 3
-    { "前挡风车窗" },      -- 4
-    { "后挡风车窗" }       -- 5
+local vehicle_window = {
+    window_toggles = {},
+    toggle_menus = {},
+    window_list = {
+        -- index, name
+        { 0, "前左车窗" }, -- SC_WINDOW_FRONT_LEFT = 0
+        { 1, "前右车窗" }, -- SC_WINDOW_FRONT_RIGHT = 1
+        { 2, "后左车窗" }, -- SC_WINDOW_REAR_LEFT = 2
+        { 3, "后右车窗" }, -- SC_WINDOW_REAR_RIGHT = 3
+        { 4, "中间左车窗" }, -- SC_WINDOW_MIDDLE_LEFT = 4
+        { 5, "中间右车窗" }, -- SC_WINDOW_MIDDLE_RIGHT = 5
+        { 6, "前挡风车窗" }, -- SC_WINDSCREEN_FRONT = 6
+        { 7, "后挡风车窗" }, -- SC_WINDSCREEN_REAR = 7
+    },
 }
-local vehicle_window_select = 1 --选择的车窗
-menu.list_select(Vehicle_Window_options, "选择车窗", {}, "", VehicleWindows_ListItem, 1, function(value)
-    vehicle_window_select = value
-end)
+
+local Vehicle_Window_Select = menu.list(Vehicle_Window_options, "选择车窗", {}, "")
+
+menu.toggle(Vehicle_Window_Select, "全部开/关", {}, "", function(toggle)
+    for key, value in pairs(vehicle_window.toggle_menus) do
+        if menu.is_ref_valid(value) then
+            menu.set_value(value, toggle)
+        end
+    end
+end, true)
+
+for _, data in pairs(vehicle_window.window_list) do
+    local index = data[1]
+    local name = data[2]
+
+    vehicle_window.window_toggles[index] = true
+    vehicle_window.toggle_menus[index] = menu.toggle(Vehicle_Window_Select, name, {}, "", function(toggle)
+        vehicle_window.window_toggles[index] = toggle
+    end, true)
+end
 
 menu.toggle_loop(Vehicle_Window_options, "修复车窗", { "fix_veh_window" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= 0 then
-        if vehicle_window_select == 1 then
-            for i = 0, 7 do
-                VEHICLE.FIX_VEHICLE_WINDOW(vehicle, i)
+        for index, toggle in pairs(vehicle_window.window_toggles) do
+            if toggle then
+                VEHICLE.FIX_VEHICLE_WINDOW(vehicle, index)
             end
-        elseif vehicle_window_select > 1 then
-            VEHICLE.FIX_VEHICLE_WINDOW(vehicle, vehicle_window_select - 2)
+        end
+    end
+end)
+menu.toggle_loop(Vehicle_Window_options, "摇上车窗", { "roll_up_veh_window" }, "", function()
+    local vehicle = entities.get_user_vehicle_as_handle()
+    if vehicle ~= 0 then
+        for index, toggle in pairs(vehicle_window.window_toggles) do
+            if toggle then
+                VEHICLE.ROLL_UP_WINDOW(vehicle, index)
+            end
         end
     end
 end)
 menu.toggle_loop(Vehicle_Window_options, "摇下车窗", { "roll_down_veh_window" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= 0 then
-        if vehicle_window_select == 1 then
-            for i = 0, 7 do
-                VEHICLE.ROLL_DOWN_WINDOW(vehicle, i)
+        for index, toggle in pairs(vehicle_window.window_toggles) do
+            if toggle then
+                VEHICLE.ROLL_DOWN_WINDOW(vehicle, index)
             end
-        elseif vehicle_window_select > 1 then
-            VEHICLE.ROLL_DOWN_WINDOW(vehicle, vehicle_window_select - 2)
-        end
-    end
-end, function()
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        if vehicle_window_select == 1 then
-            for i = 0, 7 do
-                VEHICLE.ROLL_UP_WINDOW(vehicle, i)
-            end
-        elseif vehicle_window_select > 1 then
-            VEHICLE.ROLL_UP_WINDOW(vehicle, vehicle_window_select - 2)
         end
     end
 end)
 menu.toggle_loop(Vehicle_Window_options, "粉碎车窗", { "smash_veh_window" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= 0 then
-        if vehicle_window_select == 1 then
-            for i = 0, 7 do
-                VEHICLE.SMASH_VEHICLE_WINDOW(vehicle, i)
+        for index, toggle in pairs(vehicle_window.window_toggles) do
+            if toggle then
+                VEHICLE.SMASH_VEHICLE_WINDOW(vehicle, index)
             end
-        elseif vehicle_window_select > 1 then
-            VEHICLE.SMASH_VEHICLE_WINDOW(vehicle, vehicle_window_select - 2)
         end
     end
 end)
@@ -3225,82 +3418,80 @@ end)
 ---------------
 local Vehicle_Door_options = menu.list(Vehicle_options, "载具车门", {}, "")
 
-local VehicleDoors_ListItem = {
-    { "全部",   {}, "两侧的四个车门" },
-    { "左前门" },          -- VEH_EXT_DOOR_DSIDE_F = 0
-    { "右前门" },          -- VEH_EXT_DOOR_DSIDE_R = 1
-    { "左后门" },          -- VEH_EXT_DOOR_PSIDE_F = 2
-    { "右后门" },          -- VEH_EXT_DOOR_PSIDE_R = 3
-    { "引擎盖" },          -- VEH_EXT_BONNET = 4
-    { "后备箱" }           -- VEH_EXT_BOOT = 5
+local vehicle_door = {
+    door_toggles = {},
+    toggle_menus = {},
+    door_list = {
+        -- index, name
+        { 0, "左前门" }, -- VEH_EXT_DOOR_DSIDE_F = 0
+        { 1, "右前门" }, -- VEH_EXT_DOOR_DSIDE_R = 1
+        { 2, "左后门" }, -- VEH_EXT_DOOR_PSIDE_F = 2
+        { 3, "右后门" }, -- VEH_EXT_DOOR_PSIDE_R = 3
+        { 4, "引擎盖" }, -- VEH_EXT_BONNET = 4
+        { 5, "后备箱" } -- VEH_EXT_BOOT = 5
+    },
 }
-local vehicle_door_select = 1 --选择的车门
-menu.list_select(Vehicle_Door_options, "选择车门", {}, "", VehicleDoors_ListItem, 1, function(value)
-    vehicle_door_select = value
-end)
+
+local Vehicle_Door_Select = menu.list(Vehicle_Door_options, "选择车门", {}, "")
+
+menu.toggle(Vehicle_Door_Select, "全部开/关", {}, "", function(toggle)
+    for key, value in pairs(vehicle_door.toggle_menus) do
+        if menu.is_ref_valid(value) then
+            menu.set_value(value, toggle)
+        end
+    end
+end, true)
+
+for _, data in pairs(vehicle_door.door_list) do
+    local index = data[1]
+    local name = data[2]
+
+    vehicle_door.door_toggles[index] = true
+    vehicle_door.toggle_menus[index] = menu.toggle(Vehicle_Door_Select, name, {}, "", function(toggle)
+        vehicle_door.door_toggles[index] = toggle
+    end, true)
+end
 
 menu.toggle_loop(Vehicle_Door_options, "打开车门", { "open_veh_door" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= 0 then
-        if vehicle_door_select == 1 then
-            for i = 0, 3 do
-                VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, i, false, false)
+        for index, toggle in pairs(vehicle_door.door_toggles) do
+            if toggle then
+                VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, index, false, false)
             end
-        elseif vehicle_door_select > 1 then
-            VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, vehicle_door_select - 2, false, false)
         end
     end
 end)
 menu.action(Vehicle_Door_options, "关闭车门", { "close_veh_door" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= 0 then
-        if vehicle_door_select == 1 then
-            for i = 0, 3 do
-                VEHICLE.SET_VEHICLE_DOOR_SHUT(vehicle, i, false)
+        for index, toggle in pairs(vehicle_door.door_toggles) do
+            if toggle then
+                VEHICLE.SET_VEHICLE_DOOR_SHUT(vehicle, index, false)
             end
-        elseif vehicle_door_select > 1 then
-            VEHICLE.SET_VEHICLE_DOOR_SHUT(vehicle, vehicle_door_select - 2, false)
         end
     end
 end)
 menu.toggle_loop(Vehicle_Door_options, "破坏车门", { "broken_veh_door" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= 0 then
-        if vehicle_door_select == 1 then
-            for i = 0, 3 do
-                VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, i, false)
+        for index, toggle in pairs(vehicle_door.door_toggles) do
+            if toggle then
+                VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, index, false)
             end
-        elseif vehicle_door_select > 1 then
-            VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, vehicle_door_select - 2, false)
         end
     end
 end)
 menu.toggle_loop(Vehicle_Door_options, "删除车门", { "delete_veh_door" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= 0 then
-        if vehicle_door_select == 1 then
-            for i = 0, 3 do
-                VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, i, true)
+        for index, toggle in pairs(vehicle_door.door_toggles) do
+            if toggle then
+                VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, index, true)
             end
-        elseif vehicle_door_select > 1 then
-            VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, vehicle_door_select - 2, true)
         end
     end
 end)
-
-menu.toggle(Vehicle_Door_options, "车门不可损坏", {}, "", function(toggle)
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        if vehicle_door_select == 1 then
-            for i = 0, 3 do
-                VEHICLE.SET_DOOR_ALLOWED_TO_BE_BROKEN_OFF(vehicle, i, not toggle)
-            end
-        elseif vehicle_door_select > 1 then
-            VEHICLE.SET_DOOR_ALLOWED_TO_BE_BROKEN_OFF(vehicle, vehicle_door_select - 2, not toggle)
-        end
-    end
-end)
-
 
 
 ---------------
@@ -3378,13 +3569,6 @@ menu.list_select(Vehicle_Light_options, "设置前照灯阴影", {}, "", Vehicle
             VEHICLE.SET_VEHICLE_LIGHTS(vehicle, value - 1)
         end
     end)
-
-menu.toggle(Vehicle_Light_options, "车灯不可损坏", {}, "", function(toggle)
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_HAS_UNBREAKABLE_LIGHTS(vehicle, toggle)
-    end
-end)
 menu.toggle(Vehicle_Light_options, "内饰灯光", {},
     "Forces the vehicles interior lights (regardless of time-of-day)", function(toggle)
         local vehicle = entities.get_user_vehicle_as_handle()
@@ -3403,18 +3587,18 @@ local vehicle_radio_station_select = 1
 menu.list_select(Vehicle_Radio_options, "选择电台", {}, "", Vehicle_RadioStation.ListItem, 1, function(value)
     vehicle_radio_station_select = value
 end)
-menu.toggle_loop(Vehicle_Radio_options, "自动更改电台", { "auto_veh_radio" }, "当你进入一辆载具时，更改载具的电台",
+menu.toggle_loop(Vehicle_Radio_options, "自动更改电台", { "auto_veh_radio" }, "自动更改正在进入驾驶位的载具的电台",
     function()
         if PED.IS_PED_GETTING_INTO_A_VEHICLE(players.user_ped()) then
             local veh = PED.GET_VEHICLE_PED_IS_ENTERING(players.user_ped())
-            if veh ~= 0 then
+            if ENTITY.IS_ENTITY_A_VEHICLE(veh) and PED.GET_SEAT_PED_IS_TRYING_TO_ENTER(players.user_ped()) == -1 then
                 local stationName = Vehicle_RadioStation.LabelList[vehicle_radio_station_select]
                 AUDIO.SET_VEH_RADIO_STATION(veh, stationName)
             end
         end
     end)
-menu.toggle(Vehicle_Radio_options, "关闭电台", { "close_veh_radio" },
-    "关闭后当前载具将无法选择更改电台", function(toggle)
+menu.toggle(Vehicle_Radio_options, "关闭电台", { "close_veh_radio" }, "当前或上一辆载具将无法选择更改电台",
+    function(toggle)
         local vehicle = entities.get_user_vehicle_as_handle()
         if vehicle ~= 0 then
             AUDIO.SET_VEHICLE_RADIO_ENABLED(vehicle, not toggle)
@@ -3820,54 +4004,54 @@ end)
 
 ----------------
 local veh_dirt_level = 0.0
-menu.click_slider(Vehicle_options, "载具灰尘程度", { "veh_dirt_level" }, "载具全身灰尘程度",
-    0.0, 15.0, 0.0, 1.0, function(value)
-        veh_dirt_level = value
+menu.click_slider_float(Vehicle_options, "载具灰尘程度", { "veh_dirt_level" }, "载具全身灰尘程度",
+    0, 1500, 0, 100, function(value)
+        veh_dirt_level = value * 0.01
         local vehicle = entities.get_user_vehicle_as_handle()
         if vehicle ~= 0 then
-            VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, veh_dirt_level)
+            if VEHICLE.GET_VEHICLE_DIRT_LEVEL(vehicle) ~= veh_dirt_level then
+                VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, veh_dirt_level)
+            end
         end
     end)
 menu.toggle_loop(Vehicle_options, "锁定载具灰尘程度", {}, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, veh_dirt_level)
-    end
-end)
-menu.toggle_loop(Vehicle_options, "防弹轮胎", {}, "", function()
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_TYRES_CAN_BURST(vehicle, false)
-    end
-end)
-menu.toggle_loop(Vehicle_options, "载具引擎快速开启", {}, "减少载具启动引擎时间", function()
-    if PED.IS_PED_GETTING_INTO_A_VEHICLE(PLAYER.PLAYER_PED_ID()) then
-        local veh = PED.GET_VEHICLE_PED_IS_ENTERING(PLAYER.PLAYER_PED_ID())
-        if veh ~= 0 then
-            VEHICLE.SET_VEHICLE_ENGINE_HEALTH(veh, 1000)
-            VEHICLE.SET_VEHICLE_ENGINE_ON(veh, true, true, true)
+        if VEHICLE.GET_VEHICLE_DIRT_LEVEL(vehicle) ~= veh_dirt_level then
+            VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, veh_dirt_level)
         end
     end
 end)
-menu.toggle_loop(Vehicle_options, "解锁正在进入的载具", {}, "解锁载具车门", function()
-    local vehicle = 0
-    if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-        vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
-    else
-        vehicle = PED.GET_VEHICLE_PED_IS_TRYING_TO_ENTER(players.user_ped())
-    end
-
-    if vehicle ~= 0 then
-        if RequestControl(vehicle) then
-            unlock_vehicle_doors(vehicle)
-            VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, true)
-            VEHICLE.SET_VEHICLE_UNDRIVEABLE(vehicle, false)
-            ENTITY.FREEZE_ENTITY_POSITION(vehicle, false)
+menu.toggle_loop(Vehicle_options, "自动开启载具引擎", {}, "自动开启正在进入驾驶位的载具的引擎",
+    function()
+        if PED.IS_PED_GETTING_INTO_A_VEHICLE(players.user_ped()) then
+            local veh = PED.GET_VEHICLE_PED_IS_ENTERING(players.user_ped())
+            if ENTITY.IS_ENTITY_A_VEHICLE(veh) and PED.GET_SEAT_PED_IS_TRYING_TO_ENTER(players.user_ped()) == -1 then
+                VEHICLE.SET_VEHICLE_ENGINE_HEALTH(veh, 1000)
+                VEHICLE.SET_VEHICLE_ENGINE_ON(veh, true, true, true)
+            end
+        end
+    end)
+menu.toggle_loop(Vehicle_options, "自动解锁载具车门", {}, "自动解锁正在进入的载具的车门",
+    function()
+        local vehicle = 0
+        if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+            vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
         else
-            util.toast("请求控制失败，请重试")
+            vehicle = PED.GET_VEHICLE_PED_IS_TRYING_TO_ENTER(players.user_ped())
         end
-    end
-end)
+
+        if vehicle ~= 0 then
+            if RequestControl(vehicle) then
+                unlock_vehicle_doors(vehicle)
+                VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, true)
+                VEHICLE.SET_VEHICLE_UNDRIVEABLE(vehicle, false)
+                ENTITY.FREEZE_ENTITY_POSITION(vehicle, false)
+            else
+                util.toast("请求控制失败，请重试")
+            end
+        end
+    end)
 menu.toggle_loop(Vehicle_options, "禁用载具喇叭", {}, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= 0 then
@@ -3879,15 +4063,6 @@ end, function()
         AUDIO.SET_HORN_ENABLED(vehicle, true)
     end
 end)
-menu.toggle_loop(Vehicle_options, "移除翻车卡住的检测", { "remove_veh_check" },
-    "避免因载具翻车、卡住导致任务失败", function()
-        local vehicle = entities.get_user_vehicle_as_handle()
-        if vehicle ~= 0 then
-            VEHICLE.REMOVE_VEHICLE_UPSIDEDOWN_CHECK(vehicle)
-            VEHICLE.REMOVE_VEHICLE_STUCK_CHECK(vehicle)
-        end
-    end)
-
 menu.click_slider(Vehicle_options, "强化载具", { "strong_vehicle" }, "设置实体血量加倍倍数\n提高载具防御能力",
     1, 20, 5, 1, function(value)
         local vehicle = entities.get_user_vehicle_as_handle()
@@ -5492,7 +5667,7 @@ end)
 --------------------------------
 local About_options = menu.list(menu.my_root(), "关于", {}, "")
 
-menu.readonly(About_options, "Author", "Rostal")
+menu.readonly(About_options, "Author", "Rostal#9913")
 menu.hyperlink(About_options, "Github", "https://github.com/TCRoid/Stand-Lua-RScript")
 menu.readonly(About_options, "Version", SCRIPT_VERSION)
 menu.readonly(About_options, "Support GTAO Version", SUPPORT_GTAO)

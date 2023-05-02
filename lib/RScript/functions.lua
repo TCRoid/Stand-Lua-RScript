@@ -825,8 +825,10 @@ function strong_vehicle(vehicle)
         VEHICLE.SET_VEHICLE_CAN_BREAK(vehicle, false)
         VEHICLE.SET_VEHICLE_TYRES_CAN_BURST(vehicle, false)
         VEHICLE.SET_VEHICLE_WHEELS_CAN_BREAK(vehicle, false)
-        for i = 0, 3 do
-            VEHICLE.SET_DOOR_ALLOWED_TO_BE_BROKEN_OFF(vehicle, i, false)
+        for i = 0, 5 do
+            if VEHICLE.GET_IS_DOOR_VALID(vehicle, i) then
+                VEHICLE.SET_DOOR_ALLOWED_TO_BE_BROKEN_OFF(vehicle, i, false)
+            end
         end
         VEHICLE.SET_VEHICLE_HAS_UNBREAKABLE_LIGHTS(vehicle, true)
 
@@ -840,13 +842,19 @@ function strong_vehicle(vehicle)
 
         VEHICLE.SET_VEHICLE_STRONG(vehicle, true)
         VEHICLE.SET_VEHICLE_HAS_STRONG_AXLES(vehicle, true)
-        VEHICLE.SET_DISABLE_DAMAGE_WITH_PICKED_UP_ENTITY(vehicle, true)
+
+        --Damage
         VEHICLE.VEHICLE_SET_RAMP_AND_RAMMING_CARS_TAKE_DAMAGE(vehicle, false)
+        VEHICLE.SET_INCREASE_WHEEL_CRUSH_DAMAGE(vehicle, false)
+        VEHICLE.SET_DISABLE_DAMAGE_WITH_PICKED_UP_ENTITY(vehicle, true)
+        VEHICLE.SET_VEHICLE_USES_MP_PLAYER_DAMAGE_MULTIPLIER(vehicle, true)
 
         --Explode
+        VEHICLE.SET_VEHICLE_NO_EXPLOSION_DAMAGE_FROM_DRIVER(vehicle, true)
         VEHICLE.SET_DISABLE_EXPLODE_FROM_BODY_DAMAGE_ON_COLLISION(vehicle, 1)
         VEHICLE.SET_VEHICLE_EXPLODES_ON_HIGH_EXPLOSION_DAMAGE(vehicle, false)
         VEHICLE.SET_VEHICLE_EXPLODES_ON_EXPLOSION_DAMAGE_AT_ZERO_BODY_HEALTH(vehicle, false)
+        VEHICLE.SET_ALLOW_VEHICLE_EXPLODES_ON_CONTACT(vehicle, false)
 
         --Heli
         VEHICLE.SET_HELI_TAIL_BOOM_CAN_BREAK_OFF(vehicle, false)
@@ -993,7 +1001,8 @@ function increase_ped_combat_ability(ped, isGodmode, canRagdoll)
         ENTITY.SET_ENTITY_PROOFS(ped, isGodmode, isGodmode, isGodmode, isGodmode, isGodmode, isGodmode, isGodmode,
             isGodmode)
         PED.SET_PED_CAN_RAGDOLL(ped, canRagdoll)
-        --PERCEPTIVE
+
+        --- PERCEPTIVE ---
         PED.SET_PED_HIGHLY_PERCEPTIVE(ped, true)
         PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(ped, 500.0)
         PED.SET_PED_SEEING_RANGE(ped, 500.0)
@@ -1004,24 +1013,30 @@ function increase_ped_combat_ability(ped, isGodmode, canRagdoll)
         PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, 90.0)
         PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 90.0)
         PED.SET_PED_VISUAL_FIELD_CENTER_ANGLE(ped, 90.0)
-        --WEAPON
+
+        --- WEAPON ---
         PED.SET_PED_CAN_SWITCH_WEAPON(ped, true)
         WEAPON.SET_PED_INFINITE_AMMO_CLIP(ped, true)
         PED.SET_PED_SHOOT_RATE(ped, 1000)
         PED.SET_PED_ACCURACY(ped, 100)
-        --COMBAT
-        PED.SET_PED_COMBAT_ABILITY(ped, 2)          --Professional
-        PED.SET_PED_COMBAT_RANGE(ped, 2)            --Far
-        -- PED.SET_PED_COMBAT_MOVEMENT(ped, 2) --WillAdvance
-        PED.SET_PED_TARGET_LOSS_RESPONSE(ped, 1)    --NeverLoseTarget
-        --FLEE ATTRIBUTES
+
+        --- COMBAT ---
+        PED.SET_PED_COMBAT_ABILITY(ped, 2)       -- Professional
+        PED.SET_PED_COMBAT_RANGE(ped, 2)         -- Far
+        -- PED.SET_PED_COMBAT_MOVEMENT(ped, 2) -- WillAdvance
+        PED.SET_PED_TARGET_LOSS_RESPONSE(ped, 1) -- NeverLoseTarget
+
+        --- FLEE ATTRIBUTES ---
         PED.SET_PED_FLEE_ATTRIBUTES(ped, 512, true) -- NEVER_FLEE
-        --TASK
+
+        --- TASK ---
         TASK.SET_PED_PATH_CAN_USE_CLIMBOVERS(ped, true)
         TASK.SET_PED_PATH_CAN_USE_LADDERS(ped, true)
         TASK.SET_PED_PATH_CAN_DROP_FROM_HEIGHT(ped, true)
         TASK.SET_PED_PATH_AVOID_FIRE(ped, false)
         TASK.SET_PED_PATH_MAY_ENTER_WATER(ped, true)
+
+        PED.SET_PED_SUFFERS_CRITICAL_HITS(ped, false) -- Sets if a healthy character can be killed by a single bullet (e.g. headshot)
     end
 end
 
