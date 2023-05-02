@@ -6,4 +6,4 @@ Made by Rostal#9913
 
 
 
-![rscript_cover_photo](docs\image\rscript_cover_photo.png)
+![rscript_cover_photo](docs/image/rscript_cover_photo.png)
