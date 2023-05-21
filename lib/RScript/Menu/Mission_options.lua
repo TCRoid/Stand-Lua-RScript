@@ -733,8 +733,8 @@ menu.action(Mission_Assistant_Prison, "巴士：传送到目的地", {}, "", fun
 end)
 menu.divider(Mission_Assistant_Prison, "终章")
 menu.action(Mission_Assistant_Prison, "(破坏)巴士 传送到目的地", {}, "", function()
-    local coords = { x = 1680.409301, y = 3276.584228, z = 41.07345 }
-    local heading = 38.17193
+    local coords = { x = 1679.619873, y = 3278.103759, z = 41.0774383 }
+    local heading = 32.8253974
     local entity_list = get_entities_by_hash("vehicle", true, -2007026063)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do

@@ -367,12 +367,13 @@ menu.toggle_loop(Dev_options, "GET_IS_TASK_ACTIVE", { "show_active_task" }, "", 
 end)
 
 
+local eventGroup = 1
 local eventData = memory.alloc(13 * 8)
 menu.toggle_loop(Dev_options, "Event Network Entity Damage", {}, "", function()
-    for eventNum = 0, SCRIPT.GET_NUMBER_OF_EVENTS(1) - 1 do
-        local eventId = SCRIPT.GET_EVENT_AT_INDEX(1, eventNum)
-        if eventId == 186 then                                                       -- CEventNetworkEntityDamage
-            if SCRIPT.GET_EVENT_DATA(1, eventNum, eventData, 13) then
+    for eventIndex = 0, SCRIPT.GET_NUMBER_OF_EVENTS(eventGroup) - 1 do
+        local eventType = SCRIPT.GET_EVENT_AT_INDEX(eventGroup, eventIndex)
+        if eventType == 186 then                                                     -- CEventNetworkEntityDamage
+            if SCRIPT.GET_EVENT_DATA(eventGroup, eventIndex, eventData, 13) then
                 local Victim = memory.read_int(eventData)                            -- entity
                 local Attacker = memory.read_int(eventData + 1 * 8)                  -- entity
                 local Damage = memory.read_float(eventData + 2 * 8)                  -- float
@@ -399,7 +400,9 @@ menu.toggle_loop(Dev_options, "Event Network Entity Damage", {}, "", function()
                     "\nIs Responsible For Collision: " .. IsResponsibleForCollision ..
                     "\nIs Head Shot: " .. IsHeadShot ..
                     "\nIs With Melee Weapon: " .. IsWithMeleeWeapon ..
-                    "\nHit Material: " .. HitMaterial
+                    "\nHit Material: " .. HitMaterial ..
+                    "\nEvent Index: " .. eventNum ..
+                    "\n"
 
 
                 util.toast(text, TOAST_ALL)

@@ -260,7 +260,7 @@ function TP_INTO_VEHICLE(vehicle, door, driver)
         VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER(vehicle, players.user(), false)
         --driver
         local ped = GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
-        if ped then
+        if ped ~= 0 then
             if driver == "tp" then
                 local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(vehicle, 0.0, 5.0, 3.0)
                 SET_ENTITY_COORDS(ped, coords)
@@ -499,22 +499,26 @@ function TP_ENTITY_TO_ENTITY(tp_ent, to_ent, offsetX, offsetY, offsetZ)
 end
 
 ---@param ent Entity
----@param canMigrate? boolean
+---@param can_migrate? boolean
 ---@return boolean
-function set_entity_networked(ent, canMigrate)
+function set_entity_networked(ent, can_migrate)
     if ENTITY.DOES_ENTITY_EXIST(ent) then
-        if canMigrate == nil then canMigrate = true end
+        if can_migrate == nil then can_migrate = true end
 
-        ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(obj, true)
+        ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(ent, true)
         ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(ent, true)
 
         NETWORK.NETWORK_REGISTER_ENTITY_AS_NETWORKED(ent)
+
         local net_id = NETWORK.NETWORK_GET_NETWORK_ID_FROM_ENTITY(ent)
-        NETWORK.SET_NETWORK_ID_CAN_MIGRATE(net_id, canMigrate)
+        NETWORK.SET_NETWORK_ID_CAN_MIGRATE(net_id, can_migrate)
         NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(net_id, true)
-        for _, player in pairs(players.list(true, true, true)) do
-            NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, player, true)
+        for _, pid in pairs(players.list()) do
+            if players.exists(pid) then
+                NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, pid, true)
+            end
         end
+
         return NETWORK.NETWORK_GET_ENTITY_IS_NETWORKED(ent)
     end
     return false
@@ -624,7 +628,7 @@ end
 ---@return Vehicle
 function Create_Network_Vehicle(modelHash, x, y, z, heading)
     request_model(modelHash)
-    local veh = VEHICLE.CREATE_VEHICLE(modelHash, x, y, z, heading, true, true, true)
+    local veh = VEHICLE.CREATE_VEHICLE(modelHash, x, y, z, heading, true, true, false)
 
     VEHICLE.SET_VEHICLE_ENGINE_ON(veh, true, true, false)
     VEHICLE.SET_VEHICLE_DIRT_LEVEL(veh, 0.0)
@@ -700,6 +704,249 @@ function Create_Network_Object(modelHash, x, y, z)
 
     STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(modelHash)
     return obj
+end
+
+---@param ped_type int
+---@param hash Hash
+---@param coords v3
+---@param heading float
+---@param is_networked boolean? [default = true]
+---@param is_mission boolean? [default = true]
+---@return Ped
+function create_ped(ped_type, hash, coords, heading, is_networked, is_mission)
+    if is_networked == nil then is_networked = true end
+    if is_mission == nil then is_mission = true end
+
+    request_model(hash)
+    local ped = PED.CREATE_PED(ped_type, hash, coords.x, coords.y, coords.z, heading, is_networked, is_mission)
+
+    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(ped, true)
+    ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(ped, true)
+
+    if is_mission then
+        ENTITY.SET_ENTITY_AS_MISSION_ENTITY(ped, true, false)
+    end
+
+    if is_networked then
+        NETWORK.NETWORK_REGISTER_ENTITY_AS_NETWORKED(ped)
+        local net_id = NETWORK.NETWORK_GET_NETWORK_ID_FROM_ENTITY(ped)
+        NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(net_id, true)
+        NETWORK.SET_NETWORK_ID_CAN_MIGRATE(net_id, true)
+        for _, pid in pairs(players.list()) do
+            if players.exists(pid) then
+                NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, pid, true)
+            end
+        end
+    end
+
+    STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(hash)
+    return ped
+end
+
+---@param hash Hash
+---@param coords v3
+---@param heading float
+---@param is_networked boolean? [default = true]
+---@param is_mission boolean? [default = true]
+---@return Vehicle
+function create_vehicle(hash, coords, heading, is_networked, is_mission)
+    if is_networked == nil then is_networked = true end
+    if is_mission == nil then is_mission = true end
+
+    request_model(hash)
+    local veh = VEHICLE.CREATE_VEHICLE(hash, coords.x, coords.y, coords.z, heading, is_networked, is_mission, false)
+
+    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(veh, true)
+    ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(veh, true)
+
+    if is_mission then
+        ENTITY.SET_ENTITY_AS_MISSION_ENTITY(veh, true, false)
+    end
+
+    if is_networked then
+        NETWORK.NETWORK_REGISTER_ENTITY_AS_NETWORKED(veh)
+        local net_id = NETWORK.NETWORK_GET_NETWORK_ID_FROM_ENTITY(veh)
+        NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(net_id, true)
+        NETWORK.SET_NETWORK_ID_CAN_MIGRATE(net_id, true)
+        for _, pid in pairs(players.list()) do
+            if players.exists(pid) then
+                NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, pid, true)
+            end
+        end
+    end
+
+    STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(hash)
+    return veh
+end
+
+---@param hash Hash
+---@param coords v3
+---@param is_networked boolean? [default = true]
+---@param is_mission boolean? [default = true]
+---@return Object
+function create_object(hash, coords, is_networked, is_mission)
+    if is_networked == nil then is_networked = true end
+    if is_mission == nil then is_mission = true end
+
+    request_model(hash)
+    local obj = OBJECT.CREATE_OBJECT_NO_OFFSET(hash, coords.x, coords.y, coords.z, is_networked, is_mission, false)
+
+    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(obj, true)
+    ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(obj, true)
+
+    if is_mission then
+        ENTITY.SET_ENTITY_AS_MISSION_ENTITY(obj, true, false)
+    end
+
+    if is_networked then
+        NETWORK.NETWORK_REGISTER_ENTITY_AS_NETWORKED(obj)
+        local net_id = NETWORK.NETWORK_GET_NETWORK_ID_FROM_ENTITY(obj)
+        NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(net_id, true)
+        NETWORK.SET_NETWORK_ID_CAN_MIGRATE(net_id, true)
+        for _, pid in pairs(players.list()) do
+            if players.exists(pid) then
+                NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(net_id, pid, true)
+            end
+        end
+    end
+
+    STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(hash)
+    return obj
+end
+
+-----------------------------------
+-- Clone Entity Functions
+-----------------------------------
+
+---复制Ped
+---@param target_ped Ped
+---@param coords v3
+---@param heading float
+---@param is_networked boolean
+---@return Ped
+function clone_target_ped(target_ped, coords, heading, is_networked)
+    if ENTITY.DOES_ENTITY_EXIST(target_ped) and ENTITY.IS_ENTITY_A_PED(target_ped) then
+        local ped_type = PED.GET_PED_TYPE(target_ped)
+        local hash = ENTITY.GET_ENTITY_MODEL(target_ped)
+
+        local clone_ped = create_ped(ped_type, hash, coords, heading, is_networked)
+        PED.CLONE_PED_TO_TARGET(target_ped, clone_ped)
+
+        return clone_ped
+    end
+    return 0
+end
+
+---复制目标Vehicle的数据 应用到 克隆Vehicle
+---@param target_vehicle Vehicle
+---@param clone_vehicle Vehicle
+function clone_target_vehicle_data(target_vehicle, clone_vehicle)
+    VEHICLE.SET_VEHICLE_MOD_KIT(clone_vehicle, 0)
+
+    for i = 17, 22 do
+        VEHICLE.TOGGLE_VEHICLE_MOD(clone_vehicle, i, VEHICLE.IS_TOGGLE_MOD_ON(target_vehicle, i))
+    end
+    for i = 0, 49 do
+        local modValue = VEHICLE.GET_VEHICLE_MOD(target_vehicle, i)
+        VEHICLE.SET_VEHICLE_MOD(clone_vehicle, i, modValue)
+    end
+    for i = 1, 14 do
+        VEHICLE.SET_VEHICLE_EXTRA(clone_vehicle, i, not VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(target_vehicle, i))
+    end
+
+    local colorR, colorG, colorB = memory.alloc(1), memory.alloc(1), memory.alloc(1)
+    if VEHICLE.GET_IS_VEHICLE_PRIMARY_COLOUR_CUSTOM(target_vehicle) then
+        VEHICLE.GET_VEHICLE_CUSTOM_PRIMARY_COLOUR(target_vehicle, colorR, colorG, colorB)
+        VEHICLE.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR(clone_vehicle, memory.read_ubyte(colorR), memory.read_ubyte(colorG),
+            memory.read_ubyte(colorB))
+    else
+        VEHICLE.GET_VEHICLE_MOD_COLOR_1(target_vehicle, colorR, colorG, colorB)
+        VEHICLE.SET_VEHICLE_MOD_COLOR_1(clone_vehicle, memory.read_ubyte(colorR), memory.read_ubyte(colorG),
+            memory.read_ubyte(colorB))
+    end
+    if VEHICLE.GET_IS_VEHICLE_SECONDARY_COLOUR_CUSTOM(target_vehicle) then
+        VEHICLE.GET_VEHICLE_CUSTOM_SECONDARY_COLOUR(target_vehicle, colorR, colorG, colorB)
+        VEHICLE.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR(clone_vehicle, memory.read_ubyte(colorR), memory.read_ubyte(colorG),
+            memory.read_ubyte(colorB))
+    else
+        VEHICLE.GET_VEHICLE_MOD_COLOR_2(target_vehicle, colorR, colorG)
+        VEHICLE.SET_VEHICLE_MOD_COLOR_2(clone_vehicle, memory.read_ubyte(colorR), memory.read_ubyte(colorG))
+    end
+    VEHICLE.GET_VEHICLE_COLOURS(target_vehicle, colorR, colorG)
+    VEHICLE.SET_VEHICLE_COLOURS(clone_vehicle, memory.read_ubyte(colorR), memory.read_ubyte(colorG))
+    VEHICLE.GET_VEHICLE_EXTRA_COLOURS(target_vehicle, colorR, colorG)
+    VEHICLE.SET_VEHICLE_EXTRA_COLOURS(clone_vehicle, memory.read_ubyte(colorR), memory.read_ubyte(colorG))
+    VEHICLE.GET_VEHICLE_EXTRA_COLOUR_5(target_vehicle, colorR)
+    VEHICLE.GET_VEHICLE_EXTRA_COLOUR_6(target_vehicle, colorG)
+    VEHICLE.SET_VEHICLE_EXTRA_COLOUR_5(clone_vehicle, memory.read_ubyte(colorR))
+    VEHICLE.SET_VEHICLE_EXTRA_COLOUR_6(clone_vehicle, memory.read_ubyte(colorG))
+
+    VEHICLE.GET_VEHICLE_TYRE_SMOKE_COLOR(target_vehicle, colorR, colorG, colorB)
+    VEHICLE.SET_VEHICLE_TYRE_SMOKE_COLOR(clone_vehicle, memory.read_ubyte(colorR), memory.read_ubyte(colorG),
+        memory.read_ubyte(colorB))
+    VEHICLE.GET_VEHICLE_NEON_COLOUR(target_vehicle, colorR, colorG, colorB)
+    VEHICLE.SET_VEHICLE_NEON_COLOUR(clone_vehicle, memory.read_ubyte(colorR), memory.read_ubyte(colorG),
+        memory.read_ubyte(colorB))
+
+    for i = 0, 3 do
+        VEHICLE.SET_VEHICLE_NEON_ENABLED(clone_vehicle, i, VEHICLE.GET_VEHICLE_NEON_ENABLED(target_vehicle, i))
+    end
+
+    local windowTint = VEHICLE.GET_VEHICLE_WINDOW_TINT(target_vehicle)
+    VEHICLE.SET_VEHICLE_WINDOW_TINT(clone_vehicle, windowTint)
+
+    local lightsColor = VEHICLE.GET_VEHICLE_XENON_LIGHT_COLOR_INDEX(target_vehicle)
+    VEHICLE.SET_VEHICLE_XENON_LIGHT_COLOR_INDEX(clone_vehicle, lightsColor)
+
+    VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(clone_vehicle,
+        VEHICLE.GET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(target_vehicle))
+    VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT(clone_vehicle, VEHICLE.GET_VEHICLE_NUMBER_PLATE_TEXT(target_vehicle))
+
+    VEHICLE.SET_VEHICLE_TYRES_CAN_BURST(clone_vehicle, VEHICLE.GET_VEHICLE_TYRES_CAN_BURST(target_vehicle))
+
+    VEHICLE.SET_VEHICLE_DIRT_LEVEL(clone_vehicle, VEHICLE.GET_VEHICLE_DIRT_LEVEL(target_vehicle))
+
+    local roofState = VEHICLE.GET_CONVERTIBLE_ROOF_STATE(target_vehicle)
+    if roofState == 1 or roofState == 2 then
+        VEHICLE.LOWER_CONVERTIBLE_ROOF(clone_vehicle, true)
+    end
+end
+
+---复制Vehicle
+---@param target_vehicle Vehicle
+---@param coords v3
+---@param heading float
+---@param is_networked boolean
+---@return Vehicle
+function clone_target_vehicle(target_vehicle, coords, heading, is_networked)
+    if ENTITY.DOES_ENTITY_EXIST(target_vehicle) and ENTITY.IS_ENTITY_A_VEHICLE(target_vehicle) then
+        local hash = ENTITY.GET_ENTITY_MODEL(target_vehicle)
+
+        local clone_vehicle = create_vehicle(hash, coords, heading, is_networked)
+        clone_target_vehicle_data(target_vehicle, clone_vehicle)
+
+        return clone_vehicle
+    end
+    return 0
+end
+
+---复制Object
+---@param target_object Object
+---@param coords v3
+---@param is_networked boolean
+---@return Object
+function clone_target_object(target_object, coords, is_networked)
+    if ENTITY.DOES_ENTITY_EXIST(target_object) and ENTITY.IS_ENTITY_AN_OBJECT(target_object) then
+        local hash = ENTITY.GET_ENTITY_MODEL(target_object)
+
+        local clone_object = create_object(hash, coords, is_networked)
+
+        local rotation = ENTITY.GET_ENTITY_ROTATION(target_object, 2)
+        ENTITY.SET_ENTITY_ROTATION(clone_object, rotation.x, rotation.y, rotation.z, 2, true)
+
+        return clone_object
+    end
+    return 0
 end
 
 -----------------------------------
@@ -1405,7 +1652,83 @@ function draw_point_in_center()
 end
 
 -----------------------------
--- MISC Functions
+-- Camera & Aim Functions
+-----------------------------
+
+---@param distance number
+---@return v3
+function get_offset_from_cam(distance)
+    local rot = CAM.GET_FINAL_RENDERED_CAM_ROT(2)
+    local pos = CAM.GET_FINAL_RENDERED_CAM_COORD()
+    local dir = rot:toDir()
+    dir:mul(distance)
+    local offset = v3.new(pos)
+    offset:add(dir)
+    return offset
+end
+
+local TraceFlag = {
+    everything = 4294967295,
+    none = 0,
+    world = 1,
+    vehicles = 2,
+    pedsSimpleCollision = 4,
+    peds = 8,
+    objects = 16,
+    water = 32,
+    foliage = 256,
+}
+
+---@class RaycastResult
+---@field didHit boolean
+---@field endCoords v3
+---@field surfaceNormal v3
+---@field hitEntity Entity
+---@param distance number
+---@param flag? integer
+---@return RaycastResult
+function get_raycast_result(distance, flag)
+    local result = {}
+    flag = flag or TraceFlag.everything
+    local didHit = memory.alloc(1)
+    local endCoords = v3.new()
+    local normal = v3.new()
+    local hitEntity = memory.alloc_int()
+    local camPos = CAM.GET_FINAL_RENDERED_CAM_COORD()
+    local offset = get_offset_from_cam(distance)
+
+    local handle = SHAPETEST.START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE(camPos.x, camPos.y, camPos.z, offset.x,
+        offset.y, offset.z, flag, players.user_ped(), 7)
+    SHAPETEST.GET_SHAPE_TEST_RESULT(handle, didHit, memory.addrof(endCoords), memory.addrof(normal), hitEntity)
+
+    result.didHit = memory.read_byte(didHit) ~= 0
+    result.endCoords = endCoords
+    result.surfaceNormal = normal
+    result.hitEntity = memory.read_int(hitEntity)
+    return result
+end
+
+---返回玩家正在瞄准的实体
+---@param player player
+---@return Entity|nil
+function get_entity_player_is_aiming_at(player)
+    local ent = nil
+    if PLAYER.IS_PLAYER_FREE_AIMING(player) then
+        local ptr = memory.alloc_int()
+        if PLAYER.GET_ENTITY_PLAYER_IS_FREE_AIMING_AT(player, ptr) then
+            ent = memory.read_int(ptr)
+
+            if ENTITY.IS_ENTITY_A_PED(ent) and PED.IS_PED_IN_ANY_VEHICLE(ent) then
+                local vehicle = PED.GET_VEHICLE_PED_IS_IN(ent, false)
+                ent = vehicle
+            end
+        end
+    end
+    return ent
+end
+
+-----------------------------
+-- Misc Functions
 -----------------------------
 
 ---坐标计算
@@ -1442,6 +1765,18 @@ Vector = {
     end
 }
 
+---计算模型大小，返回 long, width, height
+---@param model Hash
+---@return number
+---@return number
+---@return number
+function calculate_model_size(model)
+    local minVec = v3.new()
+    local maxVec = v3.new()
+    MISC.GET_MODEL_DIMENSIONS(model, minVec, maxVec)
+    return (maxVec:getX() - minVec:getX()), (maxVec:getY() - minVec:getY()), (maxVec:getZ() - minVec:getZ())
+end
+
 ---@return Colour
 function get_random_colour()
     local colour = { a = 255 }
@@ -1466,78 +1801,6 @@ function bool_to_string(bool)
     else
         return "否"
     end
-end
-
----@param dist number
----@return v3
-function get_offset_from_cam(dist)
-    local rot = CAM.GET_FINAL_RENDERED_CAM_ROT(2)
-    local pos = CAM.GET_FINAL_RENDERED_CAM_COORD()
-    local dir = rot:toDir()
-    dir:mul(dist)
-    local offset = v3.new(pos)
-    offset:add(dir)
-    return offset
-end
-
-local TraceFlag = {
-    everything = 4294967295,
-    none = 0,
-    world = 1,
-    vehicles = 2,
-    pedsSimpleCollision = 4,
-    peds = 8,
-    objects = 16,
-    water = 32,
-    foliage = 256,
-}
-
----@class RaycastResult
----@field didHit boolean
----@field endCoords v3
----@field surfaceNormal v3
----@field hitEntity Entity
----@param dist number
----@param flag? integer
----@return RaycastResult
-function get_raycast_result(dist, flag)
-    local result = {}
-    flag = flag or TraceFlag.everything
-    local didHit = memory.alloc(1)
-    local endCoords = v3.new()
-    local normal = v3.new()
-    local hitEntity = memory.alloc_int()
-    local camPos = CAM.GET_FINAL_RENDERED_CAM_COORD()
-    local offset = get_offset_from_cam(dist)
-
-    local handle = SHAPETEST.START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE(camPos.x, camPos.y, camPos.z, offset.x,
-        offset.y, offset.z, flag, players.user_ped(), 7)
-    SHAPETEST.GET_SHAPE_TEST_RESULT(handle, didHit, memory.addrof(endCoords), memory.addrof(normal), hitEntity)
-
-    result.didHit = memory.read_byte(didHit) ~= 0
-    result.endCoords = endCoords
-    result.surfaceNormal = normal
-    result.hitEntity = memory.read_int(hitEntity)
-    return result
-end
-
----返回玩家正在瞄准的实体
----@param player player
----@return Entity|nil
-function get_entity_player_is_aiming_at(player)
-    local ent = nil
-    if PLAYER.IS_PLAYER_FREE_AIMING(player) then
-        local ptr = memory.alloc_int()
-        if PLAYER.GET_ENTITY_PLAYER_IS_FREE_AIMING_AT(player, ptr) then
-            ent = memory.read_int(ptr)
-
-            if ENTITY.IS_ENTITY_A_PED(ent) and PED.IS_PED_IN_ANY_VEHICLE(ent) then
-                local vehicle = PED.GET_VEHICLE_PED_IS_IN(ent, false)
-                ent = vehicle
-            end
-        end
-    end
-    return ent
 end
 
 -------------------------

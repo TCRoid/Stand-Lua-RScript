@@ -865,7 +865,7 @@ end)
 
 ----- 全部范围 -----
 menu.divider(Nearby_Vehicle_options, "全部范围")
-menu.action(Nearby_Vehicle_options, "解锁车门", { "unlock_veh_door" }, "", function()
+menu.action(Nearby_Vehicle_options, "解锁车门", { "unlock_vehs_door" }, "", function()
     for k, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
         unlock_vehicle_doors(vehicle)
         VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, true)
@@ -878,14 +878,14 @@ menu.action(Nearby_Vehicle_options, "解锁车门", { "unlock_veh_door" }, "", f
         VEHICLE.SET_VEHICLE_IS_STOLEN(vehicle, false)
     end
 end)
-menu.action(Nearby_Vehicle_options, "打开左右车门和引擎", { "open_veh_door" }, "", function()
+menu.action(Nearby_Vehicle_options, "打开左右车门和引擎", { "open_vehs_door" }, "", function()
     for k, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
         VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
         VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 0, false, false)
         VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 1, false, false)
     end
 end)
-menu.action(Nearby_Vehicle_options, "拆下左右车门和打开引擎", { "broken_veh_door" }, "", function()
+menu.action(Nearby_Vehicle_options, "拆下左右车门和打开引擎", { "broken_vehs_door" }, "", function()
     for k, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
         VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
         VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, 0, false)
@@ -2260,7 +2260,7 @@ menu.action(Bunker, "消灭对手行动单位：箱子 全部爆炸", {}, "", fu
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
             local pos = ENTITY.GET_ENTITY_COORDS(ent)
-            add_owned_explosion(players.user_ped(), pos)
+            add_owned_explosion(players.user_ped(), pos, 4)
         end
     else
         util.toast("Not Found")
@@ -2271,7 +2271,7 @@ menu.action(Bunker, "消灭对手行动单位：载具 全部爆炸", {}, "", fu
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
             local pos = ENTITY.GET_ENTITY_COORDS(ent)
-            add_owned_explosion(players.user_ped(), pos)
+            add_owned_explosion(players.user_ped(), pos, 4)
         end
     else
         util.toast("Not Found")
@@ -2282,7 +2282,7 @@ menu.action(Bunker, "摧毁卡车 全部爆炸", {}, "", function()
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
             local pos = ENTITY.GET_ENTITY_COORDS(ent)
-            add_owned_explosion(players.user_ped(), pos)
+            add_owned_explosion(players.user_ped(), pos, 4)
         end
     else
         util.toast("Not Found")
@@ -2356,7 +2356,7 @@ menu.action(Cayo_Perico, "传送进 美杜莎", {}, "", function()
         for k, ent in pairs(entity_list) do
             VEHICLE.SET_VEHICLE_ENGINE_ON(ent, true, true, false)
             ENTITY.SET_ENTITY_INVINCIBLE(ent, true)
-            PED.SET_PED_INTO_VEHICLE(PLAYER.PLAYER_PED_ID(), ent, -1)
+            PED.SET_PED_INTO_VEHICLE(players.user_ped(), ent, -1)
         end
     end
 end)
@@ -2372,7 +2372,7 @@ end)
 
 menu.divider(Cayo_Perico, "前置")
 menu.action(Cayo_Perico, "长崎 传送到我并坐进尖锥魅影", {},
-    "生成并坐进尖锥魅影 传送长崎到后面", function()
+    "生成并坐进尖锥魅影 传送长崎到后面 会直接连接", function()
         local entity_list = get_entities_by_hash("vehicle", true, -1352468814)
         if next(entity_list) ~= nil then
             local modelHash = util.joaat("phantom2")
@@ -2420,6 +2420,14 @@ menu.action(Cayo_Perico, "传送到 割据", {}, "", function()
         end
     end
 end)
+menu.action(Cayo_Perico, "武器 传送到我", {}, "拾取后重新进入虎鲸，然后炸掉女武神", function()
+    local entity_list = get_entities_by_hash("pickup", true, 1912600099)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ME(ent)
+        end
+    end
+end)
 menu.action(Cayo_Perico, "武器 炸掉女武神", {}, "不再等他慢慢的飞", function()
     local entity_list = get_entities_by_hash("vehicle", true, -1600252419)
     if next(entity_list) ~= nil then
@@ -2428,23 +2436,6 @@ menu.action(Cayo_Perico, "武器 炸掉女武神", {}, "不再等他慢慢的飞
             add_owned_explosion(players.user_ped(), pos)
         end
     end
-end)
-menu.action(Cayo_Perico, "武器 阻挡女武神刷新点", {}, "避免出现跟踪女武神的任务", function()
-    local hash = util.joaat("kosatka")
-    local data = {
-        { coords = v3(526.8517456, -3188.888183, 38.08681106), heading = 0.1857338994 },
-        { coords = v3(494.942657, -3189.610351, 35.71050643),  heading = 0.90858072 },
-        { coords = v3(557.7895507, -3190.794433, 35.77930831), heading = 359.572265625 },
-    }
-
-    request_model(hash)
-    for k, v in pairs(data) do
-        local ent = entities.create_vehicle(hash, v.coords, v.heading)
-        VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(ent, 5.0)
-        ENTITY.FREEZE_ENTITY_POSITION(ent, true)
-    end
-    STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(hash)
-    util.toast("完成")
 end)
 
 --- 终章 ---
@@ -3044,8 +3035,8 @@ menu.click_slider(Franklin_Payphone_Cooldown, "安保合约刷新时间", { "agc
     SET_INT_GLOBAL(Globals.FIXER_SECURITY_CONTRACT_REFRESH_TIME, value * 1000)
 end)
 
-menu.action(Franklin_Payphone, "传送到 电话亭", { "tppayphone" },
-    "Teleport to Payphone (must have called Franklin already)", function()
+menu.action(Franklin_Payphone, "传送到 电话亭", { "tppayphone" }, "需要地图上出现电话亭标志",
+    function()
         local blip = HUD.GET_NEXT_BLIP_INFO_ID(817)
         if not HUD.DOES_BLIP_EXIST(blip) then
             util.toast("No Vehicle Found")
@@ -3130,7 +3121,7 @@ menu.action(Payphone_Hit, "出租车 传送到我", {}, "", function()
         end
     end
 end)
-menu.action(Payphone_Hit, "目标NPC 传送到我", {}, "按E叫他上车", function()
+menu.action(Payphone_Hit, "目标NPC 传送到我", {}, "然后按E叫他上车", function()
     for _, ped in pairs(entities.get_all_peds_as_handles()) do
         if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ped) then
             local blip = HUD.GET_BLIP_FROM_ENTITY(ped)
@@ -3358,7 +3349,7 @@ menu.action(Security_Contract, "传送到 目标载具并加速", {}, "传送到
         end
     end
 end)
-menu.list_action(Security_Contract, "目标汽车 传送到目的地", {}, "", {
+menu.list_action(Security_Contract, "目标汽车 传送到目的地", {}, "玩家自己也会跟着传送过去", {
     { "亚美尼亚帮 地点1" }, { "亚美尼亚帮 地点2" }, { "亚美尼亚帮 地点3" },
     { "梅利威瑟 地点1" }, { "梅利威瑟 地点2" },
 }, function(value)
@@ -3379,7 +3370,7 @@ menu.list_action(Security_Contract, "目标汽车 传送到目的地", {}, "", {
 
                         if not PED.IS_PED_IN_VEHICLE(players.user_ped(), veh, false) then
                             TP_TO_ENTITY(veh, 0.0, 0.0, 2.0)
-                            PLAYER_HEADING(ENTITY.GET_ENTITY_HEADING(veh))
+                            PLAYER_HEADING(heading)
                         end
                     end
                 end
@@ -3387,7 +3378,7 @@ menu.list_action(Security_Contract, "目标汽车 传送到目的地", {}, "", {
         end
     end
 end)
-menu.list_action(Security_Contract, "目标摩托车 传送到目的地", {}, "", {
+menu.list_action(Security_Contract, "目标摩托车 传送到目的地", {}, "玩家自己也会跟着传送过去", {
     { "失落摩托帮 地点1" }, { "失落摩托帮 地点2" }, { "失落摩托帮 地点3" },
     { "狗仔队 地点1" }, { "狗仔队 地点2" }, { "狗仔队 地点3" },
 }, function(value)
@@ -3408,7 +3399,7 @@ menu.list_action(Security_Contract, "目标摩托车 传送到目的地", {}, ""
 
                         if not PED.IS_PED_IN_VEHICLE(players.user_ped(), veh, false) then
                             TP_TO_ENTITY(veh, 0.0, 0.0, 2.0)
-                            PLAYER_HEADING(ENTITY.GET_ENTITY_HEADING(veh))
+                            PLAYER_HEADING(heading)
                         end
                     end
                 end
@@ -3416,7 +3407,7 @@ menu.list_action(Security_Contract, "目标摩托车 传送到目的地", {}, ""
         end
     end
 end)
-menu.list_action(Security_Contract, "目标直升机 传送到目的地", {}, "", {
+menu.list_action(Security_Contract, "目标直升机 传送到目的地", {}, "玩家自己也会跟着传送过去", {
     { "地点1" }, { "地点2" }
 }, function(value)
     local data = Security_Contract_RealizeAssets.heli_destination[value]
@@ -3436,7 +3427,7 @@ menu.list_action(Security_Contract, "目标直升机 传送到目的地", {}, ""
 
                         if not PED.IS_PED_IN_VEHICLE(players.user_ped(), veh, false) then
                             TP_TO_ENTITY(veh, 0.0, 0.0, 2.0)
-                            PLAYER_HEADING(ENTITY.GET_ENTITY_HEADING(veh))
+                            PLAYER_HEADING(heading)
                         end
                     end
                 end
@@ -3488,8 +3479,8 @@ menu.action(Security_Contract, "毁掉资产 任务失败", {}, "不再等待漫
 
 
 
-------- 摩托帮合约 -------
-local MC_Business = menu.list(Mission_Entity, "摩托帮合约", {}, "")
+------- 摩托帮资产 -------
+local MC_Business = menu.list(Mission_Entity, "摩托帮资产", {}, "")
 
 menu.action(MC_Business, "传送到 货物", { "tp_mc_product" }, "", function()
     local blip1 = HUD.GET_NEXT_BLIP_INFO_ID(501)
@@ -3513,6 +3504,26 @@ menu.action(MC_Business, "传送到 货物", { "tp_mc_product" }, "", function()
         util.toast("No MC Product Found")
     end
 end)
+menu.action(MC_Business, "货物 传送到我", { "tp_me_mc_product" }, "", function()
+    local blip = HUD.GET_NEXT_BLIP_INFO_ID(501)
+    if not HUD.DOES_BLIP_EXIST(blip) then
+        util.toast("No MC Product Found")
+    else
+        local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+        if ENTITY.DOES_ENTITY_EXIST(ent) then
+            SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
+            TP_TO_ME(ent, 0.0, 2.0, 0.0)
+            --vehicle
+            if HUD.GET_BLIP_INFO_ID_TYPE(blip) == 1 then
+                TP_INTO_VEHICLE(ent, "delete", "delete")
+            end
+        else
+            util.toast("No Entity, Can't Teleport To Me")
+        end
+    end
+end)
+
+menu.divider(MC_Business, "摩托帮合约")
 menu.action(MC_Business, "屋顶作战：传送到 割据", {}, "", function()
     local entity_list = get_entities_by_hash("object", true, 339736694)
     if next(entity_list) ~= nil then
@@ -3558,11 +3569,15 @@ end)
 
 
 
-------- 改装铺合约 -------
+
+---------- 改装铺合约 ----------
 local LS_Robbery = menu.list(Mission_Entity, "改装铺合约", {}, "")
 
-menu.divider(LS_Robbery, "联合储蓄")
-menu.action(LS_Robbery, "电梯钥匙：传送到 腐败商人", {}, "", function()
+
+----- 联合储蓄 Union Depository -----
+local LS_Robbery_UD = menu.list(LS_Robbery, "联合储蓄", {}, "")
+
+menu.action(LS_Robbery_UD, "电梯钥匙：传送到 腐败商人", {}, "", function()
     local entity_list = get_entities_by_hash("ped", true, 2093736314)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3570,22 +3585,47 @@ menu.action(LS_Robbery, "电梯钥匙：传送到 腐败商人", {}, "", functio
         end
     end
 end)
-menu.action(LS_Robbery, "金库密码：提示 目标载具", {}, "将载具传送到明显位置", function()
-    local entity_list = get_entities_by_hash("ped", true, -1868718465)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            local veh = PED.GET_VEHICLE_PED_IS_IN(ent, false)
-            SET_ENTITY_COORDS(veh, v3(52.6033, -614.41308, 31.0284))
-            ENTITY.SET_ENTITY_HEADING(veh, 247.0814)
+menu.action(LS_Robbery_UD, "金库密码：提示 目标载具(寻找时)", {}, "将载具传送到明显位置，并添加粒子效果",
+    function()
+        local entity_list = get_entities_by_hash("ped", true, -1868718465)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                local veh = PED.GET_VEHICLE_PED_IS_IN(ent, false)
+                SET_ENTITY_COORDS(veh, v3(52.6033, -614.41308, 31.0284))
+                ENTITY.SET_ENTITY_HEADING(veh, 247.0814)
 
-            request_ptfx_asset("scr_rcbarry2")
-            start_ptfx_on_entity("scr_exp_clown", ent)
+                request_ptfx_asset("scr_rcbarry2")
+                start_ptfx_on_entity("scr_exp_clown", ent)
+            end
         end
-    end
-end)
+    end)
+menu.click_slider(LS_Robbery_UD, "金库密码：目标载具 传送到目的地", {}, "玩家自己也会跟着传送过去",
+    1, 2, 1, 1, function(value)
+        local entity_list = get_entities_by_hash("ped", true, -1868718465)
+        if next(entity_list) ~= nil then
+            local data = {
+                { coords = v3(-1326.9161, -1026.7085, 7.1590), heading = 263.5850 },
+                { coords = v3(-59.6748, 350.2671, 111.7699),   heading = 20.9717 },
+            }
+            local coords = data[value].coords
+            local heading = data[value].heading
 
-menu.divider(LS_Robbery, "大钞交易")
-menu.action(LS_Robbery, "追踪设备：传送到 机动作战中心", {}, "", function()
+            for k, ent in pairs(entity_list) do
+                local veh = PED.GET_VEHICLE_PED_IS_IN(ent, false)
+                SET_ENTITY_COORDS(veh, coords)
+                ENTITY.SET_ENTITY_HEADING(veh, heading)
+
+                TELEPORT(coords.x, coords.y, coords.z + 80.0)
+                ENTITY.SET_ENTITY_HEADING(players.user_ped(), heading)
+            end
+        end
+    end)
+
+
+----- 大钞交易 The Superdollar Deal -----
+local LS_Robbery_TSD = menu.list(LS_Robbery, "大钞交易", {}, "")
+
+menu.action(LS_Robbery_TSD, "追踪设备：传送到 机动作战中心", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1502869817)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3596,7 +3636,7 @@ menu.action(LS_Robbery, "追踪设备：传送到 机动作战中心", {}, "", f
         end
     end
 end)
-menu.action(LS_Robbery, "病毒软件：黑客 传送到我", {}, "", function()
+menu.action(LS_Robbery_TSD, "病毒软件：黑客 传送到我", {}, "会传送到空中然后摔死", function()
     local entity_list = get_entities_by_hash("ped", true, -2039163396)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3604,7 +3644,7 @@ menu.action(LS_Robbery, "病毒软件：黑客 传送到我", {}, "", function()
         end
     end
 end)
-menu.action(LS_Robbery, "病毒软件：传送到 软件", {}, "", function()
+menu.action(LS_Robbery_TSD, "病毒软件：传送到 软件", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, 1112175411)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3613,20 +3653,74 @@ menu.action(LS_Robbery, "病毒软件：传送到 软件", {}, "", function()
     end
 end)
 
-menu.divider(LS_Robbery, "银行合约")
-menu.slider_text(LS_Robbery, "信号干扰器：传送到", {}, "", {
+menu.divider(LS_Robbery_TSD, "终章")
+menu.action(LS_Robbery_TSD, "运输载具 传送到我前面", {}, "前面要预留足够的位置\n提前杀死所有NPC",
+    function()
+        local blip = HUD.GET_NEXT_BLIP_INFO_ID(564)
+        if HUD.DOES_BLIP_EXIST(blip) then
+            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+            SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
+            TP_TO_ME(ent, 0.0, 13.0, 0.5)
+        end
+    end)
+
+
+----- 银行合约 The Bank Contract -----
+local LS_Robbery_TBC = menu.list(LS_Robbery, "银行合约", {}, "")
+
+menu.textslider_stateful(LS_Robbery_TBC, "信号干扰器：传送到", {}, "", {
     "A", "B", "C", "D", "E", "F"
 }, function(value)
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(534 + value)
     if HUD.DOES_BLIP_EXIST(blip) then
         local coords = HUD.GET_BLIP_COORDS(blip)
         local heading = HUD.GET_BLIP_ROTATION(blip)
-        TELEPORT2(coords, heading)
+        TELEPORT(coords.x, coords.y, coords.z + 0.5, heading)
     end
 end)
 
-menu.divider(LS_Robbery, "电控单元差事")
-menu.action(LS_Robbery, "火车货运清单：传送到 清单", {}, "", function()
+menu.divider(LS_Robbery_TBC, "终章")
+local LS_Robbery_TBC_bank = 1
+menu.list_select(LS_Robbery_TBC, "选择银行", {}, "先传送银行踩点后再传送到金库", {
+    "A", "B", "C", "D", "E", "F"
+}, 1, function(value)
+    LS_Robbery_TBC_bank = value
+end)
+menu.action(LS_Robbery_TBC, "传送到 银行", {}, "", function()
+    local blip = HUD.GET_NEXT_BLIP_INFO_ID(534 + LS_Robbery_TBC_bank)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        local coords = HUD.GET_BLIP_COORDS(blip)
+        local heading = HUD.GET_BLIP_ROTATION(blip)
+        TELEPORT(coords.x, coords.y, coords.z + 0.5, heading)
+    end
+end)
+menu.action(LS_Robbery_TBC, "传送到 银行金库", {}, "", function()
+    local data = {
+        { coords = { -2952.9719, 484.8367, 15.6689 },  heading = 87.5927 },
+        { coords = { -1206.9482, -338.4858, 37.7515 }, heading = 29.5932 },
+        { coords = { -352.5631, -59.3918, 49.0031 },   heading = 344.1930 },
+        { coords = { 147.9883, -1050.1608, 29.3388 },  heading = 338.7930 },
+        { coords = { 312.3861, -288.5477, 54.1316 },   heading = 341.3840 },
+        { coords = { 1173.5954, 2716.3256, 38.0559 },  heading = 177.9919 },
+    }
+    local coords = data[LS_Robbery_TBC_bank].coords
+    local heading = data[LS_Robbery_TBC_bank].heading
+    TELEPORT(coords[1], coords[2], coords[3], heading)
+end)
+menu.action(LS_Robbery_TBC, "删除 银行金库铁门", {}, "", function()
+    local entity_list = get_entities_by_hash("object", false, -1591004109)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            entities.delete_by_handle(ent)
+        end
+    end
+end)
+
+
+----- 电控单元差事 The ECU Job -----
+local LS_Robbery_TEJ = menu.list(LS_Robbery, "电控单元差事", {}, "")
+
+menu.action(LS_Robbery_TEJ, "火车货运清单：传送到 清单", {}, "", function()
     local entity_list = get_entities_by_hash("object", true, -1398142754)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3634,7 +3728,7 @@ menu.action(LS_Robbery, "火车货运清单：传送到 清单", {}, "", functio
         end
     end
 end)
-menu.action(LS_Robbery, "火车货运清单：传送到 切割锯", {}, "", function()
+menu.action(LS_Robbery_TEJ, "火车货运清单：传送到 切割锯", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, 339736694)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3643,10 +3737,34 @@ menu.action(LS_Robbery, "火车货运清单：传送到 切割锯", {}, "", func
     end
 end)
 
--- menu.divider(LS_Robbery, "监狱合约") -- 卧底 入口
+menu.divider(LS_Robbery_TEJ, "终章")
+menu.action(LS_Robbery_TEJ, "爆炸 刹车气缸", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, 897163609)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            local coords = ENTITY.GET_ENTITY_COORDS(ent)
+            add_owned_explosion(players.user_ped(), coords, 4)
+        end
+    end
+end)
+menu.action(LS_Robbery_TEJ, "电控单元 传送到我", {}, "需要动一下来确保拾取到", function()
+    local entity_list = get_entities_by_hash("pickup", true, 92049373)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ME(ent)
+        end
+    end
+end)
 
-menu.divider(LS_Robbery, "IAA 交易")
-menu.action(LS_Robbery, "入口：传送到 图纸", {}, "", function()
+
+----- 监狱合约 The Prison Contract -----
+-- local LS_Robbery_TPC = menu.list(LS_Robbery, "监狱合约", {}, "")
+
+
+----- IAA 交易 The Agency Deal -----
+local LS_Robbery_TAD = menu.list(LS_Robbery, "IAA 交易", {}, "")
+
+menu.action(LS_Robbery_TAD, "入口：传送到 图纸", {}, "", function()
     local entity_list = get_entities_by_hash("object", true, 429364207)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3655,8 +3773,30 @@ menu.action(LS_Robbery, "入口：传送到 图纸", {}, "", function()
     end
 end)
 
-menu.divider(LS_Robbery, "失落摩托帮合约")
-menu.action(LS_Robbery, "实验室地点：包裹 传送到我", {}, "", function()
+menu.divider(LS_Robbery_TAD, "终章")
+menu.action(LS_Robbery_TAD, "传送到 配方", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, -1862267709)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.0, 0.0, 0.5)
+        end
+    end
+end)
+
+
+----- 失落摩托帮合约 The Lost Contract -----
+local LS_Robbery_TLC = menu.list(LS_Robbery, "失落摩托帮合约", {}, "")
+
+menu.action(LS_Robbery_TLC, "实验室地点：传送到 保险箱", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, 1089807209)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.0, -1.0, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
+        end
+    end
+end)
+menu.action(LS_Robbery_TLC, "实验室地点：炸药 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, -957953964)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3665,8 +3805,42 @@ menu.action(LS_Robbery, "实验室地点：包裹 传送到我", {}, "", functio
     end
 end)
 
-menu.divider(LS_Robbery, "数据合约")
-menu.action(LS_Robbery, "藏身处地点：传送进 直升机", {}, "", function()
+menu.divider(LS_Robbery_TLC, "终章")
+menu.textslider_stateful(LS_Robbery_TLC, "传送到实验室", {}, "", {
+    "好麦坞", "布罗高地", "塞诺拉大沙漠", "红木轻装赛道"
+}, function(value)
+    local data = {
+        { coords = { 982.4954, -142.6833, 74.2364 },   heading = 253.8538 },
+        { coords = { 1569.8601, -2130.2998, 78.3301 }, heading = 23.6202 },
+        { coords = { 1219.1319, 1848.2427, 78.9553 },  heading = 46.3844 },
+        { coords = { 839.2638, 2176.2578, 52.2899 },   heading = 337.6105 },
+    }
+    local coords = data[value].coords
+    local heading = data[value].heading
+    TELEPORT(coords[1], coords[2], coords[3], heading)
+end)
+menu.action(LS_Robbery_TLC, "传送进 卡车", {}, "", function()
+    local blip = HUD.GET_NEXT_BLIP_INFO_ID(477)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        local phantom = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip) -- hash: -2137348917
+        TP_INTO_VEHICLE(phantom)
+    end
+end)
+menu.action(LS_Robbery_TLC, "油罐车 传送到我后面", {}, "卡车后面要预留足够的位置", function()
+    local blip = HUD.GET_CLOSEST_BLIP_INFO_ID(479)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        local tanker = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip) -- hash: -730904777
+        set_entity_godmode(tanker, true)
+        SET_ENTITY_HEAD_TO_ENTITY(tanker, players.user_ped())
+        TP_TO_ME(tanker, 0.0, -9.0, 0.5)
+    end
+end)
+
+
+----- 数据合约 The Data Contract -----
+local LS_Robbery_TDC = menu.list(LS_Robbery, "数据合约", {}, "")
+
+menu.action(LS_Robbery_TDC, "藏身处地点：传送进 直升机", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1044954915)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3674,7 +3848,22 @@ menu.action(LS_Robbery, "藏身处地点：传送进 直升机", {}, "", functio
         end
     end
 end)
-menu.action(LS_Robbery, "藏身处地点：传送进 巴拉杰", {}, "", function()
+menu.click_slider(LS_Robbery_TDC, "藏身处地点：直升机 传送到目的地", {}, "提前传送进直升机",
+    1, 3, 1, 1, function(value)
+        local entity_list = get_entities_by_hash("vehicle", true, 1044954915)
+        if next(entity_list) ~= nil then
+            local coords_list = {
+                v3(-401.5833, 4342.7768, 135.3380),
+                v3(2122.8254, 3346.9553, 124.9741),
+                v3(20.3088, 2935.2412, 136.0759),
+            }
+
+            for k, ent in pairs(entity_list) do
+                SET_ENTITY_COORDS(ent, coords_list[value])
+            end
+        end
+    end)
+menu.action(LS_Robbery_TDC, "藏身处地点：巴拉杰 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, -212993243)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3682,7 +3871,7 @@ menu.action(LS_Robbery, "藏身处地点：传送进 巴拉杰", {}, "", functio
         end
     end
 end)
-menu.action(LS_Robbery, "防御：武器 传送到我", {}, "", function()
+menu.action(LS_Robbery_TDC, "防御：武器 传送到我", {}, "一个一个的传送", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(784)
     if HUD.DOES_BLIP_EXIST(blip) then
         local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
@@ -3691,6 +3880,18 @@ menu.action(LS_Robbery, "防御：武器 传送到我", {}, "", function()
         end
     end
 end)
+
+menu.divider(LS_Robbery_TDC, "终章")
+menu.action(LS_Robbery_TDC, "硬盘 传送到我", {}, "四个硬盘会堆在一起", function()
+    local entity_list = get_entities_by_hash("object", true, 977288393)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ME(ent, 0.0, 2.0, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
+        end
+    end
+end)
+
 
 
 
@@ -3761,7 +3962,7 @@ menu.action(Air_Freight, "毁掉 泰坦号", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1981688531)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 10.0, 20.0)
+            TP_TO_ME(ent, 0.0, 20.0, 100.0)
             util.yield(2000)
             entities.delete(ent)
         end
@@ -4511,323 +4712,658 @@ end)
 
 
 
-local function get_entity_info(ent)
-    if ent ~= nil and ENTITY.DOES_ENTITY_EXIST(ent) then
-        local entity_info = {} -- 实体所有信息
-        local info = {}        -- name, value
-        local t = ""
 
-        local model_hash = ENTITY.GET_ENTITY_MODEL(ent)
+------------------------------
+-------- 实体信息枪 2.0 --------
+------------------------------
 
-        --Model Name
-        local model_name = util.reverse_joaat(model_hash)
-        if model_name ~= "" then
-            info = { "Model Name", model_name }
-            table.insert(entity_info, info)
+local Entity_Info_Gun2 = menu.list(Entity_options, "实体信息枪 2.0[TEST]", {}, "")
+
+Entity_Info = {}
+
+function Entity_Info.get_entity_info(entity)
+    if ENTITY.DOES_ENTITY_EXIST(entity) then
+        -- 实体所有信息
+        local entity_info = {
+            entity = {},
+            ped = {},
+            vehicle = {},
+        }
+
+        entity_info.entity = Entity_Info.entity_info(entity)
+
+        if ENTITY.IS_ENTITY_A_PED(entity) then
+            entity_info.ped = Entity_Info.ped_info(entity)
         end
 
-        --Hash
-        info = { "Model Hash", model_hash }
-        table.insert(entity_info, info)
-
-        --Type
-        local entity_type = GET_ENTITY_TYPE(ent, 2)
-        info = { "Entity Type", entity_type }
-        table.insert(entity_info, info)
-
-        --Mission Entity
-        if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
-            info = { "Mission Entity", "True" }
-        else
-            info = { "Mission Entity", "False" }
-        end
-        table.insert(entity_info, info)
-
-        --Health
-        t = ENTITY.GET_ENTITY_HEALTH(ent) .. "/" .. ENTITY.GET_ENTITY_MAX_HEALTH(ent)
-        info = { "Entity Health", t }
-        table.insert(entity_info, info)
-
-        --Dead
-        if ENTITY.IS_ENTITY_DEAD(ent) then
-            info = { "Entity Dead", "True" }
-            table.insert(entity_info, info)
-        end
-
-        --Position
-        local ent_pos = ENTITY.GET_ENTITY_COORDS(ent)
-        t = string.format("%.4f", ent_pos.x) .. ", " ..
-            string.format("%.4f", ent_pos.y) .. ", " ..
-            string.format("%.4f", ent_pos.z)
-        info = { "Coords", t }
-        table.insert(entity_info, info)
-
-        local my_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-
-        --Heading
-        t = string.format("%.4f", ENTITY.GET_ENTITY_HEADING(ent))
-        info = { "Entity Heading", t }
-        table.insert(entity_info, info)
-
-        t = string.format("%.4f", ENTITY.GET_ENTITY_HEADING(players.user_ped()))
-        info = { "Player Heading", t }
-        table.insert(entity_info, info)
-
-        --Distance
-        local distance = Vector.dist(my_pos, ent_pos)
-        info = { "Distance", string.format("%.4f", distance) }
-        table.insert(entity_info, info)
-
-        --Subtract with player position
-        local pos_sub = Vector.subtract(my_pos, ent_pos)
-        t = string.format("%.2f", pos_sub.x) .. ", " ..
-            string.format("%.2f", pos_sub.y) .. ", " ..
-            string.format("%.2f", pos_sub.z)
-        info = { "Subtract Coords", t }
-        table.insert(entity_info, info)
-
-        --Speed
-        local speed = ENTITY.GET_ENTITY_SPEED(ent)
-        info = { "Entity Speed", string.format("%.4f", speed) }
-        table.insert(entity_info, info)
-
-        --Networked Entity
-        t = ""
-        if NETWORK.NETWORK_GET_ENTITY_IS_LOCAL(ent) then
-            t = "Local"
-        end
-        if NETWORK.NETWORK_GET_ENTITY_IS_NETWORKED(ent) then
-            t = t .. " & Networked"
-        end
-        info = { "Networked Entity", t }
-        table.insert(entity_info, info)
-
-        --Owner
-        local owner = entities.get_owner(entities.handle_to_pointer(ent))
-        info = { "Entity Owner", players.get_name(owner) }
-        table.insert(entity_info, info)
-
-        --Blip
-        local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
-        if HUD.DOES_BLIP_EXIST(blip) then
-            info = { "Blip", "divider" }
-            table.insert(entity_info, info)
-
-            local blip_sprite = HUD.GET_BLIP_SPRITE(blip)
-            info = { "Blip Sprite", blip_sprite }
-            table.insert(entity_info, info)
-
-            local blip_colour = HUD.GET_BLIP_COLOUR(blip)
-            info = { "Blip Colour", blip_colour }
-            table.insert(entity_info, info)
-        end
-
-        ----- Attached Entity -----
-        if ENTITY.IS_ENTITY_ATTACHED(ent) then
-            info = { "Attached Entity", "divider" }
-            table.insert(entity_info, info)
-
-            local attached_entity = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
-            local attached_hash = ENTITY.GET_ENTITY_MODEL(attached_entity)
-
-            --Model Name
-            local attached_model_name = util.reverse_joaat(attached_hash)
-            if attached_model_name ~= "" then
-                info = { "Model Name", attached_model_name }
-                table.insert(entity_info, info)
-            end
-
-            --Hash
-            info = { "Model Hash", attached_hash }
-            table.insert(entity_info, info)
-
-            --Type
-            info = { "Entity Type", GET_ENTITY_TYPE(attached_entity, 2) }
-            table.insert(entity_info, info)
-        end
-
-        ----- Ped -----
-        if ENTITY.IS_ENTITY_A_PED(ent) then
-            info = { "Ped", "divider" }
-            table.insert(entity_info, info)
-
-            --Ped Type
-            local ped_type = PED.GET_PED_TYPE(ent)
-            info = { "Ped Type", enum_PedType[ped_type] }
-            table.insert(entity_info, info)
-
-            --Money
-            info = { "Money", PED.GET_PED_MONEY(ent) }
-            table.insert(entity_info, info)
-
-            --Relationship
-            local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ent, players.user_ped())
-            info = { "Relationship", enum_RelationshipType[rel] }
-            table.insert(entity_info, info)
-
-            --Accuracy
-            info = { "Accuracy", PED.GET_PED_ACCURACY(ent) }
-            table.insert(entity_info, info)
-
-            --Combat Movement
-            local combat_movement = PED.GET_PED_COMBAT_MOVEMENT(ent)
-            info = { "Combat Movement", enum_CombatMovement[combat_movement] }
-            table.insert(entity_info, info)
-
-            --Combat Range
-            local combat_range = PED.GET_PED_COMBAT_RANGE(ent)
-            info = { "Combat Range", enum_CombatRange[combat_range] }
-            table.insert(entity_info, info)
-
-            --Alertness
-            local alertness = PED.GET_PED_ALERTNESS(ent)
-            info = { "Alertness", enum_Alertness[alertness] }
-            table.insert(entity_info, info)
-
-            --Dead
-            if PED.IS_PED_DEAD_OR_DYING(ent, 1) then
-                info = { "Dead Ped", "divider" }
-                table.insert(entity_info, info)
-
-                local cause_model_hash = PED.GET_PED_CAUSE_OF_DEATH(ent)
-
-                --Cause of Death Model
-                local cause_model_name = util.reverse_joaat(cause_model_hash)
-                if cause_model_name ~= "" then
-                    info = { "Cause of Death Model", cause_model_name }
-                    table.insert(entity_info, info)
-                end
-
-                --Cause of Death Hash
-                info = { "Cause of Death Hash", cause_model_hash }
-                table.insert(entity_info, info)
-
-                --Death Time
-                info = { "Death Time", PED.GET_PED_TIME_OF_DEATH(ent) }
-                table.insert(entity_info, info)
-            end
-        end
-
-        ----- Vehicle -----
-        if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
-            info = { "Vehicle", "divider" }
-            table.insert(entity_info, info)
-
-            --Display Name
-            local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(model_hash))
-            if display_name ~= "NULL" then
-                info = { "Display Name", display_name }
-                table.insert(entity_info, info)
-            end
-
-            --Vehicle Class
-            local vehicle_class = VEHICLE.GET_VEHICLE_CLASS(ent)
-            t = util.get_label_text("VEH_CLASS_" .. vehicle_class)
-            info = { "Vehicle Class", t }
-            table.insert(entity_info, info)
-
-            --Dirt Level
-            local dirt_level = VEHICLE.GET_VEHICLE_DIRT_LEVEL(ent)
-            info = { "Dirt Level", string.format("%.2f", dirt_level) }
-            table.insert(entity_info, info)
-
-            --Door Lock Status
-            local door_lock_status = VEHICLE.GET_VEHICLE_DOOR_LOCK_STATUS(ent)
-            info = { "Door Lock Status", enum_VehicleLockStatus[door_lock_status] }
-            table.insert(entity_info, info)
-
-            --Engine Health
-            info = { "Engine Health", VEHICLE.GET_VEHICLE_ENGINE_HEALTH(ent) }
-            table.insert(entity_info, info)
-
-            --Petrol Tank Health
-            info = { "Petrol Tank Health", VEHICLE.GET_VEHICLE_PETROL_TANK_HEALTH(ent) }
-            table.insert(entity_info, info)
-
-            --Body Health
-            info = { "Body Health", VEHICLE.GET_VEHICLE_BODY_HEALTH(ent) }
-            table.insert(entity_info, info)
-
-            --- HELI ---
-            if VEHICLE.IS_THIS_MODEL_A_HELI(model_hash) then
-                --Heli Main Rotor Health
-                info = { "Heli Main Rotor Health", VEHICLE.GET_HELI_MAIN_ROTOR_HEALTH(ent) }
-                table.insert(entity_info, info)
-
-                --Heli Tail Rotor Health
-                info = { "Heli Tail Rotor Health", VEHICLE.GET_HELI_TAIL_ROTOR_HEALTH(ent) }
-                table.insert(entity_info, info)
-
-                --Heli Boom Rotor Health
-                info = { "Heli Boom Rotor Health", VEHICLE.GET_HELI_TAIL_BOOM_HEALTH(ent) }
-                table.insert(entity_info, info)
-            end
+        if ENTITY.IS_ENTITY_A_VEHICLE(entity) then
+            entity_info.vehicle = Entity_Info.vehicle_info(entity)
         end
 
         return entity_info
-    else
-        return false
     end
 end
 
+function Entity_Info.entity_info(entity)
+    local entity_info = {
+        main = {},
+        blip = {},
+        attached = {},
+        other = {},
+    }
 
-menu.divider(Entity_Info_Gun, "NEW[TEST]")
-menu.toggle_loop(Entity_Info_Gun, "开启", {}, "", function()
+    local info = {} -- name, value
+    local t = ""
+
+    local model_hash = ENTITY.GET_ENTITY_MODEL(entity)
+
+    -- Model Name
+    local model_name = util.reverse_joaat(model_hash)
+    if model_name ~= "" then
+        info = { "Model Name", model_name }
+        table.insert(entity_info.main, info)
+    end
+
+    -- Model Hash
+    info = { "Model Hash", model_hash }
+    table.insert(entity_info.main, info)
+
+    -- Type
+    local entity_type = GET_ENTITY_TYPE(entity)
+    info = { "Entity Type", entity_type }
+    table.insert(entity_info.main, info)
+
+    -- Mission Entity
+    if ENTITY.IS_ENTITY_A_MISSION_ENTITY(entity) then
+        info = { "Mission Entity", "True" }
+    else
+        info = { "Mission Entity", "False" }
+    end
+    table.insert(entity_info.main, info)
+
+    -- Health
+    t = ENTITY.GET_ENTITY_HEALTH(entity) .. "/" .. ENTITY.GET_ENTITY_MAX_HEALTH(entity)
+    info = { "Entity Health", t }
+    table.insert(entity_info.main, info)
+
+    -- Dead
+    if ENTITY.IS_ENTITY_DEAD(entity) then
+        info = { "Entity Dead", "True" }
+        table.insert(entity_info.main, info)
+    end
+
+    -- Position
+    local ent_pos = ENTITY.GET_ENTITY_COORDS(entity)
+    t = round(ent_pos.x, 4) .. ", " ..
+        round(ent_pos.y, 4) .. ", " ..
+        round(ent_pos.z, 4)
+    info = { "Coords", t }
+    table.insert(entity_info.main, info)
+
+    local my_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+
+    -- Heading
+    t = round(ENTITY.GET_ENTITY_HEADING(entity), 4)
+    info = { "Entity Heading", t }
+    table.insert(entity_info.main, info)
+
+    t = round(ENTITY.GET_ENTITY_HEADING(players.user_ped()), 4)
+    info = { "Player Heading", t }
+    table.insert(entity_info.main, info)
+
+    -- Distance
+    local distance = Vector.dist(my_pos, ent_pos)
+    info = { "Distance", round(distance, 4) }
+    table.insert(entity_info.main, info)
+
+    -- Subtract with player position
+    local pos_sub = Vector.subtract(my_pos, ent_pos)
+    t = round(pos_sub.x, 2) .. ", " ..
+        round(pos_sub.y, 2) .. ", " ..
+        round(pos_sub.z, 2)
+    info = { "Subtract Coords", t }
+    table.insert(entity_info.main, info)
+
+    -- Speed
+    local speed = ENTITY.GET_ENTITY_SPEED(entity)
+    info = { "Entity Speed", round(speed, 2) }
+    table.insert(entity_info.main, info)
+
+    -- Networked Entity
+    t = ""
+    if NETWORK.NETWORK_GET_ENTITY_IS_LOCAL(entity) then
+        t = "Local"
+    end
+    if NETWORK.NETWORK_GET_ENTITY_IS_NETWORKED(entity) then
+        t = t .. " & Networked"
+    end
+    info = { "Networked Entity", t }
+    table.insert(entity_info.main, info)
+
+    -- Owner
+    local owner = entities.get_owner(entities.handle_to_pointer(entity))
+    info = { "Entity Owner", players.get_name(owner) }
+    table.insert(entity_info.main, info)
+
+
+    ----- Blip -----
+    local blip = HUD.GET_BLIP_FROM_ENTITY(entity)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        -- Sprite
+        local blip_sprite = HUD.GET_BLIP_SPRITE(blip)
+        info = { "Blip Sprite", blip_sprite }
+        table.insert(entity_info.blip, info)
+
+        -- Colour
+        local blip_colour = HUD.GET_BLIP_COLOUR(blip)
+        info = { "Blip Colour", blip_colour }
+        table.insert(entity_info.blip, info)
+
+        -- Alpha
+        local blip_alpha = HUD.GET_BLIP_ALPHA(blip)
+        info = { "Blip Alpha", blip_alpha }
+        table.insert(entity_info.blip, info)
+
+        -- Rotation
+        local blip_rotation = HUD.GET_BLIP_ROTATION(blip)
+        info = { "Blip Rotation", blip_rotation }
+        table.insert(entity_info.blip, info)
+    end
+
+
+    ----- Attached -----
+    if ENTITY.IS_ENTITY_ATTACHED(entity) then
+        local attached_entity = ENTITY.GET_ENTITY_ATTACHED_TO(entity)
+        local attached_hash = ENTITY.GET_ENTITY_MODEL(attached_entity)
+
+        -- Model Name
+        local attached_model_name = util.reverse_joaat(attached_hash)
+        if attached_model_name ~= "" then
+            info = { "Model Name", attached_model_name }
+            table.insert(entity_info.attached, info)
+        end
+
+        -- Model Hash
+        info = { "Model Hash", attached_hash }
+        table.insert(entity_info.attached, info)
+
+        -- Type
+        info = { "Entity Type", GET_ENTITY_TYPE(attached_entity) }
+        table.insert(entity_info.attached, info)
+    end
+
+
+    ----- Other -----
+
+    -- Alpha
+    local alpha = ENTITY.GET_ENTITY_ALPHA(entity)
+    info = { "Alpha", round(alpha, 4) }
+    table.insert(entity_info.other, info)
+
+    -- Pitch
+    local pitch = ENTITY.GET_ENTITY_PITCH(entity)
+    info = { "Pitch", round(pitch, 4) }
+    table.insert(entity_info.other, info)
+
+    -- Roll
+    local roll = ENTITY.GET_ENTITY_ROLL(entity)
+    info = { "Roll", round(roll, 4) }
+    table.insert(entity_info.other, info)
+
+    -- Upright Value
+    local upright_value = ENTITY.GET_ENTITY_UPRIGHT_VALUE(entity)
+    info = { "Upright Value", round(upright_value, 4) }
+    table.insert(entity_info.other, info)
+
+    -- Height Above Ground
+    local height_above_ground = ENTITY.GET_ENTITY_HEIGHT_ABOVE_GROUND(entity)
+    info = { "Height Above Ground", round(height_above_ground, 4) }
+    table.insert(entity_info.other, info)
+
+
+    return entity_info
+end
+
+function Entity_Info.ped_info(ped)
+    local ped_info = {
+        main = {},
+        dead = {},
+        rel_group = {},
+    }
+
+    local info = {} -- name, value
+    local t = ""
+
+    -- Ped Type
+    local ped_type = PED.GET_PED_TYPE(ped)
+    info = { "Ped Type", enum_PedType[ped_type] }
+    table.insert(ped_info.main, info)
+
+    -- Money
+    info = { "Money", PED.GET_PED_MONEY(ped) }
+    table.insert(ped_info.main, info)
+
+    -- Accuracy
+    info = { "Accuracy", PED.GET_PED_ACCURACY(ped) }
+    table.insert(ped_info.main, info)
+
+    -- Combat Movement
+    local combat_movement = PED.GET_PED_COMBAT_MOVEMENT(ped)
+    info = { "Combat Movement", enum_CombatMovement[combat_movement] }
+    table.insert(ped_info.main, info)
+
+    -- Combat Range
+    local combat_range = PED.GET_PED_COMBAT_RANGE(ped)
+    info = { "Combat Range", enum_CombatRange[combat_range] }
+    table.insert(ped_info.main, info)
+
+    -- Alertness
+    local alertness = PED.GET_PED_ALERTNESS(ped)
+    info = { "Alertness", enum_Alertness[alertness] }
+    table.insert(ped_info.main, info)
+
+
+    ----- Dead -----
+    if PED.IS_PED_DEAD_OR_DYING(ped, 1) then
+        local cause_model_hash = PED.GET_PED_CAUSE_OF_DEATH(ped)
+
+        --Cause of Death Model
+        local cause_model_name = util.reverse_joaat(cause_model_hash)
+        if cause_model_name ~= "" then
+            info = { "Cause of Death Model", cause_model_name }
+            table.insert(ped_info.dead, info)
+        end
+
+        --Cause of Death Hash
+        info = { "Cause of Death Hash", cause_model_hash }
+        table.insert(ped_info.dead, info)
+
+        --Death Time
+        info = { "Death Time", PED.GET_PED_TIME_OF_DEATH(ped) }
+        table.insert(ped_info.dead, info)
+    end
+
+
+    ----- Relationship & Group -----
+
+    -- Relationship
+    local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ped, players.user_ped())
+    info = { "Relationship", enum_RelationshipType[rel] }
+    table.insert(ped_info.rel_group, info)
+
+    -- Relationship Group Hash
+    local rel_group_hash = PED.GET_PED_RELATIONSHIP_GROUP_HASH(ped)
+    info = { "Relationship Group Hash", rel_group_hash }
+    table.insert(ped_info.rel_group, info)
+
+    -- Player Relationship Group Hash
+    local my_rel_group_hash = PED.GET_PED_RELATIONSHIP_GROUP_HASH(players.user_ped())
+    info = { "Player Relationship Group Hash", rel_group_hash }
+    table.insert(ped_info.rel_group, info)
+
+    -- Group Relationship
+    local rel = PED.GET_RELATIONSHIP_BETWEEN_GROUPS(rel_group_hash, my_rel_group_hash)
+    info = { "Group Relationship", enum_RelationshipType[rel] }
+    table.insert(ped_info.rel_group, info)
+
+    -- Group
+    if PED.IS_PED_IN_GROUP(ped) then
+        local group_id = PED.GET_PED_GROUP_INDEX(ped)
+        info = { "Group Index", group_id }
+        table.insert(ped_info.rel_group, info)
+    end
+
+
+
+    return ped_info
+end
+
+function Entity_Info.ped_combat_float(ped)
+    local ped_info = {}
+
+    local info = {} -- name, value
+
+    for index, value in pairs(Ped_CombatFloat.List) do
+        local name = value[1]
+        local id = Ped_CombatFloat.ValueList[index]
+        local comment = value[2]
+
+        info = { name, PED.GET_COMBAT_FLOAT(ped, id), comment }
+        table.insert(ped_info.main, info)
+    end
+
+    return ped_info
+end
+
+function Entity_Info.vehicle_info(vehicle)
+    local vehicle_info = {
+        main = {},
+        heli = {},
+    }
+
+    local info = {} -- name, value
+    local t = ""
+
+    local model_hash = ENTITY.GET_ENTITY_MODEL(vehicle)
+
+    -- Display Name
+    local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(model_hash))
+    if display_name ~= "NULL" then
+        info = { "Display Name", display_name }
+        table.insert(vehicle_info.main, info)
+    end
+
+    -- Vehicle Class
+    local vehicle_class = VEHICLE.GET_VEHICLE_CLASS(vehicle)
+    t = util.get_label_text("VEH_CLASS_" .. vehicle_class)
+    info = { "Vehicle Class", t }
+    table.insert(vehicle_info.main, info)
+
+    -- Dirt Level
+    local dirt_level = VEHICLE.GET_VEHICLE_DIRT_LEVEL(vehicle)
+    info = { "Dirt Level", string.format("%.2f", dirt_level) }
+    table.insert(vehicle_info.main, info)
+
+    -- Door Lock Status
+    local door_lock_status = VEHICLE.GET_VEHICLE_DOOR_LOCK_STATUS(vehicle)
+    info = { "Door Lock Status", enum_VehicleLockStatus[door_lock_status] }
+    table.insert(vehicle_info.main, info)
+
+    -- Engine Health
+    info = { "Engine Health", VEHICLE.GET_VEHICLE_ENGINE_HEALTH(vehicle) }
+    table.insert(vehicle_info.main, info)
+
+    -- Petrol Tank Health
+    info = { "Petrol Tank Health", VEHICLE.GET_VEHICLE_PETROL_TANK_HEALTH(vehicle) }
+    table.insert(vehicle_info.main, info)
+
+    -- Body Health
+    info = { "Body Health", VEHICLE.GET_VEHICLE_BODY_HEALTH(vehicle) }
+    table.insert(vehicle_info.main, info)
+
+
+    ----- Heli -----
+    if VEHICLE.IS_THIS_MODEL_A_HELI(model_hash) then
+        -- Main Rotor Health
+        info = { "Heli Main Rotor Health", VEHICLE.GET_HELI_MAIN_ROTOR_HEALTH(vehicle) }
+        table.insert(vehicle_info.heli, info)
+
+        -- Tail Rotor Health
+        info = { "Heli Tail Rotor Health", VEHICLE.GET_HELI_TAIL_ROTOR_HEALTH(vehicle) }
+        table.insert(vehicle_info.heli, info)
+
+        -- Boom Rotor Health
+        info = { "Heli Boom Rotor Health", VEHICLE.GET_HELI_TAIL_BOOM_HEALTH(vehicle) }
+        table.insert(vehicle_info.heli, info)
+    end
+
+
+    return vehicle_info
+end
+
+function Entity_Info.vehicle_mod(vehicle)
+    local vehicle_info = {
+        color = {},
+        kit = {},
+    }
+
+    local info = {} -- name, value
+    local t = ""
+
+    local enum_ModKitType = {
+        [0] = "Standard",
+        [1] = "Sport",
+        [2] = "SUV",
+        [3] = "Special"
+    }
+    local enum_ModColorType = {
+        [0] = "Metallic",
+        [1] = "Classic",
+        [2] = "Pearlescent",
+        [3] = "Matte",
+        [4] = "Metals",
+        [5] = "Chrome",
+        [6] = "Chameleon",
+        [7] = "None" -- if this is set, the vehicle doesn't use mod colors, it uses the regular color system
+    }
+    local enum_ModWheelType = {
+        [-1] = "Invalid",
+        [0] = "Sport",
+        [1] = "Muscle",
+        [2] = "Lowrider",
+        [3] = "SUV",
+        [4] = "Offroad",
+        [5] = "Tuner",
+        [6] = "Bike",
+        [7] = "Hiend",
+        [8] = "Super Mod 1",
+        [9] = "Super Mod 2",
+        [10] = "Super Mod 3",
+        [11] = "Super Mod 4",
+        [12] = "Super Mod 5"
+    }
+
+
+    --#region Vehicle Colour
+
+    local colorR, colorG, colorB = memory.alloc(1), memory.alloc(1), memory.alloc(1)
+
+    -- Primary Colour
+    if VEHICLE.GET_IS_VEHICLE_PRIMARY_COLOUR_CUSTOM(vehicle) then
+        VEHICLE.GET_VEHICLE_CUSTOM_PRIMARY_COLOUR(vehicle, colorR, colorG, colorB)
+        t = memory.read_ubyte(colorR) .. "," .. memory.read_ubyte(colorG) .. "," .. memory.read_ubyte(colorB)
+        info = { "Primary Colour", t }
+        table.insert(vehicle_info.color, info)
+    end
+
+    -- Secondary Colour
+    if VEHICLE.GET_IS_VEHICLE_SECONDARY_COLOUR_CUSTOM(vehicle) then
+        VEHICLE.GET_VEHICLE_CUSTOM_SECONDARY_COLOUR(vehicle, colorR, colorG, colorB)
+        t = memory.read_ubyte(colorR) .. "," .. memory.read_ubyte(colorG) .. "," .. memory.read_ubyte(colorB)
+        info = { "Secondary Colour", t }
+        table.insert(vehicle_info.color, info)
+    end
+
+    -- Mod Color 1
+    VEHICLE.GET_VEHICLE_MOD_COLOR_1(vehicle, colorR, colorG, colorB)
+    t = enum_ModColorType[memory.read_ubyte(colorR)]
+    info = { "Mod Color 1 color Type", t }
+    table.insert(vehicle_info.color, info)
+
+    info = { "Mod Color 1 base Col Index", memory.read_ubyte(colorG) }
+    table.insert(vehicle_info.color, info)
+
+    info = { "Mod Color 1 spec Col Index", memory.read_ubyte(colorB) }
+    table.insert(vehicle_info.color, info)
+
+    -- Mod Color 1 Name
+    t = util.get_label_text(VEHICLE.GET_VEHICLE_MOD_COLOR_1_NAME(vehicle, 0))
+    info = { "Mod Color 1 Name", t }
+    table.insert(vehicle_info.color, info)
+
+    -- Mod Color 2
+    VEHICLE.GET_VEHICLE_MOD_COLOR_2(vehicle, colorR, colorG)
+    t = enum_ModColorType[memory.read_ubyte(colorR)]
+    info = { "Mod Color 2 color Type", t }
+    table.insert(vehicle_info.color, info)
+
+    info = { "Mod Color 2 base Col Index", memory.read_ubyte(colorG) }
+    table.insert(vehicle_info.color, info)
+
+    -- Mod Color 2 Name
+    t = util.get_label_text(VEHICLE.GET_VEHICLE_MOD_COLOR_2_NAME(vehicle))
+    info = { "Mod Color 2 Name", t }
+    table.insert(vehicle_info.color, info)
+    --#endregion
+
+
+
+    --#region Vehicle Mod Kit
+
+    -- Mod Kit Type
+    local mod_kit_type = VEHICLE.GET_VEHICLE_MOD_KIT_TYPE(vehicle)
+    info = { "Mod Kit Type", enum_ModKitType[mod_kit_type] }
+    table.insert(vehicle_info.kit, info)
+
+    for i = 0, 49 do
+        local mod_value = VEHICLE.GET_VEHICLE_MOD(vehicle, i)
+
+        local mod_type_name = VEHICLE.GET_MOD_SLOT_NAME(vehicle, i)
+        local mod_value_name = VEHICLE.GET_MOD_TEXT_LABEL(vehicle, i, mod_value)
+        info = { util.get_label_text(mod_type_name), util.get_label_text(mod_value_name) }
+        table.insert(vehicle_info.kit, info)
+    end
+
+    -- Wheel Type
+    local wheel_type = VEHICLE.GET_VEHICLE_WHEEL_TYPE(vehicle)
+    info = { "Wheel Type", enum_ModWheelType[wheel_type] }
+    table.insert(vehicle_info.kit, info)
+
+
+    --#endregion
+
+    return vehicle_info
+end
+
+function Entity_Info.generate_menu(menu_parent, list_item_data)
+    for k, item in pairs(list_item_data) do
+        local name = item[1]
+        local value = tostring(item[2])
+
+        local menu_name = name .. ": " .. value
+        menu.action(menu_parent, menu_name, {}, "", function()
+            util.copy_to_clipboard(menu_name, false)
+            util.toast("已复制\n" .. menu_name)
+        end)
+    end
+end
+
+local entity_info2 = {
+    method_select = 1,
+    info_data = {
+        entity = {},
+        ped = {},
+        vehicle = {},
+    },
+
+    -- menu.list
+    menu_entity = 0,
+    menu_ped = 0,
+    menu_vehicle = 0,
+
+    -- menu.list' children
+    menu_entity_list = {},
+    menu_ped_list = {},
+    menu_vehicle_list = {},
+}
+
+menu.toggle_loop(Entity_Info_Gun2, "开启", {}, "", function()
     draw_point_in_center()
-    local ent = get_entity_player_is_aiming_at(players.user())
-    if ent ~= nil and IS_AN_ENTITY(ent) then
-        entity_info.item_data = get_entity_info(ent)
 
-        if entity_info.item_data then
-            local text = ""
-            --菜单
-            -- local child_menus = menu.get_children(entity_info.menu_info_list)
-            -- for k, v in pairs(child_menus) do
-            --     menu.delete(v)
-            -- end
-
-            for _, info in pairs(entity_info.item_data) do
-                local name = info[1]
-                local value = tostring(info[2])
-
-                if value == "divider" then
-                    --menu.divider(entity_info.menu_info_list, name)
-
-                    name = "\n---  " .. name .. "  ---"
-                    value = ""
-                else
-                    name = name .. ": "
-                    --menu.readonly(entity_info.menu_info_list, name, value)
-                end
-
-
-                text = text .. name .. value .. "\n"
-            end
-
-            --显示在屏幕上
-            if entity_info.is_showOnScreen then
-                DrawString(text, 0.7)
+    local ent = 0
+    if entity_info2.method_select == 1 then
+        ent = get_entity_player_is_aiming_at(players.user())
+    else
+        if PAD.IS_CONTROL_PRESSED(0, 51) then
+            local result = get_raycast_result(1500, -1)
+            if result.didHit then
+                ent = result.hitEntity
             end
         end
+    end
+
+    if ent ~= nil and IS_AN_ENTITY(ent) then
+        entity_info2.info_data = Entity_Info.get_entity_info(ent)
     end
 end)
 
-entity_info.menu_info_list = menu.list(Entity_Info_Gun, "查看实体信息", {}, "", function()
-    --菜单
-    local child_menus = menu.get_children(entity_info.menu_info_list)
-    for k, v in pairs(child_menus) do
-        menu.delete(v)
+menu.list_select(Entity_Info_Gun2, "方式", {}, "", {
+    { "武器瞄准(右键瞄准)" }, { "镜头瞄准(按E获取)" }
+}, 1, function(value)
+    entity_info2.method_select = value
+end)
+
+menu.divider(Entity_Info_Gun2, "实体信息")
+
+entity_info2.menu_entity = menu.list(Entity_Info_Gun2, "Entity", {}, "", function()
+    local menu_parent = entity_info2.menu_entity
+    local data = entity_info2.info_data.entity
+
+    -- clear old menu
+    for _, command_ref in pairs(menu.get_children(menu_parent)) do
+        if menu.is_ref_valid(command_ref) then
+            menu.delete(command_ref)
+        end
     end
 
-    for _, info in pairs(entity_info.item_data) do
-        local name = info[1]
-        local value = tostring(info[2])
+    -- generate new menu
+    if next(data) == nil then
+        return false
+    end
 
-        if value == "divider" then
-            menu.divider(entity_info.menu_info_list, name)
-        else
-            name = name .. ": "
-            menu.readonly(entity_info.menu_info_list, name, value)
+    Entity_Info.generate_menu(menu_parent, data.main)
+
+    if next(data.blip) ~= nil then
+        local menu_blip = menu.list(menu_parent, "Entity Blip", {}, "")
+        Entity_Info.generate_menu(menu_blip, data.blip)
+    end
+
+    if next(data.attached) ~= nil then
+        local menu_attached = menu.list(menu_parent, "Attached Entity", {}, "")
+        Entity_Info.generate_menu(menu_attached, data.attached)
+    end
+
+    local menu_other = menu.list(menu_parent, "Other", {}, "")
+    Entity_Info.generate_menu(menu_other, data.other)
+end)
+
+entity_info2.menu_ped = menu.list(Entity_Info_Gun2, "Ped", {}, "", function()
+    local menu_parent = entity_info2.menu_ped
+    local data = entity_info2.info_data.ped
+
+    -- clear old menu
+    for _, command_ref in pairs(menu.get_children(menu_parent)) do
+        if menu.is_ref_valid(command_ref) then
+            menu.delete(command_ref)
         end
+    end
+
+    -- generate new menu
+    if next(data) == nil then
+        return false
+    end
+
+    Entity_Info.generate_menu(menu_parent, data.main)
+
+    if next(data.dead) ~= nil then
+        local menu_dead = menu.list(menu_parent, "Dead", {}, "")
+        Entity_Info.generate_menu(menu_dead, data.dead)
+    end
+
+    local menu_rel_group = menu.list(menu_parent, "Relationship & Group", {}, "")
+    Entity_Info.generate_menu(menu_rel_group, data.rel_group)
+end)
+
+entity_info2.menu_vehicle = menu.list(Entity_Info_Gun2, "Vehicle", {}, "", function()
+    local menu_parent = entity_info2.menu_vehicle
+    local data = entity_info2.info_data.vehicle
+
+    -- clear old menu
+    for _, command_ref in pairs(menu.get_children(menu_parent)) do
+        if menu.is_ref_valid(command_ref) then
+            menu.delete(command_ref)
+        end
+    end
+
+    -- generate new menu
+    if next(data) == nil then
+        return false
+    end
+
+    Entity_Info.generate_menu(menu_parent, data.main)
+
+    if next(data.heli) ~= nil then
+        local menu_heli = menu.list(menu_parent, "Heli", {}, "")
+        Entity_Info.generate_menu(menu_heli, data.heli)
     end
 end)

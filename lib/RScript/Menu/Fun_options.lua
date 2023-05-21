@@ -6,9 +6,9 @@ local Fun_options = menu.list(menu.my_root(), "娱乐选项", {}, "")
 
 
 
-------------------
+--------------------
 -- 玩家死亡反应
-------------------
+--------------------
 local Self_Death_Reaction = menu.list(Fun_options, "玩家死亡反应", {}, "玩家死亡后对击杀者或死亡地点的反应")
 
 local self_death_reaction = {
@@ -203,9 +203,9 @@ end)
 
 
 
-------------------
+--------------------
 -- 载具碰撞反应
-------------------
+--------------------
 local Vehicle_Collision_Reaction = menu.list(Fun_options, "载具碰撞反应", {}, "玩家和载具发生碰撞时对载具的反应")
 
 local vehicle_collision_reaction = {

@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("1681379138")
 
-local SCRIPT_VERSION <const> = "2023/5/2"
+local SCRIPT_VERSION <const> = "2023/5/25"
 
 local SUPPORT_GTAO <const> = 1.66
 
@@ -374,55 +374,74 @@ function GetEntityInfo_ListItem(ent)
     end
 end
 
-main_tick_handler = {
-    draw_point_on_screen = false,
+tick_handler_data = {
+    main = {
+        draw_point_on_screen = false,
+    },
+    ------ 实体控制 ------
+    control_ent = {
+        show_info = {
+            toggle = false,
+            ent = 0,
+        },
+        draw_line = {
+            toggle = false,
+            ent = 0,
+        },
+        draw_bounding_box = {
+            toggle = false,
+            ent = 0,
+        },
+        tp_ent_to_me = {
+            toggle = false,
+            ent = 0,
+            x = 0,
+            y = 0,
+            z = 0,
+        },
+        tp_to_ent = {
+            toggle = false,
+            ent = 0,
+            x = 0,
+            y = 0,
+            z = 0,
+        },
+        preview_ent = {
+            toggle = false,
+            ent = 0,
+            clone_ent = 0,
+            has_cloned_ent = 0,
+            camera_distance = 2.0,
+        },
+    },
 }
 
-control_ent_tick_handler = {
-    show_info = {
-        toggle = false,
-        ent = 0,
-    },
-    draw_line = {
-        toggle = false,
-        ent = 0,
-    },
-    draw_bounding_box = {
-        toggle = false,
-        ent = 0,
-    },
-    tp_ent_to_me = {
-        toggle = false,
-        ent = 0,
-        x = 0,
-        y = 0,
-        z = 0,
-    },
-    tp_to_ent = {
-        toggle = false,
-        ent = 0,
-        x = 0,
-        y = 0,
-        z = 0,
-    },
-}
-
-local function Clear_control_ent_tick_handler()
-    control_ent_tick_handler.show_info.toggle = false
-    control_ent_tick_handler.draw_line.toggle = false
-    control_ent_tick_handler.draw_bounding_box.toggle = false
-    control_ent_tick_handler.tp_ent_to_me.toggle = false
-    control_ent_tick_handler.tp_to_ent.toggle = false
+function tick_handler_data.control_ent.clear()
+    tick_handler_data.control_ent.show_info.toggle = false
+    tick_handler_data.control_ent.draw_line.toggle = false
+    tick_handler_data.control_ent.draw_bounding_box.toggle = false
+    tick_handler_data.control_ent.tp_ent_to_me.toggle = false
+    tick_handler_data.control_ent.tp_to_ent.toggle = false
+    tick_handler_data.control_ent.preview_ent.toggle = false
 end
 
 util.create_tick_handler(function()
+    if tick_handler_data.main.draw_point_on_screen then
+        draw_point_in_center()
+    end
+
+
+    ------ 实体控制 ------
+
+    local control_ent = tick_handler_data.control_ent
+
     --显示实体信息
-    if control_ent_tick_handler.show_info.toggle then
-        if not ENTITY.DOES_ENTITY_EXIST(control_ent_tick_handler.show_info.ent) then
+    if control_ent.show_info.toggle then
+        if not ENTITY.DOES_ENTITY_EXIST(control_ent.show_info.ent) then
             util.toast("该实体已经不存在")
-            control_ent_tick_handler.show_info.toggle = false
+            control_ent.show_info.toggle = false
         else
-            local ent_info_item_data = GetEntityInfo_ListItem(control_ent_tick_handler.show_info.ent)
+            local ent_info_item_data = GetEntityInfo_ListItem(control_ent.show_info.ent)
             local text = ""
             for _, info in pairs(ent_info_item_data) do
                 if info[1] ~= nil then
@@ -434,66 +453,103 @@ util.create_tick_handler(function()
     end
 
     --和实体连线
-    if control_ent_tick_handler.draw_line.toggle then
-        if not ENTITY.DOES_ENTITY_EXIST(control_ent_tick_handler.draw_line.ent) then
+    if control_ent.draw_line.toggle then
+        if not ENTITY.DOES_ENTITY_EXIST(control_ent.draw_line.ent) then
             util.toast("该实体已经不存在")
-            control_ent_tick_handler.draw_line.toggle = false
+            control_ent.draw_line.toggle = false
         else
             local pos1 = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-            local pos2 = ENTITY.GET_ENTITY_COORDS(control_ent_tick_handler.draw_line.ent)
+            local pos2 = ENTITY.GET_ENTITY_COORDS(control_ent.draw_line.ent)
             DRAW_LINE(pos1, pos2)
             util.draw_ar_beacon(pos2)
         end
     end
 
     --描绘实体边界框
-    if control_ent_tick_handler.draw_bounding_box.toggle then
-        if not ENTITY.DOES_ENTITY_EXIST(control_ent_tick_handler.draw_bounding_box.ent) then
+    if control_ent.draw_bounding_box.toggle then
+        if not ENTITY.DOES_ENTITY_EXIST(control_ent.draw_bounding_box.ent) then
             util.toast("该实体已经不存在")
-            control_ent_tick_handler.draw_bounding_box.toggle = false
+            control_ent.draw_bounding_box.toggle = false
         else
-            draw_bounding_box(control_ent_tick_handler.draw_bounding_box.ent)
+            draw_bounding_box(control_ent.draw_bounding_box.ent)
         end
     end
 
-    --锁定实体传送到我
-    if control_ent_tick_handler.tp_ent_to_me.toggle then
-        if not ENTITY.DOES_ENTITY_EXIST(control_ent_tick_handler.tp_ent_to_me.ent) then
+    --锁定 实体传送到我
+    if control_ent.tp_ent_to_me.toggle then
+        if not ENTITY.DOES_ENTITY_EXIST(control_ent.tp_ent_to_me.ent) then
             util.toast("该实体已经不存在")
-            control_ent_tick_handler.tp_ent_to_me.toggle = false
+            control_ent.tp_ent_to_me.toggle = false
         else
-            TP_TO_ME(control_ent_tick_handler.tp_ent_to_me.ent,
-                control_ent_tick_handler.tp_ent_to_me.x,
-                control_ent_tick_handler.tp_ent_to_me.y,
-                control_ent_tick_handler.tp_ent_to_me.z)
+            TP_TO_ME(control_ent.tp_ent_to_me.ent,
+                control_ent.tp_ent_to_me.x,
+                control_ent.tp_ent_to_me.y,
+                control_ent.tp_ent_to_me.z)
         end
     end
 
-    --锁定传送到实体
-    if control_ent_tick_handler.tp_to_ent.toggle then
-        if not ENTITY.DOES_ENTITY_EXIST(control_ent_tick_handler.tp_to_ent.ent) then
+    --锁定 传送到实体
+    if control_ent.tp_to_ent.toggle then
+        if not ENTITY.DOES_ENTITY_EXIST(control_ent.tp_to_ent.ent) then
             util.toast("该实体已经不存在")
-            control_ent_tick_handler.tp_to_ent.toggle = false
+            control_ent.tp_to_ent.toggle = false
         else
-            TP_TO_ENTITY(control_ent_tick_handler.tp_to_ent.ent,
-                control_ent_tick_handler.tp_to_ent.x,
-                control_ent_tick_handler.tp_to_ent.y,
-                control_ent_tick_handler.tp_to_ent.z)
+            TP_TO_ENTITY(control_ent.tp_to_ent.ent,
+                control_ent.tp_to_ent.x,
+                control_ent.tp_to_ent.y,
+                control_ent.tp_to_ent.z)
         end
     end
 
-    ------
-    if main_tick_handler.draw_point_on_screen then
-        draw_point_in_center()
+    --预览实体
+    if control_ent.preview_ent.toggle then
+        local target_ent = control_ent.preview_ent.ent
+        local clone_ent = control_ent.preview_ent.clone_ent
+        if not ENTITY.DOES_ENTITY_EXIST(target_ent) then
+            util.toast("该实体已经不存在")
+            control_ent.preview_ent.toggle = false
+        elseif control_ent.preview_ent.has_cloned_ent ~= target_ent and not ENTITY.DOES_ENTITY_EXIST(clone_ent) then
+            -- 生成（克隆）预览实体
+            local l, w, h = calculate_model_size(ENTITY.GET_ENTITY_MODEL(target_ent))
+            control_ent.preview_ent.camera_distance = math.max(l, w, h) + 1.0
+            local coords = get_offset_from_cam(control_ent.preview_ent.camera_distance)
+            local heading = ENTITY.GET_ENTITY_HEADING(players.user_ped()) + 180.0
+
+            if ENTITY.IS_ENTITY_A_PED(target_ent) then
+                clone_ent = clone_target_ped(target_ent, coords, heading, false)
+            elseif ENTITY.IS_ENTITY_A_VEHICLE(target_ent) then
+                clone_ent = clone_target_vehicle(target_ent, coords, heading, false)
+            elseif ENTITY.IS_ENTITY_AN_OBJECT(target_ent) then
+                clone_ent = clone_target_object(target_ent, coords, false)
+            end
+
+            ENTITY.FREEZE_ENTITY_POSITION(clone_ent, true)
+            ENTITY.SET_ENTITY_ALPHA(clone_ent, 206, false)
+            ENTITY.SET_ENTITY_COMPLETELY_DISABLE_COLLISION(clone_ent, false, true)
+
+            control_ent.preview_ent.clone_ent = clone_ent
+            control_ent.preview_ent.has_cloned_ent = target_ent
+        elseif control_ent.preview_ent.has_cloned_ent == target_ent and ENTITY.DOES_ENTITY_EXIST(clone_ent) then
+            -- 旋转预览实体
+            local coords = get_offset_from_cam(control_ent.preview_ent.camera_distance)
+            local heading = ENTITY.GET_ENTITY_HEADING(clone_ent) + 0.5
+
+            SET_ENTITY_COORDS(clone_ent, coords)
+            ENTITY.SET_ENTITY_HEADING(clone_ent, heading)
+        end
+    elseif ENTITY.DOES_ENTITY_EXIST(control_ent.preview_ent.clone_ent) then
+        entities.delete_by_handle(control_ent.preview_ent.clone_ent)
+        control_ent.preview_ent.has_cloned_ent = 0
     end
 end)
 
 
 
-------------------------------------------
---------- Entity Control Functions -------
----------------- START -------------------
+--#region Entity Control Functions
 
+--------------------------------------
+------ Entity Control Functions ------
+--------------------------------------
 
 Entity_Control = {}
 
@@ -560,31 +616,47 @@ function Entity_Control.entity(menu_parent, ent, index)
 
     menu.toggle(menu_parent, "描绘实体连线", {}, "", function(toggle)
         if toggle then
-            if control_ent_tick_handler.draw_line.toggle then
+            if tick_handler_data.control_ent.draw_line.toggle then
                 util.toast("正在描绘连线其它的实体")
             else
-                control_ent_tick_handler.draw_line.ent = ent
-                control_ent_tick_handler.draw_line.toggle = true
+                tick_handler_data.control_ent.draw_line.ent = ent
+                tick_handler_data.control_ent.draw_line.toggle = true
             end
         else
-            if control_ent_tick_handler.draw_line.toggle and control_ent_tick_handler.draw_line.ent ~= ent then
+            if tick_handler_data.control_ent.draw_line.toggle and tick_handler_data.control_ent.draw_line.ent ~= ent then
             else
-                control_ent_tick_handler.draw_line.toggle = false
+                tick_handler_data.control_ent.draw_line.toggle = false
             end
         end
     end)
     menu.toggle(menu_parent, "显示实体信息", {}, "", function(toggle)
         if toggle then
-            if control_ent_tick_handler.show_info.toggle then
+            if tick_handler_data.control_ent.show_info.toggle then
                 util.toast("正在显示其它的实体信息")
             else
-                control_ent_tick_handler.show_info.ent = ent
-                control_ent_tick_handler.show_info.toggle = true
+                tick_handler_data.control_ent.show_info.ent = ent
+                tick_handler_data.control_ent.show_info.toggle = true
             end
         else
-            if control_ent_tick_handler.show_info.toggle and control_ent_tick_handler.show_info.ent ~= ent then
+            if tick_handler_data.control_ent.show_info.toggle and tick_handler_data.control_ent.show_info.ent ~= ent then
             else
-                control_ent_tick_handler.show_info.toggle = false
+                tick_handler_data.control_ent.show_info.toggle = false
+            end
+        end
+    end)
+
+    menu.toggle(menu_parent, "预览实体", {}, "", function(toggle)
+        if toggle then
+            if tick_handler_data.control_ent.preview_ent.toggle then
+                util.toast("正在预览其它的实体")
+            else
+                tick_handler_data.control_ent.preview_ent.ent = ent
+                tick_handler_data.control_ent.preview_ent.toggle = true
+            end
+        else
+            if tick_handler_data.control_ent.preview_ent.toggle and tick_handler_data.control_ent.preview_ent.ent ~= ent then
+            else
+                tick_handler_data.control_ent.preview_ent.toggle = false
             end
         end
     end)
@@ -598,17 +670,17 @@ function Entity_Control.entity(menu_parent, ent, index)
 
     menu.toggle(ent_info, "描绘实体边界框", {}, "", function(toggle)
         if toggle then
-            if control_ent_tick_handler.draw_bounding_box.toggle then
+            if tick_handler_data.control_ent.draw_bounding_box.toggle then
                 util.toast("正在描绘其它的实体")
             else
-                control_ent_tick_handler.draw_bounding_box.ent = ent
-                control_ent_tick_handler.draw_bounding_box.toggle = true
+                tick_handler_data.control_ent.draw_bounding_box.ent = ent
+                tick_handler_data.control_ent.draw_bounding_box.toggle = true
             end
         else
-            if control_ent_tick_handler.draw_bounding_box.toggle and
-                control_ent_tick_handler.draw_bounding_box.ent ~= ent then
+            if tick_handler_data.control_ent.draw_bounding_box.toggle and
+                tick_handler_data.control_ent.draw_bounding_box.ent ~= ent then
             else
-                control_ent_tick_handler.draw_bounding_box.toggle = false
+                tick_handler_data.control_ent.draw_bounding_box.toggle = false
             end
         end
     end)
@@ -667,12 +739,20 @@ function Entity_Control.entity(menu_parent, ent, index)
     menu.toggle(entity_options, "冻结", {}, "", function(toggle)
         ENTITY.FREEZE_ENTITY_POSITION(ent, toggle)
     end)
-    menu.list_action(entity_options, "爆炸", {}, "选择爆炸类型", ExplosionType_ListItem, function(value)
-        local pos = ENTITY.GET_ENTITY_COORDS(ent)
-        add_explosion(pos, value - 2)
+
+    local explosion_type = 4
+    menu.list_select(entity_options, "选择爆炸类型", {}, "", ExplosionType_ListItem, 6, function(value)
+        explosion_type = value - 2
     end)
+    menu.toggle_loop(entity_options, "爆炸", {}, "", function()
+        local pos = ENTITY.GET_ENTITY_COORDS(ent)
+        add_explosion(pos, explosion_type)
+
+        util.yield(500)
+    end)
+
     menu.toggle(entity_options, "无碰撞", {}, "可以直接穿过实体", function(toggle)
-        ENTITY.SET_ENTITY_COLLISION(ent, not toggle, not toggle)
+        ENTITY.SET_ENTITY_COLLISION(ent, not toggle, true)
     end)
     menu.toggle(entity_options, "隐形", {}, "将实体隐形", function(toggle)
         ENTITY.SET_ENTITY_VISIBLE(ent, not toggle, 0)
@@ -723,6 +803,7 @@ function Entity_Control.entity(menu_parent, ent, index)
         function(value)
             ENTITY.SET_ENTITY_MAX_SPEED(ent, value)
         end)
+
     menu.action(entity_options, "设置为任务实体", {}, "避免实体被自动清理", function()
         ENTITY.SET_ENTITY_AS_MISSION_ENTITY(ent, true, false)
         ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(ent, true)
@@ -800,38 +881,38 @@ function Entity_Control.teleport(menu_parent, ent, index)
     menu.toggle(teleport_options, "锁定传送到我", {}, "如果更改了位移，需要重新开关此选项",
         function(toggle)
             if toggle then
-                if control_ent_tick_handler.tp_ent_to_me.toggle or control_ent_tick_handler.tp_to_ent.toggle then
+                if tick_handler_data.control_ent.tp_ent_to_me.toggle or tick_handler_data.control_ent.tp_to_ent.toggle then
                     util.toast("正在锁定传送其它的实体")
                 else
-                    control_ent_tick_handler.tp_ent_to_me.ent = ent
-                    control_ent_tick_handler.tp_ent_to_me.x = tp.x
-                    control_ent_tick_handler.tp_ent_to_me.y = tp.y
-                    control_ent_tick_handler.tp_ent_to_me.z = tp.z
-                    control_ent_tick_handler.tp_ent_to_me.toggle = true
+                    tick_handler_data.control_ent.tp_ent_to_me.ent = ent
+                    tick_handler_data.control_ent.tp_ent_to_me.x = tp.x
+                    tick_handler_data.control_ent.tp_ent_to_me.y = tp.y
+                    tick_handler_data.control_ent.tp_ent_to_me.z = tp.z
+                    tick_handler_data.control_ent.tp_ent_to_me.toggle = true
                 end
             else
-                if control_ent_tick_handler.tp_ent_to_me.toggle and control_ent_tick_handler.tp_ent_to_me.ent ~= ent then
+                if tick_handler_data.control_ent.tp_ent_to_me.toggle and tick_handler_data.control_ent.tp_ent_to_me.ent ~= ent then
                 else
-                    control_ent_tick_handler.tp_ent_to_me.toggle = false
+                    tick_handler_data.control_ent.tp_ent_to_me.toggle = false
                 end
             end
         end)
     menu.toggle(teleport_options, "锁定传送到实体", {}, "如果更改了位移，需要重新开关此选项",
         function(toggle)
             if toggle then
-                if control_ent_tick_handler.tp_ent_to_me.toggle or control_ent_tick_handler.tp_to_ent.toggle then
+                if tick_handler_data.control_ent.tp_ent_to_me.toggle or tick_handler_data.control_ent.tp_to_ent.toggle then
                     util.toast("正在锁定传送其它的实体")
                 else
-                    control_ent_tick_handler.tp_to_ent.ent = ent
-                    control_ent_tick_handler.tp_to_ent.x = tp.x
-                    control_ent_tick_handler.tp_to_ent.y = tp.y
-                    control_ent_tick_handler.tp_to_ent.z = tp.z
-                    control_ent_tick_handler.tp_to_ent.toggle = true
+                    tick_handler_data.control_ent.tp_to_ent.ent = ent
+                    tick_handler_data.control_ent.tp_to_ent.x = tp.x
+                    tick_handler_data.control_ent.tp_to_ent.y = tp.y
+                    tick_handler_data.control_ent.tp_to_ent.z = tp.z
+                    tick_handler_data.control_ent.tp_to_ent.toggle = true
                 end
             else
-                if control_ent_tick_handler.tp_to_ent.toggle and control_ent_tick_handler.tp_to_ent.ent ~= ent then
+                if tick_handler_data.control_ent.tp_to_ent.toggle and tick_handler_data.control_ent.tp_to_ent.ent ~= ent then
                 else
-                    control_ent_tick_handler.tp_to_ent.toggle = false
+                    tick_handler_data.control_ent.tp_to_ent.toggle = false
                 end
             end
         end)
@@ -1889,7 +1970,7 @@ function Entity_Control.entities(menu_parent, entity_list)
                     end
                 end
             end
-            util.toast("完成！\nSuccess : " .. success_num .. "\nFail : " .. fail_num)
+            util.toast("完成！\n成功: " .. success_num .. "\n失败: " .. fail_num)
         end)
     menu.toggle(menu_parent, "无敌", {}, "", function(toggle)
         for k, ent in pairs(entity_list) do
@@ -1920,26 +2001,31 @@ function Entity_Control.entities(menu_parent, entity_list)
         end
         util.toast("完成！")
     end)
-    menu.list_action(menu_parent, "爆炸", {}, "选择爆炸类型", ExplosionType_ListItem, function(value)
+
+    local explosion_type = 4
+    menu.list_select(menu_parent, "选择爆炸类型", {}, "", ExplosionType_ListItem, 6, function(value)
+        explosion_type = value - 2
+    end)
+    menu.toggle_loop(menu_parent, "爆炸", {}, "", function()
         for k, ent in pairs(entity_list) do
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 local pos = ENTITY.GET_ENTITY_COORDS(ent)
-                add_explosion(pos, value - 2)
+                add_explosion(pos, explosion_type)
+            end
+        end
+        util.yield(500)
+    end)
+
+    menu.click_slider(menu_parent, "设置实体血量", { "ctrl_ents_health" }, "", 0, 100000, 100, 100, function(value)
+        for k, ent in pairs(entity_list) do
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                ENTITY.SET_ENTITY_HEALTH(ent, value)
             end
         end
         util.toast("完成！")
     end)
-    menu.click_slider(menu_parent, "设置实体血量", { "ctrl_ents_health" }, "",
-        0, 100000, 100, 100, function(value)
-            for k, ent in pairs(entity_list) do
-                if ENTITY.DOES_ENTITY_EXIST(ent) then
-                    ENTITY.SET_ENTITY_HEALTH(ent, value)
-                end
-            end
-            util.toast("完成！")
-        end)
-    menu.click_slider(menu_parent, "设置最大速度", { "ctrl_ents_max_speed" }, "",
-        0.0, 1000.0, 0.0, 10.0, function(value)
+    menu.click_slider(menu_parent, "设置最大速度", { "ctrl_ents_max_speed" }, "", 0.0, 1000.0, 0.0, 10.0,
+        function(value)
             for k, ent in pairs(entity_list) do
                 if ENTITY.DOES_ENTITY_EXIST(ent) then
                     ENTITY.SET_ENTITY_MAX_SPEED(ent, value)
@@ -2047,12 +2133,11 @@ function Entity_Control.entities_movement(menu_parent, entity_list)
         end)
 end
 
------------------ END --------------------
--------- Entity Control Functions --------
-------------------------------------------
+--#endregion
 
 
 
+--#region Saved Hash List
 
 ------------------------------
 ------- 保存的 Hash 列表 -------
@@ -2245,6 +2330,10 @@ function Saved_Hash_List.refresh()
     end
 end
 
+--#endregion
+
+
+
 ------------------------
 ----- SCRIPT START -----
 ------------------------
@@ -2259,8 +2348,6 @@ end
 
 
 
-
---
 menu.divider(menu.my_root(), "RScript")
 
 --------------------------------
@@ -2855,7 +2942,7 @@ function Cam_Gun.Fire()
 end
 
 menu.toggle_loop(Weapon_Cam_Gun, "开启[按住E键]", { "cam_gun" }, "", function()
-    main_tick_handler.draw_point_on_screen = true
+    tick_handler_data.main.draw_point_on_screen = true
     if PAD.IS_CONTROL_PRESSED(0, 51) then
         if Cam_Gun.select == 1 then
             Cam_Gun.Shoot()
@@ -2866,7 +2953,7 @@ menu.toggle_loop(Weapon_Cam_Gun, "开启[按住E键]", { "cam_gun" }, "", functi
         end
     end
 end, function()
-    main_tick_handler.draw_point_on_screen = false
+    tick_handler_data.main.draw_point_on_screen = false
 end)
 
 menu.list_select(Weapon_Cam_Gun, "选择操作", { "cam_gun_select" }, "", {
@@ -2885,7 +2972,7 @@ menu.divider(Weapon_Cam_Gun, "设置")
 local Cam_Gun_shoot = menu.list(Weapon_Cam_Gun, "射击", {}, "")
 
 menu.toggle_loop(Cam_Gun_shoot, "绘制射击连线", {}, "", function()
-    main_tick_handler.draw_point_on_screen = true
+    tick_handler_data.main.draw_point_on_screen = true
 
     local cam_pos
     if Cam_Gun.shoot_setting.shoot_method == 1 then
@@ -2901,7 +2988,7 @@ menu.toggle_loop(Cam_Gun_shoot, "绘制射击连线", {}, "", function()
         Cam_Gun.Shoot_Pos(cam_pos, "draw_line")
     end
 end, function()
-    main_tick_handler.draw_point_on_screen = false
+    tick_handler_data.main.draw_point_on_screen = false
 end)
 
 menu.list_select(Cam_Gun_shoot, "射击方式", {}, "", {
@@ -3263,20 +3350,23 @@ function vehicle_upgrade.upgrade(vehicle)
     end
 end
 
-menu.action(Vehicle_Upgrade_options, "升级强化载具", { "up_strong_veh" }, "升级强化当前或上一辆载具", function()
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
-        vehicle_upgrade.upgrade(vehicle)
-        util.toast("载具升级强化完成!")
-    end
-end)
-menu.toggle_loop(Vehicle_Upgrade_options, "自动升级强化载具", { "auto_up_strong_veh" },
+menu.action(Vehicle_Upgrade_options, "升级强化载具", { "strong_veh" }, "升级强化当前或上一辆载具",
+    function()
+        local vehicle = entities.get_user_vehicle_as_handle()
+        if ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
+            vehicle_upgrade.upgrade(vehicle)
+            util.toast("载具升级强化完成!")
+        else
+            util.toast("请先进入载具:)")
+        end
+    end)
+menu.toggle_loop(Vehicle_Upgrade_options, "自动升级强化载具", { "auto_strong_veh" },
     "自动升级强化正在进入驾驶位的载具", function()
         local user_ped = players.user_ped()
         if PED.IS_PED_GETTING_INTO_A_VEHICLE(user_ped) then
             local veh = PED.GET_VEHICLE_PED_IS_TRYING_TO_ENTER(user_ped)
             if ENTITY.IS_ENTITY_A_VEHICLE(veh) and PED.GET_SEAT_PED_IS_TRYING_TO_ENTER(user_ped) == -1 then
-                -- RequestControl(veh)
+                RequestControl(veh)
                 vehicle_upgrade.upgrade(veh)
 
                 -- 通知
@@ -3538,47 +3628,6 @@ end)
 
 
 ---------------
---- 载具车灯 ---
----------------
-local Vehicle_Light_options = menu.list(Vehicle_options, "载具车灯", {}, "")
-
-local VehicleLightState_ListItem = {
-    { "正常" },           -- 0
-    { "强制关灯", {}, "总是关灯" }, -- 1
-    { "强制开灯", {}, "总是开灯" }, -- 2
-    { "开灯" },           -- 3
-    { "关灯" },           -- 4
-}
-menu.list_select(Vehicle_Light_options, "设置车灯状态", {}, "", VehicleLightState_ListItem, 1, function(value)
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_LIGHTS(vehicle, value - 1)
-    end
-end)
-
-local VehicleHeadlightShadow_ListItem = {
-    { "无阴影" }, -- 0
-    { "投射动态阴影" }, -- 1
-    { "投射静态阴影" }, -- 2
-    { "投射完整的阴影" }, -- 3
-}
-menu.list_select(Vehicle_Light_options, "设置前照灯阴影", {}, "", VehicleHeadlightShadow_ListItem,
-    1, function(value)
-        local vehicle = entities.get_user_vehicle_as_handle()
-        if vehicle ~= 0 then
-            VEHICLE.SET_VEHICLE_LIGHTS(vehicle, value - 1)
-        end
-    end)
-menu.toggle(Vehicle_Light_options, "内饰灯光", {},
-    "Forces the vehicles interior lights (regardless of time-of-day)", function(toggle)
-        local vehicle = entities.get_user_vehicle_as_handle()
-        if vehicle ~= 0 then
-            VEHICLE.SET_VEHICLE_FORCE_INTERIORLIGHT(vehicle, toggle)
-        end
-    end)
-
-
----------------
 --- 载具电台 ---
 ---------------
 local Vehicle_Radio_options = menu.list(Vehicle_options, "载具电台", {}, "")
@@ -3604,84 +3653,6 @@ menu.toggle(Vehicle_Radio_options, "关闭电台", { "close_veh_radio" }, "当�
             AUDIO.SET_VEHICLE_RADIO_ENABLED(vehicle, not toggle)
         end
     end)
-
-
----------------
---- 个人载具 ---
----------------
-local Vehicle_Personal_options = menu.list(Vehicle_options, "个人载具", {}, "")
-menu.action(Vehicle_Personal_options, "开启载具引擎", { "veh_engine_on" },
-    "个人载具和上一辆载具", function()
-        local vehicle = entities.get_user_personal_vehicle_as_handle()
-        if vehicle ~= 0 then
-            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
-        end
-
-        local last_vehicle = entities.get_user_vehicle_as_handle()
-        if last_vehicle ~= 0 and last_vehicle ~= vehicle then
-            VEHICLE.SET_VEHICLE_ENGINE_ON(last_vehicle, true, true, false)
-        end
-    end)
-menu.action(Vehicle_Personal_options, "打开引擎和左车门", {}, "", function()
-    local vehicle = entities.get_user_personal_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
-        VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 0, false, false)
-    end
-end)
-menu.action(Vehicle_Personal_options, "打开左车门", {}, "", function()
-    local vehicle = entities.get_user_personal_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 0, false, false)
-    end
-end)
-menu.action(Vehicle_Personal_options, "打开左右车门", {}, "", function()
-    local vehicle = entities.get_user_personal_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 0, false, false)
-        VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 1, false, false)
-    end
-end)
-menu.list_action(Vehicle_Personal_options, "传送到附近", { "veh_tp_near" }, "会传送在路边等位置", {
-    { "上一辆载具", { "last" } },
-    { "个人载具",    { "personal" } }
-}, function(value)
-    local vehicle = 0
-    if not PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-        vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), true)
-    end
-    if value == 2 then
-        vehicle = entities.get_user_personal_vehicle_as_handle()
-    end
-    if vehicle ~= 0 then
-        local pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-        local bool, coords, heading = get_closest_vehicle_node(pos, 0)
-        if bool then
-            SET_ENTITY_COORDS(vehicle, coords)
-            ENTITY.SET_ENTITY_HEADING(vehicle, heading)
-            fix_vehicle(vehicle)
-            VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle, 5.0)
-            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
-            --show blip
-            SHOW_BLIP_TIMER(vehicle, 225, 27, 5000)
-        else
-            util.toast("未找到合适位置")
-        end
-    end
-end)
-menu.toggle(Vehicle_Personal_options, "锁门", { "veh_lock" }, "", function(toggle)
-    local vehicle = entities.get_user_personal_vehicle_as_handle()
-    if vehicle ~= 0 then
-        VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_PLAYERS(vehicle, toggle)
-        if toggle then
-            VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, 2)
-            util.toast("个人载具: 已上锁")
-        else
-            VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, 1)
-            util.toast("个人载具: 已解锁")
-        end
-    end
-end)
 
 
 ---------------
@@ -3917,6 +3888,146 @@ for k, v in pairs({ "前", "后", "左", "右", "上", "下" }) do
 end
 
 
+---------------
+--- 个人载具 ---
+---------------
+local Vehicle_Personal_options = menu.list(Vehicle_options, "个人载具", {}, "")
+
+menu.action(Vehicle_Personal_options, "开启载具引擎", { "veh_engine_on" },
+    "个人载具和上一辆载具", function()
+        local vehicle = entities.get_user_personal_vehicle_as_handle()
+        if vehicle ~= 0 then
+            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
+        end
+
+        local last_vehicle = entities.get_user_vehicle_as_handle()
+        if last_vehicle ~= 0 and last_vehicle ~= vehicle then
+            VEHICLE.SET_VEHICLE_ENGINE_ON(last_vehicle, true, true, false)
+        end
+    end)
+menu.action(Vehicle_Personal_options, "打开引擎和左车门", {}, "", function()
+    local vehicle = entities.get_user_personal_vehicle_as_handle()
+    if vehicle ~= 0 then
+        VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
+        VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 0, false, false)
+    end
+end)
+menu.action(Vehicle_Personal_options, "打开左车门", {}, "", function()
+    local vehicle = entities.get_user_personal_vehicle_as_handle()
+    if vehicle ~= 0 then
+        VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 0, false, false)
+    end
+end)
+menu.action(Vehicle_Personal_options, "打开左右车门", {}, "", function()
+    local vehicle = entities.get_user_personal_vehicle_as_handle()
+    if vehicle ~= 0 then
+        VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 0, false, false)
+        VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 1, false, false)
+    end
+end)
+menu.list_action(Vehicle_Personal_options, "传送到附近", { "veh_tp_near" }, "会传送在路边等位置", {
+    { "上一辆载具", { "last" } },
+    { "个人载具",    { "personal" } }
+}, function(value)
+    local vehicle = 0
+    if not PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+        vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), true)
+    end
+    if value == 2 then
+        vehicle = entities.get_user_personal_vehicle_as_handle()
+    end
+    if vehicle ~= 0 then
+        local pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+        local bool, coords, heading = get_closest_vehicle_node(pos, 0)
+        if bool then
+            SET_ENTITY_COORDS(vehicle, coords)
+            ENTITY.SET_ENTITY_HEADING(vehicle, heading)
+            fix_vehicle(vehicle)
+            VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle, 5.0)
+            VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
+            --show blip
+            SHOW_BLIP_TIMER(vehicle, 225, 27, 5000)
+        else
+            util.toast("未找到合适位置")
+        end
+    end
+end)
+menu.toggle(Vehicle_Personal_options, "锁门", { "veh_lock" }, "", function(toggle)
+    local vehicle = entities.get_user_personal_vehicle_as_handle()
+    if vehicle ~= 0 then
+        VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_PLAYERS(vehicle, toggle)
+        if toggle then
+            VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, 2)
+            util.toast("个人载具: 已上锁")
+        else
+            VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, 1)
+            util.toast("个人载具: 已解锁")
+        end
+    end
+end)
+
+
+------------------
+--- 载具水下行为 ---
+------------------
+local Vehicle_Water_options = menu.list(Vehicle_options, "载具水下行为", {}, "")
+
+local vehicle_water = {
+    water_height = memory.alloc(4),
+    dow_block = 0,
+
+    height_diff = 1.0,
+    tp_height = 5.0,
+    spawn_block = true,
+}
+
+menu.toggle_loop(Vehicle_Water_options, "传送到水面上", {}, "", function()
+    if vehicle_water.spawn_block and not ENTITY.DOES_ENTITY_EXIST(vehicle_water.dow_block) then
+        local hash = util.joaat("stt_prop_stunt_bblock_mdm3")
+        vehicle_water.dow_block = create_object(hash, v3(0, 0, 0), false, false)
+        -- ENTITY.SET_ENTITY_VISIBLE(vehicle_water.dow_block, false, 0)
+    end
+
+    local vehicle = entities.get_user_vehicle_as_handle()
+    if vehicle ~= 0 then
+        local coords = ENTITY.GET_ENTITY_COORDS(vehicle)
+        if WATER.GET_WATER_HEIGHT(coords.x, coords.y, coords.z, vehicle_water.water_height) then
+            local water_height_z = memory.read_float(vehicle_water.water_height)
+            if water_height_z - coords.z > vehicle_water.height_diff then
+                coords.z = water_height_z
+
+                if vehicle_water.spawn_block and VEHICLE.GET_VEHICLE_CLASS(vehicle) ~= 14 then -- ignore boat
+                    SET_ENTITY_COORDS(vehicle_water.dow_block, coords)
+                    ENTITY.SET_ENTITY_HEADING(vehicle_water.dow_block, ENTITY.GET_ENTITY_HEADING(vehicle))
+                end
+
+                coords.z = coords.z + vehicle_water.tp_height
+                SET_ENTITY_COORDS(vehicle, coords)
+            end
+        end
+    else
+        SET_ENTITY_COORDS(vehicle_water.dow_block, v3(0, 0, 0))
+    end
+end, function()
+    if ENTITY.DOES_ENTITY_EXIST(vehicle_water.dow_block) then
+        entities.delete_by_handle(vehicle_water.dow_block)
+        vehicle_water.dow_block = 0
+    end
+end)
+
+menu.divider(Vehicle_Water_options, "设置")
+menu.slider_float(Vehicle_Water_options, "水面高度差", {}, "水下到水面的高度距离", 0, 2000, 100, 10,
+    function(value)
+        vehicle_water.height_diff = value * 0.01
+    end)
+menu.slider_float(Vehicle_Water_options, "传送的高度", {}, "", 0, 2000, 500, 50, function(value)
+    vehicle_water.tp_height = value * 0.01
+end)
+menu.toggle(Vehicle_Water_options, "在水面生成平台", {}, "载具为船时不生成平台", function(toggle)
+    vehicle_water.spawn_block = toggle
+end, true)
+
+
 ------------------
 --- 载具信息显示 ---
 ------------------
@@ -4003,6 +4114,18 @@ end)
 
 
 ----------------
+menu.list_select(Vehicle_options, "设置车灯状态", {}, "", {
+    { "正常" },           -- 0
+    { "强制关灯", {}, "总是关灯" }, -- 1
+    { "强制开灯", {}, "总是开灯" }, -- 2
+    { "开灯" },           -- 3
+    { "关灯" },           -- 4
+}, 1, function(value)
+    local vehicle = entities.get_user_vehicle_as_handle()
+    if vehicle ~= 0 then
+        VEHICLE.SET_VEHICLE_LIGHTS(vehicle, value - 1)
+    end
+end)
 local veh_dirt_level = 0.0
 menu.click_slider_float(Vehicle_options, "载具灰尘程度", { "veh_dirt_level" }, "载具全身灰尘程度",
     0, 1500, 0, 100, function(value)
@@ -4063,19 +4186,8 @@ end, function()
         AUDIO.SET_HORN_ENABLED(vehicle, true)
     end
 end)
-menu.click_slider(Vehicle_options, "强化载具", { "strong_vehicle" }, "设置实体血量加倍倍数\n提高载具防御能力",
-    1, 20, 5, 1, function(value)
-        local vehicle = entities.get_user_vehicle_as_handle()
-        if vehicle ~= 0 then
-            local max_health = ENTITY.GET_ENTITY_MAX_HEALTH(vehicle) * value
-            ENTITY.SET_ENTITY_MAX_HEALTH(vehicle, max_health)
-            ENTITY.SET_ENTITY_HEALTH(vehicle, max_health)
 
-            strong_vehicle(vehicle)
 
-            util.toast("完成！")
-        end
-    end)
 
 
 
@@ -5649,12 +5761,12 @@ menu.slider(Other_options, "模拟点击延迟", { "delay_left_click" }, "单位
     function(value)
         simulate_left_click_delay = value
     end)
-menu.action(Other_options, "清除帮助文本信息", { "clear_help_message" }, "", function()
+menu.action(Other_options, "清除帮助文本信息", { "cls_help_msg" }, "", function()
     HUD.CLEAR_ALL_HELP_MESSAGES()
 end)
 menu.action(Other_options, "Clear Tick Handler", {}, "用于解决控制实体的描绘连线、显示信息、锁定传送等问题"
 , function()
-    Clear_control_ent_tick_handler()
+    tick_handler_data.control_ent.clear()
 end)
 
 
