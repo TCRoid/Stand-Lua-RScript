@@ -179,7 +179,7 @@ menu.toggle_loop(ent_info2, "显示NPC关系", {}, "文字显示", function()
                 local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ped, players.user_ped())
                 local text = enum_RelationshipType[rel]
 
-                directx.draw_text(screen.x, screen.y, text, ALIGN_TOP_LEFT, 0.5, color.purple)
+                directx.draw_text(screen.x, screen.y, text, ALIGN_TOP_LEFT, 0.5, Colors.purple)
             end
         end
     end

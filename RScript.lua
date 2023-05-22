@@ -4039,7 +4039,7 @@ local vehicle_info = {
     x = 0.26,
     y = 0.80,
     scale = 0.65,
-    color = color.white,
+    color = Colors.white,
     -- show info --
     vehicle_name = true,
     entity_health = true,

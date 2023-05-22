@@ -1621,7 +1621,7 @@ end
 function draw_text_box(text, x, y, scale, margin, text_color, background_color)
     scale = scale or 0.5
     margin = margin or 0.01
-    text_color = text_color or color.white
+    text_color = text_color or Colors.white
     background_color = background_color or { r = 0.0, g = 0.0, b = 0.0, a = 0.6 }
 
     local text_width, text_height = directx.get_text_size(text, scale)
@@ -1642,13 +1642,13 @@ function DrawString(text, scale)
     local text_width, text_height = directx.get_text_size(text, scale)
 
     directx.draw_rect(0.5 - 0.01, 0.0, text_width + 0.02, text_height + 0.02, background)
-    directx.draw_text(0.5, 0.01, text, ALIGN_TOP_LEFT, scale, color.white)
+    directx.draw_text(0.5, 0.01, text, ALIGN_TOP_LEFT, scale, Colors.white)
 end
 
 function draw_point_in_center()
     --HUD.DISPLAY_SNIPER_SCOPE_THIS_FRAME()
-    --directx.draw_texture(Texture.point, 0.0016, 0, 0.5, 0.5, 0.5, 0.5, 0, color.white)
-    directx.draw_texture(Texture.crosshair, 0.03, 0.03, 0.5, 0.5, 0.5, 0.5, 0, color.white)
+    --directx.draw_texture(Texture.point, 0.0016, 0, 0.5, 0.5, 0.5, 0.5, 0, Colors.white)
+    directx.draw_texture(Texture.crosshair, 0.03, 0.03, 0.5, 0.5, 0.5, 0.5, 0, Colors.white)
 end
 
 -----------------------------
@@ -1684,6 +1684,7 @@ local TraceFlag = {
 ---@field endCoords v3
 ---@field surfaceNormal v3
 ---@field hitEntity Entity
+
 ---@param distance number
 ---@param flag? integer
 ---@return RaycastResult
@@ -1725,6 +1726,49 @@ function get_entity_player_is_aiming_at(player)
         end
     end
     return ent
+end
+
+-------------------------
+-- Colour Functions
+-------------------------
+
+---@class Colour
+---@field r number | integer
+---@field g number | integer
+---@field b number | integer
+---@field a number | integer
+
+---@return Colour
+function get_random_colour()
+    local colour = { a = 255 }
+    colour.r = math.random(0, 255)
+    colour.g = math.random(0, 255)
+    colour.b = math.random(0, 255)
+    return colour
+end
+
+--- 颜色数值 [0 - 1]格式 转换到 [0 - 255]格式
+---@param colour Colour
+---@return Colour
+function to_rage_colour(colour)
+    return {
+        r = math.ceil(colour.r * 255),
+        g = math.ceil(colour.g * 255),
+        b = math.ceil(colour.b * 255),
+        a = math.ceil(colour.a * 255)
+    }
+end
+
+--- 颜色数值 [0 - 255]格式 转换到 [0 - 1]格式
+---@param colour Colour
+---@return Colour
+function to_stand_colour(colour)
+    return {
+        r = colour.r / 255,
+        g = colour.g / 255,
+        b = colour.b / 255,
+        a = colour.a / 255
+    }
 end
 
 -----------------------------
@@ -1777,15 +1821,6 @@ function calculate_model_size(model)
     return (maxVec:getX() - minVec:getX()), (maxVec:getY() - minVec:getY()), (maxVec:getZ() - minVec:getZ())
 end
 
----@return Colour
-function get_random_colour()
-    local colour = { a = 255 }
-    colour.r = math.random(0, 255)
-    colour.g = math.random(0, 255)
-    colour.b = math.random(0, 255)
-    return colour
-end
-
 ---@param num number
 ---@param places integer
 ---@return number?
@@ -1794,12 +1829,14 @@ function round(num, places)
 end
 
 ---@param bool boolean
+---@param true_text string? [默认: 是]
+---@param false_text string? [默认: 否]
 ---@return string
-function bool_to_string(bool)
+function bool_to_string(bool, true_text, false_text)
     if bool then
-        return "是"
+        return true_text or "是"
     else
-        return "否"
+        return false_text or "否"
     end
 end
 

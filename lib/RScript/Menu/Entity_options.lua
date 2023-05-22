@@ -4671,7 +4671,7 @@ menu.toggle_loop(Entity_Info_Gun, "开启", { "info_gun" }, "", function()
                     end
                 end
                 DrawString(text, 0.7)
-                --directx.draw_text(0.5, 0.0, text, ALIGN_TOP_LEFT, 0.75, color.purple)
+                --directx.draw_text(0.5, 0.0, text, ALIGN_TOP_LEFT, 0.75, Colors.purple)
             end
         end
     end
@@ -4719,10 +4719,14 @@ end)
 
 local Entity_Info_Gun2 = menu.list(Entity_options, "实体信息枪 2.0[TEST]", {}, "")
 
-Entity_Info = {}
+Entity_Info = {
+    entity = 0,
+}
 
 function Entity_Info.get_entity_info(entity)
     if ENTITY.DOES_ENTITY_EXIST(entity) then
+        Entity_Info.entity = entity
+
         -- 实体所有信息
         local entity_info = {
             entity = {},
@@ -5026,10 +5030,10 @@ function Entity_Info.ped_combat_float(ped)
     for index, value in pairs(Ped_CombatFloat.List) do
         local name = value[1]
         local id = Ped_CombatFloat.ValueList[index]
-        local comment = value[2]
+        -- local comment = value[2]
 
-        info = { name, PED.GET_COMBAT_FLOAT(ped, id), comment }
-        table.insert(ped_info.main, info)
+        info = { name, PED.GET_COMBAT_FLOAT(ped, id) }
+        table.insert(ped_info, info)
     end
 
     return ped_info
@@ -5142,6 +5146,66 @@ function Entity_Info.vehicle_mod(vehicle)
         [11] = "Super Mod 4",
         [12] = "Super Mod 5"
     }
+    local enum_ModType = {
+        [0] = "Spoiler",
+        [1] = "Bumper_F",
+        [2] = "Bumper_R",
+        [3] = "Skirt",
+        [4] = "Exhaust",
+        [5] = "Chassis",
+        [6] = "Grill",
+        [7] = "Bonnet",
+        [8] = "Wing_L",
+        [9] = "Wing_R",
+        [10] = "Roof",
+
+        [11] = "Engine",
+        [12] = "Brakes",
+        [13] = "Gearbox",
+        [14] = "Horn",
+        [15] = "Suspension",
+        [16] = "Armour",
+
+        [17] = "Toggle_Nitrous",
+        [18] = "Toggle_Turbo",
+        [19] = "Toggle_Subwoofer",
+        [20] = "Toggle_Tyre_Smoke",
+        [21] = "Toggle_Hydraulics",
+        [22] = "Toggle_Xenon_Lights",
+
+        [23] = "Wheels",
+        [24] = "Rear_Wheels",
+
+        [25] = "Pltholder",
+        [26] = "Pltvanity",
+
+        [27] = "Interior1",
+        [28] = "Interior2",
+        [29] = "Interior3",
+        [30] = "Interior4",
+        [31] = "Interior5",
+        [32] = "Seats",
+        [33] = "Steering",
+        [34] = "Knob",
+        [35] = "Plaque",
+        [36] = "Ice",
+
+        [37] = "Trunk",
+        [38] = "Hydro",
+
+        [39] = "Enginebay1",
+        [40] = "Enginebay2",
+        [41] = "Enginebay3",
+
+        [42] = "Chassis2",
+        [43] = "Chassis3",
+        [44] = "Chassis4",
+        [45] = "Chassis5",
+
+        [46] = "Door_L",
+        [47] = "Door_R",
+        [48] = "Livery",
+    }
 
 
     --#region Vehicle Colour
@@ -5166,7 +5230,10 @@ function Entity_Info.vehicle_mod(vehicle)
 
     -- Mod Color 1
     VEHICLE.GET_VEHICLE_MOD_COLOR_1(vehicle, colorR, colorG, colorB)
-    t = enum_ModColorType[memory.read_ubyte(colorR)]
+    t = memory.read_ubyte(colorR)
+    if enum_ModColorType[t] ~= nil then
+        t = enum_ModColorType[t]
+    end
     info = { "Mod Color 1 color Type", t }
     table.insert(vehicle_info.color, info)
 
@@ -5177,13 +5244,18 @@ function Entity_Info.vehicle_mod(vehicle)
     table.insert(vehicle_info.color, info)
 
     -- Mod Color 1 Name
-    t = util.get_label_text(VEHICLE.GET_VEHICLE_MOD_COLOR_1_NAME(vehicle, 0))
-    info = { "Mod Color 1 Name", t }
-    table.insert(vehicle_info.color, info)
+    t = VEHICLE.GET_VEHICLE_MOD_COLOR_1_NAME(vehicle, 0)
+    if t ~= nil then
+        info = { "Mod Color 1 Name", t }
+        table.insert(vehicle_info.color, info)
+    end
 
     -- Mod Color 2
     VEHICLE.GET_VEHICLE_MOD_COLOR_2(vehicle, colorR, colorG)
-    t = enum_ModColorType[memory.read_ubyte(colorR)]
+    t = memory.read_ubyte(colorR)
+    if enum_ModColorType[t] ~= nil then
+        t = enum_ModColorType[t]
+    end
     info = { "Mod Color 2 color Type", t }
     table.insert(vehicle_info.color, info)
 
@@ -5191,11 +5263,13 @@ function Entity_Info.vehicle_mod(vehicle)
     table.insert(vehicle_info.color, info)
 
     -- Mod Color 2 Name
-    t = util.get_label_text(VEHICLE.GET_VEHICLE_MOD_COLOR_2_NAME(vehicle))
-    info = { "Mod Color 2 Name", t }
-    table.insert(vehicle_info.color, info)
-    --#endregion
+    t = VEHICLE.GET_VEHICLE_MOD_COLOR_2_NAME(vehicle)
+    if t ~= nil then
+        info = { "Mod Color 2 Name", t }
+        table.insert(vehicle_info.color, info)
+    end
 
+    --#endregion
 
 
     --#region Vehicle Mod Kit
@@ -5205,13 +5279,12 @@ function Entity_Info.vehicle_mod(vehicle)
     info = { "Mod Kit Type", enum_ModKitType[mod_kit_type] }
     table.insert(vehicle_info.kit, info)
 
-    for i = 0, 49 do
+    for i = 0, 48 do
         local mod_value = VEHICLE.GET_VEHICLE_MOD(vehicle, i)
-
-        local mod_type_name = VEHICLE.GET_MOD_SLOT_NAME(vehicle, i)
-        local mod_value_name = VEHICLE.GET_MOD_TEXT_LABEL(vehicle, i, mod_value)
-        info = { util.get_label_text(mod_type_name), util.get_label_text(mod_value_name) }
-        table.insert(vehicle_info.kit, info)
+        if mod_value ~= -1 then
+            info = { enum_ModType[i], mod_value }
+            table.insert(vehicle_info.kit, info)
+        end
     end
 
     -- Wheel Type
@@ -5223,6 +5296,14 @@ function Entity_Info.vehicle_mod(vehicle)
     --#endregion
 
     return vehicle_info
+end
+
+function Entity_Info.clear_menu(menu_parent)
+    for _, command_ref in pairs(menu.get_children(menu_parent)) do
+        if menu.is_ref_valid(command_ref) then
+            menu.delete(command_ref)
+        end
+    end
 end
 
 function Entity_Info.generate_menu(menu_parent, list_item_data)
@@ -5250,11 +5331,6 @@ local entity_info2 = {
     menu_entity = 0,
     menu_ped = 0,
     menu_vehicle = 0,
-
-    -- menu.list' children
-    menu_entity_list = {},
-    menu_ped_list = {},
-    menu_vehicle_list = {},
 }
 
 menu.toggle_loop(Entity_Info_Gun2, "开启", {}, "", function()
@@ -5290,11 +5366,7 @@ entity_info2.menu_entity = menu.list(Entity_Info_Gun2, "Entity", {}, "", functio
     local data = entity_info2.info_data.entity
 
     -- clear old menu
-    for _, command_ref in pairs(menu.get_children(menu_parent)) do
-        if menu.is_ref_valid(command_ref) then
-            menu.delete(command_ref)
-        end
-    end
+    Entity_Info.clear_menu(menu_parent)
 
     -- generate new menu
     if next(data) == nil then
@@ -5322,11 +5394,7 @@ entity_info2.menu_ped = menu.list(Entity_Info_Gun2, "Ped", {}, "", function()
     local data = entity_info2.info_data.ped
 
     -- clear old menu
-    for _, command_ref in pairs(menu.get_children(menu_parent)) do
-        if menu.is_ref_valid(command_ref) then
-            menu.delete(command_ref)
-        end
-    end
+    Entity_Info.clear_menu(menu_parent)
 
     -- generate new menu
     if next(data) == nil then
@@ -5342,6 +5410,20 @@ entity_info2.menu_ped = menu.list(Entity_Info_Gun2, "Ped", {}, "", function()
 
     local menu_rel_group = menu.list(menu_parent, "Relationship & Group", {}, "")
     Entity_Info.generate_menu(menu_rel_group, data.rel_group)
+
+
+    local ped = Entity_Info.entity
+
+    local menu_combat_float
+    menu_combat_float = menu.list(menu_parent, "Combat Float", {}, "", function()
+        Entity_Info.clear_menu(menu_combat_float)
+
+        if not ENTITY.DOES_ENTITY_EXIST(ped) then
+            return false
+        end
+
+        Entity_Info.generate_menu(menu_combat_float, Entity_Info.ped_combat_float(ped))
+    end)
 end)
 
 entity_info2.menu_vehicle = menu.list(Entity_Info_Gun2, "Vehicle", {}, "", function()
@@ -5349,11 +5431,7 @@ entity_info2.menu_vehicle = menu.list(Entity_Info_Gun2, "Vehicle", {}, "", funct
     local data = entity_info2.info_data.vehicle
 
     -- clear old menu
-    for _, command_ref in pairs(menu.get_children(menu_parent)) do
-        if menu.is_ref_valid(command_ref) then
-            menu.delete(command_ref)
-        end
-    end
+    Entity_Info.clear_menu(menu_parent)
 
     -- generate new menu
     if next(data) == nil then
@@ -5366,4 +5444,24 @@ entity_info2.menu_vehicle = menu.list(Entity_Info_Gun2, "Vehicle", {}, "", funct
         local menu_heli = menu.list(menu_parent, "Heli", {}, "")
         Entity_Info.generate_menu(menu_heli, data.heli)
     end
+
+
+    local vehicle = Entity_Info.entity
+
+    local menu_mod
+    menu_mod = menu.list(menu_parent, "Mod", {}, "", function()
+        Entity_Info.clear_menu(menu_mod)
+
+        if not ENTITY.DOES_ENTITY_EXIST(vehicle) then
+            return false
+        end
+
+        data.mod = Entity_Info.vehicle_mod(vehicle)
+
+        local menu_mod_color = menu.list(menu_mod, "Mod Color", {}, "")
+        Entity_Info.generate_menu(menu_mod_color, data.mod.color)
+
+        local menu_mod_kit = menu.list(menu_mod, "Mod Kit", {}, "")
+        Entity_Info.generate_menu(menu_mod_kit, data.mod.kit)
+    end)
 end)
