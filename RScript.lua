@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("1681379138")
 
-local SCRIPT_VERSION <const> = "2023/5/25"
+local SCRIPT_VERSION <const> = "2023/5/27"
 
 local SUPPORT_GTAO <const> = 1.66
 
@@ -2350,6 +2350,9 @@ end
 
 menu.divider(menu.my_root(), "RScript")
 
+
+--#region Self Options
+
 --------------------------------
 ------------ 自我选项 ------------
 --------------------------------
@@ -2580,73 +2583,6 @@ end)
 
 
 -------------------
------ 快速动作 -----
--------------------
-local Fast_Animation = menu.list(Self_options, "快速动作", {}, "")
-
-local fast_animation = {
-    toggles = {},
-    toggle_meuns = {},
-}
-fast_animation.task_list = {
-    -- task_id, menu_name
-    { 1,   "Climb Ladder" },
-    { 2,   "Exit Vehicle" },
-    { 3,   "Combat Roll" },
-    { 16,  "Get Up" },
-    { 17,  "Get Up And Stand Still" },
-    { 50,  "Vault" },
-    { 54,  "Open Door" },
-    { 121, "Steal Vehicle" },
-    { 128, "Melee" },
-    { 135, "Synchronized Scene" },
-    { 150, "In Vehicle Basic" },
-    { 152, "Leave Any Car" },
-    { 160, "Enter Vehicle" },
-    { 162, "Open Vehicle Door From Outside" },
-    { 163, "Enter Vehicle Seat" },
-    { 164, "Close Vehicle Door From Inside" },
-    { 165, "In Vehicle Seat Shuffle" },
-    { 167, "Exit Vehicle Seat" },
-    { 168, "Close Vehicle Door From Outside" },
-    { 177, "Try To Grab Vehicle Door" },
-    { 286, "Throw Projectile" },
-    { 300, "Enter Cover" },
-    { 301, "Exit Cover" },
-}
-
-menu.toggle_loop(Fast_Animation, "开启", {}, "执行对应动作时加快动作", function()
-    for id, toggle in pairs(fast_animation.toggles) do
-        if toggle and TASK.GET_IS_TASK_ACTIVE(players.user_ped(), id) then
-            PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(players.user_ped())
-        end
-    end
-end)
-
-menu.divider(Fast_Animation, "选项")
-menu.toggle(Fast_Animation, "全部开/关", {}, "", function(toggle)
-    for _, v in pairs(fast_animation.toggle_meuns) do
-        if menu.is_ref_valid(v) then
-            menu.set_value(v, toggle)
-        end
-    end
-end)
-
-for _, v in pairs(fast_animation.task_list) do
-    local id = v[1]
-    local name = v[2]
-
-    fast_animation.toggles[id] = false
-
-    local menu_toggle = menu.toggle(Fast_Animation, name, {}, "", function(toggle)
-        fast_animation.toggles[id] = toggle
-    end)
-    fast_animation.toggle_meuns[id] = menu_toggle
-end
-
-
-
--------------------
 ----- 跌落选项 -----
 -------------------
 local Self_Fall_options = menu.list(Self_options, "跌落选项", {}, "")
@@ -2717,26 +2653,35 @@ end, function()
     PED.RESET_AI_WEAPON_DAMAGE_MODIFIER()
     PED.RESET_AI_MELEE_WEAPON_DAMAGE_MODIFIER()
 end)
+menu.toggle_loop(Self_options, "只能被玩家伤害", {}, "不会被NPC伤害", function()
+    ENTITY.SET_ENTITY_ONLY_DAMAGED_BY_PLAYER(players.user_ped(), true)
+end, function()
+    ENTITY.SET_ENTITY_ONLY_DAMAGED_BY_PLAYER(players.user_ped(), false)
+end)
+
+--#endregion Self Options
 
 
 
 
 
-
+--#region Weapon Options
 
 --------------------------------
 ------------ 武器选项 ------------
 --------------------------------
 local Weapon_options = menu.list(menu.my_root(), "武器选项", {}, "")
 
-menu.toggle(Weapon_options, "可以射击队友", {}, "使你在游戏中能够射击队友", function(toggle)
-    PED.SET_CAN_ATTACK_FRIENDLY(PLAYER.PLAYER_PED_ID(), toggle, false)
+menu.toggle_loop(Weapon_options, "可以射击队友", {}, "", function()
+    PED.SET_CAN_ATTACK_FRIENDLY(players.user_ped(), true, false)
+end, function()
+    PED.SET_CAN_ATTACK_FRIENDLY(players.user_ped(), false, false)
 end)
 menu.toggle_loop(Weapon_options, "无限弹夹", { "inf_clip" }, "锁定弹夹，无需换弹",
     function()
-        WEAPON.SET_PED_INFINITE_AMMO_CLIP(PLAYER.PLAYER_PED_ID(), true)
+        WEAPON.SET_PED_INFINITE_AMMO_CLIP(players.user_ped(), true)
     end, function()
-        WEAPON.SET_PED_INFINITE_AMMO_CLIP(PLAYER.PLAYER_PED_ID(), false)
+        WEAPON.SET_PED_INFINITE_AMMO_CLIP(players.user_ped(), false)
     end)
 menu.toggle_loop(Weapon_options, "锁定最大弹药", { "lock_ammo" }, "锁定当前武器为最大弹药", function()
     local user_ped = players.user_ped()
@@ -2746,7 +2691,7 @@ menu.toggle_loop(Weapon_options, "锁定最大弹药", { "lock_ammo" }, "锁定�
         WEAPON.ADD_AMMO_TO_PED(user_ped, weaponHash, 9999)
 
         -- local curAmmoMem = memory.alloc_int()
-        -- local junk = WEAPON.GET_MAX_AMMO(PLAYER.PLAYER_PED_ID(), curWeapon, curAmmoMem)
+        -- local junk = WEAPON.GET_MAX_AMMO(players.user_ped(), curWeapon, curAmmoMem)
         -- local curAmmoMax = memory.read_int(curAmmoMem)
         -- memory.free(curAmmoMem)
     end
@@ -2766,21 +2711,21 @@ menu.toggle_loop(Weapon_options, "无限载具武器弹药", { "inf_veh_ammo" },
     end
 end)
 menu.toggle_loop(Weapon_options, "翻滚时自动换弹夹", {}, "做翻滚动作时自动更换弹夹", function()
-    if TASK.GET_IS_TASK_ACTIVE(PLAYER.PLAYER_PED_ID(), 4) and PAD.IS_CONTROL_PRESSED(2, 22) and
-        not PED.IS_PED_SHOOTING(PLAYER.PLAYER_PED_ID()) then
+    if TASK.GET_IS_TASK_ACTIVE(players.user_ped(), 4) and PAD.IS_CONTROL_PRESSED(2, 22) and
+        not PED.IS_PED_SHOOTING(players.user_ped()) then
         --checking if player is rolling
         util.yield(900)
-        WEAPON.REFILL_AMMO_INSTANTLY(PLAYER.PLAYER_PED_ID())
+        WEAPON.REFILL_AMMO_INSTANTLY(players.user_ped())
     end
 end)
 menu.toggle_loop(Weapon_options, "快速装弹", {}, "换弹时加快动作", function()
-    if PED.IS_PED_RELOADING(PLAYER.PLAYER_PED_ID()) then
-        PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(PLAYER.PLAYER_PED_ID())
+    if PED.IS_PED_RELOADING(players.user_ped()) then
+        PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(players.user_ped())
     end
 end)
 menu.toggle_loop(Weapon_options, "快速更换武器", {}, "更换武器时加快动作", function()
-    if PED.IS_PED_SWITCHING_WEAPON(PLAYER.PLAYER_PED_ID()) then
-        PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(PLAYER.PLAYER_PED_ID())
+    if PED.IS_PED_SWITCHING_WEAPON(players.user_ped()) then
+        PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(players.user_ped())
     end
 end)
 menu.action(Weapon_options, "移除黏弹和感应地雷", { "remove_projectiles" }, "用来清理扔错地方但又不能炸掉的投掷武器",
@@ -3114,13 +3059,14 @@ end)
 ------------------------
 ------- 实体控制枪 -------
 ------------------------
-local Weapon_Entity_Control = menu.list(Weapon_options, "实体控制枪", {}, "控制你所瞄准的实体")
+local Entity_Control_Gun = menu.list(Weapon_options, "实体控制枪", {}, "控制你所瞄准的实体")
 
-local entity_control_data = {
+local entity_control_gun = {
     entity_type = "全部",
+    method_select = 1,
 }
 
-local function entity_control_Head(menu_parent, ent)
+function entity_control_gun.generate_menu_head(menu_parent, ent)
     menu.action(menu_parent, "检测该实体是否存在", {}, "", function()
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             util.toast("实体存在")
@@ -3128,110 +3074,137 @@ local function entity_control_Head(menu_parent, ent)
             util.toast("该实体已经不存在，请删除此条实体记录！")
         end
     end)
+
     menu.action(menu_parent, "删除此条实体记录", {}, "", function()
         menu.delete(menu_parent)
-        clearTableValue(control_ent_menu_list, menu_parent)
-        clearTableValue(control_ent_list, ent)
+        clearTableValue(entity_control_gun.entity_menu_list, menu_parent)
+        clearTableValue(entity_control_gun.entity_list, ent)
 
-        control_ent_count = control_ent_count - 1
-        if control_ent_count <= 0 then
-            menu.set_menu_name(Weapon_Entity_Control_divider, "实体控制列表")
+        entity_control_gun.entity_count = entity_control_gun.entity_count - 1
+        if entity_control_gun.entity_count <= 0 then
+            entity_control_gun.clear_entity_list_data()
         else
-            menu.set_menu_name(Weapon_Entity_Control_divider, "实体控制列表 (" .. control_ent_count .. ")")
+            menu.set_menu_name(entity_control_gun.count_divider, "实体列表 (" ..
+                entity_control_gun.entity_count .. ")")
         end
     end)
 end
 
-local function Init_control_ent_list()
-    -- 所有控制的实体
-    control_ent_list = {}
-    -- 所有控制实体的 menu.list
-    control_ent_menu_list = {}
-    -- 控制实体的索引
-    control_ent_index = 1
-    -- 已记录实体的数量
-    control_ent_count = 0
+-- 初始化数据
+function entity_control_gun.init_entity_list_data()
+    -- 实体 list
+    entity_control_gun.entity_list = {}
+    -- 实体的 menu.list()
+    entity_control_gun.entity_menu_list = {}
+    -- 实体索引
+    entity_control_gun.entity_index = 1
+    -- 实体数量
+    entity_control_gun.entity_count = 0
 end
 
-Init_control_ent_list()
+entity_control_gun.init_entity_list_data()
 
-menu.toggle_loop(Weapon_Entity_Control, "开启", { "ctrl_gun" }, "", function()
+-- 清理并初始化数据
+function entity_control_gun.clear_entity_list_data()
+    -- 实体的 menu.list()
+    for k, v in pairs(entity_control_gun.entity_menu_list) do
+        if v ~= nil and menu.is_ref_valid(v) then
+            menu.delete(v)
+        end
+    end
+    -- 初始化
+    entity_control_gun.init_entity_list_data()
+    menu.set_menu_name(entity_control_gun.count_divider, "实体列表")
+end
+
+menu.toggle_loop(Entity_Control_Gun, "开启[按E]", { "ctrl_gun" }, "", function()
     draw_point_in_center()
-    local ent
-    local Type = entity_control_data.entity_type
-    local temp_ent = get_entity_player_is_aiming_at(players.user())
-    if temp_ent ~= nil then
-        if Type == "全部" then
-            if IS_AN_ENTITY(temp_ent) then
-                ent = temp_ent
-            end
-        else
-            local ent_type = GET_ENTITY_TYPE(temp_ent, 2)
-            if Type == ent_type then
-                ent = temp_ent
+
+    local ent = 0
+    if entity_control_gun.method_select == 1 then
+        ent = get_entity_player_is_aiming_at(players.user())
+    else
+        local result = get_raycast_result(1500, -1)
+        if result.didHit then
+            ent = result.hitEntity
+        end
+    end
+
+    if ent ~= nil and IS_AN_ENTITY(ent) then
+        -- 实体类型判断
+        local Type = entity_control_gun.entity_type
+        if Type ~= "全部" then
+            local ent_type = GET_ENTITY_TYPE(ent, 2)
+            if Type ~= ent_type then
+                return false
             end
         end
 
-        if ent ~= nil then
-            --Draw Line
-            local pos1 = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-            local pos2 = ENTITY.GET_ENTITY_COORDS(ent)
-            GRAPHICS.DRAW_LINE(pos1.x, pos1.y, pos1.z, pos2.x, pos2.y, pos2.z, 255, 0, 255, 255)
+        -- 和实体连线
+        local pos1 = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+        local pos2 = ENTITY.GET_ENTITY_COORDS(ent)
+        DRAW_LINE(pos1, pos2)
 
-            if not isInTable(control_ent_list, ent) then
-                table.insert(control_ent_list, ent) -- entity list
+        -- 记录实体
+        if PAD.IS_CONTROL_PRESSED(0, 51) then
+            if not isInTable(entity_control_gun.entity_list, ent) then
+                table.insert(entity_control_gun.entity_list, ent) -- 实体 list
 
-                local menu_name, help_text = Entity_Control.get_menu_info(ent, control_ent_index)
+                local menu_name, help_text = Entity_Control.get_menu_info(ent, entity_control_gun.entity_index)
                 util.toast(menu_name .. "\n" .. help_text)
 
-                -- 实体菜单列表 menu.list
-                local menu_list = menu.list(Weapon_Entity_Control, menu_name, {}, help_text)
-                table.insert(control_ent_menu_list, menu_list)
+                -- 实体的 menu.list()
+                local menu_list = menu.list(Entity_Control_Gun, menu_name, {}, help_text)
+                table.insert(entity_control_gun.entity_menu_list, menu_list)
 
                 -- 创建对应实体的menu操作
-                entity_control_Head(menu_list, ent)
-                Entity_Control.generate_menu(menu_list, ent, control_ent_index)
+                entity_control_gun.generate_menu_head(menu_list, ent)
+                Entity_Control.generate_menu(menu_list, ent, entity_control_gun.entity_index)
 
-                control_ent_index = control_ent_index + 1
+                entity_control_gun.entity_index = entity_control_gun.entity_index + 1 -- 实体索引
+
                 -- 实体数量
-                control_ent_count = control_ent_count + 1
-                if control_ent_count == 0 then
-                    menu.set_menu_name(Weapon_Entity_Control_divider, "实体控制列表")
+                entity_control_gun.entity_count = entity_control_gun.entity_count + 1
+                if entity_control_gun.entity_count == 0 then
+                    menu.set_menu_name(entity_control_gun.count_divider, "实体列表")
                 else
-                    menu.set_menu_name(Weapon_Entity_Control_divider, "实体控制列表 (" .. control_ent_count .. ")")
+                    menu.set_menu_name(entity_control_gun.count_divider,
+                        "实体列表 (" .. entity_control_gun.entity_count .. ")")
                 end
             end
         end
     end
 end)
 
-local Weapon_Entity_Control_TypeListItem = {
+menu.list_select(Entity_Control_Gun, "方式", {}, "", {
+    { "武器瞄准" }, { "镜头瞄准" }
+}, 1, function(value)
+    entity_control_gun.method_select = value
+end)
+
+menu.list_select(Entity_Control_Gun, "实体类型", {}, "", {
     { "全部",  {}, "全部类型实体" },
     { "Ped",     {}, "NPC" },
     { "Vehicle", {}, "载具" },
     { "Object",  {}, "物体" },
     { "Pickup",  {}, "拾取物" }
-}
-menu.list_select(Weapon_Entity_Control, "实体类型", {}, "", Weapon_Entity_Control_TypeListItem, 1,
-    function(index, name)
-        entity_control_data.entity_type = name
-    end)
-menu.action(Weapon_Entity_Control, "清除记录的实体", {}, "", function()
-    for k, v in pairs(control_ent_menu_list) do
-        if v ~= nil and menu.is_ref_valid(v) then
-            menu.delete(v)
-        end
-    end
-    Init_control_ent_list()
-    menu.set_menu_name(Weapon_Entity_Control_divider, "实体控制列表")
+}, 1, function(index, name)
+    entity_control_gun.entity_type = name
 end)
-Weapon_Entity_Control_divider = menu.divider(Weapon_Entity_Control, "实体控制列表")
+
+menu.action(Entity_Control_Gun, "清空列表", {}, "", function()
+    entity_control_gun.clear_entity_list_data()
+end)
+entity_control_gun.count_divider = menu.divider(Entity_Control_Gun, "实体列表")
+
+
+--#endregion Weapon Options
 
 
 
 
 
-
+--#region Vehicle Options
 
 --------------------------------
 ------------ 载具选项 ------------
@@ -4187,22 +4160,26 @@ end, function()
     end
 end)
 
+--#endregion  Vehicle Options
 
 
 
 
 
-
+--#region Entity Options
 
 -----------------------------------
 ------------ 世界实体选项 -----------
 -----------------------------------
 require "RScript.Menu.Entity_options"
 
+--#endregion Entity Options
 
 
 
 
+
+--#region Session Options
 
 --------------------------------
 ------------ 战局选项 ------------
@@ -4559,11 +4536,13 @@ menu.toggle_loop(Session_options, "周围执法NPC降低精准度", {},
         PED.SET_AMBIENT_LAW_PED_ACCURACY_MODIFIER(0.0)
     end)
 
+--#endregion Session Options
 
 
 
 
 
+--#region Bodyguard Options
 
 --------------------------------
 ------------ 保镖选项 ------------
@@ -5106,20 +5085,26 @@ menu.list_select(Bodyguard_heli_setting, "直升机模式", {}, "", Vehicle_Heli
     Bodyguard.setting.heli.HeliMode = Vehicle_HeliMode.ValueList[value]
 end)
 
+--#endregion Bodyguard Options
 
 
 
 
+
+--#region Fun Options
 
 --------------------------------
 ------------ 娱乐选项 ------------
 --------------------------------
 require "RScript.Menu.Fun_options"
 
+--#endregion Fun Options
 
 
 
 
+
+--#region Protect Options
 
 --------------------------------
 ------------ 保护选项 ------------
@@ -5151,20 +5136,26 @@ menu.toggle_loop(Protect_options, "停止所有声音", {}, "", function()
     end
 end)
 
+--#endregion Protect Options
 
 
 
 
+
+--#region Mission Options
 
 --------------------------------
 ------------ 任务选项 -----------
 --------------------------------
 require "RScript.Menu.Mission_options"
 
+--#endregion Mission Options
 
 
 
 
+
+--#region Other options
 
 --------------------------------
 ------------ 其它选项 -----------
@@ -5769,6 +5760,7 @@ menu.action(Other_options, "Clear Tick Handler", {}, "用于解决控制实体�
     tick_handler_data.control_ent.clear()
 end)
 
+--#endregion Other options
 
 
 

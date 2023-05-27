@@ -1883,7 +1883,7 @@ function THEFEED_POST.TEXT(message)
 end
 
 -----------------------------
--- Fun Functions
+-- Other Functions
 -----------------------------
 
 ---实体坠落爆炸
@@ -1909,5 +1909,32 @@ function fall_entity_explosion(entity, owner)
         FIRE.ADD_OWNED_EXPLOSION(owner, coords.x, coords.y, coords.z, 4, 1.0, true, false, 0.0)
     else
         FIRE.ADD_EXPLOSION(coords.x, coords.y, coords.z, 4, 1.0, true, false, 0.0, false)
+    end
+end
+
+---爆头击杀Ped
+---@param ped Ped
+---@param weaponHash Hash
+function shoot_ped_head(ped, weaponHash)
+    local head_pos = PED.GET_PED_BONE_COORDS(ped, 0x322c, 0, 0, 0)
+    local vector = ENTITY.GET_ENTITY_FORWARD_VECTOR(ped)
+    local start_pos = {}
+    start_pos.x = head_pos.x + vector.x
+    start_pos.y = head_pos.y + vector.y
+    start_pos.z = head_pos.z + vector.z
+
+    local ped_veh = GET_VEHICLE_PED_IS_IN(ped)
+    if ped_veh ~= 0 then
+        MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
+            start_pos.x, start_pos.y, start_pos.z,
+            head_pos.x, head_pos.y, head_pos.z,
+            1000, false, weaponHash, players.user_ped(),
+            false, false, 1000, ped_veh)
+    else
+        MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(
+            start_pos.x, start_pos.y, start_pos.z,
+            head_pos.x, head_pos.y, head_pos.z,
+            1000, false, weaponHash, players.user_ped(),
+            false, false, 1000)
     end
 end

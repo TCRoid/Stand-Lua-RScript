@@ -5,6 +5,8 @@
 local Entity_options = menu.list(menu.my_root(), "世界实体选项", {}, "")
 
 
+--#region Entity Quick Action
+
 -------------------------
 -- 实体快捷操作
 -------------------------
@@ -106,27 +108,7 @@ menu.action(Entity_Quick_Ped, "爆头击杀", { "kill_ped" }, "", function()
             end
 
             if ped ~= nil then
-                local head_pos = PED.GET_PED_BONE_COORDS(ped, 0x322c, 0, 0, 0)
-                local vector = ENTITY.GET_ENTITY_FORWARD_VECTOR(ped)
-                local start_pos = {}
-                start_pos.x = head_pos.x + vector.x
-                start_pos.y = head_pos.y + vector.y
-                start_pos.z = head_pos.z + vector.z
-
-                local ped_veh = GET_VEHICLE_PED_IS_IN(ped)
-                if ped_veh ~= 0 then
-                    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
-                        start_pos.x, start_pos.y, start_pos.z,
-                        head_pos.x, head_pos.y, head_pos.z,
-                        1000, false, weaponHash, players.user_ped(),
-                        false, false, 1000, ped_veh)
-                else
-                    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(
-                        start_pos.x, start_pos.y, start_pos.z,
-                        head_pos.x, head_pos.y, head_pos.z,
-                        1000, false, weaponHash, players.user_ped(),
-                        false, false, 1000)
-                end
+                shoot_ped_head(ped, weaponHash)
             end
         end
     end
@@ -463,13 +445,13 @@ menu.action(Entity_Quick_Vehicle, "禁用载具武器", {}, "NPC将无法使用�
         end
     end)
 
+--#endregion Entity Quick Action
 
 
 
 
 
-
-
+--#region Nearby Vehicle
 
 ---------------------------
 --------- 附近载具 ---------
@@ -893,10 +875,13 @@ menu.action(Nearby_Vehicle_options, "拆下左右车门和打开引擎", { "brok
     end
 end)
 
+--#endregion Nearby Vehicle
 
 
 
 
+
+--#region Nearby Ped
 
 --------------------------
 --------- 附近NPC ---------
@@ -1584,10 +1569,13 @@ menu.toggle_loop(Nearby_Ped_ClearTask_options, "设置 (Loop)", {}, "", function
     NearbyPed_ClearTask()
 end)
 
+--#endregion Nearby Ped
 
 
 
 
+
+--#region Nearby Area
 
 ------------------------
 -------- 附近区域 --------
@@ -2026,7 +2014,7 @@ menu.toggle_loop(Nearby_Area_Shoot, "循环射击", {}, "", function()
     util.yield(nearby_area_shoot.delay)
 end)
 
-
+--#endregion Nearby Area
 
 
 
@@ -2047,6 +2035,8 @@ menu.action(Mission_Entity, "传送到 电脑", { "tp_desk" }, "", function()
         TELEPORT(coords.x - 1.0, coords.y + 1.0, coords.z)
     end
 end)
+
+--#region Special Cargo
 
 -------- 办公室拉货 --------
 local Special_Cargo = menu.list(Mission_Entity, "CEO拉货", {}, "")
@@ -2207,7 +2197,9 @@ Vehicle_Cargo_ListAction = menu.list_action(Special_Cargo, "任务载具列表",
         end
     end)
 
+--#endregion Special Cargo
 
+--#region Bunker
 
 -------- 地堡拉货 --------
 local Bunker = menu.list(Mission_Entity, "地堡拉货", {}, "")
@@ -2323,7 +2315,9 @@ menu.action(Bunker, "长鳍追飞机：炸掉长鳍", {},
         end
     end)
 
+--#endregion Bunker
 
+--#region Cayo Perico
 
 -------- 佩里科岛抢劫 --------
 local Cayo_Perico = menu.list(Mission_Entity, "佩里科岛抢劫", {}, "")
@@ -2577,7 +2571,9 @@ menu.action(Cayo_Perico_Final, "办公室保险箱 传送到我", {}, "保险箱
     end
 end)
 
+--#endregion Cayo Perico
 
+--#region Diamond Casino
 
 -------- 赌场抢劫 --------
 local Diamond_Casino = menu.list(Mission_Entity, "赌场抢劫", {}, "")
@@ -2910,8 +2906,9 @@ casino_vault_trolley_menu = menu.click_slider(Diamond_Casino_Final, "金库内�
         end
     end)
 
+--#endregion Diamond Casino
 
-
+--#region Contract Dre
 
 -------- 合约 别惹德瑞 --------
 local Contract_Dre = menu.list(Mission_Entity, "别惹德瑞", {}, "")
@@ -3020,7 +3017,9 @@ menu.action(Contract_Dre, "南中心区泄密：底盘车 传送到我", {}, "",
     end
 end)
 
+--#endregion Contract Dre
 
+--#region Franklin Payphone
 
 ------- 富兰克林电话任务 -------
 local Franklin_Payphone = menu.list(Mission_Entity, "富兰克林电话任务", {}, "")
@@ -3477,7 +3476,9 @@ menu.action(Security_Contract, "毁掉资产 任务失败", {}, "不再等待漫
         end
     end)
 
+--#endregion Franklin Payphone
 
+--#region MC Business
 
 ------- 摩托帮资产 -------
 local MC_Business = menu.list(Mission_Entity, "摩托帮资产", {}, "")
@@ -3567,8 +3568,9 @@ menu.action(MC_Business, "直捣黄龙：传送到 保险箱", {}, "", function(
     end
 end)
 
+--#endregion MC Business
 
-
+--#region LS Robbery
 
 ---------- 改装铺合约 ----------
 local LS_Robbery = menu.list(Mission_Entity, "改装铺合约", {}, "")
@@ -3892,9 +3894,9 @@ menu.action(LS_Robbery_TDC, "硬盘 传送到我", {}, "四个硬盘会堆在一
     end
 end)
 
+--#endregion LS Robbery
 
-
-
+--#region Air Freight
 
 ------- 机库拉货 -------
 local Air_Freight = menu.list(Mission_Entity, "机库拉货", {}, "")
@@ -3994,7 +3996,9 @@ menu.action(Air_Freight, "爆炸 所有敌对物体", { "obj_hostile_explode" },
     end
 end)
 
+--#endregion Air Freight
 
+--#region Other
 
 ------- 其它 -------
 local Mission_Entity_other = menu.list(Mission_Entity, "其它", {}, "")
@@ -4076,9 +4080,11 @@ menu.action(Mission_Entity_other, "通知 藏匿屋密码", { "stash_house_code"
     end
 end)
 
+--#endregion Other
 
 
 
+--#region All Entity Manage
 
 --------------------------
 --------- 所有实体 ---------
@@ -4636,8 +4642,11 @@ menu.divider(Saved_Hash_List.Manage_Hash_List_Menu, "列表")
 Saved_Hash_List.generate_menu_list(Saved_Hash_List.Manage_Hash_List_Menu)
 
 
+--#endregion All Entity Manage
 
 
+
+--#region Entity Info Gun
 
 menu.divider(Entity_options, "")
 
@@ -5465,3 +5474,6 @@ entity_info2.menu_vehicle = menu.list(Entity_Info_Gun2, "Vehicle", {}, "", funct
         Entity_Info.generate_menu(menu_mod_kit, data.mod.kit)
     end)
 end)
+
+
+--#endregion Entity Info Gun

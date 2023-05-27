@@ -682,6 +682,7 @@ menu.toggle_loop(Mission_Assistant, "秃鹰直升机 NPC禁用武器", {},
     end)
 
 
+--#region Apartment Heist
 
 ------ 公寓抢劫 ------
 menu.divider(Mission_Assistant, "公寓抢劫")
@@ -1335,6 +1336,7 @@ menu.action(Mission_Assistant_Pacific, "终章：摩托车位置 生成直升机
     end
 end)
 
+--#endregion Apartment Heist
 
 
 

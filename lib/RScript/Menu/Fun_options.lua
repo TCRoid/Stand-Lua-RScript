@@ -6,6 +6,236 @@ local Fun_options = menu.list(menu.my_root(), "娱乐选项", {}, "")
 
 
 
+
+----------------------
+-- 玩家受到伤害时
+----------------------
+local Player_Damage = menu.list(Fun_options, "玩家受到伤害时", {}, "")
+
+local player_damage = {
+    eventData = memory.alloc(13 * 8),
+    screenX = memory.alloc(8),
+    screenY = memory.alloc(8),
+    bonePtr = memory.alloc(4),
+
+    number = {
+        enable = false,
+
+
+        duration = 3000, -- ms
+        text_scale = 0.8,
+        text_colour = Colors.red,
+        -- 显示位置
+        pos_select = 1,
+        text_x = 0.5,
+        text_y = 0.5,
+    },
+
+    attacker = {
+        enable = false,
+
+        toggle = {
+            exclude_player = true,
+            dead = false,
+            explosion = false,
+            owned_explosion = false,
+            shoot_head = false,
+            fire = false,
+            remove_weapon = false,
+        },
+    },
+}
+
+function player_damage.to_screen_coords(coords)
+    local x, y = 0, 0
+    if GRAPHICS.GET_SCREEN_COORD_FROM_WORLD_COORD(coords.x, coords.y, coords.z,
+            player_damage.screenX, player_damage.screenY) then
+        x = memory.read_float(player_damage.screenX)
+        y = memory.read_float(player_damage.screenY)
+    end
+    return x, y
+end
+
+function player_damage.draw_damage_number(text, eventData)
+    local duration = player_damage.number.duration / 1000
+    local text_colour = player_damage.number.text_colour
+    local scale = player_damage.number.text_scale
+
+    local x, y = player_damage.number.text_x, player_damage.number.text_y
+    if player_damage.number.pos_select == 2 then
+        if PED.GET_PED_LAST_DAMAGE_BONE(players.user_ped(), player_damage.bonePtr) then
+            local boneId = memory.read_byte(player_damage.bonePtr)
+            local bone_coords = PED.GET_PED_BONE_COORDS(players.user_ped(), boneId, 0.0, 0.0, 0.0)
+            x, y = player_damage.to_screen_coords(bone_coords)
+        else
+            x, y = player_damage.to_screen_coords(ENTITY.GET_ENTITY_COORDS(players.user_ped()))
+        end
+    end
+
+    util.create_tick_handler(function()
+        local delta_time = MISC.GET_FRAME_TIME()
+
+        local alpha = math.min(1, duration)
+        directx.draw_text(x, y, text, ALIGN_CENTRE, scale,
+            { r = text_colour.r, g = text_colour.g, b = text_colour.b, a = text_colour.a * alpha }, false)
+
+        y = y - 0.002
+        duration = duration - delta_time * 2
+        if duration <= 0 then
+            return false
+        end
+    end)
+end
+
+function player_damage.attacker_reaction(attacker, eventData)
+    local toggle = player_damage.attacker.toggle
+
+    -- 排除玩家
+    if toggle.exclude_player and IS_PED_PLAYER(attacker) then
+    else
+        -- 死亡
+        if toggle.dead then
+            ENTITY.SET_ENTITY_HEALTH(attacker, 0)
+        end
+        -- 匿名爆炸
+        if toggle.explosion then
+            local pos = ENTITY.GET_ENTITY_COORDS(attacker)
+            add_explosion(pos, 4)
+        end
+        -- 署名爆炸
+        if toggle.owned_explosion then
+            local pos = ENTITY.GET_ENTITY_COORDS(attacker)
+            add_owned_explosion(players.user_ped(), pos, 4)
+        end
+        -- 爆头击杀
+        if toggle.shoot_head then
+            shoot_ped_head(attacker, util.joaat("WEAPON_PISTOL"))
+        end
+        -- 燃烧
+        if toggle.fire then
+            FIRE.START_ENTITY_FIRE(attacker)
+        end
+        -- 移除武器
+        if toggle.remove_weapon then
+            WEAPON.REMOVE_ALL_PED_WEAPONS(attacker)
+        end
+    end
+end
+
+menu.toggle_loop(Player_Damage, "开启", {}, "仅在线上模式才有效\n需要关闭无敌", function()
+    if util.is_session_started() and not util.is_session_transition_active() then
+        for eventIndex = 0, SCRIPT.GET_NUMBER_OF_EVENTS(1) - 1 do
+            local eventType = SCRIPT.GET_EVENT_AT_INDEX(1, eventIndex)
+            if eventType == 186 then -- CEventNetworkEntityDamage
+                if SCRIPT.GET_EVENT_DATA(1, eventIndex, player_damage.eventData, 13) then
+                    local eventData = {}
+                    eventData.Victim = memory.read_int(player_damage.eventData)           -- entity
+                    eventData.Attacker = memory.read_int(player_damage.eventData + 1 * 8) -- entity
+                    eventData.Damage = memory.read_float(player_damage.eventData + 2 * 8) -- float
+                    -- eventData.EnduranceDamage = memory.read_float(player_damage.eventData + 3 * 8)   -- float
+                    -- eventData.VictimIncapacitated = memory.read_int(player_damage.eventData + 4 * 8) -- bool
+                    eventData.VictimDestroyed = memory.read_int(player_damage.eventData + 5 * 8) -- bool
+                    eventData.WeaponHash = memory.read_int(player_damage.eventData + 6 * 8)      -- int
+                    -- eventData.VictimSpeed = memory.read_float(player_damage.eventData + 7 * 8)             -- float
+                    -- eventData.AttackerSpeed = memory.read_float(player_damage.eventData + 8 * 8)           -- float
+                    -- eventData.IsResponsibleForCollision = memory.read_int(player_damage.eventData + 9 * 8) -- bool
+                    -- eventData.IsHeadShot = memory.read_int(player_damage.eventData + 10 * 8)               -- bool
+                    -- eventData.IsWithMeleeWeapon = memory.read_int(player_damage.eventData + 11 * 8)        -- bool
+                    -- eventData.HitMaterial = memory.read_int(player_damage.eventData + 12 * 8)              -- int
+
+
+                    -- 受害者为玩家
+                    if eventData.Victim == players.user_ped() then
+                        -- 伤害数值显示
+                        if player_damage.number.enable then
+                            player_damage.draw_damage_number(round(eventData.Damage, 2), eventData)
+                        end
+
+                        -- 攻击者反应
+                        if player_damage.attacker.enable and eventData.Attacker ~= players.user_ped() then
+                            player_damage.attacker_reaction(eventData.Attacker, eventData)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+menu.divider(Player_Damage, "选项")
+
+
+----- 伤害数值显示  -----
+menu.toggle(Player_Damage, "伤害数值显示", {}, "", function(toggle)
+    player_damage.number.enable = toggle
+end)
+
+local Player_Damage_Number = menu.list(Player_Damage, "伤害数值显示设置", {}, "")
+
+menu.slider(Player_Damage_Number, "显示时长(毫秒)", { "player_damage_number_duration" }, "",
+    500, 10000, 3000, 500, function(value)
+        player_damage.number.duration = value
+    end)
+menu.slider_float(Player_Damage_Number, "文字大小", { "player_damage_number_text_scale" }, "",
+    1, 1000, 70, 5, function(value)
+        player_damage.number.text_scale = value * 0.01
+    end)
+menu.colour(Player_Damage_Number, "文字颜色", { "player_damage_number_text_colour" }, "",
+    Colors.red, true, function(value)
+        player_damage.number.text_colour = value
+    end)
+
+menu.list_select(Player_Damage_Number, "位置", {}, "", {
+    { "国定位置" }, { "受到伤害的位置", {}, "玩家位置" }
+}, 1, function(value)
+    player_damage.number.pos_select = value
+end)
+menu.slider_float(Player_Damage_Number, "固定位置 X", { "player_damage_number_text_x" }, "",
+    0, 100, 50, 1, function(value)
+        player_damage.number.text_x = value * 0.01
+    end)
+menu.slider_float(Player_Damage_Number, "固定位置 Y", { "player_damage_number_text_y" }, "",
+    0, 100, 50, 1, function(value)
+        player_damage.number.text_y = value * 0.01
+    end)
+
+menu.action(Player_Damage_Number, "测试效果", {}, "", function()
+    player_damage.draw_damage_number(math.random(0, 100))
+end)
+
+
+----- 攻击者反应 -----
+menu.toggle(Player_Damage, "攻击者反应", {}, "", function(toggle)
+    player_damage.attacker.enable = toggle
+end)
+
+local Player_Damage_Attacker = menu.list(Player_Damage, "攻击者反应设置", {}, "")
+
+menu.toggle(Player_Damage_Attacker, "排除玩家", {}, "", function(toggle)
+    player_damage.attacker.toggle.exclude_player = toggle
+end, true)
+menu.toggle(Player_Damage_Attacker, "死亡", {}, "", function(toggle)
+    player_damage.attacker.toggle.dead = toggle
+end)
+menu.toggle(Player_Damage_Attacker, "匿名爆炸", {}, "", function(toggle)
+    player_damage.attacker.toggle.explosion = toggle
+end)
+menu.toggle(Player_Damage_Attacker, "署名爆炸", {}, "", function(toggle)
+    player_damage.attacker.toggle.owned_explosion = toggle
+end)
+menu.toggle(Player_Damage_Attacker, "爆头击杀", {}, "", function(toggle)
+    player_damage.attacker.toggle.shoot_head = toggle
+end)
+menu.toggle(Player_Damage_Attacker, "燃烧", {}, "", function(toggle)
+    player_damage.attacker.toggle.fire = toggle
+end)
+menu.toggle(Player_Damage_Attacker, "移除武器", {}, "", function(toggle)
+    player_damage.attacker.toggle.remove_weapon = toggle
+end)
+
+
+
+
 --------------------
 -- 玩家死亡反应
 --------------------
@@ -30,20 +260,20 @@ local self_death_reaction = {
         blip_list = {},
     },
 }
+
 menu.toggle_loop(Self_Death_Reaction, "启用", {}, "", function()
     local player_ped = players.user_ped()
 
     if PLAYER.IS_PLAYER_DEAD(players.user()) then
         if not self_death_reaction.flag then
-            --- 击杀者 ---
+            ----- 击杀者 -----
             local ent = PED.GET_PED_SOURCE_OF_DEATH(player_ped)
             if IS_AN_ENTITY(ent) and ent ~= player_ped then
-                --排除玩家
+                -- 排除玩家
                 if self_death_reaction.killer.exclude_player and IS_PED_PLAYER(ent) then
                 else
                     local pos = ENTITY.GET_ENTITY_COORDS(ent)
-
-                    --爆炸
+                    -- 爆炸
                     if self_death_reaction.killer.explosion then
                         util.create_thread(function()
                             for i = 1, self_death_reaction.killer.explosion, 1 do
@@ -53,8 +283,7 @@ menu.toggle_loop(Self_Death_Reaction, "启用", {}, "", function()
                             end
                         end)
                     end
-
-                    --坠落爆炸
+                    -- 坠落爆炸
                     if self_death_reaction.killer.fall_explosion > 0 then
                         util.create_thread(function()
                             ENTITY.FREEZE_ENTITY_POSITION(ent, false)
@@ -79,8 +308,7 @@ menu.toggle_loop(Self_Death_Reaction, "启用", {}, "", function()
                                 false, 0.0)
                         end)
                     end
-
-                    --RPG轰炸
+                    -- RPG轰炸
                     if self_death_reaction.killer.rpg > 0 then
                         util.create_thread(function()
                             local weaponHash = util.joaat("WEAPON_RPG")
@@ -94,23 +322,19 @@ menu.toggle_loop(Self_Death_Reaction, "启用", {}, "", function()
                             end
                         end)
                     end
-
-                    --死亡
+                    -- 死亡
                     if self_death_reaction.killer.dead then
                         ENTITY.SET_ENTITY_HEALTH(ent, 0)
                     end
-
-                    --冻结
+                    -- 冻结
                     if self_death_reaction.killer.freeze then
                         ENTITY.FREEZE_ENTITY_POSITION(ent, true)
                     end
-
-                    --燃烧
+                    -- 燃烧
                     if self_death_reaction.killer.fire then
                         FIRE.START_ENTITY_FIRE(ent)
                     end
-
-                    --标记点
+                    -- 标记点
                     if self_death_reaction.killer.blip then
                         local blip = add_blip_for_entity(ent, 303, 1)
                         table.insert(self_death_reaction.killer.blip_list, blip)
@@ -119,9 +343,10 @@ menu.toggle_loop(Self_Death_Reaction, "启用", {}, "", function()
             end
 
 
-            --- 死亡位置 ---
+            ----- 死亡位置 -----
             local dead_pos = ENTITY.GET_ENTITY_COORDS(player_ped)
 
+            -- 爆炸
             if self_death_reaction.position.explosion > 0 then
                 util.create_thread(function()
                     for i = 1, self_death_reaction.position.explosion, 1 do
@@ -130,7 +355,7 @@ menu.toggle_loop(Self_Death_Reaction, "启用", {}, "", function()
                     end
                 end)
             end
-
+            -- 标记点
             if self_death_reaction.position.blip then
                 local blip = HUD.ADD_BLIP_FOR_COORD(dead_pos.x, dead_pos.y, dead_pos.z)
                 HUD.SET_BLIP_SPRITE(blip, 274)
@@ -230,13 +455,13 @@ menu.toggle_loop(Vehicle_Collision_Reaction, "启用", {}, "", function()
                 if not IS_PLAYER_VEHICLE(vehicle) then
                     if vehicle_collision_reaction.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(vehicle) then
                     else
-                        --请求控制
+                        -- 请求控制
                         RequestControl(vehicle)
-                        --破坏引擎
+                        -- 破坏引擎
                         if vehicle_collision_reaction.kill_engine then
                             VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, -4000)
                         end
-                        --爆胎
+                        -- 爆胎
                         if vehicle_collision_reaction.burst_tyre then
                             for i = 0, 5 do
                                 if not VEHICLE.IS_VEHICLE_TYRE_BURST(vehicle, i, true) then
@@ -244,7 +469,7 @@ menu.toggle_loop(Vehicle_Collision_Reaction, "启用", {}, "", function()
                                 end
                             end
                         end
-                        --推开
+                        -- 推开
                         if vehicle_collision_reaction.push_away then
                             local force = ENTITY.GET_ENTITY_COORDS(vehicle)
                             v3.sub(force, ENTITY.GET_ENTITY_COORDS(player_veh))
@@ -254,7 +479,7 @@ menu.toggle_loop(Vehicle_Collision_Reaction, "启用", {}, "", function()
                                 0, 0, 0.5, 0,
                                 false, false, true, false, false)
                         end
-                        --发射上天
+                        -- 发射上天
                         if vehicle_collision_reaction.launch then
                             ENTITY.APPLY_FORCE_TO_ENTITY(vehicle, 1, 0.0, 0.0, vehicle_collision_reaction.launch_height,
                                 0.0, 0.0, 0.0, 0,
