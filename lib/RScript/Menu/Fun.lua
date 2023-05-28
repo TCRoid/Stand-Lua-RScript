@@ -123,7 +123,7 @@ function player_damage.attacker_reaction(attacker, eventData)
 end
 
 menu.toggle_loop(Player_Damage, "开启", {}, "仅在线上模式才有效\n需要关闭无敌", function()
-    if util.is_session_started() and not util.is_session_transition_active() then
+    if IS_IN_SESSION() then
         for eventIndex = 0, SCRIPT.GET_NUMBER_OF_EVENTS(1) - 1 do
             local eventType = SCRIPT.GET_EVENT_AT_INDEX(1, eventIndex)
             if eventType == 186 then -- CEventNetworkEntityDamage

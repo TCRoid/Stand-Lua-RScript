@@ -5,6 +5,7 @@
 local Mission_options = menu.list(menu.my_root(), "任务选项", {}, "")
 
 
+
 ---------------------
 -- 分红编辑
 ---------------------
@@ -39,6 +40,7 @@ end)
 menu.click_slider(Heist_Cut_Editor, "玩家4", { "cut4edit" }, "", 0, 300, 85, 5, function(value)
     SET_INT_GLOBAL(cut_global_base + 4, value)
 end)
+
 
 
 ---------------------
@@ -105,137 +107,6 @@ menu.action(Casion_Heist, "写入 BITSET0 值", {}, "写入到 H3OPT_BITSET0", f
     STAT_SET_INT("H3OPT_BITSET0", bitset0)
     util.toast("已将 H3OPT_BITSET0 修改为: " .. bitset0)
 end)
-
-
----------------------
--- 资产监视
----------------------
-local Business_Monitor = menu.list(Mission_options, "资产监视", { "business_monitor" }, "")
-
-local Business = {}
-
-function Business.GetOrgOffset()
-    return (1892703 + 1 + (players.user() * 599) + 10)
-end
-
-function Business.GetOnlineWorkOffset()
-    return (1853910 + 1 + (players.user() * 862) + 267)
-end
-
-function Business.GetNightclubValue(slot)
-    local offset = Business.GetOnlineWorkOffset() + 310 + 8 + 1 + slot
-    return GET_INT_GLOBAL(offset)
-end
-
-function Business.GetBusinessSupplies(slot)
-    return STAT_GET_INT("MATTOTALFORFACTORY" .. slot)
-end
-
-function Business.GetBusinessProduct(slot)
-    return STAT_GET_INT("PRODTOTALFORFACTORY" .. slot)
-end
-
-Business.Caps = {
-    NightClub = {
-        [0] = 50,  -- Cargo
-        [1] = 100, -- Weapons
-        [2] = 10,  -- Cocaine
-        [3] = 20,  -- Meth
-        [4] = 80,  -- Weed
-        [5] = 60,  -- Forgery
-        [6] = 40   -- Cash
-    },
-}
-
-local Business_Monitor_Menu = {
-    bunker = {
-        supplies,
-        product,
-        research,
-    },
-    nightclub = {
-        safe_cash,
-        popularity,
-        product = {
-            [0] = { name = "运输货物", menu },
-            [1] = { name = "体育用品", menu },
-            [2] = { name = "南美进口货", menu },
-            [3] = { name = "药学研究产品", menu },
-            [4] = { name = "有机农产品", menu },
-            [5] = { name = "印刷品", menu },
-            [6] = { name = "印钞", menu },
-        },
-    },
-    acid_lab = {
-        supplies,
-        product,
-    },
-    arcade_safe_cash,
-    agency_safe_cash,
-}
-menu.action(Business_Monitor, "刷新状态", {}, "", function()
-    if util.is_session_started() and not util.is_session_transition_active() then
-        --- Bunker ---
-        local slot = 5
-        local text = ""
-        text = Business.GetBusinessSupplies(slot) .. "%"
-        menu.set_value(Business_Monitor_Menu.bunker.supplies, text)
-
-        text = Business.GetBusinessProduct(slot) .. "/100"
-        menu.set_value(Business_Monitor_Menu.bunker.product, text)
-
-        text = STAT_GET_INT("RESEARCHTOTALFORFACTORY5")
-        menu.set_value(Business_Monitor_Menu.bunker.research, text)
-
-        --- Nightclub ---
-        text = math.floor(STAT_GET_INT('CLUB_POPULARITY') / 10) .. '%'
-        menu.set_value(Business_Monitor_Menu.nightclub.popularity, text)
-        menu.set_value(Business_Monitor_Menu.nightclub.safe_cash, STAT_GET_INT("CLUB_SAFE_CASH_VALUE"))
-
-        for i = 0, 6 do
-            local t = Business.GetNightclubValue(i) .. "/" .. Business.Caps.NightClub[i]
-            menu.set_value(Business_Monitor_Menu.nightclub.product[i].menu, t)
-        end
-
-        --- Acid Lab ---
-        slot = 6
-        text = Business.GetBusinessSupplies(slot) .. "%"
-        menu.set_value(Business_Monitor_Menu.acid_lab.supplies, text)
-
-        text = Business.GetBusinessProduct(slot) .. "/160"
-        menu.set_value(Business_Monitor_Menu.acid_lab.product, text)
-
-        --- Other ---
-        menu.set_value(Business_Monitor_Menu.arcade_safe_cash, STAT_GET_INT("ARCADE_SAFE_CASH_VALUE"))
-        menu.set_value(Business_Monitor_Menu.agency_safe_cash, STAT_GET_INT("FIXER_SAFE_CASH_VALUE"))
-    else
-        util.toast("仅在线上模式战局内可用")
-    end
-end)
-
-menu.divider(Business_Monitor, "地堡")
-Business_Monitor_Menu.bunker.supplies = menu.readonly(Business_Monitor, "原材料")
-Business_Monitor_Menu.bunker.product = menu.readonly(Business_Monitor, "产品")
-Business_Monitor_Menu.bunker.research = menu.readonly(Business_Monitor, "研究")
-
-menu.divider(Business_Monitor, "夜总会")
-Business_Monitor_Menu.nightclub.popularity = menu.readonly(Business_Monitor, "夜总会人气")
-Business_Monitor_Menu.nightclub.safe_cash  = menu.readonly(Business_Monitor, "保险箱现金")
-for i = 0, 6 do
-    Business_Monitor_Menu.nightclub.product[i].menu = menu.readonly(Business_Monitor,
-        Business_Monitor_Menu.nightclub.product[i].name)
-end
-
-menu.divider(Business_Monitor, "致幻剂实验室")
-Business_Monitor_Menu.acid_lab.supplies = menu.readonly(Business_Monitor, "原材料")
-Business_Monitor_Menu.acid_lab.product = menu.readonly(Business_Monitor, "产品")
-
-menu.divider(Business_Monitor, "其它")
-Business_Monitor_Menu.arcade_safe_cash = menu.readonly(Business_Monitor, "游戏厅保险箱现金")
-Business_Monitor_Menu.agency_safe_cash = menu.readonly(Business_Monitor, "事务所保险箱现金")
-
-
-
 
 
 
@@ -332,7 +203,6 @@ menu.toggle_loop(Local_Editor, "锁定写入", {}, "更改地址类型，锁定�
         end
     end
 end)
-
 
 
 
@@ -1337,6 +1207,8 @@ menu.action(Mission_Assistant_Pacific, "终章：摩托车位置 生成直升机
 end)
 
 --#endregion Apartment Heist
+
+
 
 
 

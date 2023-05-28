@@ -4004,9 +4004,9 @@ end)
 local Mission_Entity_other = menu.list(Mission_Entity, "其它", {}, "")
 
 menu.action(Mission_Entity_other, "打开 恐霸屏幕", { "open_terrorbyte" }, "", function()
-    if util.is_session_started() and not util.is_session_transition_active() then
+    if IS_IN_SESSION() then
         SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 1)
-        START_SCRIPT(Globals.SpecialCargoBuyScreenString, Globals.SpecialCargoBuyScreenArgs)
+        START_SCRIPT("appHackerTruck", Locals.appHackerTruckArgs)
     end
 end)
 menu.action(Mission_Entity_other, "传送到 夜总会VIP客户", { "tp_radar_vip" }, "", function()

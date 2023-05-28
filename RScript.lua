@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("1681379138")
 
-local SCRIPT_VERSION <const> = "2023/5/27"
+local SCRIPT_VERSION <const> = "2023/5/28"
 
 local SUPPORT_GTAO <const> = 1.66
 
@@ -48,11 +48,12 @@ local Required_Files <const> = {
     "lib\\RScript\\variables.lua",
     "lib\\RScript\\functions.lua",
     "lib\\RScript\\functions2.lua",
-    "lib\\RScript\\Menu\\Entity_options.lua",
-    "lib\\RScript\\Menu\\Mission_options.lua",
-    "lib\\RScript\\Menu\\Dev_options.lua",
-    "lib\\RScript\\Menu\\Fun_options.lua",
-    "lib\\RScript\\Menu\\Player_options.lua",
+    "lib\\RScript\\Menu\\Entity.lua",
+    "lib\\RScript\\Menu\\Mission.lua",
+    "lib\\RScript\\Menu\\Online.lua",
+    "lib\\RScript\\Menu\\Dev.lua",
+    "lib\\RScript\\Menu\\Fun.lua",
+    "lib\\RScript\\Menu\\Player.lua",
 }
 for _, file in pairs(Required_Files) do
     local file_path = ScriptDir .. file
@@ -4171,9 +4172,35 @@ end)
 -----------------------------------
 ------------ 世界实体选项 -----------
 -----------------------------------
-require "RScript.Menu.Entity_options"
+require "RScript.Menu.Entity"
 
 --#endregion Entity Options
+
+
+
+
+
+--#region Online Options
+
+----------------------------------
+------------- 线上选项 ------------
+----------------------------------
+require "RScript.Menu.Online"
+
+--#endregion Online Options
+
+
+
+
+
+--#region Mission Options
+
+--------------------------------
+------------ 任务选项 -----------
+--------------------------------
+require "RScript.Menu.Mission"
+
+--#endregion Mission Options
 
 
 
@@ -4457,64 +4484,6 @@ menu.slider_float(Population_Density_Sphere, "交通密度", { "population_densi
 menu.toggle(Population_Density_Sphere, "仅本地有效", {}, "", function(toggle)
     population_density_sphere.localOnly = toggle
 end)
-
-
-
--------------------
--- 玩家语言
--------------------
-local Player_Language = menu.list(Session_options, "玩家语言", {}, "获取玩家游戏使用的语言")
-
-local player_language_data = {
-    language = {
-        [-1] = "未定义",
-        [0] = "英语",
-        [1] = "法语",
-        [2] = "德语",
-        [3] = "意大利语",
-        [4] = "西班牙语",
-        [5] = "葡萄牙语",
-        [6] = "波兰语",
-        [7] = "俄语",
-        [8] = "韩语",
-        [9] = "繁体中文",
-        [10] = "日语",
-        [11] = "墨西哥语",
-        [12] = "简体中文"
-    },
-    menu_list = {},
-    notify = true,
-}
-
-menu.action(Player_Language, "获取玩家语言列表", { "player_language" }, "", function()
-    for k, v in pairs(player_language_data.menu_list) do
-        if menu.is_ref_valid(v) then
-            menu.delete(v)
-        end
-    end
-    player_language_data.menu_list = {}
-
-    local text = ""
-    for k, pid in pairs(players.list()) do
-        local name                          = players.get_name(pid)
-        local rank                          = players.get_rank(pid)
-        local lang                          = players.get_language(pid)
-        local lang_text                     = player_language_data.language[lang]
-        local title                         = name .. " (" .. rank .. "级)"
-
-        player_language_data.menu_list[pid] = menu.readonly(Player_Language, title, lang_text)
-
-        text                                = text .. title .. "     " .. lang_text .. "\n"
-    end
-    if player_language_data.notify then
-        util.toast(text)
-    end
-end)
-menu.toggle(Player_Language, "通知", {}, "", function(toggle)
-    player_language_data.notify = toggle
-end, true)
-menu.divider(Player_Language, "列表")
-
 
 
 
@@ -5096,7 +5065,7 @@ end)
 --------------------------------
 ------------ 娱乐选项 ------------
 --------------------------------
-require "RScript.Menu.Fun_options"
+require "RScript.Menu.Fun"
 
 --#endregion Fun Options
 
@@ -5142,19 +5111,6 @@ end)
 
 
 
---#region Mission Options
-
---------------------------------
------------- 任务选项 -----------
---------------------------------
-require "RScript.Menu.Mission_options"
-
---#endregion Mission Options
-
-
-
-
-
 --#region Other options
 
 --------------------------------
@@ -5163,7 +5119,8 @@ require "RScript.Menu.Mission_options"
 local Other_options = menu.list(menu.my_root(), "其它选项", {}, "")
 
 Dev_options = menu.list(Other_options, "开发者选项", {}, "")
-require "RScript.Menu.Dev_options"
+require "RScript.Menu.Dev"
+
 
 
 ------------------
@@ -5235,6 +5192,7 @@ menu.click_slider(Snack_Armour_Editor, "霜碧", { "snack_sprunk" }, "+36 Health
     end)
 
 
+
 --------------------
 ----- 标记点选项 -----
 --------------------
@@ -5243,25 +5201,26 @@ local Blip_options = menu.list(Other_options, "标记点选项", {}, "")
 ------------------
 -- 地图全部标记点
 ------------------
-local Blip_all = menu.list(Blip_options, "地图全部标记点", {}, "")
+local All_Blip_On_Map = menu.list(Blip_options, "地图全部标记点", {}, "")
 
-local blip_count = 0      -- 获取到的标记点数量
-local blip_menu_list = {} -- 标记点列表 menu.list
+local map_all_blip = {
+    count = 0,      -- 获取到的标记点数量
+    menu_list = {}, -- 标记点的 menu.list
+}
 
-local function Init_blip_menu_list()
-    if next(blip_menu_list) ~= nil then
-        for k, v in pairs(blip_menu_list) do
-            if v ~= nil and menu.is_ref_valid(v) then
-                menu.delete(v)
-            end
+function map_all_blip.init_list_data()
+    for k, v in pairs(map_all_blip.menu_list) do
+        if v ~= nil and menu.is_ref_valid(v) then
+            menu.delete(v)
         end
     end
-    menu.set_menu_name(Blip_all_divider, "标记点列表")
-    blip_count = 0
-    blip_menu_list = {} -- menu.list
+
+    menu.set_menu_name(map_all_blip.menu_divider, "标记点列表")
+    map_all_blip.count = 0
+    map_all_blip.menu_list = {}
 end
 
-local function generate_blip_menu(menu_parent, blip)
+function map_all_blip.generate_menu(menu_parent, blip)
     menu.divider(menu_parent, menu.get_menu_name(menu_parent))
 
     local sprite = HUD.GET_BLIP_SPRITE(blip)
@@ -5391,9 +5350,9 @@ local function generate_blip_menu(menu_parent, blip)
     end)
 end
 
-menu.action(Blip_all, "获取地图显示的全部标记点", {}, "重复的标记点只能获取到最近的一个",
+menu.action(All_Blip_On_Map, "获取地图显示的全部标记点", {}, "重复的标记点只能获取到最近的一个",
     function()
-        Init_blip_menu_list()
+        map_all_blip.init_list_data()
 
         for i = 0, 826, 1 do
             -- local blip = HUD.GET_FIRST_BLIP_INFO_ID(i)
@@ -5402,23 +5361,24 @@ menu.action(Blip_all, "获取地图显示的全部标记点", {}, "重复的标�
                 local blip_name = All_Blips[i + 1]
                 local blip_type = GET_BLIP_TYPE(blip)
 
+                -- menu.list
                 local menu_name = i .. ". " .. blip_name
                 local help_text = "Type: " .. blip_type
-                local menu_list = menu.list(Blip_all, menu_name, {}, help_text)
-                generate_blip_menu(menu_list, blip)
+                local menu_list = menu.list(All_Blip_On_Map, menu_name, {}, help_text)
+                map_all_blip.generate_menu(menu_list, blip)
 
-                table.insert(blip_menu_list, menu_list)
+                table.insert(map_all_blip.menu_list, menu_list)
 
-                blip_count = blip_count + 1
-                menu.set_menu_name(Blip_all_divider, "标记点列表 (" .. blip_count .. ")")
+                map_all_blip.count = map_all_blip.count + 1
+                menu.set_menu_name(map_all_blip.menu_divider, "标记点列表 (" .. map_all_blip.count .. ")")
             end
         end
     end)
 
-menu.action(Blip_all, "清空列表", {}, "", function()
-    Init_blip_menu_list()
+menu.action(All_Blip_On_Map, "清空列表", {}, "", function()
+    map_all_blip.init_list_data()
 end)
-Blip_all_divider = menu.divider(Blip_all, "标记点列表")
+map_all_blip.menu_divider = menu.divider(All_Blip_On_Map, "标记点列表")
 
 
 
@@ -5428,14 +5388,14 @@ Blip_all_divider = menu.divider(Blip_all, "标记点列表")
 local Blip_custom = menu.list(Blip_options, "自定义标记点", {}, "")
 
 local waypoint_blip_sprite = 8
-menu.slider_text(Blip_custom, "标记点类型", {}, "点击应用修改\n只作用于第一个标记的大头针位置"
-, { "标记点位置", "大头针位置" }, function(value)
-    if value == 1 then
-        waypoint_blip_sprite = 8
-    elseif value == 2 then
-        waypoint_blip_sprite = 162
-    end
-end)
+menu.slider_text(Blip_custom, "标记点类型", {}, "点击应用修改\n只作用于第一个标记的大头针位置",
+    { "标记点位置", "大头针位置" }, function(value)
+        if value == 1 then
+            waypoint_blip_sprite = 8
+        elseif value == 2 then
+            waypoint_blip_sprite = 162
+        end
+    end)
 
 menu.toggle(Blip_custom, "在小地图上显示标记点", {}, "", function(toggle)
     local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
@@ -5555,134 +5515,23 @@ menu.action(Waypoint_Explosion, "RPG轰炸", {}, "以玩家的名义轰炸", fun
 end)
 
 
--------------------
------ 请求服务 -----
--------------------
-local Request_Service_options = menu.list(Other_options, "请求服务", {}, "")
-
-local Request_Service_Remove = menu.list(Request_Service_options, "移除冷却时间和费用", {}, "切换战局后会失效，需要重新操作")
-menu.toggle(Request_Service_Remove, "CEO技能冷却时间", {}, "", function(toggle)
-    if toggle then
-        for k, v in pairs(Globals.CEO_Ability.Cooldown) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, 0)
-        end
-    else
-        for k, v in pairs(Globals.CEO_Ability.Cooldown) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, v[2])
-        end
-    end
-end)
-menu.toggle(Request_Service_Remove, "CEO技能费用", {}, "", function(toggle)
-    if toggle then
-        for k, v in pairs(Globals.CEO_Ability.Cost) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, 0)
-        end
-    else
-        for k, v in pairs(Globals.CEO_Ability.Cost) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, v[2])
-        end
-    end
-end)
-menu.toggle(Request_Service_Remove, "CEO载具请求冷却时间", {}, "", function(toggle)
-    if toggle then
-        SET_INT_GLOBAL(Globals.GB_CALL_VEHICLE_COOLDOWN, 0)
-    else
-        SET_INT_GLOBAL(Globals.GB_CALL_VEHICLE_COOLDOWN, 120000)
-    end
-end)
-menu.toggle(Request_Service_Remove, "CEO载具请求费用", {}, "", function(toggle)
-    if toggle then
-        for k, v in pairs(Globals.CEO_Vehicle_Request_Cost) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, 0)
-        end
-    else
-        for k, v in pairs(Globals.CEO_Vehicle_Request_Cost) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, v[2])
-        end
-    end
-end)
-
-
-----------------
-menu.action(Request_Service_options, "请求重型装甲", { "ammo_drop" }, "请求弹道装甲和火神机枪",
-    function()
-        SET_INT_GLOBAL(Globals.Ballistic_Armor, 1)
-    end)
-menu.action(Request_Service_options, "重型装甲包裹 传送到我", {}, "", function()
-    local entity_model_hash = 1688540826
-    for k, ent in pairs(entities.get_all_pickups_as_handles()) do
-        local hash = ENTITY.GET_ENTITY_MODEL(ent)
-        if hash == entity_model_hash and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
-            TP_TO_ME(ent, 0.0, 1.0, 0.0)
-        end
-    end
-end)
-menu.toggle(Request_Service_options, "请求RC坦克", {}, "", function(toggle)
-    if toggle then
-        SET_INT_GLOBAL(Globals.RC_Tank, 1)
-    else
-        SET_INT_GLOBAL(Globals.RC_Tank, 0)
-    end
-end)
-menu.toggle(Request_Service_options, "请求RC匪徒", {}, "", function(toggle)
-    if toggle then
-        SET_INT_GLOBAL(Globals.RC_Bandito, 1)
-    else
-        SET_INT_GLOBAL(Globals.RC_Bandito, 0)
-    end
-end)
-
-menu.divider(Request_Service_options, "无视犯罪")
-menu.toggle_loop(Request_Service_options, "锁定倒计时", {}, "无视犯罪的倒计时", function()
-    SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
-    util.yield(5000)
-end)
-menu.action(Request_Service_options, "警察无视犯罪", { "no_cops" }, "莱斯特电话请求", function()
-    SET_INT_GLOBAL(Globals.NCOPS.type, 5)
-    SET_INT_GLOBAL(Globals.NCOPS.flag, 1)
-    SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
-end)
-menu.click_slider(Request_Service_options, "贿赂当局 倒计时时间", {}, "单位:分钟", 1, 60, 2, 1,
-    function(value)
-        SET_INT_GLOBAL(Globals.GB_BRIBE_AUTHORITIES_DURATION, value * 60 * 1000)
-        util.toast("完成！")
-    end)
-menu.toggle(Request_Service_options, "贿赂当局", {}, "CEO技能", function(toggle)
-    if toggle then
-        SET_INT_GLOBAL(Globals.NCOPS.type, 81)
-        SET_INT_GLOBAL(Globals.NCOPS.flag, 1)
-        SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
-    else
-        SET_INT_GLOBAL(Globals.NCOPS.time, 0)
-    end
-end)
-
-menu.divider(Request_Service_options, "幽灵组织")
-menu.click_slider(Request_Service_options, "倒计时时间", {}, "单位:分钟", 1, 60, 3, 1,
-    function(value)
-        SET_INT_GLOBAL(Globals.GB_GHOST_ORG_DURATION, value * 60 * 1000)
-        util.toast("完成！")
-    end)
--- menu.action(Request_Service_options, "幽灵组织", { "ghost_org" }, "CEO技能\n~Not Working~", function() end)
-
 
 -------------------
 ----- 聊天选项 -----
 -------------------
 local Chat_options = menu.list(Other_options, "聊天选项", {}, "")
 
+local nophonespam = menu.ref_by_command_name("nophonespam")
 menu.toggle_loop(Chat_options, "打字时禁用来电电话", {}, "避免在打字时有电话把输入框挤掉",
     function()
         if chat.is_open() then
-            menu.trigger_commands("nophonespam on")
+            if not menu.get_value(nophonespam) then
+                menu.set_value(nophonespam, true)
+            end
         else
-            menu.trigger_commands("nophonespam off")
+            if menu.get_value(nophonespam) then
+                menu.set_value(nophonespam, false)
+            end
         end
     end, function()
         menu.trigger_commands("nophonespam off")
@@ -5777,6 +5626,7 @@ menu.readonly(About_options, "Version", SCRIPT_VERSION)
 menu.readonly(About_options, "Support GTAO Version", SUPPORT_GTAO)
 
 
+
 ---------------------------------------------------------------
 
 
@@ -5788,4 +5638,4 @@ menu.readonly(About_options, "Support GTAO Version", SUPPORT_GTAO)
 ------------ 玩家选项 -----------
 --------------------------------
 
-require "RScript.Menu.Player_options"
+require "RScript.Menu.Player"
