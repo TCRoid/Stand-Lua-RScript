@@ -858,6 +858,8 @@ menu.action(Nearby_Vehicle_options, "解锁车门", { "unlock_vehs_door" }, "", 
         VEHICLE.SET_VEHICLE_INFLUENCES_WANTED_LEVEL(vehicle, false)
         VEHICLE.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER(vehicle, true)
         VEHICLE.SET_VEHICLE_IS_STOLEN(vehicle, false)
+
+        ENTITY.FREEZE_ENTITY_POSITION(vehicle, false)
     end
 end)
 menu.action(Nearby_Vehicle_options, "打开左右车门和引擎", { "open_vehs_door" }, "", function()
@@ -2348,8 +2350,8 @@ menu.action(Cayo_Perico, "传送进 美杜莎", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1077420264)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
+            set_entity_godmode(ent, true)
             VEHICLE.SET_VEHICLE_ENGINE_ON(ent, true, true, false)
-            ENTITY.SET_ENTITY_INVINCIBLE(ent, true)
             PED.SET_PED_INTO_VEHICLE(players.user_ped(), ent, -1)
         end
     end
@@ -2422,7 +2424,7 @@ menu.action(Cayo_Perico, "武器 传送到我", {}, "拾取后重新进入虎鲸
         end
     end
 end)
-menu.action(Cayo_Perico, "武器 炸掉女武神", {}, "不再等他慢慢的飞", function()
+menu.action(Cayo_Perico, "武器 炸掉女武神", {}, "不再等它慢慢的飞", function()
     local entity_list = get_entities_by_hash("vehicle", true, -1600252419)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -3009,10 +3011,8 @@ menu.action(Contract_Dre, "南中心区泄密：底盘车 传送到我", {}, "",
     local entity_list = get_entities_by_hash("vehicle", true, -1013450936)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, 0.0)
-            SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
-            TP_INTO_VEHICLE(ent, "", "tp")
-            ENTITY.SET_ENTITY_HEALTH(ent, 10000)
+            TP_VEHICLE_TO_ME(ent, "", "tp")
+            set_entity_godmode(ent, true)
         end
     end
 end)
@@ -4854,7 +4854,7 @@ function Entity_Info.entity_info(entity)
     table.insert(entity_info.main, info)
 
     -- Owner
-    local owner = entities.get_owner(entities.handle_to_pointer(entity))
+    local owner = entities.get_owner(entity)
     info = { "Entity Owner", players.get_name(owner) }
     table.insert(entity_info.main, info)
 

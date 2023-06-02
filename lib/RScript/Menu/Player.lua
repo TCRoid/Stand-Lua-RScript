@@ -580,7 +580,7 @@ local Player_options = function(pid)
                 ENTITY.FREEZE_ENTITY_POSITION(ent, custom_generate_entity_data.is_freeze)
                 ENTITY.SET_ENTITY_VISIBLE(ent, not custom_generate_entity_data.is_invisible, 0)
                 if custom_generate_entity_data.cant_migrate then
-                    entities.set_can_migrate(entities.handle_to_pointer(ent), false)
+                    entities.set_can_migrate(ent, false)
                 end
                 if custom_generate_entity_data.no_collision then
                     ENTITY.SET_ENTITY_COLLISION(ent, false, false)

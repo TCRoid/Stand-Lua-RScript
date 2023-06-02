@@ -320,21 +320,10 @@ end, true)
 
 menu.divider(Mission_Assistant_Nearby_Road, "载具列表")
 
-local Nearby_Road_Vehicle_ListItem = {
-    -- name, model, help_text
-    { "警车",                "police3",    "" },
-    { "坦克",                "khanjali",   "" },
-    { "骷髅马",             "kuruma2",    "" },
-    { "警用直升机",       "polmav",     "" },
-    { "子弹",                "bullet",     "大街上随处可见的超级跑车" },
-    { "801巴提",             "bati",       "" },
-    { "暴君MK2",             "oppressor2", "" },
-    { "秃鹰攻击直升机", "buzzard",    "" },
-}
-for _, data in pairs(Nearby_Road_Vehicle_ListItem) do
-    local name = "生成 " .. data[1]
-    local hash = util.joaat(data[2])
-    menu.action(Mission_Assistant_Nearby_Road, name, {}, data[3], function()
+for _, data in pairs(Vehicle_Common) do
+    local name = "生成 " .. data.name
+    local hash = util.joaat(data.model)
+    menu.action(Mission_Assistant_Nearby_Road, name, {}, data.help_text, function()
         local pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
         local bool, coords, heading = false, pos, 0
 
@@ -427,10 +416,10 @@ local function generate_mpa_player_commands(menu_parent, pid)
 
     menu.divider(neayby_veh, "载具列表")
 
-    for _, data in pairs(Nearby_Road_Vehicle_ListItem) do
-        local name = "生成 " .. data[1]
-        local hash = util.joaat(data[2])
-        menu.action(neayby_veh, name, {}, data[3], function()
+    for _, data in pairs(Vehicle_Common) do
+        local name = "生成 " .. data.name
+        local hash = util.joaat(data.model)
+        menu.action(neayby_veh, name, {}, data.help_text, function()
             local pos = ENTITY.GET_ENTITY_COORDS(player_ped)
             local bool, coords, heading = get_closest_vehicle_node(pos, 1)
             if bool then

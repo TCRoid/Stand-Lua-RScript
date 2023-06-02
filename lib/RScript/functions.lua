@@ -307,7 +307,7 @@ end
 function RequestControl(entity, tick)
     if tick == nil then tick = 20 end
     if not NETWORK.NETWORK_HAS_CONTROL_OF_ENTITY(entity) and util.is_session_started() then
-        entities.set_can_migrate(entities.handle_to_pointer(entity), true)
+        entities.set_can_migrate(entity, true)
 
         local i = 0
         while not NETWORK.NETWORK_HAS_CONTROL_OF_ENTITY(entity) and i <= tick do
@@ -576,6 +576,7 @@ end
 function set_entity_godmode(ent, toggle)
     ENTITY.SET_ENTITY_INVINCIBLE(ent, toggle)
     ENTITY.SET_ENTITY_PROOFS(ent, toggle, toggle, toggle, toggle, toggle, toggle, toggle, toggle)
+    ENTITY.SET_ENTITY_CAN_BE_DAMAGED(ent, toggle)
 end
 
 ---@param entity Entity

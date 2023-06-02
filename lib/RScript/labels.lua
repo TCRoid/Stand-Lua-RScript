@@ -36,6 +36,18 @@ Weapon_Common = {
     }
 }
 
+-- 常用载具
+Vehicle_Common = {
+    { model = "police3",    name = "警车",                help_text = "" },
+    { model = "khanjali",   name = "坦克",                help_text = "" },
+    { model = "kuruma2",    name = "骷髅马",             help_text = "" },
+    { model = "polmav",     name = "警用直升机",       help_text = "" },
+    { model = "bullet",     name = "子弹",                help_text = "大街上随处可见的超级跑车" },
+    { model = "bati",       name = "801巴提",             help_text = "" },
+    { model = "oppressor2", name = "暴君MK2",             help_text = "" },
+    { model = "buzzard",    name = "秃鹰攻击直升机", help_text = "" },
+}
+
 -- 实体类型
 EntityType_ListItem = {
     { "Ped",     {}, "NPC" },

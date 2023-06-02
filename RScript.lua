@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("1681379138")
 
-local SCRIPT_VERSION <const> = "2023/5/28"
+local SCRIPT_VERSION <const> = "2023/6/2"
 
 local SUPPORT_GTAO <const> = 1.66
 
@@ -156,7 +156,7 @@ function GetEntityInfo_ListItem(ent)
 
         --Blip
         local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
-        if blip > 0 then
+        if HUD.DOES_BLIP_EXIST(blip) then
             local blip_id = HUD.GET_BLIP_SPRITE(blip)
             t = "Blip Sprite ID: " .. blip_id
             table.insert(ent_info_item_data, newTableValue(1, t))
@@ -177,7 +177,7 @@ function GetEntityInfo_ListItem(ent)
         table.insert(ent_info_item_data, newTableValue(1, t))
 
         --Owner
-        local owner = entities.get_owner(entities.handle_to_pointer(ent))
+        local owner = entities.get_owner(ent)
         owner = players.get_name(owner)
         t = "Entity Owner: " .. owner
         table.insert(ent_info_item_data, newTableValue(1, t))
@@ -235,16 +235,6 @@ function GetEntityInfo_ListItem(ent)
             t = "Relationship: " .. enum_RelationshipType[rel]
             ent_info = newTableValue(1, t)
             table.insert(ent_info_item_data, ent_info)
-
-            --Defensive Area
-            if PED.IS_PED_DEFENSIVE_AREA_ACTIVE(ent) then
-                local def_pos = PED.GET_PED_DEFENSIVE_AREA_POSITION(ent)
-                t = "Defensive Area Position: " ..
-                    string.format("%.4f", def_pos.x) ..
-                    ", " .. string.format("%.4f", def_pos.y) .. ", " .. string.format("%.4f", def_pos.z)
-                ent_info = newTableValue(1, t)
-                table.insert(ent_info_item_data, ent_info)
-            end
 
             --Visual Field Center Angle
             t = "Visual Field Center Angle: " .. PED.GET_PED_VISUAL_FIELD_CENTER_ANGLE(ent)
@@ -584,7 +574,7 @@ function Entity_Control.get_menu_info(ent, k)
         end
     end
 
-    local owner = entities.get_owner(entities.handle_to_pointer(ent))
+    local owner = entities.get_owner(ent)
     owner = players.get_name(owner)
     help_text = help_text .. "Hash: " .. modelHash .. "\nOwner: " .. owner
 
@@ -1485,9 +1475,8 @@ function Entity_Control.vehicle(menu_parent, vehicle, index)
         end
     end)
     menu.action(vehicle_options, "分离车轮", {}, "", function(value)
-        local ptr = entities.handle_to_pointer(vehicle)
         for i = 0, 7 do
-            entities.detach_wheel(ptr, i)
+            entities.detach_wheel(vehicle, i)
         end
     end)
 
@@ -2144,7 +2133,7 @@ end
 ------- 保存的 Hash 列表 -------
 ------------------------------
 
--- 格式 --
+--- 格式 ---
 -- name
 -- hash \n type
 Saved_Hash_List = {
@@ -5388,8 +5377,8 @@ map_all_blip.menu_divider = menu.divider(All_Blip_On_Map, "标记点列表")
 local Blip_custom = menu.list(Blip_options, "自定义标记点", {}, "")
 
 local waypoint_blip_sprite = 8
-menu.slider_text(Blip_custom, "标记点类型", {}, "点击应用修改\n只作用于第一个标记的大头针位置",
-    { "标记点位置", "大头针位置" }, function(value)
+menu.list_select(Blip_custom, "标记点类型", {}, "只作用于第一个标记的大头针位置",
+    { "标记点位置", "大头针位置" }, 1, function(value)
         if value == 1 then
             waypoint_blip_sprite = 8
         elseif value == 2 then
@@ -5399,7 +5388,7 @@ menu.slider_text(Blip_custom, "标记点类型", {}, "点击应用修改\n只作
 
 menu.toggle(Blip_custom, "在小地图上显示标记点", {}, "", function(toggle)
     local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
-    if blip > 0 then
+    if HUD.DOES_BLIP_EXIST(blip) then
         if toggle then
             HUD.SET_BLIP_DISPLAY(blip, 2)
         else
@@ -5409,13 +5398,13 @@ menu.toggle(Blip_custom, "在小地图上显示标记点", {}, "", function(togg
 end)
 menu.toggle(Blip_custom, "闪烁标记点", {}, "", function(toggle)
     local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
-    if blip > 0 then
+    if HUD.DOES_BLIP_EXIST(blip) then
         HUD.SET_BLIP_FLASHES(blip, toggle)
     end
 end)
 menu.action(Blip_custom, "通知坐标", {}, "", function()
     local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
-    if blip == 0 then
+    if not HUD.DOES_BLIP_EXIST(blip) then
         util.toast("No Waypoint Found")
     else
         local pos = GET_BLIP_COORDS(blip)
@@ -5429,28 +5418,23 @@ end)
 menu.divider(Blip_custom, "在标记点位置")
 
 local Waypoint_CreateVehicle = menu.list(Blip_custom, "生成载具", {}, "")
-local Waypoint_Vehicle_ListItem = {
-    --name, model, help_text
-    { "警车",    "police3",  "" },
-    { "坦克",    "khanjali", "可汗贾利" },
-    { "骷髅马", "kuruma2",  "" },
-    { "直升机", "polmav",   "警用直升机" },
-    { "摩托车", "bati",     "801" },
-}
-for k, data in pairs(Waypoint_Vehicle_ListItem) do
-    local name = "生成" .. data[1]
-    menu.action(Waypoint_CreateVehicle, name, {}, data[3], function()
+
+for k, data in pairs(Vehicle_Common) do
+    local name = "生成 " .. data.name
+    local hash = util.joaat(data.model)
+    menu.action(Waypoint_CreateVehicle, name, {}, data.help_text, function()
         local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
-        if blip == 0 then
+        if not HUD.DOES_BLIP_EXIST(blip) then
             util.toast("No Waypoint Found")
         else
             local pos = GET_BLIP_COORDS(blip)
             if pos ~= nil then
-                local hash = util.joaat(data[2])
                 local vehicle = Create_Network_Vehicle(hash, pos.x, pos.y, pos.z + 1.0, 0)
                 if vehicle ~= 0 then
                     upgrade_vehicle(vehicle)
-                    ENTITY.SET_ENTITY_INVINCIBLE(vehicle, true)
+                    set_entity_godmode(vehicle, true)
+                    VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle, 5.0)
+
                     util.toast("完成！")
                 end
             end
@@ -5469,7 +5453,7 @@ for k, data in pairs(Waypoint_Pickup_ListItem) do
     local name = "生成" .. data[1]
     menu.action(Waypoint_CreatePickup, name, {}, "", function()
         local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
-        if blip == 0 then
+        if not HUD.DOES_BLIP_EXIST(blip) then
             util.toast("No Waypoint Found")
         else
             local pos = GET_BLIP_COORDS(blip)
@@ -5490,7 +5474,7 @@ menu.list_select(Waypoint_Explosion, "爆炸类型", {}, "", ExplosionType_ListI
 end)
 menu.action(Waypoint_Explosion, "爆炸", {}, "", function()
     local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
-    if blip == 0 then
+    if not HUD.DOES_BLIP_EXIST(blip) then
         util.toast("No Waypoint Found")
     else
         local pos = GET_BLIP_COORDS(blip)
@@ -5502,7 +5486,7 @@ end)
 
 menu.action(Waypoint_Explosion, "RPG轰炸", {}, "以玩家的名义轰炸", function()
     local blip = HUD.GET_FIRST_BLIP_INFO_ID(waypoint_blip_sprite)
-    if blip == 0 then
+    if not HUD.DOES_BLIP_EXIST(blip) then
         util.toast("No Waypoint Found")
     else
         local pos = GET_BLIP_COORDS(blip)
@@ -5584,7 +5568,7 @@ menu.toggle_loop(Other_options, "跳到下一条对话", { "skip_talk" }, "快�
         AUDIO.SKIP_TO_NEXT_SCRIPTED_CONVERSATION_LINE()
     end
 end)
-menu.action(Other_options, "停止对话", { "stop_talk" }, "", function()
+menu.toggle_loop(Other_options, "停止对话", { "stop_talk" }, "", function()
     if AUDIO.IS_SCRIPTED_CONVERSATION_ONGOING() then
         AUDIO.STOP_SCRIPTED_CONVERSATION(false)
     end
