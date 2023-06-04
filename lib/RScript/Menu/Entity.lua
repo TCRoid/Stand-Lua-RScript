@@ -369,6 +369,7 @@ menu.action(Entity_Quick_Object, "关闭无碰撞", {}, "", function()
 end)
 
 
+
 ------ 载具选项 ------
 local Entity_Quick_Vehicle = menu.list(Entity_Quick_Action, "载具选项", {}, "")
 
@@ -444,6 +445,312 @@ menu.action(Entity_Quick_Vehicle, "禁用载具武器", {}, "NPC将无法使用�
             end
         end
     end)
+
+
+
+------ 任务拾取物/收集物 ------
+local Entity_Quick_Pickup = menu.list(Entity_Quick_Action, "任务拾取物/收集物", {}, "")
+
+local ent_quick_pickup = {
+    ent_data = {
+        { type = "pickup", mission = true, hash = {} },
+        { type = "pickup", mission = true, hash = { 1932904700, -299426222, -1229859060, -1096615886 } },
+        { type = "object", mission = true, hash = { -2092739441 } },
+        { type = "pickup", mission = true, hash = { 1002246134, -2122380018 } },
+        { type = "pickup", mission = true, hash = { 1188944846 } },
+    },
+    select_list_item = {
+        { "全部 任务拾取物" },
+        { "ULP: 情报 FIB硬件" },
+        { "ULP: 清场 保险丝" },
+        { "最后一搏: 内藏玄机 手办" },
+        { "第一剂3: 致命侵袭 冰毒" },
+    },
+
+    select_value = 1,
+    entity_list = {}, -- 实体 list
+
+    -- 传送到我
+    tp_to_me = {
+        x = 0.0,
+        y = 2.0,
+        z = 0.0,
+        delay = 500,
+    },
+    -- 连线显示
+    draw_line = {
+        draw_ar = false,
+        draw_distance = false,
+    },
+    screen_x = memory.alloc(8),
+    screen_y = memory.alloc(8),
+    -- 添加标记点
+    add_blip = {
+        blip_name = "",
+        show_number = false,
+    },
+
+}
+
+function ent_quick_pickup.init()
+    ent_quick_pickup.entity_list = {} -- 实体 list
+    ent_quick_pickup.entity_count = 0 -- 实体 数量
+    -- ent_quick_pickup.entity_menu_list = {} -- 实体的 menu.list
+
+    local commands = menu.get_children(ent_quick_pickup.menu_list)
+    for k, command in pairs(commands) do
+        if menu.is_ref_valid(command) then
+            menu.delete(command)
+        end
+    end
+
+    menu.set_menu_name(ent_quick_pickup.menu_list, "查看实体列表")
+end
+
+function ent_quick_pickup.generate_command(ent, menu_parent, index)
+    local hash = ENTITY.GET_ENTITY_MODEL(ent)
+    local model = util.reverse_joaat(hash)
+
+    local menu_name = ""
+    if model ~= "NULL" then
+        menu_name = index .. ". " .. model
+    else
+        menu_name = index .. ". " .. hash
+    end
+
+    local menu_list = menu.list(menu_parent, menu_name, {}, "")
+
+    ----- 传送 -----
+    local menu_teleport = menu.divider(menu_list, "传送")
+
+    local tp = {
+        x = 0.0,
+        y = 2.0,
+        z = 0.0,
+    }
+
+    menu.slider_float(menu_list, "前/后", { "ent_quick" .. index .. "_tp_x" }, "", -5000, 5000, 200, 50,
+        function(value)
+            tp.y = value * 0.01
+        end)
+    menu.slider_float(menu_list, "上/下", { "ent_quick" .. index .. "_tp_y" }, "", -5000, 5000, 0, 50,
+        function(value)
+            tp.z = value * 0.01
+        end)
+    menu.slider_float(menu_list, "左/右", { "ent_quick" .. index .. "_tp_z" }, "", -5000, 5000, 0, 50,
+        function(value)
+            tp.x = value * 0.01
+        end)
+
+    menu.action(menu_list, "传送到实体", {}, "", function()
+        if ENTITY.DOES_ENTITY_EXIST(ent) then
+            TP_TO_ENTITY(ent, tp.x, tp.y, tp.z)
+        else
+            util.toast("实体已经不存在")
+        end
+    end)
+    menu.action(menu_list, "传送到我", {}, "", function()
+        if ENTITY.DOES_ENTITY_EXIST(ent) then
+            RequestControl(ent)
+            TP_TO_ME(ent, tp.x, tp.y, tp.z)
+        else
+            util.toast("实体已经不存在")
+        end
+    end)
+
+    -----
+    menu.on_tick_in_viewport(menu_teleport, function()
+        if ENTITY.DOES_ENTITY_EXIST(ent) then
+            DRAW_LINE_TO_ENTITY(ent)
+        end
+    end)
+end
+
+menu.list_select(Entity_Quick_Pickup, "选择", {}, "", ent_quick_pickup.select_list_item, 1, function(value)
+    ent_quick_pickup.select_value = value
+end)
+menu.action(Entity_Quick_Pickup, "获取所有实体", {}, "要先获取实体才能进行操作", function()
+    ent_quick_pickup.init()
+
+    if ent_quick_pickup.select_value == 1 then
+        -- 全部任务拾取物
+        for key, pickup in pairs(entities.get_all_pickups_as_handles()) do
+            if ENTITY.IS_ENTITY_A_MISSION_ENTITY(pickup) then
+                table.insert(ent_quick_pickup.entity_list, pickup)
+
+                ent_quick_pickup.generate_command(pickup, ent_quick_pickup.menu_list, key)
+
+                ent_quick_pickup.entity_count = ent_quick_pickup.entity_count + 1
+            end
+        end
+
+        if ent_quick_pickup.entity_count > 0 then
+            menu.set_menu_name(ent_quick_pickup.menu_list, "查看实体列表 (" .. ent_quick_pickup.entity_count .. ")")
+        end
+    else
+        local data = ent_quick_pickup.ent_data[ent_quick_pickup.select_value]
+        local hash_list = data.hash
+        for key, ent_ in pairs(get_all_entities(data.type)) do
+            local ent = nil
+            if data.mission then
+                if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent_) then
+                    ent = ent_
+                end
+            else
+                ent = ent_
+            end
+
+            if ent ~= nil then
+                local hash = ENTITY.GET_ENTITY_MODEL(ent)
+                if isInTable(hash_list, hash) then
+                    table.insert(ent_quick_pickup.entity_list, ent)
+
+                    ent_quick_pickup.generate_command(ent, ent_quick_pickup.menu_list, key)
+
+                    ent_quick_pickup.entity_count = ent_quick_pickup.entity_count + 1
+                end
+            end
+        end
+
+        if ent_quick_pickup.entity_count > 0 then
+            menu.set_menu_name(ent_quick_pickup.menu_list, "查看实体列表 (" .. ent_quick_pickup.entity_count .. ")")
+        end
+    end
+end)
+
+menu.divider(Entity_Quick_Pickup, "选项")
+
+ent_quick_pickup.menu_list = menu.list(Entity_Quick_Pickup, "查看实体列表", {}, "")
+
+--- 传送到我 ---
+ent_quick_pickup.menu_tp_to_me = menu.list(Entity_Quick_Pickup, "传送到我", {}, "")
+
+menu.action(ent_quick_pickup.menu_tp_to_me, "传送到我", {}, "", function()
+    if next(ent_quick_pickup.entity_list) ~= nil then
+        local num_success, num_fail = 0, 0
+        for key, ent in pairs(ent_quick_pickup.entity_list) do
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                RequestControl(ent)
+                TP_TO_ME(ent, ent_quick_pickup.tp_to_me.x, ent_quick_pickup.tp_to_me.y, ent_quick_pickup.tp_to_me.z)
+
+                if hasControl(ent) then
+                    num_success = num_success + 1
+                else
+                    num_fail = num_fail + 1
+                end
+                util.yield(ent_quick_pickup.tp_to_me.delay)
+            end
+        end
+        util.toast("传送完成！\n成功: " .. num_success .. "\n失败: " .. num_fail)
+    end
+end)
+
+menu.divider(ent_quick_pickup.menu_tp_to_me, "设置")
+menu.slider_float(ent_quick_pickup.menu_tp_to_me, "前/后", { "ent_quick_pickup_tp_x" }, "", -5000, 5000, 200, 50,
+    function(value)
+        ent_quick_pickup.tp_to_me.y = value * 0.01
+    end)
+menu.slider_float(ent_quick_pickup.menu_tp_to_me, "上/下", { "ent_quick_pickup_tp_y" }, "", -5000, 5000, 0, 50,
+    function(value)
+        ent_quick_pickup.tp_to_me.z = value * 0.01
+    end)
+menu.slider_float(ent_quick_pickup.menu_tp_to_me, "左/右", { "ent_quick_pickup_tp_z" }, "", -5000, 5000, 0, 50,
+    function(value)
+        ent_quick_pickup.tp_to_me.x = value * 0.01
+    end)
+menu.slider(ent_quick_pickup.menu_tp_to_me, "时间间隔", { "ent_quick_pickup_tp_delay" }, "单位: ms", 0, 5000, 500,
+    100, function(value)
+        ent_quick_pickup.tp_to_me.delay = value
+    end)
+
+--- 连线显示 ---
+ent_quick_pickup.menu_draw_line = menu.list(Entity_Quick_Pickup, "连线显示", {}, "")
+
+menu.toggle_loop(ent_quick_pickup.menu_draw_line, "连线显示", {}, "", function()
+    if next(ent_quick_pickup.entity_list) ~= nil then
+        local my_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+        for key, ent in pairs(ent_quick_pickup.entity_list) do
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                local ent_pos = ENTITY.GET_ENTITY_COORDS(ent)
+                DRAW_LINE(my_pos, ent_pos)
+
+                if ent_quick_pickup.draw_line.draw_ar then
+                    util.draw_ar_beacon(ent_pos)
+                end
+
+                if ent_quick_pickup.draw_line.draw_distance then
+                    if GRAPHICS.GET_SCREEN_COORD_FROM_WORLD_COORD(ent_pos.x, ent_pos.y, ent_pos.z,
+                            ent_quick_pickup.screen_x, ent_quick_pickup.screen_y) then
+                        local x = memory.read_float(ent_quick_pickup.screen_x)
+                        local y = memory.read_float(ent_quick_pickup.screen_y)
+                        local distance = v3.distance(my_pos, ent_pos)
+
+                        directx.draw_text(x, y, round(distance, 2), ALIGN_TOP_LEFT, 0.8, Colors.purple)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+menu.divider(ent_quick_pickup.menu_draw_line, "设置")
+menu.toggle(ent_quick_pickup.menu_draw_line, "绘制灯塔", {}, "", function(toggle)
+    ent_quick_pickup.draw_line.draw_ar = toggle
+end)
+menu.toggle(ent_quick_pickup.menu_draw_line, "绘制距离", {}, "", function(toggle)
+    ent_quick_pickup.draw_line.draw_distance = toggle
+end)
+
+--- 地图标记点 ---
+ent_quick_pickup.menu_add_blip = menu.list(Entity_Quick_Pickup, "地图标记点", {}, "")
+
+menu.action(ent_quick_pickup.menu_add_blip, "添加标记点", {}, "", function()
+    if next(ent_quick_pickup.entity_list) ~= nil then
+        for key, ent in pairs(ent_quick_pickup.entity_list) do
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
+                if not HUD.DOES_BLIP_EXIST(blip) then
+                    blip = HUD.ADD_BLIP_FOR_ENTITY(ent)
+                end
+                HUD.SET_BLIP_SPRITE(blip, 271) -- radar_on_mission
+                HUD.SET_BLIP_COLOUR(blip, 27)  -- Bright Purple
+                HUD.SET_BLIP_SCALE(blip, 0.75)
+                HUD.SET_BLIP_AS_SHORT_RANGE(blip, false)
+                HUD.SHOW_HEIGHT_ON_BLIP(blip, true)
+                HUD.SET_BLIP_DISPLAY(blip, 2) -- Shows on both main map and minimap. (Selectable on map)
+            end
+        end
+    end
+end)
+menu.action(ent_quick_pickup.menu_add_blip, "移除标记点", {}, "", function()
+    if next(ent_quick_pickup.entity_list) ~= nil then
+        for key, ent in pairs(ent_quick_pickup.entity_list) do
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
+                if HUD.DOES_BLIP_EXIST(blip) then
+                    util.remove_blip(blip)
+                end
+            end
+        end
+    end
+end)
+menu.toggle(ent_quick_pickup.menu_add_blip, "标记点上添加数字", {}, "", function(toggle)
+    if next(ent_quick_pickup.entity_list) ~= nil then
+        for key, ent in pairs(ent_quick_pickup.entity_list) do
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
+                if HUD.DOES_BLIP_EXIST(blip) then
+                    if toggle then
+                        HUD.SHOW_NUMBER_ON_BLIP(blip, key)
+                    else
+                        HUD.HIDE_NUMBER_ON_BLIP(blip)
+                    end
+                end
+            end
+        end
+    end
+end)
+
 
 --#endregion Entity Quick Action
 
@@ -4880,6 +5187,14 @@ function Entity_Info.entity_info(entity)
         -- Rotation
         local blip_rotation = HUD.GET_BLIP_ROTATION(blip)
         info = { "Blip Rotation", blip_rotation }
+        table.insert(entity_info.blip, info)
+
+        -- Short Range
+        if HUD.IS_BLIP_SHORT_RANGE(blip) then
+            info = { "Short Range", "True" }
+        else
+            info = { "Short Range", "False" }
+        end
         table.insert(entity_info.blip, info)
     end
 

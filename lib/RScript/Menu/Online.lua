@@ -92,29 +92,31 @@ menu.toggle_loop(Request_Service, "锁定倒计时", {}, "无视犯罪的倒计�
     SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
     util.yield(5000)
 end)
+menu.action(Request_Service, "清空倒计时", {}, "", function()
+    SET_INT_GLOBAL(Globals.NCOPS.time, 0)
+end)
 menu.action(Request_Service, "警察无视犯罪", { "no_cops" }, "莱斯特电话请求", function()
     SET_INT_GLOBAL(Globals.NCOPS.type, 5)
     SET_INT_GLOBAL(Globals.NCOPS.flag, 1)
     SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
 end)
-menu.click_slider(Request_Service, "贿赂当局 倒计时时间", {}, "单位:分钟", 1, 60, 2, 1,
-    function(value)
+menu.toggle_loop(Request_Service, "贿赂当局", {}, "CEO技能", function()
+    SET_INT_GLOBAL(Globals.NCOPS.type, 81)
+    SET_INT_GLOBAL(Globals.NCOPS.flag, 1)
+    SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
+    util.yield(5000)
+end, function()
+    SET_INT_GLOBAL(Globals.NCOPS.time, 0)
+end)
+
+menu.divider(Request_Service, "倒计时")
+menu.click_slider(Request_Service, "贿赂当局 倒计时时间", {}, "单位: 分钟\n切换战局后会失效，需要重新操作",
+    1, 60, 2, 1, function(value)
         SET_INT_GLOBAL(Globals.GB_BRIBE_AUTHORITIES_DURATION, value * 60 * 1000)
         util.toast("完成！")
     end)
-menu.toggle(Request_Service, "贿赂当局", {}, "CEO技能", function(toggle)
-    if toggle then
-        SET_INT_GLOBAL(Globals.NCOPS.type, 81)
-        SET_INT_GLOBAL(Globals.NCOPS.flag, 1)
-        SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
-    else
-        SET_INT_GLOBAL(Globals.NCOPS.time, 0)
-    end
-end)
-
-menu.divider(Request_Service, "幽灵组织")
-menu.click_slider(Request_Service, "倒计时时间", {}, "单位:分钟", 1, 60, 3, 1,
-    function(value)
+menu.click_slider(Request_Service, "幽灵组织 倒计时时间", {}, "单位: 分钟\n切换战局后会失效，需要重新操作",
+    1, 60, 3, 1, function(value)
         SET_INT_GLOBAL(Globals.GB_GHOST_ORG_DURATION, value * 60 * 1000)
         util.toast("完成！")
     end)
@@ -295,6 +297,26 @@ end
 
 
 
+--#region On Transition Finished
+
+On_Transition_Finished = {
+    player_language = {
+        enable = false,
+        callback = function() end,
+    }
+}
+
+util.on_transition_finished(function()
+    if On_Transition_Finished.player_language.enable then
+        On_Transition_Finished.player_language.callback()
+    end
+end)
+
+--#endregion
+
+
+
+
 ---------------------
 -- 玩家语言
 ---------------------
@@ -329,31 +351,33 @@ local player_lang = {
 
 local Player_Language_Session = menu.list(Player_Language, "进入战局后自动通知", {}, "当玩家进入一个战局后进行通知")
 
-menu.toggle_loop(Player_Language_Session, "开启", {}, "", function()
-    util.on_transition_finished(function()
-        local player_num = 0
-        local text = ""
-        for _, pid in pairs(players.list()) do
-            local lang = players.get_language(pid)
-            if player_lang.session.exclude_sc and lang == 12 then
-            else
-                local lang_text = player_lang.language[lang]
-                local name      = players.get_name(pid)
-                local rank      = players.get_rank(pid)
-                local title     = name .. " (" .. rank .. "级)"
+On_Transition_Finished.player_language.callback = function()
+    local player_num = 0
+    local text = ""
+    for _, pid in pairs(players.list()) do
+        local lang = players.get_language(pid)
+        if player_lang.session.exclude_sc and lang == 12 then
+        else
+            local lang_text = player_lang.language[lang]
+            local name      = players.get_name(pid)
+            local rank      = players.get_rank(pid)
+            local title     = name .. " (" .. rank .. "级)"
 
-                if text ~= "" then
-                    text = text .. "\n"
-                end
-                text       = text .. title .. "     " .. lang_text .. "\n"
-                player_num = player_num + 1
+            if text ~= "" then
+                text = text .. "\n"
             end
+            text       = text .. title .. "     " .. lang_text .. "\n"
+            player_num = player_num + 1
         end
+    end
 
-        if player_num <= player_lang.session.max_player then
-            util.toast(text)
-        end
-    end)
+    if player_num <= player_lang.session.max_player then
+        util.toast(text)
+    end
+end
+
+menu.toggle(Player_Language_Session, "开启", {}, "", function(toggle)
+    On_Transition_Finished.player_language.enable = toggle
 end)
 menu.slider(Player_Language_Session, "玩家最多人数", {}, "战局内玩家人数少于等于指定人数时才进行通知",
     2, 32, 4, 1, function(value)

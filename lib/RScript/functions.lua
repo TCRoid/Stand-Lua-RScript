@@ -296,6 +296,15 @@ function TP_VEHICLE_TO_ME(vehicle, door, driver)
     end
 end
 
+---玩家与实体绘制连线
+---@param entity Entity
+---@param colour Colour?
+function DRAW_LINE_TO_ENTITY(entity, colour)
+    local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+    local ent_pos = ENTITY.GET_ENTITY_COORDS(entity)
+    DRAW_LINE(player_pos, ent_pos, colour)
+end
+
 -----------------------------
 -- Entity Functions
 -----------------------------

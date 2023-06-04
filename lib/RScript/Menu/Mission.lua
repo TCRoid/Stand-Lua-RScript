@@ -304,9 +304,10 @@ menu.list_select(Mission_Assistant_Nearby_Road, "生成地点", {}, "", {
 }, 1, function(value)
     ma_nearby_road.nodeType = value - 1
 end)
-menu.slider_float(Mission_Assistant_Nearby_Road, "随机范围", {}, "", 0, 50000, 6000, 500, function(value)
-    ma_nearby_road.random_radius = value * 0.01
-end)
+menu.slider_float(Mission_Assistant_Nearby_Road, "随机范围", { "ma_nearby_road_random_radius" }, "",
+    0, 50000, 6000, 500, function(value)
+        ma_nearby_road.random_radius = value * 0.01
+    end)
 
 menu.toggle(Mission_Assistant_Nearby_Road, "生成载具: 无敌", {}, "", function(toggle)
     ma_nearby_road.godmode = toggle
