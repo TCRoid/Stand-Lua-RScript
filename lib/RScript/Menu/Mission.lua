@@ -1198,6 +1198,210 @@ end)
 
 --#endregion Apartment Heist
 
+--#region Doomsday Heist
+
+------ 末日豪劫 ------
+menu.divider(Mission_Assistant, "末日豪劫")
+
+local Mission_Assistant_Doomsday_Preps = menu.list(Mission_Assistant, "前置任务", {}, "")
+
+menu.divider(Mission_Assistant_Doomsday_Preps, "末日一: 数据泄露")
+menu.action(Mission_Assistant_Doomsday_Preps, "医疗装备：救护车 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, 1171614426)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            RequestControl(ent)
+            TP_VEHICLE_TO_ME(ent)
+
+            if not hasControl(ent) then
+                util.toast("未能成功控制实体，请重试")
+            end
+        end
+    end
+end)
+local doomsday_preps_deluxo_menu
+local doomsday_preps_deluxo_ent = {} -- 实体列表
+doomsday_preps_deluxo_menu = menu.list_action(Mission_Assistant_Doomsday_Preps, "德罗索：载具 传送到我",
+    {}, "", { "刷新载具列表" }, function(value)
+        if value == 1 then
+            local entity_list = get_entities_by_hash("vehicle", true, 1483171323)
+            if next(entity_list) ~= nil then
+                doomsday_preps_deluxo_ent = {}
+                local list_item_data = { "刷新载具列表" }
+                local i = 1
+
+                for k, ent in pairs(entity_list) do
+                    table.insert(doomsday_preps_deluxo_ent, ent)
+                    table.insert(list_item_data, "德罗索 " .. i)
+                    i = i + 1
+                end
+
+                menu.set_list_action_options(doomsday_preps_deluxo_menu, list_item_data)
+                util.toast("已刷新，请重新打开该列表")
+            end
+        else
+            local ent = doomsday_preps_deluxo_ent[value - 1]
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                RequestControl(ent)
+                TP_VEHICLE_TO_ME(ent)
+
+                if not hasControl(ent) then
+                    util.toast("未能成功控制实体，请重试")
+                end
+            end
+        end
+    end)
+menu.action(Mission_Assistant_Doomsday_Preps, "德罗索：当前载具 随机主色调", {},
+    "无需去改车王改装\n基于Stand命令", function()
+        if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+            local vehicle = entities.get_user_vehicle_as_handle()
+            local colour = get_random_colour()
+            menu.trigger_commands("vehprimaryred " .. colour.r)
+            menu.trigger_commands("vehprimarygreen " .. colour.g)
+            menu.trigger_commands("vehprimaryblue " .. colour.b)
+        end
+    end)
+menu.action(Mission_Assistant_Doomsday_Preps, "阿库拉：载具 传送到我", {},
+    "需要先去下载飞行数据", function()
+        local entity_list = get_entities_by_hash("vehicle", true, 1181327175)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                RequestControl(ent)
+                TP_VEHICLE_TO_ME(ent, "", "delete")
+                set_entity_godmode(ent, true)
+
+                if not hasControl(ent) then
+                    util.toast("未能成功控制实体，请重试")
+                end
+            end
+        end
+    end)
+
+menu.divider(Mission_Assistant_Doomsday_Preps, "末日二: 博格丹危机")
+menu.action(Mission_Assistant_Doomsday_Preps, "钥匙卡：防暴车 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, -1205689942)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            RequestControl(ent)
+            TP_VEHICLE_TO_ME(ent)
+
+            if not hasControl(ent) then
+                util.toast("未能成功控制实体，请重试")
+            end
+        end
+    end
+end)
+menu.action(Mission_Assistant_Doomsday_Preps, "ULP情报：包裹 传送到我", {},
+    "先干掉毒贩，下方提示进入公寓后传送", function()
+        local entity_list = get_entities_by_hash("pickup", true, -1851147549)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                RequestControl(ent)
+                TP_TO_ME(ent)
+
+                if not hasControl(ent) then
+                    util.toast("未能成功控制实体，请重试")
+                end
+            end
+        end
+    end)
+local doomsday_preps_stromberg_menu
+local doomsday_preps_stromberg_ent = {} -- 实体列表
+doomsday_preps_stromberg_menu = menu.list_action(Mission_Assistant_Doomsday_Preps, "斯特龙伯格：卡车 传送到我",
+    {}, "", { "刷新载具列表" }, function(value)
+        if value == 1 then
+            local entity_list = get_entities_by_hash("object", true, -6020377)
+            if next(entity_list) ~= nil then
+                doomsday_preps_stromberg_ent = {}
+                local list_item_data = { "刷新载具列表" }
+                local i = 1
+
+                for k, ent in pairs(entity_list) do
+                    if ENTITY.IS_ENTITY_ATTACHED(ent) then
+                        local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
+                        table.insert(doomsday_preps_stromberg_ent, attached_ent)
+                        table.insert(list_item_data, "卡车 " .. i)
+                        i = i + 1
+                    end
+                end
+
+                menu.set_list_action_options(doomsday_preps_stromberg_menu, list_item_data)
+                util.toast("已刷新，请重新打开该列表")
+            end
+        else
+            local ent = doomsday_preps_stromberg_ent[value - 1]
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                RequestControl(ent)
+                TP_VEHICLE_TO_ME(ent, "", "delete")
+
+                if not hasControl(ent) then
+                    util.toast("未能成功控制实体，请重试")
+                end
+            end
+        end
+    end)
+menu.action(Mission_Assistant_Doomsday_Preps, "鱼雷电控单元：包裹 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("pickup", true, 2096599423)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            RequestControl(ent)
+            TP_TO_ME(ent)
+
+            if not hasControl(ent) then
+                util.toast("未能成功控制实体，请重试")
+            end
+        end
+    end
+end)
+
+menu.divider(Mission_Assistant_Doomsday_Preps, "末日三: 末日将至")
+menu.action(Mission_Assistant_Doomsday_Preps, "标记资金：包裹 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("pickup", true, -549235179)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            RequestControl(ent)
+            TP_TO_ME(ent)
+
+            if not hasControl(ent) then
+                util.toast("未能成功控制实体，请重试")
+            end
+        end
+    end
+end)
+menu.action(Mission_Assistant_Doomsday_Preps, "切尔诺伯格：载具 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, -692292317)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            RequestControl(ent)
+            TP_VEHICLE_TO_ME(ent)
+
+            if not hasControl(ent) then
+                util.toast("未能成功控制实体，请重试")
+            end
+        end
+    end
+end)
+menu.action(Mission_Assistant_Doomsday_Preps, "机载电脑：飞机 传送到我", {},
+    "先杀死所有NPC(飞行员)", function()
+        local entity_list = get_entities_by_hash("object", true, -82999846)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                if ENTITY.IS_ENTITY_ATTACHED(ent) then
+                    local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
+                    RequestControl(attached_ent)
+                    TP_TO_ME(attached_ent, 0.0, 10.0, 2.0)
+                    SET_ENTITY_HEAD_TO_ENTITY(attached_ent, players.user_ped(), 180.0)
+
+                    if not hasControl(attached_ent) then
+                        util.toast("未能成功控制实体，请重试")
+                    end
+                end
+            end
+        end
+    end)
+
+
+--#endregion Doomsday Heist
 
 
 

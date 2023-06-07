@@ -2556,37 +2556,20 @@ menu.action(Bunker, "原材料 传送到我", { "tp_me_bsupplies" }, "", functio
         end
     end
 end)
-menu.action(Bunker, "消灭对手行动单位：箱子 全部爆炸", {}, "", function()
-    local entity_list = get_entities_by_hash("object", true, -986153641)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            local pos = ENTITY.GET_ENTITY_COORDS(ent)
-            add_owned_explosion(players.user_ped(), pos, 4)
+menu.action(Bunker, "爆炸 所有敌对载具", {}, "", function()
+    for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
+        if IS_HOSTILE_ENTITY(vehicle) then
+            local coords = ENTITY.GET_ENTITY_COORDS(vehicle)
+            add_owned_explosion(players.user_ped(), coords, 4, { isAudible = false })
         end
-    else
-        util.toast("Not Found")
     end
 end)
-menu.action(Bunker, "消灭对手行动单位：载具 全部爆炸", {}, "", function()
-    local entity_list = get_entities_by_hash("vehicle", true, 788747387, -1050465301, -1860900134)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            local pos = ENTITY.GET_ENTITY_COORDS(ent)
-            add_owned_explosion(players.user_ped(), pos, 4)
+menu.action(Bunker, "爆炸 所有敌对物体", {}, "", function()
+    for _, object in pairs(entities.get_all_objects_as_handles()) do
+        if IS_HOSTILE_ENTITY(object) then
+            local coords = ENTITY.GET_ENTITY_COORDS(object)
+            add_owned_explosion(players.user_ped(), coords, 4, { isAudible = false })
         end
-    else
-        util.toast("Not Found")
-    end
-end)
-menu.action(Bunker, "摧毁卡车 全部爆炸", {}, "", function()
-    local entity_list = get_entities_by_hash("vehicle", true, 904750859)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            local pos = ENTITY.GET_ENTITY_COORDS(ent)
-            add_owned_explosion(players.user_ped(), pos, 4)
-        end
-    else
-        util.toast("Not Found")
     end
 end)
 menu.action(Bunker, "骇入飞机 传送到我", {}, "传送到头上并冻结", function()
@@ -4526,8 +4509,8 @@ function All_Mission_Entity.Check_Match_Conditions(ent)
     end
     --地图标记
     if All_Mission_Entity.Filter.blip > 1 then
-        is_match = false
-        if HUD.GET_BLIP_FROM_ENTITY(ent) > 0 then
+        is_match = false 
+        if HUD.DOES_BLIP_EXIST(HUD.GET_BLIP_FROM_ENTITY(ent)) then
             if All_Mission_Entity.Filter.blip == 2 then
                 is_match = true
             end

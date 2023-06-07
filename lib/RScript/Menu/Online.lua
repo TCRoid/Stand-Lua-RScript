@@ -366,12 +366,12 @@ On_Transition_Finished.player_language.callback = function()
             if text ~= "" then
                 text = text .. "\n"
             end
-            text       = text .. title .. "     " .. lang_text .. "\n"
+            text       = text .. title .. "     " .. lang_text
             player_num = player_num + 1
         end
     end
 
-    if player_num <= player_lang.session.max_player then
+    if player_num > 1 and player_num <= player_lang.session.max_player then
         util.toast(text)
     end
 end

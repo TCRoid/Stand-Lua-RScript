@@ -257,7 +257,9 @@ function TP_INTO_VEHICLE(vehicle, door, driver)
         --unlock doors
         VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, 1)
         VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_PLAYERS(vehicle, false)
-        VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER(vehicle, players.user(), false)
+        VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_NON_SCRIPT_PLAYERS(vehicle, false)
+        VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_TEAMS(vehicle, false)
+        VEHICLE.SET_DONT_ALLOW_PLAYER_TO_ENTER_VEHICLE_IF_LOCKED_FOR_PLAYER(vehicle, false)
         --driver
         local ped = GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
         if ped ~= 0 then
