@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("1681379138")
 
-local SCRIPT_VERSION <const> = "2023/6/7"
+local SCRIPT_VERSION <const> = "2023/6/8"
 
 local SUPPORT_GTAO <const> = 1.66
 
@@ -5568,7 +5568,7 @@ menu.toggle_loop(Other_options, "跳到下一条对话", { "skip_talk" }, "快�
         AUDIO.SKIP_TO_NEXT_SCRIPTED_CONVERSATION_LINE()
     end
 end)
-menu.toggle_loop(Other_options, "停止对话", { "stop_talk" }, "", function()
+menu.toggle_loop(Other_options, "停止对话", { "stop_talk" }, "快速跳过对话", function()
     if AUDIO.IS_SCRIPTED_CONVERSATION_ONGOING() then
         AUDIO.STOP_SCRIPTED_CONVERSATION(false)
     end

@@ -11,6 +11,8 @@ local Player_options = function(pid)
 
 
 
+    --#region 恶搞选项
+
     ----------------------------
     ---------- 恶搞选项 ---------
     ----------------------------
@@ -108,6 +110,18 @@ local Player_options = function(pid)
         else
             util.toast("未找到玩家的载具")
         end
+    end)
+
+    menu.action(Trolling_options, "生成虎鲸", {}, "", function()
+        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
+        local modelHash = util.joaat("kosatka")
+        local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
+        local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
+
+        local g_veh = create_vehicle(modelHash, coords, heading)
+        
+        set_entity_godmode(g_evh, true)
+        entities.set_can_migrate(g_veh, false)
     end)
 
 
@@ -378,10 +392,13 @@ local Player_options = function(pid)
         util.yield(500)
     end)
 
+    --#endregion
 
 
 
 
+
+    --#region 友好选项
 
     ----------------------------
     ---------- 友好选项 ---------
@@ -448,6 +465,7 @@ local Player_options = function(pid)
         util.yield(500)
     end)
 
+    --#endregion
 
 
 

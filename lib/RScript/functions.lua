@@ -1924,7 +1924,7 @@ function fall_entity_explosion(entity, owner)
     end
 end
 
----爆头击杀Ped
+---玩家爆头击杀NPC
 ---@param ped Ped
 ---@param weaponHash Hash
 function shoot_ped_head(ped, weaponHash)
