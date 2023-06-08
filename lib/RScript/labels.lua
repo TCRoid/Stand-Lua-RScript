@@ -1,8 +1,13 @@
----颜色
-color = {
-    purple = { r = 1.0, g = 0.0, b = 1.0, a = 1.0 },
-    black = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
+---颜色 [0 - 1]格式
+Colors = {
     white = { r = 1.0, g = 1.0, b = 1.0, a = 1.0 },
+    black = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
+
+    red = { r = 1.0, g = 0.0, b = 0.0, a = 1.0 },
+    green = { r = 0.0, g = 1.0, b = 0.0, a = 1.0 },
+    blue = { r = 0.0, g = 0.0, b = 1.0, a = 1.0 },
+
+    purple = { r = 1.0, g = 0.0, b = 1.0, a = 1.0 },
 }
 
 -- 常用武器
@@ -29,6 +34,18 @@ Weapon_Common = {
         "WEAPON_RPG",
         "WEAPON_RAILGUN",
     }
+}
+
+-- 常用载具
+Vehicle_Common = {
+    { model = "police3",    name = "警车",                help_text = "" },
+    { model = "khanjali",   name = "坦克",                help_text = "" },
+    { model = "kuruma2",    name = "骷髅马",             help_text = "" },
+    { model = "polmav",     name = "警用直升机",       help_text = "" },
+    { model = "bullet",     name = "子弹",                help_text = "大街上随处可见的超级跑车" },
+    { model = "bati",       name = "801巴提",             help_text = "" },
+    { model = "oppressor2", name = "暴君MK2",             help_text = "" },
+    { model = "buzzard",    name = "秃鹰攻击直升机", help_text = "" },
 }
 
 -- 实体类型

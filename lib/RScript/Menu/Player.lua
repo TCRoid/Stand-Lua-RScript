@@ -11,6 +11,8 @@ local Player_options = function(pid)
 
 
 
+    --#region 恶搞选项
+
     ----------------------------
     ---------- 恶搞选项 ---------
     ----------------------------
@@ -110,11 +112,22 @@ local Player_options = function(pid)
         end
     end)
 
+    menu.action(Trolling_options, "生成虎鲸", {}, "", function()
+        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
+        local modelHash = util.joaat("kosatka")
+        local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
+        local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
+
+        local g_veh = create_vehicle(modelHash, coords, heading)
+        
+        set_entity_godmode(g_evh, true)
+        entities.set_can_migrate(g_veh, false)
+    end)
+
 
     -------------------
     -- 传送所有实体
     -------------------
-
     local Trolling_tp_entities = menu.list(Trolling_options, "传送所有实体", {}, "")
 
     local player_tp_entities = {
@@ -128,15 +141,23 @@ local Player_options = function(pid)
             if player_tp_entities.is_running then
                 if player_tp_entities.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
                 else
-                    if ENTITY.IS_ENTITY_A_PED(ent) and not IS_PED_PLAYER(ent) then
+                    if Type == "Ped" and ENTITY.IS_ENTITY_A_PED(ent) then
+                        if not IS_PED_PLAYER(ent) then
+                            RequestControl(ent)
+                            TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
+                            i = i + 1
+                        end
+                    elseif Type == "Vehicle" and ENTITY.IS_ENTITY_A_VEHICLE(ent) then
+                        if not IS_PLAYER_VEHICLE(ent) then
+                            RequestControl(ent)
+                            TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
+                            i = i + 1
+                        end
+                    elseif Type == "Object" and ENTITY.IS_ENTITY_AN_OBJECT(ent) then
                         RequestControl(ent)
                         TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
                         i = i + 1
-                    elseif ENTITY.IS_ENTITY_A_VEHICLE(ent) and not IS_PLAYER_VEHICLE(ent) then
-                        RequestControl(ent)
-                        TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
-                        i = i + 1
-                    else
+                    elseif Type == "Pickup" and IS_ENTITY_A_PICKUP(ent) then
                         RequestControl(ent)
                         TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
                         i = i + 1
@@ -145,17 +166,17 @@ local Player_options = function(pid)
                 util.yield(player_tp_entities.delay)
             else
                 -- 停止传送
-                util.toast("Done!\n" .. Type .. " Number : " .. i)
+                util.toast("完成!\n" .. Type .. " 数量: " .. i)
                 return false
             end
         end
         -- 完成传送
-        util.toast("Done!\n" .. Type .. " Number : " .. i)
+        util.toast("完成!\n" .. Type .. " 数量: " .. i)
         player_tp_entities.is_running = false
         return true
     end
 
-    menu.slider(Trolling_tp_entities, "传送延时", { "TP_delay" }, "单位: ms", 0, 5000, 100, 100,
+    menu.slider(Trolling_tp_entities, "传送延时", { "tp_entities_delay" }, "单位: ms", 0, 5000, 100, 100,
         function(value)
             player_tp_entities.delay = value
         end)
@@ -272,7 +293,6 @@ local Player_options = function(pid)
     --------------------
     local Trolling_NearbyPed = menu.list(Trolling_options, "此玩家附近行人", {}, "需要在此玩家附近")
 
-
     local player_nearby_ped = {
         radius = 60,
         combat = {
@@ -291,14 +311,14 @@ local Player_options = function(pid)
     menu.toggle_loop(Trolling_NearbyPed, "附近行人逮捕此玩家", {}, "", function()
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         for _, ped in pairs(GET_NEARBY_PEDS(pid, player_nearby_ped.radius)) do
-            if not IS_PED_PLAYER(ped) and not TASK.IS_PED_RUNNING_ARREST_TASK(ped) then
-                RequestControl(driver)
+            if not IS_PED_PLAYER(ped) and not TASK.GET_IS_TASK_ACTIVE(ped, 62) then
+                RequestControl(ped)
 
-                PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
-                TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
-                PED.SET_PED_KEEP_TASK(driver, true)
+                PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
+                TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
+                PED.SET_PED_KEEP_TASK(ped, true)
 
-                disable_ped_flee_attributes(driver)
+                disable_ped_flee_attributes(ped)
 
                 TASK.TASK_ARREST_PED(ped, player_ped)
             end
@@ -372,10 +392,13 @@ local Player_options = function(pid)
         util.yield(500)
     end)
 
+    --#endregion
 
 
 
 
+
+    --#region 友好选项
 
     ----------------------------
     ---------- 友好选项 ---------
@@ -442,6 +465,7 @@ local Player_options = function(pid)
         util.yield(500)
     end)
 
+    --#endregion
 
 
 
@@ -574,7 +598,7 @@ local Player_options = function(pid)
                 ENTITY.FREEZE_ENTITY_POSITION(ent, custom_generate_entity_data.is_freeze)
                 ENTITY.SET_ENTITY_VISIBLE(ent, not custom_generate_entity_data.is_invisible, 0)
                 if custom_generate_entity_data.cant_migrate then
-                    entities.set_can_migrate(entities.handle_to_pointer(ent), false)
+                    entities.set_can_migrate(ent, false)
                 end
                 if custom_generate_entity_data.no_collision then
                     ENTITY.SET_ENTITY_COLLISION(ent, false, false)

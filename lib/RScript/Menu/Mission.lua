@@ -5,6 +5,7 @@
 local Mission_options = menu.list(menu.my_root(), "任务选项", {}, "")
 
 
+
 ---------------------
 -- 分红编辑
 ---------------------
@@ -39,6 +40,7 @@ end)
 menu.click_slider(Heist_Cut_Editor, "玩家4", { "cut4edit" }, "", 0, 300, 85, 5, function(value)
     SET_INT_GLOBAL(cut_global_base + 4, value)
 end)
+
 
 
 ---------------------
@@ -105,137 +107,6 @@ menu.action(Casion_Heist, "写入 BITSET0 值", {}, "写入到 H3OPT_BITSET0", f
     STAT_SET_INT("H3OPT_BITSET0", bitset0)
     util.toast("已将 H3OPT_BITSET0 修改为: " .. bitset0)
 end)
-
-
----------------------
--- 资产监视
----------------------
-local Business_Monitor = menu.list(Mission_options, "资产监视", { "business_monitor" }, "")
-
-local Business = {}
-
-function Business.GetOrgOffset()
-    return (1892703 + 1 + (players.user() * 599) + 10)
-end
-
-function Business.GetOnlineWorkOffset()
-    return (1853910 + 1 + (players.user() * 862) + 267)
-end
-
-function Business.GetNightclubValue(slot)
-    local offset = Business.GetOnlineWorkOffset() + 310 + 8 + 1 + slot
-    return GET_INT_GLOBAL(offset)
-end
-
-function Business.GetBusinessSupplies(slot)
-    return STAT_GET_INT("MATTOTALFORFACTORY" .. slot)
-end
-
-function Business.GetBusinessProduct(slot)
-    return STAT_GET_INT("PRODTOTALFORFACTORY" .. slot)
-end
-
-Business.Caps = {
-    NightClub = {
-        [0] = 50,  -- Cargo
-        [1] = 100, -- Weapons
-        [2] = 10,  -- Cocaine
-        [3] = 20,  -- Meth
-        [4] = 80,  -- Weed
-        [5] = 60,  -- Forgery
-        [6] = 40   -- Cash
-    },
-}
-
-local Business_Monitor_Menu = {
-    bunker = {
-        supplies,
-        product,
-        research,
-    },
-    nightclub = {
-        safe_cash,
-        popularity,
-        product = {
-            [0] = { name = "运输货物", menu },
-            [1] = { name = "体育用品", menu },
-            [2] = { name = "南美进口货", menu },
-            [3] = { name = "药学研究产品", menu },
-            [4] = { name = "有机农产品", menu },
-            [5] = { name = "印刷品", menu },
-            [6] = { name = "印钞", menu },
-        },
-    },
-    acid_lab = {
-        supplies,
-        product,
-    },
-    arcade_safe_cash,
-    agency_safe_cash,
-}
-menu.action(Business_Monitor, "刷新状态", {}, "", function()
-    if util.is_session_started() and not util.is_session_transition_active() then
-        --- Bunker ---
-        local slot = 5
-        local text = ""
-        text = Business.GetBusinessSupplies(slot) .. "%"
-        menu.set_value(Business_Monitor_Menu.bunker.supplies, text)
-
-        text = Business.GetBusinessProduct(slot) .. "/100"
-        menu.set_value(Business_Monitor_Menu.bunker.product, text)
-
-        text = STAT_GET_INT("RESEARCHTOTALFORFACTORY5")
-        menu.set_value(Business_Monitor_Menu.bunker.research, text)
-
-        --- Nightclub ---
-        text = math.floor(STAT_GET_INT('CLUB_POPULARITY') / 10) .. '%'
-        menu.set_value(Business_Monitor_Menu.nightclub.popularity, text)
-        menu.set_value(Business_Monitor_Menu.nightclub.safe_cash, STAT_GET_INT("CLUB_SAFE_CASH_VALUE"))
-
-        for i = 0, 6 do
-            local t = Business.GetNightclubValue(i) .. "/" .. Business.Caps.NightClub[i]
-            menu.set_value(Business_Monitor_Menu.nightclub.product[i].menu, t)
-        end
-
-        --- Acid Lab ---
-        slot = 6
-        text = Business.GetBusinessSupplies(slot) .. "%"
-        menu.set_value(Business_Monitor_Menu.acid_lab.supplies, text)
-
-        text = Business.GetBusinessProduct(slot) .. "/160"
-        menu.set_value(Business_Monitor_Menu.acid_lab.product, text)
-
-        --- Other ---
-        menu.set_value(Business_Monitor_Menu.arcade_safe_cash, STAT_GET_INT("ARCADE_SAFE_CASH_VALUE"))
-        menu.set_value(Business_Monitor_Menu.agency_safe_cash, STAT_GET_INT("FIXER_SAFE_CASH_VALUE"))
-    else
-        util.toast("仅在线上模式战局内可用")
-    end
-end)
-
-menu.divider(Business_Monitor, "地堡")
-Business_Monitor_Menu.bunker.supplies = menu.readonly(Business_Monitor, "原材料")
-Business_Monitor_Menu.bunker.product = menu.readonly(Business_Monitor, "产品")
-Business_Monitor_Menu.bunker.research = menu.readonly(Business_Monitor, "研究")
-
-menu.divider(Business_Monitor, "夜总会")
-Business_Monitor_Menu.nightclub.popularity = menu.readonly(Business_Monitor, "夜总会人气")
-Business_Monitor_Menu.nightclub.safe_cash  = menu.readonly(Business_Monitor, "保险箱现金")
-for i = 0, 6 do
-    Business_Monitor_Menu.nightclub.product[i].menu = menu.readonly(Business_Monitor,
-        Business_Monitor_Menu.nightclub.product[i].name)
-end
-
-menu.divider(Business_Monitor, "致幻剂实验室")
-Business_Monitor_Menu.acid_lab.supplies = menu.readonly(Business_Monitor, "原材料")
-Business_Monitor_Menu.acid_lab.product = menu.readonly(Business_Monitor, "产品")
-
-menu.divider(Business_Monitor, "其它")
-Business_Monitor_Menu.arcade_safe_cash = menu.readonly(Business_Monitor, "游戏厅保险箱现金")
-Business_Monitor_Menu.agency_safe_cash = menu.readonly(Business_Monitor, "事务所保险箱现金")
-
-
-
 
 
 
@@ -332,7 +203,6 @@ menu.toggle_loop(Local_Editor, "锁定写入", {}, "更改地址类型，锁定�
         end
     end
 end)
-
 
 
 
@@ -434,9 +304,10 @@ menu.list_select(Mission_Assistant_Nearby_Road, "生成地点", {}, "", {
 }, 1, function(value)
     ma_nearby_road.nodeType = value - 1
 end)
-menu.slider_float(Mission_Assistant_Nearby_Road, "随机范围", {}, "", 0, 50000, 6000, 500, function(value)
-    ma_nearby_road.random_radius = value * 0.01
-end)
+menu.slider_float(Mission_Assistant_Nearby_Road, "随机范围", { "ma_nearby_road_random_radius" }, "",
+    0, 50000, 6000, 500, function(value)
+        ma_nearby_road.random_radius = value * 0.01
+    end)
 
 menu.toggle(Mission_Assistant_Nearby_Road, "生成载具: 无敌", {}, "", function(toggle)
     ma_nearby_road.godmode = toggle
@@ -450,21 +321,10 @@ end, true)
 
 menu.divider(Mission_Assistant_Nearby_Road, "载具列表")
 
-local Nearby_Road_Vehicle_ListItem = {
-    -- name, model, help_text
-    { "警车",                "police3",    "" },
-    { "坦克",                "khanjali",   "" },
-    { "骷髅马",             "kuruma2",    "" },
-    { "警用直升机",       "polmav",     "" },
-    { "子弹",                "bullet",     "大街上随处可见的超级跑车" },
-    { "801巴提",             "bati",       "" },
-    { "暴君MK2",             "oppressor2", "" },
-    { "秃鹰攻击直升机", "buzzard",    "" },
-}
-for _, data in pairs(Nearby_Road_Vehicle_ListItem) do
-    local name = "生成 " .. data[1]
-    local hash = util.joaat(data[2])
-    menu.action(Mission_Assistant_Nearby_Road, name, {}, data[3], function()
+for _, data in pairs(Vehicle_Common) do
+    local name = "生成 " .. data.name
+    local hash = util.joaat(data.model)
+    menu.action(Mission_Assistant_Nearby_Road, name, {}, data.help_text, function()
         local pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
         local bool, coords, heading = false, pos, 0
 
@@ -557,10 +417,10 @@ local function generate_mpa_player_commands(menu_parent, pid)
 
     menu.divider(neayby_veh, "载具列表")
 
-    for _, data in pairs(Nearby_Road_Vehicle_ListItem) do
-        local name = "生成 " .. data[1]
-        local hash = util.joaat(data[2])
-        menu.action(neayby_veh, name, {}, data[3], function()
+    for _, data in pairs(Vehicle_Common) do
+        local name = "生成 " .. data.name
+        local hash = util.joaat(data.model)
+        menu.action(neayby_veh, name, {}, data.help_text, function()
             local pos = ENTITY.GET_ENTITY_COORDS(player_ped)
             local bool, coords, heading = get_closest_vehicle_node(pos, 1)
             if bool then
@@ -682,6 +542,7 @@ menu.toggle_loop(Mission_Assistant, "秃鹰直升机 NPC禁用武器", {},
     end)
 
 
+--#region Apartment Heist
 
 ------ 公寓抢劫 ------
 menu.divider(Mission_Assistant, "公寓抢劫")
@@ -733,8 +594,8 @@ menu.action(Mission_Assistant_Prison, "巴士：传送到目的地", {}, "", fun
 end)
 menu.divider(Mission_Assistant_Prison, "终章")
 menu.action(Mission_Assistant_Prison, "(破坏)巴士 传送到目的地", {}, "", function()
-    local coords = { x = 1680.409301, y = 3276.584228, z = 41.07345 }
-    local heading = 38.17193
+    local coords = { x = 1679.619873, y = 3278.103759, z = 41.0774383 }
+    local heading = 32.8253974
     local entity_list = get_entities_by_hash("vehicle", true, -2007026063)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -1334,6 +1195,213 @@ menu.action(Mission_Assistant_Pacific, "终章：摩托车位置 生成直升机
         util.toast("完成！")
     end
 end)
+
+--#endregion Apartment Heist
+
+--#region Doomsday Heist
+
+------ 末日豪劫 ------
+menu.divider(Mission_Assistant, "末日豪劫")
+
+local Mission_Assistant_Doomsday_Preps = menu.list(Mission_Assistant, "前置任务", {}, "")
+
+menu.divider(Mission_Assistant_Doomsday_Preps, "末日一: 数据泄露")
+menu.action(Mission_Assistant_Doomsday_Preps, "医疗装备：救护车 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, 1171614426)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            RequestControl(ent)
+            TP_VEHICLE_TO_ME(ent)
+
+            if not hasControl(ent) then
+                util.toast("未能成功控制实体，请重试")
+            end
+        end
+    end
+end)
+local doomsday_preps_deluxo_menu
+local doomsday_preps_deluxo_ent = {} -- 实体列表
+doomsday_preps_deluxo_menu = menu.list_action(Mission_Assistant_Doomsday_Preps, "德罗索：载具 传送到我",
+    {}, "", { "刷新载具列表" }, function(value)
+        if value == 1 then
+            local entity_list = get_entities_by_hash("vehicle", true, 1483171323)
+            if next(entity_list) ~= nil then
+                doomsday_preps_deluxo_ent = {}
+                local list_item_data = { "刷新载具列表" }
+                local i = 1
+
+                for k, ent in pairs(entity_list) do
+                    table.insert(doomsday_preps_deluxo_ent, ent)
+                    table.insert(list_item_data, "德罗索 " .. i)
+                    i = i + 1
+                end
+
+                menu.set_list_action_options(doomsday_preps_deluxo_menu, list_item_data)
+                util.toast("已刷新，请重新打开该列表")
+            end
+        else
+            local ent = doomsday_preps_deluxo_ent[value - 1]
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                RequestControl(ent)
+                TP_VEHICLE_TO_ME(ent)
+
+                if not hasControl(ent) then
+                    util.toast("未能成功控制实体，请重试")
+                end
+            end
+        end
+    end)
+menu.action(Mission_Assistant_Doomsday_Preps, "德罗索：当前载具 随机主色调", {},
+    "无需去改车王改装\n基于Stand命令", function()
+        if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+            local vehicle = entities.get_user_vehicle_as_handle()
+            local colour = get_random_colour()
+            menu.trigger_commands("vehprimaryred " .. colour.r)
+            menu.trigger_commands("vehprimarygreen " .. colour.g)
+            menu.trigger_commands("vehprimaryblue " .. colour.b)
+        end
+    end)
+menu.action(Mission_Assistant_Doomsday_Preps, "阿库拉：载具 传送到我", {},
+    "需要先去下载飞行数据", function()
+        local entity_list = get_entities_by_hash("vehicle", true, 1181327175)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                RequestControl(ent)
+                TP_VEHICLE_TO_ME(ent, "", "delete")
+                set_entity_godmode(ent, true)
+
+                if not hasControl(ent) then
+                    util.toast("未能成功控制实体，请重试")
+                end
+            end
+        end
+    end)
+
+menu.divider(Mission_Assistant_Doomsday_Preps, "末日二: 博格丹危机")
+menu.action(Mission_Assistant_Doomsday_Preps, "钥匙卡：防暴车 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, -1205689942)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            RequestControl(ent)
+            TP_VEHICLE_TO_ME(ent)
+
+            if not hasControl(ent) then
+                util.toast("未能成功控制实体，请重试")
+            end
+        end
+    end
+end)
+menu.action(Mission_Assistant_Doomsday_Preps, "ULP情报：包裹 传送到我", {},
+    "先干掉毒贩，下方提示进入公寓后传送", function()
+        local entity_list = get_entities_by_hash("pickup", true, -1851147549)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                RequestControl(ent)
+                TP_TO_ME(ent)
+
+                if not hasControl(ent) then
+                    util.toast("未能成功控制实体，请重试")
+                end
+            end
+        end
+    end)
+local doomsday_preps_stromberg_menu
+local doomsday_preps_stromberg_ent = {} -- 实体列表
+doomsday_preps_stromberg_menu = menu.list_action(Mission_Assistant_Doomsday_Preps, "斯特龙伯格：卡车 传送到我",
+    {}, "", { "刷新载具列表" }, function(value)
+        if value == 1 then
+            local entity_list = get_entities_by_hash("object", true, -6020377)
+            if next(entity_list) ~= nil then
+                doomsday_preps_stromberg_ent = {}
+                local list_item_data = { "刷新载具列表" }
+                local i = 1
+
+                for k, ent in pairs(entity_list) do
+                    if ENTITY.IS_ENTITY_ATTACHED(ent) then
+                        local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
+                        table.insert(doomsday_preps_stromberg_ent, attached_ent)
+                        table.insert(list_item_data, "卡车 " .. i)
+                        i = i + 1
+                    end
+                end
+
+                menu.set_list_action_options(doomsday_preps_stromberg_menu, list_item_data)
+                util.toast("已刷新，请重新打开该列表")
+            end
+        else
+            local ent = doomsday_preps_stromberg_ent[value - 1]
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                RequestControl(ent)
+                TP_VEHICLE_TO_ME(ent, "", "delete")
+
+                if not hasControl(ent) then
+                    util.toast("未能成功控制实体，请重试")
+                end
+            end
+        end
+    end)
+menu.action(Mission_Assistant_Doomsday_Preps, "鱼雷电控单元：包裹 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("pickup", true, 2096599423)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            RequestControl(ent)
+            TP_TO_ME(ent)
+
+            if not hasControl(ent) then
+                util.toast("未能成功控制实体，请重试")
+            end
+        end
+    end
+end)
+
+menu.divider(Mission_Assistant_Doomsday_Preps, "末日三: 末日将至")
+menu.action(Mission_Assistant_Doomsday_Preps, "标记资金：包裹 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("pickup", true, -549235179)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            RequestControl(ent)
+            TP_TO_ME(ent)
+
+            if not hasControl(ent) then
+                util.toast("未能成功控制实体，请重试")
+            end
+        end
+    end
+end)
+menu.action(Mission_Assistant_Doomsday_Preps, "切尔诺伯格：载具 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, -692292317)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            RequestControl(ent)
+            TP_VEHICLE_TO_ME(ent)
+
+            if not hasControl(ent) then
+                util.toast("未能成功控制实体，请重试")
+            end
+        end
+    end
+end)
+menu.action(Mission_Assistant_Doomsday_Preps, "机载电脑：飞机 传送到我", {},
+    "先杀死所有NPC(飞行员)", function()
+        local entity_list = get_entities_by_hash("object", true, -82999846)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                if ENTITY.IS_ENTITY_ATTACHED(ent) then
+                    local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
+                    RequestControl(attached_ent)
+                    TP_TO_ME(attached_ent, 0.0, 10.0, 2.0)
+                    SET_ENTITY_HEAD_TO_ENTITY(attached_ent, players.user_ped(), 180.0)
+
+                    if not hasControl(attached_ent) then
+                        util.toast("未能成功控制实体，请重试")
+                    end
+                end
+            end
+        end
+    end)
+
+
+--#endregion Doomsday Heist
 
 
 

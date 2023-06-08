@@ -1,13 +1,11 @@
 ----------------------------------
---   GTA Online Version: 1.64   --
+--   GTA Online Version: 1.66   --
 ----------------------------------
 
 Globals = {
     IsUsingComputerScreen = 75693,
-    -- appHackerTruck
-    SpecialCargoBuyScreenString = "appHackerTruck",
-    SpecialCargoBuyScreenArgs = 4592, -- arg count needed to properly start the script, possibly outdated
 
+    -- CEO技能的费用和冷却时间
     CEO_Ability = {
         -- global, default_value
         Cost = {
@@ -26,7 +24,8 @@ Globals = {
             { 12838, 600000 }, -- Bribe Authorities
         },
     },
-    
+
+    -- CEO载具的费用
     CEO_Vehicle_Request_Cost = {
         -- global, default_value
         { 12842, 20000 }, { 12843, 5000 }, { 12844, 5000 }, { 12845, 5000 }, { 12846, 25000 },
@@ -38,7 +37,7 @@ Globals = {
     RC_Bandito = 2793046 + 6874,     -- freemode.c, (..., joaat("rcbandito"), 1)
     RC_Tank = 2793046 + 6875,        -- freemode.c, (..., joaat("minitank"), 1)
     Ballistic_Armor = 2793046 + 896, -- freemode.c, (!NETWORK::NETWORK_IS_SCRIPT_ACTIVE("AM_AMMO_DROP", PLAYER::PLAYER_ID(), true, 0))
-   
+
     -- 无视犯罪
     NCOPS = {
         type = 2793046 + 4654,
@@ -107,9 +106,21 @@ function Globals.RemoveCooldown.PayphoneHitAndContract(toggle)
     end
 end
 
+Globals.RequestVehicle = {
+    { name = "MOC",                global = 2793046 + 925 },
+    { name = "Avenger",            global = 2793046 + 933 },
+    { name = "Terrorbyte",         global = 2793046 + 937 },
+    { name = "Kosatka",            global = 2793046 + 954 },
+    { name = "Dingy",              global = 2793046 + 966 },
+    { name = "Acid Lab",           global = 2793046 + 938 },
+    { name = "Acid Delivery Bike", global = 2793046 + 988 },
+}
+
 Locals = {
     -- fm_mission_controller_2020
     MC_TLIVES_2020 = 48647 + 868 + 1,
     -- fm_mission_controller
     MC_TLIVES = 26133 + 1325 + 1,
+
+    appHackerTruckArgs = 4592, -- arg count needed to properly start the script, possibly outdated
 }

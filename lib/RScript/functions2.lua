@@ -1,4 +1,12 @@
 --------------------------
+-- Online Functions
+--------------------------
+
+function IS_IN_SESSION()
+    return util.is_session_started() and not util.is_session_transition_active()
+end
+
+--------------------------
 -- Script Functions
 --------------------------
 
