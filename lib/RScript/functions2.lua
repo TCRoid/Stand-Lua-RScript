@@ -184,8 +184,16 @@ function GET_FLOAT_LOCAL(Script, Local)
     end
 end
 
-function SET_BIT(Bits, Place)
-    return (Bits | (1 << Place))
+---------------------------
+-- Bit Functions
+---------------------------
+
+function SET_BIT(bits, place)
+    return (bits | (1 << place))
+end
+
+function CLEAR_BIT(bits, place)
+    return (bits & ~(1 << place))
 end
 
 function SET_LOCAL_BIT(script, script_local, bit)

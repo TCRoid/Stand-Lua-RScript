@@ -5,9 +5,9 @@
 util.keep_running()
 util.require_natives("1681379138")
 
-local SCRIPT_VERSION <const> = "2023/6/8"
+local SCRIPT_VERSION <const> = "2023/6/20"
 
-local SUPPORT_GTAO <const> = 1.66
+local SUPPORT_GTAO <const> = 1.67
 
 
 

@@ -1852,6 +1852,22 @@ function bool_to_string(bool, true_text, false_text)
     end
 end
 
+---十进制数字转二进制数字，以table形式返回
+---
+---`bit` 从1开始，需要减1
+---@param decimal integer
+---@return table<bit, bin>
+function decimal_to_binary(decimal)
+    local binary = {}
+    local i = 1
+    while decimal > 0 do
+        binary[i] = decimal % 2
+        decimal = math.floor(decimal / 2)
+        i = i + 1
+    end
+    return binary
+end
+
 -------------------------
 -- Table Functions
 -------------------------

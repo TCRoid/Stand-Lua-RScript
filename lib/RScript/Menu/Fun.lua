@@ -186,7 +186,7 @@ menu.colour(Player_Damage_Number, "文字颜色", { "player_damage_number_text_c
     end)
 
 menu.list_select(Player_Damage_Number, "位置", {}, "", {
-    { "国定位置" }, { "受到伤害的位置", {}, "玩家位置" }
+    { "固定位置" }, { "受到伤害的位置", {}, "玩家位置" }
 }, 1, function(value)
     player_damage.number.pos_select = value
 end)

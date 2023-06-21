@@ -7,11 +7,11 @@ local Mission_options = menu.list(menu.my_root(), "任务选项", {}, "")
 
 
 ---------------------
--- 分红编辑
+-- 抢劫分红编辑
 ---------------------
-local Heist_Cut_Editor = menu.list(Mission_options, "分红编辑", {}, "")
+local Heist_Cut_Editor = menu.list(Mission_options, "抢劫分红编辑", {}, "")
 
-local cut_global_base = 1977693 + 823 + 56
+local cut_global_base = 1978495 + 825 + 56
 local HeistCut = {
     ListItem = {
         { "佩里科岛" },
@@ -19,9 +19,9 @@ local HeistCut = {
         { "末日豪劫" },
     },
     ValueList = {
-        1977693 + 823 + 56,
-        1970895 + 2325,
-        1966831 + 812 + 50,
+        1978495 + 825 + 56,
+        1971696 + 2325,
+        1967630 + 812 + 50,
     },
 }
 menu.list_select(Heist_Cut_Editor, "当前抢劫", {}, "", HeistCut.ListItem, 1, function(value)
@@ -43,70 +43,277 @@ end)
 
 
 
+--#region Heist Prep Editor
+
 ---------------------
+-- 抢劫前置编辑
+---------------------
+local Heist_Prep_Editor = menu.list(Mission_options, "抢劫前置编辑[TEST]", {}, "")
+
+---------------
 -- 赌场抢劫
----------------------
-local Casion_Heist = menu.list(Mission_options, "赌场抢劫", {}, "")
+---------------
+local Casion_Heist = menu.list(Heist_Prep_Editor, "赌场抢劫", {}, "")
 
-menu.divider(Casion_Heist, "第二面板")
-local Casion_Heist_Custom = menu.list(Casion_Heist, "自定义可选任务", {}, "")
-
-local bitset0 = 0
-local bitset0_temp = 0
-local Casion_Heist_Custom_ListItem = {
-    { "toggle",  "巡逻路线",          2,             "" },
-    { "toggle",  "杜根货物",          4,             "是否会显示对钩而已" },
-    { "toggle",  "电钻",                16,            "" },
-    { "toggle",  "枪手诱饵",          64,            "" },
-    { "toggle",  "更换载具",          128,           "" },
-    { "divider", "隐迹潜踪" },
-    { "toggle",  "潜入套装",          8,             "" },
-    { "toggle",  "电磁脉冲设备",    32,            "" },
-    { "divider", "兵不厌诈" },
-    { "toggle",  "进场：除虫大师", 256 + 512,     "" },
-    { "toggle",  "进场：维修工",    1024 + 2048,   "" },
-    { "toggle",  "进场：古倍科技", 4096 + 8192,   "" },
-    { "toggle",  "进场：名人",       16384 + 32768, "" },
-    { "toggle",  "离场：国安局",    65536,         "" },
-    { "toggle",  "离场：消防员",    131072,        "" },
-    { "toggle",  "离场：豪赌客",    262144,        "" },
-    { "divider", "气势汹汹" },
-    { "toggle",  "加固防弹衣",       1048576,       "" },
-    { "toggle",  "镗床",                2621440,       "" }
+local casion_heist = {
+    optional = {
+        bitset0 = 0,
+        menu_input = nil,
+        menu_list = {},
+    },
 }
 
-for k, data in pairs(Casion_Heist_Custom_ListItem) do
-    if data[1] == "toggle" then
-        menu.toggle(Casion_Heist_Custom, data[2], {}, data[4], function(toggle)
-            if toggle then
-                bitset0_temp = bitset0_temp + data[3]
-            else
-                bitset0_temp = bitset0_temp - data[3]
-            end
-        end)
-    else
-        menu.divider(Casion_Heist_Custom, data[2])
+menu.divider(Casion_Heist, "第二面板")
+local Casion_Heist_Optional = menu.list(Casion_Heist, "自定义可选任务", {}, "")
+
+menu.action(Casion_Heist_Optional, "读取 H3OPT_BITSET0", {}, "", function()
+    local value = STAT_GET_INT("H3OPT_BITSET0")
+    menu.set_value(casion_heist.optional.menu_input, value)
+    util.toast(value)
+end)
+casion_heist.optional.menu_input = menu.slider(Casion_Heist_Optional, "H3OPT_BITSET0", { "CH_H3OPT_BITSET0" }, "",
+    0, 16777216, 0, 1, function(value)
+        casion_heist.optional.bitset0 = value
+    end)
+menu.action(Casion_Heist_Optional, "解析 H3OPT_BITSET0", {}, "", function()
+    local value = casion_heist.optional.bitset0
+
+    for _, command in pairs(casion_heist.optional.menu_list) do
+        menu.set_value(command, false)
     end
-end
-menu.divider(Casion_Heist_Custom, "")
-menu.action(Casion_Heist_Custom, "添加到 BITSET0", {}, "", function()
-    bitset0 = bitset0_temp
-    util.toast("当前值为: " .. bitset0)
+
+    for bit, bin in pairs(decimal_to_binary(value)) do
+        bit = bit - 1
+        if bin == 1 then
+            local command = casion_heist.optional.menu_list[bit]
+            if command ~= nil and menu.is_ref_valid(command) then
+                menu.set_value(command, true)
+            end
+        end
+    end
+end)
+menu.action(Casion_Heist_Optional, "写入 H3OPT_BITSET0", {}, "", function()
+    STAT_SET_INT("H3OPT_BITSET0", casion_heist.optional.bitset0)
+    util.toast("已将 H3OPT_BITSET0 修改为: " .. casion_heist.optional.bitset0)
 end)
 
-menu.divider(Casion_Heist, "BITSET0 设置")
-menu.action(Casion_Heist, "读取当前 BITSET0 值", {}, "", function()
-    util.toast(bitset0)
+menu.divider(Casion_Heist_Optional, "任务列表")
+
+local Casion_Heist_Optional_Preps_ListData = {
+    { menu = "toggle",  name = "Support Crew Selected [必选]", bit = 0,  help_text = "" },
+    { menu = "toggle",  name = "巡逻路线",                   bit = 1,  help_text = "" },
+    { menu = "toggle",  name = "杜根货物",                   bit = 2,  help_text = "是否会显示对钩而已" },
+    { menu = "toggle",  name = "电钻",                         bit = 4,  help_text = "" },
+    { menu = "toggle",  name = "枪手诱饵",                   bit = 6,  help_text = "" },
+    { menu = "toggle",  name = "更换载具",                   bit = 7,  help_text = "" },
+    { menu = "divider", name = "隐迹潜踪" },
+    { menu = "toggle",  name = "潜入套装",                   bit = 3,  help_text = "" },
+    { menu = "toggle",  name = "电磁脉冲设备",             bit = 5,  help_text = "" },
+    { menu = "divider", name = "兵不厌诈" },
+    { menu = "toggle",  name = "进场: 除虫大师1",          bit = 8,  help_text = "" },
+    { menu = "toggle",  name = "进场: 除虫大师2",          bit = 9,  help_text = "" },
+    { menu = "toggle",  name = "进场: 维修工1",             bit = 10, help_text = "" },
+    { menu = "toggle",  name = "进场: 维修工2",             bit = 11, help_text = "" },
+    { menu = "toggle",  name = "进场: 古倍科技1",          bit = 12, help_text = "" },
+    { menu = "toggle",  name = "进场: 古倍科技2",          bit = 13, help_text = "" },
+    { menu = "toggle",  name = "进场: 名人1",                bit = 14, help_text = "" },
+    { menu = "toggle",  name = "进场: 名人2",                bit = 15, help_text = "" },
+    { menu = "toggle",  name = "离场: 国安局",              bit = 16, help_text = "" },
+    { menu = "toggle",  name = "离场: 消防员",              bit = 17, help_text = "" },
+    { menu = "toggle",  name = "离场: 豪赌客",              bit = 18, help_text = "" },
+    { menu = "divider", name = "气势汹汹" },
+    { menu = "toggle",  name = "镗床",                         bit = 19, help_text = "" },
+    { menu = "toggle",  name = "加固防弹衣",                bit = 20, help_text = "" },
+}
+for k, item in pairs(Casion_Heist_Optional_Preps_ListData) do
+    if item.menu == "toggle" then
+        local menu_toggle = menu.toggle(Casion_Heist_Optional, item.name, {}, item.help_text,
+            function(toggle, click_type)
+                if click_type ~= CLICK_SCRIPTED then
+                    local value = casion_heist.optional.bitset0
+                    if toggle then
+                        value = value + (1 << item.bit)
+                    else
+                        value = value - (1 << item.bit)
+                    end
+                    menu.set_value(casion_heist.optional.menu_input, value)
+                end
+            end)
+
+        casion_heist.optional.menu_list[item.bit] = menu_toggle
+    else
+        menu.divider(Casion_Heist_Optional, item.name)
+    end
+end
+
+
+---------------
+-- 末日豪劫
+---------------
+local Doomsday_Heist = menu.list(Heist_Prep_Editor, "末日豪劫", {}, "")
+
+local doomsday_heist = {
+    prep = {
+        gangops_fm = 0,
+        menu_input = nil,
+        menu_list = {},
+        list_data = {
+            { menu = "divider", name = "末日一: 数据泄露" },
+            { menu = "toggle",  name = "医疗装备",              bit = 0,  help_text = "" },
+            { menu = "toggle",  name = "德罗索",                 bit = 1,  help_text = "" },
+            { menu = "toggle",  name = "阿库拉",                 bit = 2,  help_text = "" },
+            { menu = "divider", name = "末日二: 博格丹危机" },
+            { menu = "toggle",  name = "钥匙卡",                 bit = 3,  help_text = "" },
+            { menu = "toggle",  name = "ULP情报",                 bit = 4,  help_text = "" },
+            { menu = "toggle",  name = "防暴车",                 bit = 5,  help_text = "" },
+            { menu = "toggle",  name = "斯特龙伯格",           bit = 6,  help_text = "" },
+            { menu = "toggle",  name = "鱼雷电控单元",        bit = 7,  help_text = "" },
+            { menu = "divider", name = "末日三: 末日将至" },
+            { menu = "toggle",  name = "标记资金",              bit = 8,  help_text = "" },
+            { menu = "toggle",  name = "侦察",                    bit = 9,  help_text = "" },
+            { menu = "toggle",  name = "切尔诺伯格",           bit = 10, help_text = "" },
+            { menu = "toggle",  name = "飞行路线",              bit = 11, help_text = "" },
+            { menu = "toggle",  name = "试验场情报",           bit = 12, help_text = "" },
+            { menu = "toggle",  name = "机载电脑",              bit = 13, help_text = "" },
+        },
+    },
+
+    setup = {
+        gangops_flow = 0,
+        menu_input = nil,
+        menu_list = {},
+        list_data = {
+            { menu = "divider", name = "末日一: 数据泄露" },
+            { menu = "toggle",  name = "亡命速递",              bit = 0,  help_text = "" },
+            { menu = "toggle",  name = "拦截信号",              bit = 1,  help_text = "" },
+            { menu = "toggle",  name = "服务器群组",           bit = 2,  help_text = "" },
+            { menu = "divider", name = "末日二: 博格丹危机" },
+            { menu = "toggle",  name = "复仇者",                 bit = 4,  help_text = "" },
+            { menu = "toggle",  name = "营救ULP",                 bit = 5,  help_text = "" },
+            { menu = "toggle",  name = "抢救硬盘",              bit = 6,  help_text = "" },
+            { menu = "toggle",  name = "潜水艇侦察",           bit = 7,  help_text = "" },
+            { menu = "divider", name = "末日三: 末日将至" },
+            { menu = "toggle",  name = "营救14号探员",         bit = 9,  help_text = "" },
+            { menu = "toggle",  name = "护送ULP探员",           bit = 10, help_text = "" },
+            { menu = "toggle",  name = "巴拉杰",                 bit = 11, help_text = "" },
+            { menu = "toggle",  name = "可汗贾利",              bit = 12, help_text = "" },
+            { menu = "toggle",  name = "空中防御",              bit = 13, help_text = "" },
+        },
+    }
+}
+
+local Doomsday_Heist_Preps = menu.list(Doomsday_Heist, "前置任务", {}, "")
+
+menu.action(Doomsday_Heist_Preps, "读取 GANGOPS_FM_MISSION_PROG", {}, "", function()
+    local value = STAT_GET_INT("GANGOPS_FM_MISSION_PROG")
+    menu.set_value(doomsday_heist.prep.menu_input, value)
+    util.toast(value)
 end)
-menu.slider(Casion_Heist, "自定义 BITSET0 值", { "bitset0" }, "", 0, 16777216, 0, 1, function(value)
-    bitset0 = value
-    util.toast("已修改为: " .. bitset0)
+doomsday_heist.prep.menu_input = menu.slider(Doomsday_Heist_Preps, "GANGOPS_FM 值", { "doomsday_heist_gangops_fm" }, "",
+    0, 16777216, 0, 1, function(value)
+        doomsday_heist.prep.gangops_fm = value
+    end)
+menu.action(Doomsday_Heist_Preps, "解析当前 GANGOPS_FM 值", {}, "", function()
+    local value = doomsday_heist.prep.gangops_fm
+
+    for _, command in pairs(doomsday_heist.prep.menu_list) do
+        menu.set_value(command, false)
+    end
+
+    for bit, bin in pairs(decimal_to_binary(value)) do
+        bit = bit - 1
+        if bin == 1 then
+            local command = doomsday_heist.prep.menu_list[bit]
+            if command ~= nil and menu.is_ref_valid(command) then
+                menu.set_value(command, true)
+            end
+        end
+    end
 end)
-menu.divider(Casion_Heist, "")
-menu.action(Casion_Heist, "写入 BITSET0 值", {}, "写入到 H3OPT_BITSET0", function()
-    STAT_SET_INT("H3OPT_BITSET0", bitset0)
-    util.toast("已将 H3OPT_BITSET0 修改为: " .. bitset0)
+menu.action(Doomsday_Heist_Preps, "写入 GANGOPS_FM_MISSION_PROG", {}, "", function()
+    STAT_SET_INT("GANGOPS_FM_MISSION_PROG", doomsday_heist.prep.gangops_fm)
+    util.toast("已将 GANGOPS_FM_MISSION_PROG 修改为: " .. doomsday_heist.prep.gangops_fm)
 end)
+
+-- 任务列表
+for k, item in pairs(doomsday_heist.prep.list_data) do
+    if item.menu == "toggle" then
+        local menu_toggle = menu.toggle(Doomsday_Heist_Preps, item.name, {}, item.help_text, function(toggle, click_type)
+            if click_type ~= CLICK_SCRIPTED then
+                local value = doomsday_heist.prep.gangops_fm
+                if toggle then
+                    value = value + (1 << item.bit)
+                else
+                    value = value - (1 << item.bit)
+                end
+                menu.set_value(doomsday_heist.prep.menu_input, value)
+            end
+        end)
+
+        doomsday_heist.prep.menu_list[item.bit] = menu_toggle
+    else
+        menu.divider(Doomsday_Heist_Preps, item.name)
+    end
+end
+
+
+local Doomsday_Heist_Setups = menu.list(Doomsday_Heist, "准备任务", {}, "")
+
+menu.action(Doomsday_Heist_Setups, "读取 GANGOPS_FLOW_MISSION_PROG", {}, "", function()
+    local value = STAT_GET_INT("GANGOPS_FLOW_MISSION_PROG")
+    menu.set_value(doomsday_heist.setup.menu_input, value)
+    util.toast(value)
+end)
+doomsday_heist.setup.menu_input = menu.slider(Doomsday_Heist_Setups, "GANGOPS_FLOW 值",
+    { "doomsday_heist_gangops_flow" }, "", 0, 16777216, 0, 1, function(value)
+        doomsday_heist.setup.gangops_flow = value
+    end)
+menu.action(Doomsday_Heist_Setups, "解析当前 GANGOPS_FM 值", {}, "", function()
+    local value = doomsday_heist.setup.gangops_flow
+
+    for _, command in pairs(doomsday_heist.setup.menu_list) do
+        menu.set_value(command, false)
+    end
+
+    for bit, bin in pairs(decimal_to_binary(value)) do
+        bit = bit - 1
+        if bin == 1 then
+            local command = doomsday_heist.setup.menu_list[bit]
+            if command ~= nil and menu.is_ref_valid(command) then
+                menu.set_value(command, true)
+            end
+        end
+    end
+end)
+menu.action(Doomsday_Heist_Setups, "写入 GANGOPS_FLOW_MISSION_PROG", {}, "", function()
+    STAT_SET_INT("GANGOPS_FLOW_MISSION_PROG", doomsday_heist.setup.gangops_flow)
+    util.toast("已将 GANGOPS_FLOW_MISSION_PROG 修改为: " .. doomsday_heist.setup.gangops_flow)
+end)
+
+-- 任务列表
+for k, item in pairs(doomsday_heist.setup.list_data) do
+    if item.menu == "toggle" then
+        local menu_toggle = menu.toggle(Doomsday_Heist_Setups, item.name, {}, item.help_text,
+            function(toggle, click_type)
+                if click_type ~= CLICK_SCRIPTED then
+                    local value = doomsday_heist.setup.gangops_flow
+                    if toggle then
+                        value = value + (1 << item.bit)
+                    else
+                        value = value - (1 << item.bit)
+                    end
+                    menu.set_value(doomsday_heist.setup.menu_input, value)
+                end
+            end)
+
+        doomsday_heist.setup.menu_list[item.bit] = menu_toggle
+    else
+        menu.divider(Doomsday_Heist_Setups, item.name)
+    end
+end
+
+--#endregion
+
 
 
 
@@ -1310,7 +1517,7 @@ local doomsday_preps_stromberg_ent = {} -- 实体列表
 doomsday_preps_stromberg_menu = menu.list_action(Mission_Assistant_Doomsday_Preps, "斯特龙伯格：卡车 传送到我",
     {}, "", { "刷新载具列表" }, function(value)
         if value == 1 then
-            local entity_list = get_entities_by_hash("object", true, -6020377)
+            local entity_list = get_entities_by_hash("object", true, -6020377, -1690938994)
             if next(entity_list) ~= nil then
                 doomsday_preps_stromberg_ent = {}
                 local list_item_data = { "刷新载具列表" }
@@ -1421,51 +1628,51 @@ menu.action(Mission_options, "跳过破解", { "skip_hacking" }, "所有的破�
     local script = "fm_mission_controller_2020"
     if IS_SCRIPT_RUNNING(script) then
         -- Skip The Hacking Process
-        if GET_INT_LOCAL(script, 22032) == 4 then
-            SET_INT_LOCAL(script, 22032, 5)
+        if GET_INT_LOCAL(script, 23669) == 4 then
+            SET_INT_LOCAL(script, 23669, 5)
         end
         -- Skip Cutting The Sewer Grill
-        if GET_INT_LOCAL(script, 26746) == 4 then
-            SET_INT_LOCAL(script, 26746, 6)
+        if GET_INT_LOCAL(script, 28446) == 4 then
+            SET_INT_LOCAL(script, 28446, 6)
         end
         -- Skip Cutting The Glass
-        SET_FLOAT_LOCAL(script, 27985 + 3, 100)
+        SET_FLOAT_LOCAL(script, 29685 + 3, 100)
 
-        SET_INT_LOCAL(script, 974 + 135, 3) -- For ULP Missions
+        SET_INT_LOCAL(script, 975 + 135, 3) -- For ULP Missions
     end
 
     script = "fm_mission_controller"
     if IS_SCRIPT_RUNNING(script) then
         -- For Fingerprint
-        if GET_INT_LOCAL(script, 52962) ~= 1 then
-            SET_INT_LOCAL(script, 52962, 5)
+        if GET_INT_LOCAL(script, 52964) ~= 1 then
+            SET_INT_LOCAL(script, 52964, 5)
         end
         -- For Keypad
-        if GET_INT_LOCAL(script, 54024) ~= 1 then
-            SET_INT_LOCAL(script, 54024, 5)
+        if GET_INT_LOCAL(script, 54026) ~= 1 then
+            SET_INT_LOCAL(script, 54026, 5)
         end
         -- Skip Drilling The Vault Door
-        local Value = GET_INT_LOCAL(script, 10098 + 37)
-        SET_INT_LOCAL(script, 10098 + 7, Value)
+        local Value = GET_INT_LOCAL(script, 10101 + 37)
+        SET_INT_LOCAL(script, 10101 + 7, Value)
 
         -- Doomsday Heist
-        SET_INT_LOCAL(script, 1508, 3)       -- For ACT I, Setup: Server Farm (Lester)
-        SET_INT_LOCAL(script, 1539, 2)
-        SET_INT_LOCAL(script, 1265 + 135, 3) -- For ACT III
+        SET_INT_LOCAL(script, 1509, 3)       -- For ACT I, Setup: Server Farm (Lester)
+        SET_INT_LOCAL(script, 1540, 2)
+        SET_INT_LOCAL(script, 1266 + 135, 3) -- For ACT III
 
         -- Fleeca Heist
-        SET_INT_LOCAL(script, 11757 + 24, 7)     -- Skip The Hacking Process
-        SET_FLOAT_LOCAL(script, 10058 + 11, 100) -- Skip Drilling
+        -- SET_INT_LOCAL(script, 11757 + 24, 7)     -- Skip The Hacking Process
+        -- SET_FLOAT_LOCAL(script, 10058 + 11, 100) -- Skip Drilling
 
         -- Pacific Standard Heist
-        SET_LOCAL_BIT(script, 9764, 9) -- Skip The Hacking Process
+        SET_LOCAL_BIT(script, 9767, 9) -- Skip The Hacking Process
     end
 end)
 menu.toggle_loop(Mission_options, "Voltage Hack", { "voltage_hack" }, "", function()
     local script = "fm_mission_controller_2020"
     if IS_SCRIPT_RUNNING(script) then
-        -- Infinite Voltage Timer
-        local Value = GET_INT_LOCAL(script, 1718)
-        SET_INT_LOCAL(script, 1717, Value)
+        -- Voltage Hack
+        local Value = GET_INT_LOCAL(script, 1719)
+        SET_INT_LOCAL(script, 1718, Value)
     end
 end)

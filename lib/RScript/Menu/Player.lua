@@ -112,6 +112,8 @@ local Player_options = function(pid)
         end
     end)
 
+
+
     menu.action(Trolling_options, "生成虎鲸", {}, "", function()
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         local modelHash = util.joaat("kosatka")
@@ -119,10 +121,32 @@ local Player_options = function(pid)
         local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
 
         local g_veh = create_vehicle(modelHash, coords, heading)
-        
+
         set_entity_godmode(g_evh, true)
         entities.set_can_migrate(g_veh, false)
     end)
+
+    local trace_kosatka = 0
+    menu.toggle_loop(Trolling_options, "追踪生成虎鲸", {}, "", function()
+        if players.exists(pid) then
+            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
+            local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
+            local heading = ENTITY.GET_ENTITY_HEADING(player_ped)
+
+            if ENTITY.DOES_ENTITY_EXIST(trace_kosatka) then
+                SET_ENTITY_COORDS(trace_kosatka, coords)
+            else
+                trace_kosatka = create_vehicle(util.joaat("kosatka"), coords, heading)
+                set_entity_godmode(trace_kosatka, true)
+                entities.set_can_migrate(trace_kosatka, false)
+            end
+        end
+    end, function()
+        if ENTITY.DOES_ENTITY_EXIST(trace_kosatka) then
+            entities.delete_by_handle(trace_kosatka)
+        end
+    end)
+
 
 
     -------------------

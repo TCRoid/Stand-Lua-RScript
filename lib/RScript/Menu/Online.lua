@@ -125,40 +125,33 @@ menu.click_slider(Request_Service, "幽灵组织 倒计时时间", {}, "单位: 
 
 
 ---------------------
--- 请求载具
----------------------
-local Request_Vehicle = menu.list(Online_options, "请求载具", {}, "")
-
-for _, item in pairs(Globals.RequestVehicle) do
-    menu.action(Request_Vehicle, item.name, {}, "", function()
-        if IS_IN_SESSION() then
-            SET_INT_GLOBAL(item.global, 1)
-            util.toast("已经请求载具，请等待")
-        end
-    end)
-end
-
-
-
-
----------------------
 -- 资产监视
 ---------------------
 local Business_Monitor = menu.list(Online_options, "资产监视", { "business_monitor" }, "")
 
-local Business = {}
-
-function Business.GetOrgOffset()
-    return (1892703 + 1 + (players.user() * 599) + 10)
-end
-
-function Business.GetOnlineWorkOffset()
-    return (1853910 + 1 + (players.user() * 862) + 267)
-end
+local Business = {
+    Caps = {
+        NightClub = {
+            [0] = 50,  -- Cargo
+            [1] = 100, -- Weapons
+            [2] = 10,  -- Cocaine
+            [3] = 20,  -- Meth
+            [4] = 80,  -- Weed
+            [5] = 60,  -- Forgery
+            [6] = 40   -- Cash
+        },
+        MCBusiness = {
+            [0] = 60, -- Forgery
+            [1] = 80, -- Weed
+            [2] = 40, -- Cash
+            [3] = 20, -- Meth
+            [4] = 10  -- Cocaine
+        },
+    },
+}
 
 function Business.GetNightclubValue(slot)
-    local offset = Business.GetOnlineWorkOffset() + 310 + 8 + 1 + slot
-    return GET_INT_GLOBAL(offset)
+    return STAT_GET_INT("HUB_PROD_TOTAL_" .. slot)
 end
 
 function Business.GetBusinessSupplies(slot)
@@ -169,19 +162,7 @@ function Business.GetBusinessProduct(slot)
     return STAT_GET_INT("PRODTOTALFORFACTORY" .. slot)
 end
 
-Business.Caps = {
-    NightClub = {
-        [0] = 50,  -- Cargo
-        [1] = 100, -- Weapons
-        [2] = 10,  -- Cocaine
-        [3] = 20,  -- Meth
-        [4] = 80,  -- Weed
-        [5] = 60,  -- Forgery
-        [6] = 40   -- Cash
-    },
-}
-
-local Business_Monitor_Menu = {
+Business.Menu = {
     bunker = {
         supplies,
         product,
@@ -204,71 +185,161 @@ local Business_Monitor_Menu = {
         supplies,
         product,
     },
-    arcade_safe_cash,
-    agency_safe_cash,
+    safe_cash = {
+        arcade,
+        agency,
+    },
+    mc_business = {
+        [0] = { name = "伪造证件", supplies, product },
+        [1] = { name = "大麻", supplies, product },
+        [2] = { name = "假钞", supplies, product },
+        [3] = { name = "冰毒", supplies, product },
+        [4] = { name = "可卡因", supplies, product },
+    },
 }
 
 menu.action(Business_Monitor, "刷新状态", {}, "", function()
     if IS_IN_SESSION() then
-        --- Bunker ---
-        local slot = 5
         local text = ""
-        text = Business.GetBusinessSupplies(slot) .. "%"
-        menu.set_value(Business_Monitor_Menu.bunker.supplies, text)
+        local product = 0
+        --- Bunker ---
+        text = Business.GetBusinessSupplies(5) .. "%"
+        menu.set_value(Business.Menu.bunker.supplies, text)
 
-        text = Business.GetBusinessProduct(slot) .. "/100"
-        menu.set_value(Business_Monitor_Menu.bunker.product, text)
+        product = Business.GetBusinessProduct(5)
+        text = product .. "/100"
+        if product == 100 then
+            text = "[!] " .. text
+        end
+        menu.set_value(Business.Menu.bunker.product, text)
 
         text = STAT_GET_INT("RESEARCHTOTALFORFACTORY5")
-        menu.set_value(Business_Monitor_Menu.bunker.research, text)
+        menu.set_value(Business.Menu.bunker.research, text)
 
         --- Nightclub ---
         text = math.floor(STAT_GET_INT('CLUB_POPULARITY') / 10) .. '%'
-        menu.set_value(Business_Monitor_Menu.nightclub.popularity, text)
-        menu.set_value(Business_Monitor_Menu.nightclub.safe_cash, STAT_GET_INT("CLUB_SAFE_CASH_VALUE"))
+        menu.set_value(Business.Menu.nightclub.popularity, text)
+        menu.set_value(Business.Menu.nightclub.safe_cash, STAT_GET_INT("CLUB_SAFE_CASH_VALUE"))
 
         for i = 0, 6 do
-            local t = Business.GetNightclubValue(i) .. "/" .. Business.Caps.NightClub[i]
-            menu.set_value(Business_Monitor_Menu.nightclub.product[i].menu, t)
+            product = Business.GetNightclubValue(i)
+            text = product .. "/" .. Business.Caps.NightClub[i]
+            if product == Business.Caps.NightClub[i] then
+                text = "[!] " .. text
+            end
+            menu.set_value(Business.Menu.nightclub.product[i].menu, text)
         end
 
         --- Acid Lab ---
-        slot = 6
-        text = Business.GetBusinessSupplies(slot) .. "%"
-        menu.set_value(Business_Monitor_Menu.acid_lab.supplies, text)
+        text = Business.GetBusinessSupplies(6) .. "%"
+        menu.set_value(Business.Menu.acid_lab.supplies, text)
 
-        text = Business.GetBusinessProduct(slot) .. "/160"
-        menu.set_value(Business_Monitor_Menu.acid_lab.product, text)
+        product = Business.GetBusinessProduct(6)
+        text = product .. "/160"
+        if product == 160 then
+            text = "[!] " .. text
+        end
+        menu.set_value(Business.Menu.acid_lab.product, text)
 
-        --- Other ---
-        menu.set_value(Business_Monitor_Menu.arcade_safe_cash, STAT_GET_INT("ARCADE_SAFE_CASH_VALUE"))
-        menu.set_value(Business_Monitor_Menu.agency_safe_cash, STAT_GET_INT("FIXER_SAFE_CASH_VALUE"))
+        --- Safe Cash ---
+        menu.set_value(Business.Menu.safe_cash.arcade, STAT_GET_INT("ARCADE_SAFE_CASH_VALUE"))
+        menu.set_value(Business.Menu.safe_cash.agency, STAT_GET_INT("FIXER_SAFE_CASH_VALUE"))
+
+        --- MCBusiness ---
+        for i = 0, 4 do
+            text = Business.GetBusinessSupplies(i) .. "%"
+            menu.set_value(Business.Menu.mc_business[i].supplies, text)
+
+            product = Business.GetBusinessProduct(i)
+            text = product .. "/" .. Business.Caps.MCBusiness[i]
+            if product == Business.Caps.MCBusiness[i] then
+                text = "[!] " .. text
+            end
+            menu.set_value(Business.Menu.mc_business[i].product, text)
+        end
     else
         util.toast("仅在线上模式战局内可用")
     end
 end)
 
 menu.divider(Business_Monitor, "地堡")
-Business_Monitor_Menu.bunker.supplies = menu.readonly(Business_Monitor, "原材料")
-Business_Monitor_Menu.bunker.product = menu.readonly(Business_Monitor, "产品")
-Business_Monitor_Menu.bunker.research = menu.readonly(Business_Monitor, "研究")
+Business.Menu.bunker.supplies = menu.readonly(Business_Monitor, "原材料")
+Business.Menu.bunker.product = menu.readonly(Business_Monitor, "产品")
+Business.Menu.bunker.research = menu.readonly(Business_Monitor, "研究")
 
 menu.divider(Business_Monitor, "夜总会")
-Business_Monitor_Menu.nightclub.popularity = menu.readonly(Business_Monitor, "夜总会人气")
-Business_Monitor_Menu.nightclub.safe_cash  = menu.readonly(Business_Monitor, "保险箱现金")
+Business.Menu.nightclub.popularity = menu.readonly(Business_Monitor, "夜总会人气")
+Business.Menu.nightclub.safe_cash  = menu.readonly(Business_Monitor, "保险箱现金")
 for i = 0, 6 do
-    Business_Monitor_Menu.nightclub.product[i].menu = menu.readonly(Business_Monitor,
-        Business_Monitor_Menu.nightclub.product[i].name)
+    Business.Menu.nightclub.product[i].menu = menu.readonly(Business_Monitor,
+        Business.Menu.nightclub.product[i].name)
 end
 
 menu.divider(Business_Monitor, "致幻剂实验室")
-Business_Monitor_Menu.acid_lab.supplies = menu.readonly(Business_Monitor, "原材料")
-Business_Monitor_Menu.acid_lab.product = menu.readonly(Business_Monitor, "产品")
+Business.Menu.acid_lab.supplies = menu.readonly(Business_Monitor, "原材料")
+Business.Menu.acid_lab.product = menu.readonly(Business_Monitor, "产品")
 
-menu.divider(Business_Monitor, "其它")
-Business_Monitor_Menu.arcade_safe_cash = menu.readonly(Business_Monitor, "游戏厅保险箱现金")
-Business_Monitor_Menu.agency_safe_cash = menu.readonly(Business_Monitor, "事务所保险箱现金")
+menu.divider(Business_Monitor, "保险箱现金")
+Business.Menu.safe_cash.arcade = menu.readonly(Business_Monitor, "游戏厅")
+Business.Menu.safe_cash.agency = menu.readonly(Business_Monitor, "事务所")
 
+menu.divider(Business_Monitor, "")
+local Business_Monitor_MC = menu.list(Business_Monitor, "摩托帮工厂", {}, "")
+for i = 0, 4 do
+    menu.divider(Business_Monitor_MC, Business.Menu.mc_business[i].name)
+    Business.Menu.mc_business[i].supplies = menu.readonly(Business_Monitor_MC, "原材料")
+    Business.Menu.mc_business[i].product = menu.readonly(Business_Monitor_MC, "产品")
+end
+
+
+
+---------------------
+-- 资产统计数据
+---------------------
+local Business_Stats = menu.list(Online_options, "资产统计数据", {}, "")
+
+local BusinessStats = {
+    Bunker = {
+        [1] = { name = "总营收", stat = "LIFETIME_BKR_SELL_EARNINGS5", menu },
+        [2] = { name = "送达原材料次数", stat = "LFETIME_BIKER_BUY_COMPLET5", menu },
+        [3] = { name = "开启原材料任务次数", stat = "LFETIME_BIKER_BUY_UNDERTA5", menu },
+        [4] = { name = "成功卖货次数", stat = "LFETIME_BIKER_SELL_COMPLET5", menu },
+        [5] = { name = "开启卖货任务次数", stat = "LFETIME_BIKER_SELL_UNDERTA5", menu },
+    },
+    SpecialCargo = {
+        [1] = { name = "总营收", stat = "LIFETIME_CONTRA_EARNINGS", menu },
+        [2] = { name = "成功拉货次数", stat = "LIFETIME_BUY_COMPLETE", menu },
+        [3] = { name = "开启拉货任务次数", stat = "LIFETIME_BUY_UNDERTAKEN", menu },
+        [4] = { name = "成功卖货次数", stat = "LIFETIME_SELL_COMPLETE", menu },
+        [5] = { name = "开启卖货任务次数", stat = "LIFETIME_SELL_UNDERTAKEN", menu },
+    },
+}
+
+menu.action(Business_Stats, "刷新状态", {}, "", function()
+    if IS_IN_SESSION() then
+        for i = 1, 5 do
+            local stat = BusinessStats.Bunker[i].stat
+            local menu_ = BusinessStats.Bunker[i].menu
+            menu.set_value(menu_, STAT_GET_INT(stat))
+
+            stat = BusinessStats.SpecialCargo[i].stat
+            menu_ = BusinessStats.SpecialCargo[i].menu
+            menu.set_value(menu_, STAT_GET_INT(stat))
+        end
+    else
+        util.toast("仅在线上模式战局内可用")
+    end
+end)
+
+menu.divider(Business_Stats, "地堡")
+for i = 1, 5 do
+    BusinessStats.Bunker[i].menu = menu.readonly(Business_Stats, BusinessStats.Bunker[i].name)
+end
+
+menu.divider(Business_Stats, "特种货物")
+for i = 1, 5 do
+    BusinessStats.SpecialCargo[i].menu = menu.readonly(Business_Stats, BusinessStats.SpecialCargo[i].name)
+end
 
 
 
@@ -293,27 +364,6 @@ for _, item in pairs(remote_computer_list) do
         end
     end)
 end
-
-
-
-
---#region On Transition Finished
-
-On_Transition_Finished = {
-    player_language = {
-        enable = false,
-        callback = function() end,
-    }
-}
-
-util.on_transition_finished(function()
-    if On_Transition_Finished.player_language.enable then
-        On_Transition_Finished.player_language.callback()
-    end
-end)
-
---#endregion
-
 
 
 
@@ -342,51 +392,7 @@ local player_lang = {
 
     menu_list = {},
     notify = true,
-
-    session = {
-        max_player = 4,
-        exclude_sc = true,
-    },
 }
-
-local Player_Language_Session = menu.list(Player_Language, "进入战局后自动通知", {}, "当玩家进入一个战局后进行通知")
-
-On_Transition_Finished.player_language.callback = function()
-    local player_num = 0
-    local text = ""
-    for _, pid in pairs(players.list()) do
-        local lang = players.get_language(pid)
-        if player_lang.session.exclude_sc and lang == 12 then
-        else
-            local lang_text = player_lang.language[lang]
-            local name      = players.get_name(pid)
-            local rank      = players.get_rank(pid)
-            local title     = name .. " (" .. rank .. "级)"
-
-            if text ~= "" then
-                text = text .. "\n"
-            end
-            text       = text .. title .. "     " .. lang_text
-            player_num = player_num + 1
-        end
-    end
-
-    if player_num > 1 and player_num <= player_lang.session.max_player then
-        util.toast(text)
-    end
-end
-
-menu.toggle(Player_Language_Session, "开启", {}, "", function(toggle)
-    On_Transition_Finished.player_language.enable = toggle
-end)
-menu.slider(Player_Language_Session, "玩家最多人数", {}, "战局内玩家人数少于等于指定人数时才进行通知",
-    2, 32, 4, 1, function(value)
-        player_lang.session.max_player = value
-    end)
-menu.toggle(Player_Language_Session, "排除 简体中文", {}, "", function(toggle)
-    player_lang.session.exclude_sc = toggle
-end, true)
-
 
 menu.action(Player_Language, "获取玩家语言列表", { "player_language" }, "", function()
     for k, v in pairs(player_lang.menu_list) do
@@ -420,3 +426,21 @@ menu.toggle(Player_Language, "通知", {}, "", function(toggle)
     player_lang.notify = toggle
 end, true)
 menu.divider(Player_Language, "列表")
+
+
+
+
+----------
+menu.toggle(Online_options, "战局雪天", { "turn_snow" }, "切换战局后会失效，需要重新操作",
+    function(toggle)
+        if toggle then
+            SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 1)
+        else
+            SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 0)
+        end
+    end)
+menu.click_slider_float(Online_options, "AI血量", { "ai_health" }, "切换战局后会失效，需要重新操作",
+    0, 1000, 100, 10, function(value)
+        SET_FLOAT_GLOBAL(Globals.AI_HEALTH, value * 0.01)
+    end)
+

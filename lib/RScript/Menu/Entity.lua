@@ -2724,6 +2724,7 @@ menu.action(Cayo_Perico, "武器 炸掉女武神", {}, "不再等它慢慢的飞
     end
 end)
 
+menu.divider(Cayo_Perico, "")
 --- 终章 ---
 local Cayo_Perico_Final = menu.list(Cayo_Perico, "终章", {}, "")
 
