@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("1681379138")
 
-local SCRIPT_VERSION <const> = "2023/6/20"
+local SCRIPT_VERSION <const> = "2023/6/24"
 
 local SUPPORT_GTAO <const> = 1.67
 
@@ -48,6 +48,7 @@ local Required_Files <const> = {
     "lib\\RScript\\variables.lua",
     "lib\\RScript\\functions.lua",
     "lib\\RScript\\functions2.lua",
+    "lib\\RScript\\utils.lua",
     "lib\\RScript\\Menu\\Entity.lua",
     "lib\\RScript\\Menu\\Mission.lua",
     "lib\\RScript\\Menu\\Online.lua",
@@ -69,6 +70,7 @@ require "RScript.labels"
 require "RScript.variables"
 require "RScript.functions"
 require "RScript.functions2"
+require "RScript.utils"
 
 
 
@@ -163,6 +165,10 @@ function GetEntityInfo_ListItem(ent)
 
             local blip_colour = HUD.GET_BLIP_COLOUR(blip)
             t = "Blip Colour: " .. blip_colour
+            table.insert(ent_info_item_data, newTableValue(1, t))
+
+            local blip_hud_colour = HUD.GET_BLIP_HUD_COLOUR(blip)
+            t = "Blip HUD Colour: " .. blip_hud_colour
             table.insert(ent_info_item_data, newTableValue(1, t))
         end
 
@@ -2708,16 +2714,6 @@ menu.toggle_loop(Weapon_options, "翻滚时自动换弹夹", {}, "做翻滚动�
         WEAPON.REFILL_AMMO_INSTANTLY(players.user_ped())
     end
 end)
-menu.toggle_loop(Weapon_options, "快速装弹", {}, "换弹时加快动作", function()
-    if PED.IS_PED_RELOADING(players.user_ped()) then
-        PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(players.user_ped())
-    end
-end)
-menu.toggle_loop(Weapon_options, "快速更换武器", {}, "更换武器时加快动作", function()
-    if PED.IS_PED_SWITCHING_WEAPON(players.user_ped()) then
-        PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(players.user_ped())
-    end
-end)
 menu.action(Weapon_options, "移除黏弹和感应地雷", { "remove_projectiles" }, "用来清理扔错地方但又不能炸掉的投掷武器",
     function()
         local weaponHash = util.joaat("WEAPON_PROXMINE")
@@ -2744,8 +2740,8 @@ Cam_Gun.shoot_setting = {
     shoot_method = 1,
     delay = 100,
     weapon_select = 1,
-    weapon_hash = "PLAYER_WEAPON",
-    vehicle_weapon_hash = "VEHICLE_WEAPON",
+    weapon_hash = "PLAYER_CURRENT_WEAPON",
+    vehicle_weapon_hash = "VEHICLE_CURRENT_WEAPON",
     is_owned = false,
     CreateTraceVfx = true,
     AllowRumble = true,
@@ -2766,11 +2762,11 @@ function Cam_Gun.Shoot_Pos(pos, state)
         weaponHash = Cam_Gun.shoot_setting.vehicle_weapon_hash
     end
 
-    if weaponHash == "PLAYER_WEAPON" then
+    if weaponHash == "PLAYER_CURRENT_WEAPON" then
         local pWeapon = memory.alloc_int()
         WEAPON.GET_CURRENT_PED_WEAPON(user_ped, pWeapon, true)
         weaponHash = memory.read_int(pWeapon)
-    elseif weaponHash == "VEHICLE_WEAPON" then
+    elseif weaponHash == "VEHICLE_CURRENT_WEAPON" then
         local pWeapon = memory.alloc_int()
         WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(user_ped, pWeapon)
         weaponHash = memory.read_int(pWeapon)
@@ -2942,9 +2938,14 @@ menu.list_select(Cam_Gun_shoot_weapon, "武器类型", {}, "", { { "手持武器
     function(value)
         Cam_Gun.shoot_setting.weapon_select = value
     end)
-menu.list_select(Cam_Gun_shoot_weapon, "手持武器", {}, "", AllWeapons_NoMelee_ListItem, 1, function(value)
-    Cam_Gun.shoot_setting.weapon_hash = AllWeapons_NoMelee_ListItem[value][3]
-end)
+local Cam_Gun_shoot_player_weapon = rs_menu.all_weapons_without_melee(Cam_Gun_shoot_weapon, "手持武器", {}, "",
+    function(hash)
+        Cam_Gun.shoot_setting.weapon_hash = hash
+    end, true)
+rs_menu.current_weapon_action(Cam_Gun_shoot_player_weapon, function()
+    Cam_Gun.shoot_setting.weapon_hash = "PLAYER_CURRENT_WEAPON"
+end, true)
+
 menu.list_select(Cam_Gun_shoot_weapon, "载具武器", {}, "", All_VehicleWeapons_ListItem, 1, function(value)
     Cam_Gun.shoot_setting.vehicle_weapon_hash = All_VehicleWeapons_ListItem[value][3]
 end)
@@ -3384,6 +3385,292 @@ menu.toggle(Vehicle_Upgrade_options, "其它属性增强", {}, "其它属性的�
 
 
 ---------------
+--- 载具武器 ---
+---------------
+local Vehicle_Weapon_options = menu.list(Vehicle_options, "载具武器", {}, "")
+
+
+local Vehicle_Weapon = {
+    delay = 500,
+    direction = {
+        [1] = true,  -- front
+        [2] = false, -- rear
+        [3] = false, -- left
+        [4] = false, -- right
+        [5] = false, -- up
+        [6] = false, -- down
+    },
+    weapon_select = 1,
+    launch_num = 3,
+    weapon_hash = "PLAYER_CURRENT_WEAPON",
+    vehicle_weapon_hash = "VEHICLE_CURRENT_WEAPON",
+    is_owned = false,
+    damage = 1000,
+    speed = 1000,
+    CreateTraceVfx = true,
+    AllowRumble = true,
+    PerfectAccuracy = false,
+    start_offset = {
+        -- front
+        [1] = { x = 0.0, y = 1.0, z = 0.0 },
+        -- rear
+        [2] = { x = 0.0, y = -1.0, z = 0.0 },
+        -- left
+        [3] = { x = -1.0, y = 0.0, z = 0.0 },
+        -- right
+        [4] = { x = 1.0, y = 0.0, z = 0.0 },
+        -- up
+        [5] = { x = 0.0, y = 0.0, z = 2.5 },
+        -- down
+        [6] = { x = 0.0, y = 0.0, z = -2.5 },
+    },
+    disable_horn = true,
+}
+
+function Vehicle_Weapon.Get_Offsets(vehicle, direction)
+    local min, max = v3.new(), v3.new()
+    MISC.GET_MODEL_DIMENSIONS(ENTITY.GET_ENTITY_MODEL(vehicle), min, max)
+
+    local offset_z = get_middle_num(min.z, max.z)
+    local offsets = {}
+    local start_offset, end_offset
+
+    if direction == 1 then
+        offsets[1] = v3.new(min.x, max.y, offset_z)
+        offsets[2] = v3.new(get_middle_num(min.x, max.x), max.y, offset_z)
+        offsets[3] = v3.new(max.x, max.y, offset_z)
+        -- front
+        end_offset = v3.new(0.0, 1.0, 0.0)
+    elseif direction == 2 then
+        offsets[1] = v3.new(min.x, min.y, offset_z)
+        offsets[2] = v3.new(get_middle_num(min.x, max.x), min.y, offset_z)
+        offsets[3] = v3.new(max.x, min.y, offset_z)
+        -- rear
+        end_offset = v3.new(0.0, -1.0, 0.0)
+    elseif direction == 3 then
+        offsets[1] = v3.new(min.x, max.y, offset_z)
+        offsets[2] = v3.new(min.x, get_middle_num(min.y, max.y), offset_z)
+        offsets[3] = v3.new(min.x, min.y, offset_z)
+        -- left
+        end_offset = v3.new(-1.0, 0.0, 0.0)
+    elseif direction == 4 then
+        offsets[1] = v3.new(max.x, max.y, offset_z)
+        offsets[2] = v3.new(max.x, get_middle_num(min.y, max.y), offset_z)
+        offsets[3] = v3.new(max.x, min.y, offset_z)
+        -- right
+        end_offset = v3.new(1.0, 0.0, 0.0)
+    elseif direction == 5 then
+        offsets[1] = v3.new(get_middle_num(min.x, max.x), max.y, offset_z)
+        offsets[2] = v3.new(get_middle_num(min.x, max.x), get_middle_num(min.y, max.y), offset_z)
+        offsets[3] = v3.new(get_middle_num(min.x, max.x), min.y, offset_z)
+        -- up
+        end_offset = v3.new(0.0, 0.0, 1.0)
+    elseif direction == 6 then
+        offsets[1] = v3.new(get_middle_num(min.x, max.x), max.y, offset_z)
+        offsets[2] = v3.new(get_middle_num(min.x, max.x), get_middle_num(min.y, max.y), offset_z)
+        offsets[3] = v3.new(get_middle_num(min.x, max.x), min.y, offset_z)
+        -- down
+        end_offset = v3.new(0.0, 0.0, -1.0)
+    end
+
+    start_offset = v3.new(Vehicle_Weapon.start_offset[direction])
+    end_offset:mul(500.0) -- distance
+
+    local launch_num = Vehicle_Weapon.launch_num
+    if launch_num == 1 then
+        offsets[1] = nil
+        offsets[3] = nil
+    elseif launch_num == 2 then
+        offsets[2] = nil
+    end
+
+    return start_offset, end_offset, offsets
+end
+
+function Vehicle_Weapon.Shoot(vehicle)
+    local user_ped = players.user_ped()
+
+    local weaponHash = Vehicle_Weapon.weapon_hash
+    if Vehicle_Weapon.weapon_select == 2 then
+        weaponHash = Vehicle_Weapon.vehicle_weapon_hash
+    end
+
+    if weaponHash == "PLAYER_CURRENT_WEAPON" then
+        local pWeapon = memory.alloc_int()
+        WEAPON.GET_CURRENT_PED_WEAPON(user_ped, pWeapon, true)
+        weaponHash = memory.read_int(pWeapon)
+    elseif weaponHash == "VEHICLE_CURRENT_WEAPON" then
+        local pWeapon = memory.alloc_int()
+        WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(user_ped, pWeapon)
+        weaponHash = memory.read_int(pWeapon)
+    end
+    if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHash) then
+        request_weapon_asset(weaponHash)
+    end
+
+    local owner = 0
+    if Vehicle_Weapon.is_owned then
+        owner = user_ped
+    end
+
+    for dir, toggle in pairs(Vehicle_Weapon.direction) do
+        if toggle then
+            local start_offset, end_offset, offsets = Vehicle_Weapon.Get_Offsets(vehicle, dir)
+            local start_pos, end_pos
+            for _, offset in pairs(offsets) do
+                if offset ~= nil then
+                    offset:add(start_offset)
+                    start_pos = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(vehicle, offset.x, offset.y, offset.z)
+
+                    offset:add(end_offset)
+                    end_pos = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(vehicle, offset.x, offset.y, offset.z)
+
+                    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(start_pos.x, start_pos.y, start_pos.z,
+                        end_pos.x, end_pos.y, end_pos.z,
+                        Vehicle_Weapon.damage, Vehicle_Weapon.PerfectAccuracy, weaponHash, owner,
+                        Vehicle_Weapon.CreateTraceVfx, Vehicle_Weapon.AllowRumble, Vehicle_Weapon.speed,
+                        vehicle)
+                end
+            end
+        end
+    end
+end
+
+function Vehicle_Weapon.Draw_Line(vehicle)
+    for dir, toggle in pairs(Vehicle_Weapon.direction) do
+        if toggle then
+            local start_offset, end_offset, offsets = Vehicle_Weapon.Get_Offsets(vehicle, dir)
+            local start_pos, end_pos
+            for _, offset in pairs(offsets) do
+                if offset ~= nil then
+                    offset:add(start_offset)
+                    start_pos = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(vehicle, offset.x, offset.y, offset.z)
+
+                    offset:add(end_offset)
+                    end_pos = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(vehicle, offset.x, offset.y, offset.z)
+
+                    DRAW_LINE(start_pos, end_pos)
+                end
+            end
+        end
+    end
+end
+
+menu.toggle_loop(Vehicle_Weapon_options, "开启[按住E键]", { "veh_weapon" }, "", function()
+    if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) and PAD.IS_CONTROL_PRESSED(0, 51) then
+        local vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped())
+        if vehicle ~= 0 then
+            if Vehicle_Weapon.disable_horn then
+                AUDIO.SET_HORN_ENABLED(vehicle, false)
+            end
+
+            Vehicle_Weapon.Shoot(vehicle)
+            util.yield(Vehicle_Weapon.delay)
+        end
+    end
+end, function()
+    local vehicle = GET_VEHICLE_PED_IS_IN(players.user_ped())
+    if vehicle ~= 0 then
+        if Vehicle_Weapon.disable_horn then
+            AUDIO.SET_HORN_ENABLED(vehicle, true)
+        end
+    end
+end)
+
+menu.toggle_loop(Vehicle_Weapon_options, "绘制射击连线", {}, "", function()
+    local vehicle = GET_VEHICLE_PED_IS_IN(players.user_ped())
+    if vehicle ~= 0 then
+        Vehicle_Weapon.Draw_Line(vehicle)
+    end
+end)
+
+menu.divider(Vehicle_Weapon_options, "设置")
+menu.slider(Vehicle_Weapon_options, "循环延迟", { "veh_weapon_delay" }, "单位: ms", 0, 5000, 500, 10,
+    function(value)
+        Vehicle_Weapon.delay = value
+    end)
+
+local Vehicle_Weapon_direction = menu.list(Vehicle_Weapon_options, "方向", {}, "")
+for k, v in pairs({ "前", "后", "左", "右", "上", "下" }) do
+    menu.toggle(Vehicle_Weapon_direction, v, {}, "", function(toggle)
+        Vehicle_Weapon.direction[k] = toggle
+    end, Vehicle_Weapon.direction[k])
+end
+
+local Vehicle_Weapon_select = menu.list(Vehicle_Weapon_options, "武器", {}, "")
+menu.list_select(Vehicle_Weapon_select, "武器类型", {}, "", { { "手持武器" }, { "载具武器" } }, 1,
+    function(value)
+        Vehicle_Weapon.weapon_select = value
+    end)
+
+local Vehicle_Weapon_player_select = rs_menu.all_weapons_without_melee(Vehicle_Weapon_select, "手持武器", {}, "",
+    function(hash)
+        Vehicle_Weapon.weapon_hash = hash
+    end, true)
+rs_menu.current_weapon_action(Vehicle_Weapon_player_select, function()
+    Vehicle_Weapon.weapon_hash = "PLAYER_CURRENT_WEAPON"
+end, true)
+
+menu.list_select(Vehicle_Weapon_select, "载具武器", {}, "", All_VehicleWeapons_ListItem, 1, function(value)
+    Vehicle_Weapon.vehicle_weapon_hash = All_VehicleWeapons_ListItem[value][3]
+end)
+
+menu.slider(Vehicle_Weapon_options, "发射数量", { "veh_weapon_launch_num" }, "", 1, 3, 3, 1, function(value)
+    Vehicle_Weapon.launch_num = value
+end)
+menu.toggle(Vehicle_Weapon_options, "署名射击", {}, "以玩家名义", function(toggle)
+    Vehicle_Weapon.is_owned = toggle
+end)
+menu.slider(Vehicle_Weapon_options, "伤害", { "veh_weapon_damage" }, "", 0, 10000, 1000, 100,
+    function(value)
+        Vehicle_Weapon.damage = value
+    end)
+menu.slider(Vehicle_Weapon_options, "速度", { "veh_weapon_speed" }, "", 0, 10000, 1000, 100,
+    function(value)
+        Vehicle_Weapon.speed = value
+    end)
+menu.toggle(Vehicle_Weapon_options, "Create Trace Vfx", {}, "", function(toggle)
+    Vehicle_Weapon.CreateTraceVfx = toggle
+end, true)
+menu.toggle(Vehicle_Weapon_options, "Allow Rumble", {}, "", function(toggle)
+    Vehicle_Weapon.AllowRumble = toggle
+end, true)
+menu.toggle(Vehicle_Weapon_options, "Perfect Accuracy", {}, "", function(toggle)
+    Vehicle_Weapon.PerfectAccuracy = toggle
+end)
+
+local Vehicle_Weapon_startOffset = menu.list(Vehicle_Weapon_options, "起始射击位置偏移", {}, "")
+for k, v in pairs({ "前", "后", "左", "右", "上", "下" }) do
+    local menu_list = menu.list(Vehicle_Weapon_startOffset, v, {}, "")
+
+    menu.slider_float(menu_list, "X", { "veh_weapon_dir" .. k .. "_x" }, "", -10000, 10000,
+        Vehicle_Weapon.start_offset[k].x * 100, 10,
+        function(value)
+            value = value * 0.01
+            Vehicle_Weapon.start_offset[k].x = value
+        end)
+    menu.slider_float(menu_list, "Y", { "veh_weapon_dir" .. k .. "_y" }, "", -10000, 10000,
+        Vehicle_Weapon.start_offset[k].y * 100, 10,
+        function(value)
+            value = value * 0.01
+            Vehicle_Weapon.start_offset[k].y = value
+        end)
+    menu.slider_float(menu_list, "Z", { "veh_weapon_dir" .. k .. "_z" }, "", -10000, 10000,
+        Vehicle_Weapon.start_offset[k].z * 100, 10,
+        function(value)
+            value = value * 0.01
+            Vehicle_Weapon.start_offset[k].z = value
+        end)
+end
+
+menu.toggle(Vehicle_Weapon_options, "禁用载具喇叭", {}, "", function(toggle)
+    Vehicle_Weapon.disable_horn = toggle
+end, true)
+
+
+
+
+---------------
 --- 载具车窗 ---
 ---------------
 local Vehicle_Window_options = menu.list(Vehicle_options, "载具车窗", {}, "")
@@ -3616,239 +3903,6 @@ menu.toggle(Vehicle_Radio_options, "关闭电台", { "close_veh_radio" }, "当�
             AUDIO.SET_VEHICLE_RADIO_ENABLED(vehicle, not toggle)
         end
     end)
-
-
----------------
---- 载具武器 ---
----------------
-local Vehicle_Weapon_options = menu.list(Vehicle_options, "载具武器", {}, "")
-
-local veh_weapon_data = {
-    delay = 100,
-    direction = {
-        [1] = true,  -- front
-        [2] = false, -- rear
-        [3] = false, -- left
-        [4] = false, -- right
-        [5] = false, -- up
-        [6] = false, -- down
-    },
-    weapon_select = 1,
-    weapon_hash = "PLAYER_WEAPON",
-    vehicle_weapon_hash = "VEHICLE_WEAPON",
-    is_owned = false,
-    damage = 1000,
-    speed = 1000,
-    CreateTraceVfx = true,
-    AllowRumble = true,
-    PerfectAccuracy = false,
-    start_offset = {
-        -- front
-        [1] = { x = 0.0, y = 1.0, z = 0.0 },
-        -- rear
-        [2] = { x = 0.0, y = -1.0, z = 0.0 },
-        -- left
-        [3] = { x = -1.0, y = 0.0, z = 0.0 },
-        -- right
-        [4] = { x = 1.0, y = 0.0, z = 0.0 },
-        -- up
-        [5] = { x = 0.0, y = 0.0, z = 2.5 },
-        -- down
-        [6] = { x = 0.0, y = 0.0, z = -2.5 },
-    }
-}
-
-local function get_middle_num(a, b)
-    local min = math.min(a, b)
-    local max = math.max(a, b)
-    local middle = min + (max - min) * 0.5
-    return middle
-end
-
-local function Vehicle_Weapon_Shoot(vehicle, direction, state)
-    local weaponHash = veh_weapon_data.weapon_hash
-    if veh_weapon_data.weapon_select == 2 then
-        weaponHash = veh_weapon_data.vehicle_weapon_hash
-    end
-
-    if weaponHash == "PLAYER_WEAPON" then
-        local pWeapon = memory.alloc_int()
-        WEAPON.GET_CURRENT_PED_WEAPON(user_ped, pWeapon, true)
-        weaponHash = memory.read_int(pWeapon)
-    elseif weaponHash == "VEHICLE_WEAPON" then
-        local pWeapon = memory.alloc_int()
-        WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(user_ped, pWeapon)
-        weaponHash = memory.read_int(pWeapon)
-    end
-    if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHash) then
-        request_weapon_asset(weaponHash)
-    end
-
-    local owner = 0
-    if veh_weapon_data.is_owned then
-        owner = players.user_ped()
-    end
-
-    local min, max = v3.new(), v3.new()
-    MISC.GET_MODEL_DIMENSIONS(ENTITY.GET_ENTITY_MODEL(vehicle), min, max)
-
-    local offset_z = get_middle_num(min.z, max.z)
-    local offsets = {}
-    local start_offset, end_offset
-
-    if direction == 1 then
-        offsets[1] = v3.new(min.x, max.y, offset_z)
-        offsets[2] = v3.new(get_middle_num(min.x, max.x), max.y, offset_z)
-        offsets[3] = v3.new(max.x, max.y, offset_z)
-        -- front
-        end_offset = v3.new(0.0, 1.0, 0.0)
-    elseif direction == 2 then
-        offsets[1] = v3.new(min.x, min.y, offset_z)
-        offsets[2] = v3.new(get_middle_num(min.x, max.x), min.y, offset_z)
-        offsets[3] = v3.new(max.x, min.y, offset_z)
-        -- rear
-        end_offset = v3.new(0.0, -1.0, 0.0)
-    elseif direction == 3 then
-        offsets[1] = v3.new(min.x, max.y, offset_z)
-        offsets[2] = v3.new(min.x, get_middle_num(min.y, max.y), offset_z)
-        offsets[3] = v3.new(min.x, min.y, offset_z)
-        -- left
-        end_offset = v3.new(-1.0, 0.0, 0.0)
-    elseif direction == 4 then
-        offsets[1] = v3.new(max.x, max.y, offset_z)
-        offsets[2] = v3.new(max.x, get_middle_num(min.y, max.y), offset_z)
-        offsets[3] = v3.new(max.x, min.y, offset_z)
-        -- right
-        end_offset = v3.new(1.0, 0.0, 0.0)
-    elseif direction == 5 then
-        offsets[1] = v3.new(get_middle_num(min.x, max.x), max.y, offset_z)
-        offsets[2] = v3.new(get_middle_num(min.x, max.x), get_middle_num(min.y, max.y), offset_z)
-        offsets[3] = v3.new(get_middle_num(min.x, max.x), min.y, offset_z)
-        -- up
-        end_offset = v3.new(0.0, 0.0, 1.0)
-    elseif direction == 6 then
-        offsets[1] = v3.new(get_middle_num(min.x, max.x), max.y, offset_z)
-        offsets[2] = v3.new(get_middle_num(min.x, max.x), get_middle_num(min.y, max.y), offset_z)
-        offsets[3] = v3.new(get_middle_num(min.x, max.x), min.y, offset_z)
-        -- down
-        end_offset = v3.new(0.0, 0.0, -1.0)
-    end
-
-    start_offset = v3.new(veh_weapon_data.start_offset[direction])
-    end_offset:mul(500.0)
-
-    local start_pos, end_pos
-    for k, offset in pairs(offsets) do
-        offset:add(start_offset)
-        start_pos = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(vehicle, offset.x, offset.y, offset.z)
-
-        offset:add(end_offset)
-        end_pos = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(vehicle, offset.x, offset.y, offset.z)
-
-        if state == "draw_line" then
-            DRAW_LINE(start_pos, end_pos)
-        elseif state == "shoot" then
-            MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(start_pos.x, start_pos.y, start_pos.z,
-                end_pos.x, end_pos.y, end_pos.z,
-                veh_weapon_data.damage, veh_weapon_data.PerfectAccuracy, weaponHash, owner,
-                veh_weapon_data.CreateTraceVfx, veh_weapon_data.AllowRumble, veh_weapon_data.speed,
-                vehicle)
-        end
-    end
-end
-
-menu.toggle_loop(Vehicle_Weapon_options, "开启[按住E键]", { "veh_weapon" }, "", function()
-    if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) and PAD.IS_CONTROL_PRESSED(0, 51) then
-        local vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
-        if vehicle ~= 0 then
-            for k, v in pairs(veh_weapon_data.direction) do
-                if v then
-                    Vehicle_Weapon_Shoot(vehicle, k, "shoot")
-                end
-            end
-            util.yield(veh_weapon_data.delay)
-        end
-    end
-end)
-
-menu.toggle_loop(Vehicle_Weapon_options, "绘制射击连线", {}, "", function()
-    local vehicle = GET_VEHICLE_PED_IS_IN(players.user_ped())
-    if vehicle ~= 0 then
-        for k, v in pairs(veh_weapon_data.direction) do
-            if v then
-                Vehicle_Weapon_Shoot(vehicle, k, "draw_line")
-            end
-        end
-    end
-end)
-menu.divider(Vehicle_Weapon_options, "设置")
-menu.slider(Vehicle_Weapon_options, "循环延迟", { "veh_weapon_delay" }, "单位: ms", 0, 5000, 100, 10,
-    function(value)
-        veh_weapon_data.delay = value
-    end)
-
-local Vehicle_Weapon_direction = menu.list(Vehicle_Weapon_options, "方向", {}, "")
-for k, v in pairs({ "前", "后", "左", "右", "上", "下" }) do
-    menu.toggle(Vehicle_Weapon_direction, v, {}, "", function(toggle)
-        veh_weapon_data.direction[k] = toggle
-    end, veh_weapon_data.direction[k])
-end
-
-local Vehicle_Weapon_select = menu.list(Vehicle_Weapon_options, "武器", {}, "")
-menu.list_select(Vehicle_Weapon_select, "武器类型", {}, "", { { "手持武器" }, { "载具武器" } }, 1,
-    function(value)
-        veh_weapon_data.weapon_select = value
-    end)
-menu.list_select(Vehicle_Weapon_select, "手持武器", {}, "", AllWeapons_NoMelee_ListItem, 1, function(value)
-    veh_weapon_data.weapon_hash = AllWeapons_NoMelee_ListItem[value][3]
-end)
-menu.list_select(Vehicle_Weapon_select, "载具武器", {}, "", All_VehicleWeapons_ListItem, 1, function(value)
-    veh_weapon_data.vehicle_weapon_hash = All_VehicleWeapons_ListItem[value][3]
-end)
-
-menu.toggle(Vehicle_Weapon_options, "署名射击", {}, "以玩家名义", function(toggle)
-    veh_weapon_data.is_owned = toggle
-end)
-menu.slider(Vehicle_Weapon_options, "伤害", { "veh_weapon_damage" }, "", 0, 10000, 1000, 100,
-    function(value)
-        veh_weapon_data.damage = value
-    end)
-menu.slider(Vehicle_Weapon_options, "速度", { "veh_weapon_speed" }, "", 0, 10000, 1000, 100,
-    function(value)
-        veh_weapon_data.speed = value
-    end)
-menu.toggle(Vehicle_Weapon_options, "Create Trace Vfx", {}, "", function(toggle)
-    veh_weapon_data.CreateTraceVfx = toggle
-end, true)
-menu.toggle(Vehicle_Weapon_options, "Allow Rumble", {}, "", function(toggle)
-    veh_weapon_data.AllowRumble = toggle
-end, true)
-menu.toggle(Vehicle_Weapon_options, "Perfect Accuracy", {}, "", function(toggle)
-    veh_weapon_data.PerfectAccuracy = toggle
-end)
-local Vehicle_Weapon_startOffset = menu.list(Vehicle_Weapon_options, "起始射击位置偏移", {}, "")
-for k, v in pairs({ "前", "后", "左", "右", "上", "下" }) do
-    local menu_list = menu.list(Vehicle_Weapon_startOffset, v, {}, "")
-
-    menu.slider_float(menu_list, "X", { "veh_weapon_dir" .. k .. "_x" }, "", -10000, 10000,
-        veh_weapon_data.start_offset[k].x * 100, 10,
-        function(value)
-            value = value * 0.01
-            veh_weapon_data.start_offset[k].x = value
-        end)
-    menu.slider_float(menu_list, "Y", { "veh_weapon_dir" .. k .. "_y" }, "", -10000, 10000,
-        veh_weapon_data.start_offset[k].y * 100, 10,
-        function(value)
-            value = value * 0.01
-            veh_weapon_data.start_offset[k].y = value
-        end)
-    menu.slider_float(menu_list, "Z", { "veh_weapon_dir" .. k .. "_z" }, "", -10000, 10000,
-        veh_weapon_data.start_offset[k].z * 100, 10,
-        function(value)
-            value = value * 0.01
-            veh_weapon_data.start_offset[k].z = value
-        end)
-end
 
 
 ---------------
@@ -5198,11 +5252,7 @@ local map_all_blip = {
 }
 
 function map_all_blip.init_list_data()
-    for k, v in pairs(map_all_blip.menu_list) do
-        if v ~= nil and menu.is_ref_valid(v) then
-            menu.delete(v)
-        end
-    end
+    rs_menu.delete_menu_list(map_all_blip.menu_list)
 
     menu.set_menu_name(map_all_blip.menu_divider, "标记点列表")
     map_all_blip.count = 0
@@ -5228,6 +5278,9 @@ function map_all_blip.generate_menu(menu_parent, blip)
     readonly_menu_list[6] = menu.readonly(blip_info, "X")
     readonly_menu_list[7] = menu.readonly(blip_info, "Y")
     readonly_menu_list[8] = menu.readonly(blip_info, "Z")
+    menu.divider(blip_info, "Scale")
+    readonly_menu_list[9] = menu.readonly(blip_info, "X")
+    readonly_menu_list[10] = menu.readonly(blip_info, "Y")
 
     menu.on_tick_in_viewport(readonly_menu_list[1], function()
         if HUD.DOES_BLIP_EXIST(blip) then
@@ -5239,24 +5292,29 @@ function map_all_blip.generate_menu(menu_parent, blip)
             menu.set_value(readonly_menu_list[6], coords.x)
             menu.set_value(readonly_menu_list[7], coords.y)
             menu.set_value(readonly_menu_list[8], coords.z)
+            local scale_x, scale_y = memory_utils.get_blip_scale_2d(blip)
+            menu.set_value(readonly_menu_list[9], scale_x)
+            menu.set_value(readonly_menu_list[10], scale_y)
         end
     end)
 
+
     ----- 标记点设置 -----
     local blip_setting = menu.list(menu_parent, "标记点设置", {}, "")
+
     menu.click_slider(blip_setting, "Set Sprite", { "set_blip" .. sprite .. "sprite" }, "", 0, 826, sprite, 1,
         function(value)
             HUD.SET_BLIP_SPRITE(blip, value)
         end)
     menu.click_slider(blip_setting, "Set Colour", { "set_blip" .. sprite .. "colour" }, "", 0, 85,
-        HUD.GET_BLIP_HUD_COLOUR(blip), 1,
+        HUD.GET_BLIP_COLOUR(blip), 1,
         function(value)
             HUD.SET_BLIP_COLOUR(blip, value)
         end)
-    menu.list_select(blip_setting, "Set Display", {}, "", Blip_DisplayID_ListItem, HUD.GET_BLIP_INFO_ID_DISPLAY(blip) + 1
-    , function(value)
-        HUD.SET_BLIP_DISPLAY(blip, value - 1)
-    end)
+    menu.list_select(blip_setting, "Set Display", {}, "", Blip_DisplayID_ListItem,
+        HUD.GET_BLIP_INFO_ID_DISPLAY(blip) + 1, function(value)
+            HUD.SET_BLIP_DISPLAY(blip, value - 1)
+        end)
     menu.toggle(blip_setting, "Flashs", {}, "", function(toggle)
         HUD.SET_BLIP_FLASHES(blip, toggle)
     end, HUD.IS_BLIP_FLASHING(blip))
@@ -5283,6 +5341,10 @@ function map_all_blip.generate_menu(menu_parent, blip)
     menu.toggle(blip_setting, "Show Height On Blip", {}, "", function(toggle)
         HUD.SHOW_HEIGHT_ON_BLIP(blip, toggle)
     end)
+    menu.toggle(blip_setting, "Set As Mission Creator", {}, "", function(toggle)
+        HUD.SET_BLIP_AS_MISSION_CREATOR_BLIP(blip, toggle)
+    end, HUD.IS_MISSION_CREATOR_BLIP(blip))
+
 
 
     menu.divider(menu_parent, "Type: " .. blip_type)

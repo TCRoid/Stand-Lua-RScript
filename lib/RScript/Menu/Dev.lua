@@ -35,8 +35,6 @@ menu.action(Dev_options, "FORCE_PED_AI_AND_ANIMATION_UPDATE", {}, "", function()
 end)
 
 
-
-
 local radius_draw_sphere = 10.0
 local dev_draw_sphere = menu.slider_float(Dev_options, "DRAW_MARKER_SPHERE", { "radius_draw_sphere" }, "",
     0, 100000, 1000, 100, function(value)
@@ -48,7 +46,6 @@ menu.on_tick_in_viewport(dev_draw_sphere, function()
         DRAW_MARKER_SPHERE(coords, radius_draw_sphere)
     end
 end)
-
 
 
 
@@ -107,3 +104,4 @@ menu.toggle_loop(Dev_options, "Event Network Entity Damage", {}, "", function()
         end
     end
 end)
+

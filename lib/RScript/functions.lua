@@ -1679,7 +1679,7 @@ function get_offset_from_cam(distance)
     return offset
 end
 
-local TraceFlag = {
+local TraceFlag <const> = {
     everything = 4294967295,
     none = 0,
     world = 1,
@@ -1783,6 +1783,32 @@ function to_stand_colour(colour)
     }
 end
 
+local org_blip_colours <const> = {
+    [-1] = 4,
+    [0] = -140542977,
+    [1] = -494486529,
+    [2] = -269576193,
+    [3] = 1906946047,
+    [4] = -1601388033,
+    [5] = -1915836417,
+    [6] = -1244206337,
+    [7] = -1299151617,
+    [8] = 8680191,
+    [9] = -665487873,
+    [10] = 509909247,
+    [11] = 733312511,
+    [12] = -376614913,
+    [13] = -1982670849,
+    [14] = -2038592001
+}
+
+---获取玩家组织地图标记点的颜色
+---@param player_id player
+---@return integer
+function get_org_blip_colour(player_id)
+    return org_blip_colours[players.get_org_colour(player_id)]
+end
+
 -----------------------------
 -- Misc Functions
 -----------------------------
@@ -1866,6 +1892,17 @@ function decimal_to_binary(decimal)
         i = i + 1
     end
     return binary
+end
+
+---返回a和b的中间值
+---@param a number
+---@param b number
+---@return number
+function get_middle_num(a, b)
+    local min = math.min(a, b)
+    local max = math.max(a, b)
+    local middle = min + (max - min) * 0.5
+    return middle
 end
 
 -------------------------

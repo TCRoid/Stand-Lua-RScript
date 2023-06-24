@@ -1948,14 +1948,19 @@ end)
 -- 射击区域
 ---------------
 local Nearby_Area_Shoot = menu.list(Nearby_Area_options, "射击区域", {}, "若半径是0,则为全部范围")
+
 local nearby_area_shoot = {
-    target_ped = 2,
-    target_ped_body = 2,
-    target_vehicle = 1,
-    target_vehicle_body = 1,
-    target_object = 1,
-    weapon_hash = "PLAYER_WEAPON",
-    owner = 1,
+    -- 目标
+    target = {
+        ped = 2,
+        ped_head = true,
+        vehicle = 1,
+        object = 1,
+        except_dead = true,
+    },
+    -- 设置
+    weapon_hash = "PLAYER_CURRENT_WEAPON",
+    is_owned = true,
     damage = 1000,
     speed = 1000,
     is_audible = true,
@@ -1966,87 +1971,57 @@ local nearby_area_shoot = {
     z = 0.1,
     delay = 1000,
 }
------
+
+--------
 local Nearby_Area_Shoot_Target = menu.list(Nearby_Area_Shoot, "目标", {}, "")
 
-menu.divider(Nearby_Area_Shoot_Target, "NPC")
-local Nearby_Area_Shoot_Target_Ped = {
-    { "关闭" },
-    { "全部NPC" },
-    { "步行NPC" },
-    { "载具内NPC" },
-    { "敌对NPC" },
-}
-menu.list_select(Nearby_Area_Shoot_Target, "NPC目标", {}, "", Nearby_Area_Shoot_Target_Ped, 2, function(value)
-    nearby_area_shoot.target_ped = value
+menu.list_select(Nearby_Area_Shoot_Target, "NPC", {}, "", {
+    { "关闭", },
+    { "全部NPC (排除友好)", },
+    { "敌对NPC", },
+    { "步行NPC", },
+    { "载具内NPC", },
+    { "全部NPC", },
+}, 2, function(value)
+    nearby_area_shoot.target.ped = value
 end)
-
-local Nearby_Area_Shoot_Target_Ped_Body = {
-    { "默认", {}, "身体中心" },
-    { "头部" },
-}
-menu.list_select(Nearby_Area_Shoot_Target, "NPC身体位置", {}, "", Nearby_Area_Shoot_Target_Ped_Body, 2,
-    function(value)
-        nearby_area_shoot.target_ped_body = value
-    end)
-
-menu.divider(Nearby_Area_Shoot_Target, "载具")
-local Nearby_Area_Shoot_Target_Vehicle = {
-    { "关闭" },
-    { "NPC载具",    {}, "有NPC作为司机驾驶的载具" },
+menu.toggle(Nearby_Area_Shoot_Target, "射击NPC头部", {}, "", function(toggle)
+    nearby_area_shoot.target.ped_head = toggle
+end, true)
+menu.list_select(Nearby_Area_Shoot_Target, "载具", {}, "默认排除玩家载具", {
+    { "关闭", },
+    { "全部载具", {}, "" },
     { "敌对载具", {}, "敌对NPC驾驶或者有敌对地图标识的载具" },
-    { "全部载具", {}, "会排除玩家载具" },
-}
-menu.list_select(Nearby_Area_Shoot_Target, "载具目标", {}, "", Nearby_Area_Shoot_Target_Vehicle, 1,
-    function(value)
-        nearby_area_shoot.target_vehicle = value
-    end)
-
-local Nearby_Area_Shoot_Target_Vehicle_Body = {
-    { "默认", {}, "载具中心" },
-    { "车轮" },
-    { "车窗" },
-}
-local Nearby_Area_Shoot_Target_Vehicle_Body_List = {
-    { "" },
-    { "wheel_lf", "wheel_lr", "wheel_rf", "wheel_rr" },
-    { "windscreen", "windscreen_r",
-        "window_lf", "window_rf",
-        "window_lr", "window_rr",
-        "window_lm", "window_rm" },
-}
-menu.list_select(Nearby_Area_Shoot_Target, "载具车身位置", {}, "", Nearby_Area_Shoot_Target_Vehicle_Body, 1,
-    function(value)
-        nearby_area_shoot.target_vehicle_body = value
-    end)
-
-menu.divider(Nearby_Area_Shoot_Target, "物体")
-local Nearby_Area_Shoot_Target_Object = {
+    { "NPC载具",    {}, "有NPC作为司机驾驶的载具" },
+    { "空载具",    {}, "没有任何NPC驾驶的载具" },
+}, 1, function(value)
+    nearby_area_shoot.target.vehicle = value
+end)
+menu.list_select(Nearby_Area_Shoot_Target, "物体", {}, "", {
     { "关闭" },
-    { "敌对物体", {}, "有敌对地图标识的物体" },
-}
-menu.list_select(Nearby_Area_Shoot_Target, "物体目标", {}, "", Nearby_Area_Shoot_Target_Object, 1,
-    function(value)
-        nearby_area_shoot.target_object = value
-    end)
+    { "敌对物体",    {}, "有敌对地图标记点的物体" },
+    { "标记点物体", {}, "有地图标记点的物体" },
+}, 1, function(value)
+    nearby_area_shoot.target.object = value
+end)
+menu.toggle(Nearby_Area_Shoot_Target, "排除死亡实体", {}, "", function(toggle)
+    nearby_area_shoot.target.except_dead = toggle
+end, true)
 
------
+--------
 local Nearby_Area_Shoot_Setting = menu.list(Nearby_Area_Shoot, "设置", {}, "")
-menu.divider(Nearby_Area_Shoot_Setting, "属性")
 
-menu.list_select(Nearby_Area_Shoot_Setting, "武器", {}, "", AllWeapons_NoMelee_ListItem, 1, function(value)
-    nearby_area_shoot.weapon_hash = AllWeapons_NoMelee_ListItem[value][3]
-end)
+local Nearby_Area_Shoot_Weapon = rs_menu.all_weapons_without_melee(Nearby_Area_Shoot_Setting, "武器", {}, "",
+    function(hash)
+        nearby_area_shoot.weapon_hash = hash
+    end, true)
+rs_menu.current_weapon_action(Nearby_Area_Shoot_Weapon, function()
+    nearby_area_shoot.weapon_hash = "PLAYER_CURRENT_WEAPON"
+end, true)
 
-local Nearby_Area_Shoot_Owner = {
-    { "玩家",       {}, "以你的名义射击" },
-    { "匿名",       {}, "" },
-    { "随机玩家", {}, "没有其他玩家则匿名" },
-}
-menu.list_select(Nearby_Area_Shoot_Setting, "攻击者", {}, "", Nearby_Area_Shoot_Owner, 1, function(value)
-    nearby_area_shoot.owner = value
-end)
-
+menu.toggle(Nearby_Area_Shoot_Setting, "署名射击", {}, "以玩家名义", function(toggle)
+    nearby_area_shoot.is_owned = toggle
+end, true)
 menu.slider(Nearby_Area_Shoot_Setting, "伤害", { "nearby_area_shoot_damage" }, "", 0, 10000, 1000, 100,
     function(value)
         nearby_area_shoot.damage = value
@@ -2076,25 +2051,98 @@ menu.slider_float(Nearby_Area_Shoot_Setting, "Z", { "nearby_area_shoot_z" }, "",
         value = value * 0.01
         nearby_area_shoot.z = value
     end)
----
----
----
-local function Get_Random_Player()
-    local player_list = players.list(false, true, true)
-    local length = 0
-    for k, v in pairs(player_list) do
-        length = length + 1
+
+--------
+function nearby_area_shoot.checkPed(ped)
+    if nearby_area_shoot.target.except_dead and ENTITY.IS_ENTITY_DEAD(ped) then
+        return false
     end
-    if length == 0 then
-        return 0
-    else
-        return player_list[math.random(1, length)]
+
+    if not IS_PED_PLAYER(ped) then
+        local target_select = nearby_area_shoot.target.ped
+        if target_select == 2 and not is_friendly_ped(ped) then
+            return true
+        elseif target_select == 3 and is_hostile_ped(ped) then
+            return true
+        elseif target_select == 4 and not PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
+            return true
+        elseif target_select == 5 and PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
+            return true
+        elseif target_select == 6 then
+            return true
+        end
     end
+
+    return false
 end
 
-local function Shoot_Nearby_Area(state)
+function nearby_area_shoot.checkVehicle(vehicle)
+    if nearby_area_shoot.target.except_dead and ENTITY.IS_ENTITY_DEAD(vehicle) then
+        return false
+    end
+
+    if not IS_PLAYER_VEHICLE(vehicle) then
+        local target_select = nearby_area_shoot.target.vehicle
+        if target_select == 2 then
+            return true
+        elseif target_select == 3 and IS_HOSTILE_ENTITY(vehicle) then
+            return true
+        elseif target_select == 4 and not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
+            return true
+        elseif target_select == 5 and VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
+            return true
+        end
+    end
+
+    return false
+end
+
+function nearby_area_shoot.checkObject(object)
+    if nearby_area_shoot.target.except_dead and ENTITY.IS_ENTITY_DEAD(object) then
+        return false
+    end
+
+    local blip = HUD.GET_BLIP_FROM_ENTITY(object)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        local target_select = nearby_area_shoot.target.object
+        if target_select == 2 and IS_HOSTILE_ENTITY(object) then
+            return true
+        elseif target_select == 3 then
+            return true
+        end
+    end
+
+    return false
+end
+
+function nearby_area_shoot.Shoot(start_pos, end_pos, weaponHash)
+    local owner = 0
+    if nearby_area_shoot.is_owned then
+        owner = players.user_ped()
+    end
+
+    local ignore_entity = players.user_ped()
+    if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+        ignore_entity = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
+    end
+
+    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
+        start_pos.x, start_pos.y, start_pos.z,
+        end_pos.x, end_pos.y, end_pos.z,
+        nearby_area_shoot.damage,
+        false,
+        weaponHash,
+        owner,
+        nearby_area_shoot.is_audible,
+        nearby_area_shoot.is_invisible,
+        nearby_area_shoot.speed,
+        ignore_entity)
+end
+
+function nearby_area_shoot.Handle(action)
+    --if action == "shoot" then
     local weaponHash = nearby_area_shoot.weapon_hash
-    if weaponHash == "PLAYER_WEAPON" then
+    if weaponHash == "PLAYER_CURRENT_WEAPON" then
         local pWeapon = memory.alloc_int()
         WEAPON.GET_CURRENT_PED_WEAPON(players.user_ped(), pWeapon, true)
         weaponHash = memory.read_int(pWeapon)
@@ -2102,177 +2150,18 @@ local function Shoot_Nearby_Area(state)
     if not WEAPON.HAS_WEAPON_ASSET_LOADED(weaponHash) then
         request_weapon_asset(weaponHash)
     end
-
-    local owner
-    if nearby_area_shoot.owner == 1 then
-        owner = players.user_ped()
-    elseif nearby_area_shoot.owner == 2 then
-        owner = 0
-    elseif nearby_area_shoot.owner == 3 then
-        owner = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(Get_Random_Player())
-    end
+    --end
 
     --- PED ---
-    if nearby_area_shoot.target_ped ~= 1 then
+    if nearby_area_shoot.target.ped ~= 1 then
         for _, ent in pairs(GET_NEARBY_PEDS(players.user(), nearby_area.radius)) do
-            if not IS_PED_PLAYER(ent) and not ENTITY.IS_ENTITY_DEAD(ent) then
-                local ped = nil
-                if nearby_area_shoot.target_ped == 2 then
-                    ped = ent
-                elseif nearby_area_shoot.target_ped == 3 and not PED.IS_PED_IN_ANY_VEHICLE(ent, false) then
-                    ped = ent
-                elseif nearby_area_shoot.target_ped == 4 and PED.IS_PED_IN_ANY_VEHICLE(ent, false) then
-                    ped = ent
-                elseif nearby_area_shoot.target_ped == 5 and IS_HOSTILE_ENTITY(ent) then
-                    ped = ent
+            if nearby_area_shoot.checkPed(ent) then
+                local pos = ENTITY.GET_ENTITY_COORDS(ent)
+                if nearby_area_shoot.target.ped_head then
+                    pos = PED.GET_PED_BONE_COORDS(ent, 0x322c, 0, 0, 0)
                 end
 
-                if ped ~= nil then
-                    local pos, start_pos = {}, {}
-                    if nearby_area_shoot.target_ped_body == 1 then
-                        pos = ENTITY.GET_ENTITY_COORDS(ped)
-                    elseif nearby_area_shoot.target_ped_body == 2 then
-                        pos = PED.GET_PED_BONE_COORDS(ped, 0x322c, 0, 0, 0)
-                    end
-
-                    if nearby_area_shoot.start_from_player then
-                        local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-                        start_pos.x = player_pos.x + nearby_area_shoot.x
-                        start_pos.y = player_pos.y + nearby_area_shoot.y
-                        start_pos.z = player_pos.z + nearby_area_shoot.z
-                    else
-                        start_pos.x = pos.x + nearby_area_shoot.x
-                        start_pos.y = pos.y + nearby_area_shoot.y
-                        start_pos.z = pos.z + nearby_area_shoot.z
-                    end
-
-                    if state == "shoot" then
-                        local ignore_entity = players.user_ped()
-                        if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-                            ignore_entity = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
-                        end
-
-                        MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
-                            start_pos.x, start_pos.y, start_pos.z,
-                            pos.x, pos.y, pos.z,
-                            nearby_area_shoot.damage,
-                            false,
-                            weaponHash,
-                            owner,
-                            nearby_area_shoot.is_audible,
-                            nearby_area_shoot.is_invisible,
-                            nearby_area_shoot.speed,
-                            ignore_entity)
-                    elseif state == "draw" then
-                        DRAW_LINE(start_pos, pos)
-                    end
-                end
-            end
-        end
-    end
-
-    --- VEHICLE ---
-    if nearby_area_shoot.target_vehicle ~= 1 then
-        for _, ent in pairs(GET_NEARBY_VEHICLES(players.user(), nearby_area.radius)) do
-            if not IS_PLAYER_VEHICLE(ent) and not ENTITY.IS_ENTITY_DEAD(ent) then
-                local veh = nil
-                if nearby_area_shoot.target_vehicle == 2 and not VEHICLE.IS_VEHICLE_SEAT_FREE(ent, -1, false) then
-                    veh = ent
-                elseif nearby_area_shoot.target_vehicle == 3 and IS_HOSTILE_ENTITY(ent) then
-                    veh = ent
-                elseif nearby_area_shoot.target_vehicle == 4 then
-                    veh = ent
-                end
-
-                if veh ~= nil then
-                    local pos, start_pos = {}, {}
-                    if nearby_area_shoot.target_vehicle_body == 1 then
-                        pos = ENTITY.GET_ENTITY_COORDS(veh)
-
-                        if nearby_area_shoot.start_from_player then
-                            local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-                            start_pos.x = player_pos.x + nearby_area_shoot.x
-                            start_pos.y = player_pos.y + nearby_area_shoot.y
-                            start_pos.z = player_pos.z + nearby_area_shoot.z
-                        else
-                            start_pos.x = pos.x + nearby_area_shoot.x
-                            start_pos.y = pos.y + nearby_area_shoot.y
-                            start_pos.z = pos.z + nearby_area_shoot.z
-                        end
-
-                        if state == "shoot" then
-                            MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
-                                start_pos.x, start_pos.y, start_pos.z,
-                                pos.x, pos.y, pos.z,
-                                nearby_area_shoot.damage,
-                                false, weaponHash,
-                                owner,
-                                nearby_area_shoot.is_audible,
-                                nearby_area_shoot.is_invisible,
-                                nearby_area_shoot.speed,
-                                players.user_ped())
-                        elseif state == "draw" then
-                            DRAW_LINE(start_pos, pos)
-                        end
-                    else
-                        local bones = Nearby_Area_Shoot_Target_Vehicle_Body_List[nearby_area_shoot.target_vehicle_body]
-                        for _, bone in pairs(bones) do
-                            local bone_index = ENTITY.GET_ENTITY_BONE_INDEX_BY_NAME(veh, bone)
-                            if bone_index ~= -1 then
-                                pos = ENTITY.GET_WORLD_POSITION_OF_ENTITY_BONE(veh, bone_index)
-
-                                if nearby_area_shoot.start_from_player then
-                                    local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-                                    start_pos.x = player_pos.x + nearby_area_shoot.x
-                                    start_pos.y = player_pos.y + nearby_area_shoot.y
-                                    start_pos.z = player_pos.z + nearby_area_shoot.z
-                                else
-                                    start_pos.x = pos.x + nearby_area_shoot.x
-                                    start_pos.y = pos.y + nearby_area_shoot.y
-                                    start_pos.z = pos.z + nearby_area_shoot.z
-                                end
-
-                                if state == "shoot" then
-                                    local ignore_entity = players.user_ped()
-                                    if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-                                        ignore_entity = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false)
-                                    end
-
-                                    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
-                                        start_pos.x, start_pos.y, start_pos.z,
-                                        pos.x, pos.y, pos.z,
-                                        nearby_area_shoot.damage,
-                                        false,
-                                        weaponHash,
-                                        owner,
-                                        nearby_area_shoot.is_audible,
-                                        nearby_area_shoot.is_invisible,
-                                        nearby_area_shoot.speed,
-                                        ignore_entity)
-                                elseif state == "draw" then
-                                    DRAW_LINE(start_pos, pos)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    --- OBJECT ---
-    if nearby_area_shoot.target_object ~= 1 then
-        for _, ent in pairs(GET_NEARBY_OBJECTS(players.user(), nearby_area.radius)) do
-            local obj = nil
-            if nearby_area_shoot.target_object == 2 and IS_HOSTILE_ENTITY(ent) then
-                obj = ent
-            end
-
-            if obj ~= nil then
-                local pos, start_pos = {}, {}
-
-                pos = ENTITY.GET_ENTITY_COORDS(obj)
-
+                local start_pos = {}
                 if nearby_area_shoot.start_from_player then
                     local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
                     start_pos.x = player_pos.x + nearby_area_shoot.x
@@ -2284,21 +2173,63 @@ local function Shoot_Nearby_Area(state)
                     start_pos.z = pos.z + nearby_area_shoot.z
                 end
 
-                if state == "shoot" then
-                    local ignore_entity = players.user_ped()
+                if action == "shoot" then
+                    nearby_area_shoot.Shoot(start_pos, pos, weaponHash)
+                elseif action == "drawline" then
+                    DRAW_LINE(start_pos, pos)
+                end
+            end
+        end
+    end
 
-                    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
-                        start_pos.x, start_pos.y, start_pos.z,
-                        pos.x, pos.y, pos.z,
-                        nearby_area_shoot.damage,
-                        false,
-                        weaponHash,
-                        owner,
-                        nearby_area_shoot.is_audible,
-                        nearby_area_shoot.is_invisible,
-                        nearby_area_shoot.speed,
-                        ignore_entity)
-                elseif state == "draw" then
+    --- VEHICLE ---
+    if nearby_area_shoot.target.vehicle ~= 1 then
+        for _, ent in pairs(GET_NEARBY_VEHICLES(players.user(), nearby_area.radius)) do
+            if nearby_area_shoot.checkVehicle(ent) then
+                local pos = ENTITY.GET_ENTITY_COORDS(ent)
+
+                local start_pos = {}
+                if nearby_area_shoot.start_from_player then
+                    local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+                    start_pos.x = player_pos.x + nearby_area_shoot.x
+                    start_pos.y = player_pos.y + nearby_area_shoot.y
+                    start_pos.z = player_pos.z + nearby_area_shoot.z
+                else
+                    start_pos.x = pos.x + nearby_area_shoot.x
+                    start_pos.y = pos.y + nearby_area_shoot.y
+                    start_pos.z = pos.z + nearby_area_shoot.z
+                end
+
+                if action == "shoot" then
+                    nearby_area_shoot.Shoot(start_pos, pos, weaponHash)
+                elseif action == "drawline" then
+                    DRAW_LINE(start_pos, pos)
+                end
+            end
+        end
+    end
+
+    --- OBJECT ---
+    if nearby_area_shoot.target.object ~= 1 then
+        for _, ent in pairs(GET_NEARBY_OBJECTS(players.user(), nearby_area.radius)) do
+            if nearby_area_shoot.checkObject(ent) then
+                local pos = ENTITY.GET_ENTITY_COORDS(ent)
+
+                local start_pos = {}
+                if nearby_area_shoot.start_from_player then
+                    local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+                    start_pos.x = player_pos.x + nearby_area_shoot.x
+                    start_pos.y = player_pos.y + nearby_area_shoot.y
+                    start_pos.z = player_pos.z + nearby_area_shoot.z
+                else
+                    start_pos.x = pos.x + nearby_area_shoot.x
+                    start_pos.y = pos.y + nearby_area_shoot.y
+                    start_pos.z = pos.z + nearby_area_shoot.z
+                end
+
+                if action == "shoot" then
+                    nearby_area_shoot.Shoot(start_pos, pos, weaponHash)
+                elseif action == "drawline" then
                     DRAW_LINE(start_pos, pos)
                 end
             end
@@ -2307,23 +2238,250 @@ local function Shoot_Nearby_Area(state)
 end
 
 menu.toggle_loop(Nearby_Area_Shoot, "绘制模拟射击连线", {}, "", function()
-    Shoot_Nearby_Area("draw")
+    nearby_area_shoot.Handle("drawline")
 end)
 
 menu.divider(Nearby_Area_Shoot, "")
 menu.action(Nearby_Area_Shoot, "射击", { "shoot_area" }, "", function()
-    Shoot_Nearby_Area("shoot")
+    nearby_area_shoot.Handle("shoot")
 end)
-menu.slider(Nearby_Area_Shoot, "循环延迟", { "nearby_area_shoot_delay" }, "单位: ms", 0, 5000, 1000, 100,
-    function(value)
+menu.slider(Nearby_Area_Shoot, "循环延迟", { "nearby_area_shoot_delay" }, "单位: ms",
+    0, 5000, 1000, 100, function(value)
         nearby_area_shoot.delay = value
     end)
 menu.toggle_loop(Nearby_Area_Shoot, "循环射击", {}, "", function()
-    Shoot_Nearby_Area("shoot")
+    nearby_area_shoot.Handle("shoot")
     util.yield(nearby_area_shoot.delay)
 end)
 
+
+---------------
+-- 爆炸区域
+---------------
+local Nearby_Area_Explosion = menu.list(Nearby_Area_options, "爆炸区域", {}, "若半径是0,则为全部范围")
+
+local nearby_area_explosion = {
+    -- 目标
+    target = {
+        ped = 2,
+        vehicle = 1,
+        object = 1,
+        except_dead = true,
+    },
+    -- 设置
+    explosionType = 2,
+    is_owned = true,
+    damage = 1000,
+    is_audible = true,
+    is_invisible = false,
+    camera_shake = 0.0,
+    delay = 1000,
+}
+
+--------
+local Nearby_Area_Explosion_Target = menu.list(Nearby_Area_Explosion, "目标", {}, "")
+
+menu.list_select(Nearby_Area_Explosion_Target, "NPC", {}, "", {
+    { "关闭", },
+    { "全部NPC (排除友好)", },
+    { "敌对NPC", },
+    { "步行NPC", },
+    { "载具内NPC", },
+    { "全部NPC", },
+}, 2, function(value)
+    nearby_area_explosion.target.ped = value
+end)
+menu.list_select(Nearby_Area_Explosion_Target, "载具", {}, "默认排除玩家载具", {
+    { "关闭", },
+    { "全部载具", {}, "" },
+    { "敌对载具", {}, "敌对NPC驾驶或者有敌对地图标识的载具" },
+    { "NPC载具",    {}, "有NPC作为司机驾驶的载具" },
+    { "空载具",    {}, "没有任何NPC驾驶的载具" },
+}, 1, function(value)
+    nearby_area_explosion.target.vehicle = value
+end)
+menu.list_select(Nearby_Area_Explosion_Target, "物体", {}, "", {
+    { "关闭" },
+    { "敌对物体",    {}, "有敌对地图标记点的物体" },
+    { "标记点物体", {}, "有地图标记点的物体" },
+}, 1, function(value)
+    nearby_area_explosion.target.object = value
+end)
+menu.toggle(Nearby_Area_Explosion_Target, "排除死亡实体", {}, "", function(toggle)
+    nearby_area_explosion.target.except_dead = toggle
+end, true)
+
+--------
+local Nearby_Area_Explosion_Setting = menu.list(Nearby_Area_Explosion, "设置", {}, "")
+
+menu.list_select(Nearby_Area_Explosion_Setting, "爆炸类型", {}, "", ExplosionType_ListItem, 4, function(index)
+    nearby_area_explosion.explosionType = index - 2
+end)
+menu.toggle(Nearby_Area_Explosion_Setting, "署名爆炸", {}, "以玩家名义", function(toggle)
+    nearby_area_explosion.is_owned = toggle
+end, true)
+menu.slider(Nearby_Area_Explosion_Setting, "伤害", { "nearby_area_explosion_damage" }, "", 0, 10000, 1000, 100,
+    function(value)
+        nearby_area_explosion.damage = value
+    end)
+menu.toggle(Nearby_Area_Explosion_Setting, "可听见", {}, "", function(toggle)
+    nearby_area_explosion.is_audible = toggle
+end, true)
+menu.toggle(Nearby_Area_Explosion_Setting, "不可见", {}, "", function(toggle)
+    nearby_area_explosion.is_invisible = toggle
+end)
+menu.slider_float(Nearby_Area_Explosion_Setting, "镜头晃动", { "nearby_area_explosion_camera_shake" }, "",
+    0, 1000, 0, 10, function(value)
+        nearby_area_explosion.camera_shake = value * 0.01
+    end)
+
+--------
+function nearby_area_explosion.checkPed(ped)
+    if nearby_area_explosion.target.except_dead and ENTITY.IS_ENTITY_DEAD(ped) then
+        return false
+    end
+
+    if not IS_PED_PLAYER(ped) then
+        local target_select = nearby_area_explosion.target.ped
+        if target_select == 2 and not is_friendly_ped(ped) then
+            return true
+        elseif target_select == 3 and is_hostile_ped(ped) then
+            return true
+        elseif target_select == 4 and not PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
+            return true
+        elseif target_select == 5 and PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
+            return true
+        elseif target_select == 6 then
+            return true
+        end
+    end
+
+    return false
+end
+
+function nearby_area_explosion.checkVehicle(vehicle)
+    if nearby_area_explosion.target.except_dead and ENTITY.IS_ENTITY_DEAD(vehicle) then
+        return false
+    end
+
+    if not IS_PLAYER_VEHICLE(vehicle) then
+        local target_select = nearby_area_explosion.target.vehicle
+        if target_select == 2 then
+            return true
+        elseif target_select == 3 and IS_HOSTILE_ENTITY(vehicle) then
+            return true
+        elseif target_select == 4 and not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
+            return true
+        elseif target_select == 5 and VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
+            return true
+        end
+    end
+
+    return false
+end
+
+function nearby_area_explosion.checkObject(object)
+    if nearby_area_explosion.target.except_dead and ENTITY.IS_ENTITY_DEAD(object) then
+        return false
+    end
+
+    local blip = HUD.GET_BLIP_FROM_ENTITY(object)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        local target_select = nearby_area_explosion.target.object
+        if target_select == 2 and IS_HOSTILE_ENTITY(object) then
+            return true
+        elseif target_select == 3 then
+            return true
+        end
+    end
+
+    return false
+end
+
+function nearby_area_explosion.Explosion(pos)
+    if nearby_area_explosion.is_owned then
+        FIRE.ADD_OWNED_EXPLOSION(players.user_ped(),
+            pos.x, pos.y, pos.z,
+            nearby_area_explosion.explosionType,
+            nearby_area_explosion.damage,
+            nearby_area_explosion.is_audible,
+            nearby_area_explosion.is_invisible,
+            nearby_area_explosion.camera_shake)
+    else
+        FIRE.ADD_EXPLOSION(pos.x, pos.y, pos.z,
+            nearby_area_explosion.explosionType,
+            nearby_area_explosion.damage,
+            nearby_area_explosion.is_audible,
+            nearby_area_explosion.is_invisible,
+            nearby_area_explosion.camera_shake,
+            false)
+    end
+end
+
+function nearby_area_explosion.Handle(action)
+    --- PED ---
+    if nearby_area_explosion.target.ped ~= 1 then
+        for _, ent in pairs(GET_NEARBY_PEDS(players.user(), nearby_area.radius)) do
+            if nearby_area_explosion.checkPed(ent) then
+                if action == "explosion" then
+                    local pos = ENTITY.GET_ENTITY_COORDS(ent)
+                    nearby_area_explosion.Explosion(pos)
+                elseif action == "drawline" then
+                    DRAW_LINE_TO_ENTITY(ent)
+                end
+            end
+        end
+    end
+
+    --- VEHICLE ---
+    if nearby_area_explosion.target.vehicle ~= 1 then
+        for _, ent in pairs(GET_NEARBY_VEHICLES(players.user(), nearby_area.radius)) do
+            if nearby_area_explosion.checkVehicle(ent) then
+                if action == "explosion" then
+                    local pos = ENTITY.GET_ENTITY_COORDS(ent)
+                    nearby_area_explosion.Explosion(pos)
+                elseif action == "drawline" then
+                    DRAW_LINE_TO_ENTITY(ent)
+                end
+            end
+        end
+    end
+
+    --- OBJECT ---
+    if nearby_area_explosion.target.object ~= 1 then
+        for _, ent in pairs(GET_NEARBY_OBJECTS(players.user(), nearby_area.radius)) do
+            if nearby_area_explosion.checkObject(ent) then
+                if action == "explosion" then
+                    local pos = ENTITY.GET_ENTITY_COORDS(ent)
+                    nearby_area_explosion.Explosion(pos)
+                elseif action == "drawline" then
+                    DRAW_LINE_TO_ENTITY(ent)
+                end
+            end
+        end
+    end
+end
+
+menu.toggle_loop(Nearby_Area_Explosion, "连线指示实体", {}, "", function()
+    nearby_area_explosion.Handle("drawline")
+end)
+
+menu.divider(Nearby_Area_Explosion, "")
+menu.action(Nearby_Area_Explosion, "爆炸", { "explosion_area" }, "", function()
+    nearby_area_explosion.Handle("explosion")
+end)
+menu.slider(Nearby_Area_Explosion, "循环延迟", { "nearby_area_explosion_delay" }, "单位: ms",
+    0, 5000, 1000, 100, function(value)
+        nearby_area_explosion.delay = value
+    end)
+menu.toggle_loop(Nearby_Area_Explosion, "循环爆炸", {}, "", function()
+    nearby_area_explosion.Handle("explosion")
+    util.yield(nearby_area_explosion.delay)
+end)
+
+
 --#endregion Nearby Area
+
 
 
 
@@ -2333,7 +2491,7 @@ end)
 ---------- 任务实体 ---------
 ---------------------------
 
-local Mission_Entity = menu.list(Entity_options, "管理任务实体", {}, "")
+local Mission_Entity = menu.list(Entity_options, "管理任务实体", { "manage_mission" }, "")
 
 menu.action(Mission_Entity, "传送到 电脑", { "tp_desk" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(521)
@@ -3162,6 +3320,7 @@ menu.action(Diamond_Casino_Aggressive, "加固防弹衣：潜水套装 传送到
 end)
 
 
+menu.divider(Diamond_Casino, "")
 --- 终章 ---
 local Diamond_Casino_Final = menu.list(Diamond_Casino, "终章", {}, "")
 
@@ -4314,7 +4473,7 @@ menu.action(Mission_Entity_other, "传送到 地图蓝点", { "tp_radar_blue" },
         TELEPORT(coords.x, coords.y, coords.z + 0.8)
     end
 end)
-menu.action(Mission_Entity_other, "出口载具 传送到我", {}, "", function()
+menu.action(Mission_Entity_other, "出口载具 传送到我", { "tpme_export_veh" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(143)
     if HUD.DOES_BLIP_EXIST(blip) then
         local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
@@ -4323,7 +4482,7 @@ menu.action(Mission_Entity_other, "出口载具 传送到我", {}, "", function(
         end
     end
 end)
-menu.action(Mission_Entity_other, "传送到 载具出口码头", {}, "", function()
+menu.action(Mission_Entity_other, "传送到 载具出口码头", { "tp_radar_dock" }, "", function()
     TELEPORT(1171.784, -2974.434, 6.502)
 end)
 menu.action(Mission_Entity_other, "传送到 出租车乘客", { "tp_taxi_passenger" }, "", function()
@@ -4385,7 +4544,7 @@ local All_Entity_Manage = menu.list(Entity_options, "管理所有实体", {}, ""
 ------------------
 --- 所有任务实体 ---
 ------------------
-local Mission_Entity_All = menu.list(All_Entity_Manage, "所有任务实体", {}, "")
+local Mission_Entity_All = menu.list(All_Entity_Manage, "所有任务实体", { "manage_all_entity" }, "")
 
 local All_Mission_Entity = {
     Type = "Ped", -- 实体类型
@@ -4510,7 +4669,7 @@ function All_Mission_Entity.Check_Match_Conditions(ent)
     end
     --地图标记
     if All_Mission_Entity.Filter.blip > 1 then
-        is_match = false 
+        is_match = false
         if HUD.DOES_BLIP_EXIST(HUD.GET_BLIP_FROM_ENTITY(ent)) then
             if All_Mission_Entity.Filter.blip == 2 then
                 is_match = true
@@ -5161,6 +5320,11 @@ function Entity_Info.entity_info(entity)
         -- Colour
         local blip_colour = HUD.GET_BLIP_COLOUR(blip)
         info = { "Blip Colour", blip_colour }
+        table.insert(entity_info.blip, info)
+
+        -- HUD Colour
+        local blip_hud_colour = HUD.GET_BLIP_HUD_COLOUR(blip)
+        info = { "Blip HUD Colour", blip_hud_colour }
         table.insert(entity_info.blip, info)
 
         -- Alpha

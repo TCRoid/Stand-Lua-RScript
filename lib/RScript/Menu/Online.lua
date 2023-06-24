@@ -368,6 +368,91 @@ end
 
 
 ---------------------
+-- 资产快捷传送
+---------------------
+local Fast_Teleport = menu.list(Online_options, "资产快捷传送", {}, "")
+
+local FastTP = {
+    property_list = {
+        { sprite = 557, name = "地堡",    command = "bunker" },
+        { sprite = 569, name = "机库",    command = "Hangar" },
+        { sprite = 590, name = "设施",    command = "facility" },
+        { sprite = 614, name = "夜总会", command = "nightclub" },
+        { sprite = 740, name = "游戏厅", command = "arcade" },
+        { sprite = 779, name = "改装铺", command = "autoshop" },
+        { sprite = 826, name = "事务所", command = "agency" },
+    }
+}
+
+menu.divider(Fast_Teleport, "载具资产")
+menu.action(Fast_Teleport, "传送到 机动作战中心", { "fatp_moc" }, "", function()
+    local blip = HUD.GET_NEXT_BLIP_INFO_ID(564)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
+            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
+            TP_TO_ENTITY(ent, 0.0, -9.0, -1.0)
+        end
+    else
+        util.toast("未在地图上找到 机动作战中心")
+    end
+end)
+menu.action(Fast_Teleport, "传送到 复仇者", { "fatp_avenger" }, "", function()
+    local blip = HUD.GET_NEXT_BLIP_INFO_ID(589)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
+            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
+            TP_TO_ENTITY(ent, 0.0, -8.0, 0.0)
+        end
+    else
+        util.toast("未在地图上找到 复仇者")
+    end
+end)
+menu.action(Fast_Teleport, "传送到 恐霸", { "fatp_terrorbyte" }, "", function()
+    local blip = HUD.GET_NEXT_BLIP_INFO_ID(632)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
+            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent, 90)
+            TP_TO_ENTITY(ent, 2.0, 0.0, 0.0)
+        end
+    else
+        util.toast("未在地图上找到 恐霸")
+    end
+end)
+menu.action(Fast_Teleport, "传送到 致幻剂实验室", { "fatp_acidlab" }, "", function()
+    local blip = HUD.GET_NEXT_BLIP_INFO_ID(840)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
+            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
+            TP_TO_ENTITY(ent, 3.0, 0.0, 0.0)
+        end
+    else
+        util.toast("未在地图上找到 致幻剂实验室")
+    end
+end)
+
+menu.divider(Fast_Teleport, "资产")
+
+for key, item in pairs(FastTP.property_list) do
+    menu.action(Fast_Teleport, "传送到 " .. item.name, { "fatp" .. item.command }, "", function()
+        local blip = HUD.GET_NEXT_BLIP_INFO_ID(item.sprite)
+        if HUD.DOES_BLIP_EXIST(blip) then
+            if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
+                local coords = HUD.GET_BLIP_COORDS(blip)
+                TELEPORT2(coords)
+            end
+        else
+            util.toast("未在地图上找到 " .. item.name)
+        end
+    end)
+end
+
+
+
+---------------------
 -- 玩家语言
 ---------------------
 local Player_Language = menu.list(Online_options, "玩家游戏语言", {}, "")
@@ -443,4 +528,3 @@ menu.click_slider_float(Online_options, "AI血量", { "ai_health" }, "切换战�
     0, 1000, 100, 10, function(value)
         SET_FLOAT_GLOBAL(Globals.AI_HEALTH, value * 0.01)
     end)
-

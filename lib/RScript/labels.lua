@@ -1526,25 +1526,8 @@ ExplosionType_ListItem = {
 
 
 
--- 所有武器（无近战武器）
-AllWeapons_NoMelee_ListItem = {
-    { "玩家手持武器", {}, "PLAYER_WEAPON" }
-}
-
-for k, v in pairs(util.get_weapons()) do
-    -- The inner tables contain hash, label_key, category, & category_id
-    local t = { "label", {}, "hash" }
-    t[1] = util.get_label_text(v.label_key)
-    t[3] = tostring(v.hash)
-
-    if v.category_id ~= 0 then
-        table.insert(AllWeapons_NoMelee_ListItem, t)
-    end
-end
-
-
 -- 载具武器
-VehicleWeapons = {
+local VehicleWeapons = {
     -- { model_name, label_key }
     { "VEHICLE_WEAPON_TANK",                 "WT_V_TANK" },
     { "VEHICLE_WEAPON_SPACE_ROCKET",         "WT_V_PLANEMSL" },
@@ -1568,7 +1551,7 @@ VehicleWeapons = {
 }
 
 All_VehicleWeapons_ListItem = {
-    { "载具当前武器", {}, "VEHICLE_WEAPON" }
+    { "载具当前使用的武器", {}, "VEHICLE_CURRENT_WEAPON" }
 }
 
 for k, v in pairs(VehicleWeapons) do
@@ -1578,3 +1561,4 @@ for k, v in pairs(VehicleWeapons) do
     t[3] = tostring(util.joaat(v[1]))
     table.insert(All_VehicleWeapons_ListItem, t)
 end
+
