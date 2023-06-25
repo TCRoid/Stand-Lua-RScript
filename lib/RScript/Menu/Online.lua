@@ -368,9 +368,9 @@ end
 
 
 ---------------------
--- 资产快捷传送
+-- 快捷传送
 ---------------------
-local Fast_Teleport = menu.list(Online_options, "资产快捷传送", {}, "")
+local Fast_Teleport = menu.list(Online_options, "快捷传送", {}, "")
 
 local FastTP = {
     property_list = {
@@ -381,7 +381,13 @@ local FastTP = {
         { sprite = 740, name = "游戏厅", command = "arcade" },
         { sprite = 779, name = "改装铺", command = "autoshop" },
         { sprite = 826, name = "事务所", command = "agency" },
-    }
+    },
+    event_list = {
+        { sprite = 430, name = "时间挑战赛",         command = "timetrial" },
+        { sprite = 673, name = "RC匪徒时间挑战赛", command = "rctimetrial" },
+        { sprite = 842, name = "杰拉德包裹",         command = "gcaches" },
+        { sprite = 845, name = "藏匿屋",               command = "stashhouse" },
+    },
 }
 
 menu.divider(Fast_Teleport, "载具资产")
@@ -435,7 +441,6 @@ menu.action(Fast_Teleport, "传送到 致幻剂实验室", { "fatp_acidlab" }, "
 end)
 
 menu.divider(Fast_Teleport, "资产")
-
 for key, item in pairs(FastTP.property_list) do
     menu.action(Fast_Teleport, "传送到 " .. item.name, { "fatp" .. item.command }, "", function()
         local blip = HUD.GET_NEXT_BLIP_INFO_ID(item.sprite)
@@ -444,6 +449,19 @@ for key, item in pairs(FastTP.property_list) do
                 local coords = HUD.GET_BLIP_COORDS(blip)
                 TELEPORT2(coords)
             end
+        else
+            util.toast("未在地图上找到 " .. item.name)
+        end
+    end)
+end
+
+menu.divider(Fast_Teleport, "活动")
+for key, item in pairs(FastTP.event_list) do
+    menu.action(Fast_Teleport, "传送到 " .. item.name, { "fatp" .. item.command }, "", function()
+        local blip = HUD.GET_NEXT_BLIP_INFO_ID(item.sprite)
+        if HUD.DOES_BLIP_EXIST(blip) then
+            local coords = HUD.GET_BLIP_COORDS(blip)
+            TELEPORT2(coords)
         else
             util.toast("未在地图上找到 " .. item.name)
         end

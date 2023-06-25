@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("1681379138")
 
-local SCRIPT_VERSION <const> = "2023/6/24"
+local SCRIPT_VERSION <const> = "2023/6/25"
 
 local SUPPORT_GTAO <const> = 1.67
 
@@ -372,9 +372,11 @@ function GetEntityInfo_ListItem(ent)
 end
 
 tick_handler_data = {
+    ------ 主要 ------
     main = {
         draw_point_on_screen = false,
     },
+
     ------ 实体控制 ------
     control_ent = {
         show_info = {
@@ -423,13 +425,14 @@ function tick_handler_data.control_ent.clear()
 end
 
 util.create_tick_handler(function()
+    ------ 主要 ------
     if tick_handler_data.main.draw_point_on_screen then
         draw_point_in_center()
     end
 
 
-    ------ 实体控制 ------
 
+    ------ 实体控制 ------
     local control_ent = tick_handler_data.control_ent
 
     --显示实体信息
@@ -535,7 +538,7 @@ util.create_tick_handler(function()
             ENTITY.SET_ENTITY_HEADING(clone_ent, heading)
         end
     elseif ENTITY.DOES_ENTITY_EXIST(control_ent.preview_ent.clone_ent) then
-        entities.delete_by_handle(control_ent.preview_ent.clone_ent)
+        entities.delete(control_ent.preview_ent.clone_ent)
         control_ent.preview_ent.has_cloned_ent = 0
     end
 end)
@@ -814,7 +817,7 @@ function Entity_Control.entity(menu_parent, ent, index)
         util.toast(set_entity_networked(ent))
     end)
     menu.action(entity_options, "删除", {}, "", function()
-        entities.delete_by_handle(ent)
+        entities.delete(ent)
     end)
 
 
@@ -1212,16 +1215,16 @@ function Entity_Control.ped_combat(menu_parent, ped, index)
     menu.click_slider(ped_combat_options, "精准度", {}, "", 0, 100, 50, 10, function(value)
         PED.SET_PED_ACCURACY(ped, value)
     end)
-    menu.slider_text(ped_combat_options, "战斗能力", {}, "", enum_CombatAbility, function(value)
+    menu.textslider_stateful(ped_combat_options, "战斗能力", {}, "", enum_CombatAbility, function(value)
         PED.SET_PED_COMBAT_ABILITY(ped, value)
     end)
-    menu.slider_text(ped_combat_options, "战斗范围", {}, "", enum_CombatRange, function(value)
+    menu.textslider_stateful(ped_combat_options, "战斗范围", {}, "", enum_CombatRange, function(value)
         PED.SET_PED_COMBAT_RANGE(ped, value)
     end)
-    menu.slider_text(ped_combat_options, "战斗走位", {}, "", enum_CombatMovement, function(value)
+    menu.textslider_stateful(ped_combat_options, "战斗走位", {}, "", enum_CombatMovement, function(value)
         PED.SET_PED_COMBAT_MOVEMENT(ped, value)
     end)
-    menu.slider_text(ped_combat_options, "警觉度", {}, "", enum_Alertness, function(value)
+    menu.textslider_stateful(ped_combat_options, "警觉度", {}, "", enum_Alertness, function(value)
         PED.SET_PED_ALERTNESS(ped, value)
     end)
     menu.list_action(ped_combat_options, "射击模式", {}, "", Ped_FirePattern.ListItem, function(value)
@@ -1345,7 +1348,7 @@ function Entity_Control.vehicle(menu_parent, vehicle, index)
     ----- Vehicle 选项 -----
     local vehicle_options = menu.list(menu_parent, "Vehicle 选项", {}, "")
 
-    menu.slider_text(vehicle_options, "传送到载具内", {}, "会将原座位的NPC传送出去",
+    menu.textslider_stateful(vehicle_options, "传送到载具内", {}, "会将原座位的NPC传送出去",
         { "空座位", "驾驶位", "副驾驶位" }, function(value)
             if value == 1 then
                 if VEHICLE.ARE_ANY_VEHICLE_SEATS_FREE(vehicle) then
@@ -1459,17 +1462,17 @@ function Entity_Control.vehicle(menu_parent, vehicle, index)
         end
     end)
 
-    menu.slider_text(vehicle_options, "引擎", {}, "", { "打开", "关闭" }, function(value)
+    menu.textslider_stateful(vehicle_options, "引擎", {}, "", { "打开", "关闭" }, function(value)
         if value == 1 then
             VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
         elseif value == 2 then
             VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, false, true, false)
         end
     end)
-    menu.slider_text(vehicle_options, "车门锁", {}, "", { "解锁", "上锁" }, function(value)
+    menu.textslider_stateful(vehicle_options, "车门锁", {}, "", { "解锁", "上锁" }, function(value)
         VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, value)
     end)
-    menu.slider_text(vehicle_options, "车胎", {}, "", { "爆胎", "修复" }, function(value)
+    menu.textslider_stateful(vehicle_options, "车胎", {}, "", { "爆胎", "修复" }, function(value)
         if value == 1 then
             for i = 0, 7 do
                 VEHICLE.SET_VEHICLE_TYRE_BURST(vehicle, i, true, 1000.0)
@@ -2032,7 +2035,7 @@ function Entity_Control.entities(menu_parent, entity_list)
     menu.action(menu_parent, "删除", {}, "", function()
         for k, ent in pairs(entity_list) do
             if ENTITY.DOES_ENTITY_EXIST(ent) then
-                entities.delete_by_handle(ent)
+                entities.delete(ent)
             end
         end
         util.toast("完成！")
@@ -2695,7 +2698,7 @@ end)
 menu.toggle_loop(Weapon_options, "无限载具武器弹药", { "inf_veh_ammo" }, "", function()
     local user_ped = players.user_ped()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         if VEHICLE.DOES_VEHICLE_HAVE_WEAPONS(vehicle) then
             for i = 0, 3 do
                 local ammo = VEHICLE.GET_VEHICLE_WEAPON_RESTRICTED_AMMO(vehicle, i)
@@ -2723,6 +2726,153 @@ menu.action(Weapon_options, "移除黏弹和感应地雷", { "remove_projectiles
     end)
 
 
+
+--#region Weapon Attributes
+
+------------------------
+------ 武器属性修改 ------
+------------------------
+local Weapon_Attributes = menu.list(Weapon_options, "武器属性修改", {}, "修改当前武器属性，应用修改后会一直生效")
+
+local weapon_attributes = {
+    default = {},
+    offset = {
+        m_reload_time_mp = 0x128,
+        m_reload_time_sp = 0x12c,
+        m_vehicle_reload_time = 0x130,
+        m_anim_reload_time = 0x134,
+        m_time_between_shots = 0x13c,
+        m_alternate_wait_time = 0x150,
+    }
+}
+
+function weapon_attributes.CWeaponInfo()
+    local ped_ptr = entities.handle_to_pointer(players.user_ped())
+    local weapon_manager = entities.get_weapon_manager(ped_ptr)
+    local m_weapon_info = weapon_manager + 0x20
+    local m_vehicle_weapon_info = weapon_manager + 0x70
+
+    local CWeaponInfo = memory.read_long(m_weapon_info)
+    local CVehicleWeaponInfo = memory.read_long(m_vehicle_weapon_info)
+
+    local Addr = 0
+    if CWeaponInfo ~= 0 then
+        Addr = CWeaponInfo
+    elseif CWeaponInfo_Vehicle ~= 0 then
+        Addr = CVehicleWeaponInfo
+    end
+    return Addr
+end
+
+function weapon_attributes.save_default(CWeaponInfo)
+    local weaponHash = get_ped_current_weapon(players.user_ped())
+    if not weapon_attributes.default[weaponHash] then
+        weapon_attributes.default[weaponHash] = {
+            anim_reload_time    = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_anim_reload_time),
+            vehicle_reload_time = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_vehicle_reload_time),
+            time_between_shots  = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_time_between_shots),
+            alternate_wait_time = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_alternate_wait_time),
+            reload_time_mp      = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_reload_time_mp),
+            reload_time_sp      = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_reload_time_sp),
+        }
+    end
+end
+
+function weapon_attributes.set_attribute(offset, value)
+    local CWeaponInfo = weapon_attributes.CWeaponInfo()
+    if CWeaponInfo ~= 0 then
+        local weapon_addr = CWeaponInfo + offset
+        if memory.read_float(weapon_addr) ~= -1 then
+            weapon_attributes.save_default(CWeaponInfo)
+
+            memory.write_float(weapon_addr, value)
+        end
+    end
+end
+
+menu.slider_float(Weapon_Attributes, "换弹动作速度", { "weapon_attributes_anim_reload_time" }, "",
+    0, 1000, 100, 10, function(value)
+        weapon_attributes.set_attribute(weapon_attributes.offset.m_anim_reload_time, value * 0.01)
+    end)
+menu.slider_float(Weapon_Attributes, "载具内换弹时间", { "weapon_attributes_vehicle_reload_time" }, "",
+    0, 1000, 50, 10, function(value)
+        weapon_attributes.set_attribute(weapon_attributes.offset.m_vehicle_reload_time, value * 0.01)
+    end)
+menu.slider_float(Weapon_Attributes, "射击间隔时间", { "weapon_attributes_time_between_shots" }, "",
+    0, 1000, 10, 10, function(value)
+        weapon_attributes.set_attribute(weapon_attributes.offset.m_time_between_shots, value * 0.01)
+    end)
+menu.slider_float(Weapon_Attributes, "载具武器射击间隔时间", { "weapon_attributes_alternate_wait_time" }, "",
+    0, 1000, 50, 10, function(value)
+        weapon_attributes.set_attribute(weapon_attributes.offset.m_alternate_wait_time, value * 0.01)
+    end)
+menu.slider_float(Weapon_Attributes, "载具武器装弹时间", { "weapon_attributes_reload_time" }, "",
+    0, 1000, 100, 10, function(value)
+        weapon_attributes.set_attribute(weapon_attributes.offset.m_reload_time_mp, value * 0.01)
+        weapon_attributes.set_attribute(weapon_attributes.offset.m_reload_time_sp, value * 0.01)
+    end)
+
+menu.divider(Weapon_Attributes, "")
+menu.textslider_stateful(Weapon_Attributes, "读取当前武器属性", {}, "", {
+    "仅通知", "保存到日志"
+}, function(value)
+    local CWeaponInfo = weapon_attributes.CWeaponInfo()
+    if CWeaponInfo ~= 0 then
+        local anim_reload_time    = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_anim_reload_time)
+        local vehicle_reload_time = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_vehicle_reload_time)
+        local time_between_shots  = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_time_between_shots)
+        local alternate_wait_time = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_alternate_wait_time)
+        local reload_time_mp      = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_reload_time_mp)
+        local reload_time_sp      = memory.read_float(CWeaponInfo + weapon_attributes.offset.m_reload_time_sp)
+
+        local weaponHash          = get_ped_current_weapon(players.user_ped())
+        local text                = "武器: " .. util.reverse_joaat(weaponHash) ..
+            "\n换弹动作速度: " .. anim_reload_time ..
+            "\n载具内换弹时间: " .. vehicle_reload_time ..
+            "\n射击间隔时间: " .. time_between_shots ..
+            "\n载具武器射击间隔时间: " .. alternate_wait_time ..
+            "\n载具武器装弹时间(线上): " .. reload_time_mp ..
+            "\n载具武器装弹时间(线下): " .. reload_time_sp
+        THEFEED_POST.TEXT(text)
+
+        if value == 2 then
+            util.log("\n" .. text)
+        end
+    end
+end)
+
+menu.action(Weapon_Attributes, "恢复当前武器默认属性", {}, "", function()
+    local weaponHash = get_ped_current_weapon(players.user_ped())
+    if weapon_attributes.default[weaponHash] then
+        local CWeaponInfo = weapon_attributes.CWeaponInfo()
+        if CWeaponInfo ~= 0 then
+            memory.write_float(CWeaponInfo + weapon_attributes.offset.m_anim_reload_time,
+                weapon_attributes.default[weaponHash].anim_reload_time)
+            memory.write_float(CWeaponInfo + weapon_attributes.offset.m_vehicle_reload_time,
+                weapon_attributes.default[weaponHash].vehicle_reload_time)
+            memory.write_float(CWeaponInfo + weapon_attributes.offset.m_time_between_shots,
+                weapon_attributes.default[weaponHash].time_between_shots)
+            memory.write_float(CWeaponInfo + weapon_attributes.offset.m_alternate_wait_time,
+                weapon_attributes.default[weaponHash].alternate_wait_time)
+            memory.write_float(CWeaponInfo + weapon_attributes.offset.m_reload_time_mp,
+                weapon_attributes.default[weaponHash].reload_time_mp)
+            memory.write_float(CWeaponInfo + weapon_attributes.offset.m_reload_time_sp,
+                weapon_attributes.default[weaponHash].reload_time_sp)
+
+            util.toast("已恢复默认属性")
+        end
+    end
+end)
+menu.action(Weapon_Attributes, "! 清除保存的武器默认属性", {}, "", function()
+    weapon_attributes.default = {}
+    util.toast("完成")
+end)
+
+--#endregion
+
+
+
+--#region Weapon Cam Gun
 
 ------------------------
 ------- 视野工具枪 -------
@@ -3044,8 +3194,11 @@ menu.action(Cam_Gun_fire, "移除生成的火焰", {}, "", function()
     end
 end)
 
+--#endregion
 
 
+
+--#region Entity Control Gun
 
 ------------------------
 ------- 实体控制枪 -------
@@ -3188,6 +3341,8 @@ menu.action(Entity_Control_Gun, "清空列表", {}, "", function()
 end)
 entity_control_gun.count_divider = menu.divider(Entity_Control_Gun, "实体列表")
 
+--#endregion
+
 
 --#endregion Weapon Options
 
@@ -3202,6 +3357,8 @@ entity_control_gun.count_divider = menu.divider(Entity_Control_Gun, "实体列�
 --------------------------------
 local Vehicle_options = menu.list(menu.my_root(), "载具选项", {}, "")
 
+
+--#region Vehicle Upgrade
 
 ------------------
 --- 载具升级强化 ---
@@ -3382,7 +3539,11 @@ menu.toggle(Vehicle_Upgrade_options, "其它属性增强", {}, "其它属性的�
         vehicle_upgrade.other_strong = toggle
     end, true)
 
+--#endregion
 
+
+
+--#region Vehicle Weapon
 
 ---------------
 --- 载具武器 ---
@@ -3667,6 +3828,7 @@ menu.toggle(Vehicle_Weapon_options, "禁用载具喇叭", {}, "", function(toggl
     Vehicle_Weapon.disable_horn = toggle
 end, true)
 
+--#endregion
 
 
 
@@ -3713,7 +3875,7 @@ end
 
 menu.toggle_loop(Vehicle_Window_options, "修复车窗", { "fix_veh_window" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         for index, toggle in pairs(vehicle_window.window_toggles) do
             if toggle then
                 VEHICLE.FIX_VEHICLE_WINDOW(vehicle, index)
@@ -3723,7 +3885,7 @@ menu.toggle_loop(Vehicle_Window_options, "修复车窗", { "fix_veh_window" }, "
 end)
 menu.toggle_loop(Vehicle_Window_options, "摇上车窗", { "roll_up_veh_window" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         for index, toggle in pairs(vehicle_window.window_toggles) do
             if toggle then
                 VEHICLE.ROLL_UP_WINDOW(vehicle, index)
@@ -3733,7 +3895,7 @@ menu.toggle_loop(Vehicle_Window_options, "摇上车窗", { "roll_up_veh_window" 
 end)
 menu.toggle_loop(Vehicle_Window_options, "摇下车窗", { "roll_down_veh_window" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         for index, toggle in pairs(vehicle_window.window_toggles) do
             if toggle then
                 VEHICLE.ROLL_DOWN_WINDOW(vehicle, index)
@@ -3743,7 +3905,7 @@ menu.toggle_loop(Vehicle_Window_options, "摇下车窗", { "roll_down_veh_window
 end)
 menu.toggle_loop(Vehicle_Window_options, "粉碎车窗", { "smash_veh_window" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         for index, toggle in pairs(vehicle_window.window_toggles) do
             if toggle then
                 VEHICLE.SMASH_VEHICLE_WINDOW(vehicle, index)
@@ -3794,7 +3956,7 @@ end
 
 menu.toggle_loop(Vehicle_Door_options, "打开车门", { "open_veh_door" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         for index, toggle in pairs(vehicle_door.door_toggles) do
             if toggle then
                 VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, index, false, false)
@@ -3804,7 +3966,7 @@ menu.toggle_loop(Vehicle_Door_options, "打开车门", { "open_veh_door" }, "", 
 end)
 menu.action(Vehicle_Door_options, "关闭车门", { "close_veh_door" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         for index, toggle in pairs(vehicle_door.door_toggles) do
             if toggle then
                 VEHICLE.SET_VEHICLE_DOOR_SHUT(vehicle, index, false)
@@ -3814,7 +3976,7 @@ menu.action(Vehicle_Door_options, "关闭车门", { "close_veh_door" }, "", func
 end)
 menu.toggle_loop(Vehicle_Door_options, "破坏车门", { "broken_veh_door" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         for index, toggle in pairs(vehicle_door.door_toggles) do
             if toggle then
                 VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, index, false)
@@ -3824,7 +3986,7 @@ menu.toggle_loop(Vehicle_Door_options, "破坏车门", { "broken_veh_door" }, ""
 end)
 menu.toggle_loop(Vehicle_Door_options, "删除车门", { "delete_veh_door" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         for index, toggle in pairs(vehicle_door.door_toggles) do
             if toggle then
                 VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, index, true)
@@ -3858,20 +4020,20 @@ end)
 
 menu.action(Vehicle_DoorLock_options, "设置载具锁门", {}, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, vehicle_door_lock_select)
     end
 end)
 
 menu.toggle(Vehicle_DoorLock_options, "对所有玩家锁门", {}, "", function(toggle)
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_PLAYERS(vehicle, toggle)
     end
 end)
 menu.toggle(Vehicle_DoorLock_options, "对所有团队锁门", {}, "", function(toggle)
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_TEAMS(vehicle, toggle)
     end
 end)
@@ -3899,7 +4061,7 @@ menu.toggle_loop(Vehicle_Radio_options, "自动更改电台", { "auto_veh_radio"
 menu.toggle(Vehicle_Radio_options, "关闭电台", { "close_veh_radio" }, "当前或上一辆载具将无法选择更改电台",
     function(toggle)
         local vehicle = entities.get_user_vehicle_as_handle()
-        if vehicle ~= 0 then
+        if vehicle ~= INVALID_GUID then
             AUDIO.SET_VEHICLE_RADIO_ENABLED(vehicle, not toggle)
         end
     end)
@@ -3918,7 +4080,7 @@ menu.action(Vehicle_Personal_options, "开启载具引擎", { "veh_engine_on" },
         end
 
         local last_vehicle = entities.get_user_vehicle_as_handle()
-        if last_vehicle ~= 0 and last_vehicle ~= vehicle then
+        if last_vehicle ~= INVALID_GUID and last_vehicle ~= vehicle then
             VEHICLE.SET_VEHICLE_ENGINE_ON(last_vehicle, true, true, false)
         end
     end)
@@ -4006,7 +4168,7 @@ menu.toggle_loop(Vehicle_Water_options, "传送到水面上", {}, "", function()
     end
 
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         local coords = ENTITY.GET_ENTITY_COORDS(vehicle)
         if WATER.GET_WATER_HEIGHT(coords.x, coords.y, coords.z, vehicle_water.water_height) then
             local water_height_z = memory.read_float(vehicle_water.water_height)
@@ -4027,7 +4189,7 @@ menu.toggle_loop(Vehicle_Water_options, "传送到水面上", {}, "", function()
     end
 end, function()
     if ENTITY.DOES_ENTITY_EXIST(vehicle_water.dow_block) then
-        entities.delete_by_handle(vehicle_water.dow_block)
+        entities.delete(vehicle_water.dow_block)
         vehicle_water.dow_block = 0
     end
 end)
@@ -4069,7 +4231,7 @@ menu.toggle_loop(Vehicle_Info_options, "开启", {}, "", function()
     if vehicle_info.only_current_vehicle and not PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
     else
         local veh = entities.get_user_vehicle_as_handle()
-        if veh ~= 0 then
+        if veh ~= INVALID_GUID then
             local text = ""
 
             if vehicle_info.vehicle_name then
@@ -4139,7 +4301,7 @@ menu.list_select(Vehicle_options, "设置车灯状态", {}, "", {
     { "关灯" },           -- 4
 }, 1, function(value)
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         VEHICLE.SET_VEHICLE_LIGHTS(vehicle, value - 1)
     end
 end)
@@ -4148,7 +4310,7 @@ menu.click_slider_float(Vehicle_options, "载具灰尘程度", { "veh_dirt_level
     0, 1500, 0, 100, function(value)
         veh_dirt_level = value * 0.01
         local vehicle = entities.get_user_vehicle_as_handle()
-        if vehicle ~= 0 then
+        if vehicle ~= INVALID_GUID then
             if VEHICLE.GET_VEHICLE_DIRT_LEVEL(vehicle) ~= veh_dirt_level then
                 VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, veh_dirt_level)
             end
@@ -4156,7 +4318,7 @@ menu.click_slider_float(Vehicle_options, "载具灰尘程度", { "veh_dirt_level
     end)
 menu.toggle_loop(Vehicle_options, "锁定载具灰尘程度", {}, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         if VEHICLE.GET_VEHICLE_DIRT_LEVEL(vehicle) ~= veh_dirt_level then
             VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, veh_dirt_level)
         end
@@ -4194,12 +4356,12 @@ menu.toggle_loop(Vehicle_options, "自动解锁载具车门", {}, "自动解锁�
     end)
 menu.toggle_loop(Vehicle_options, "禁用载具喇叭", {}, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         AUDIO.SET_HORN_ENABLED(vehicle, false)
     end
 end, function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         AUDIO.SET_HORN_ENABLED(vehicle, true)
     end
 end)
@@ -4862,7 +5024,7 @@ end)
 menu.action(Bodyguard_NPC_manage_all, "删除", {}, "", function()
     for k, ent in pairs(Bodyguard.npc.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
-            entities.delete_by_handle(ent)
+            entities.delete(ent)
         end
     end
     for k, v in pairs(Bodyguard.npc.menu_list) do
@@ -4993,12 +5155,12 @@ end)
 menu.action(Bodyguard_Heli_manage_all, "删除", {}, "", function()
     for k, ent in pairs(Bodyguard.heli.npc_list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
-            entities.delete_by_handle(ent)
+            entities.delete(ent)
         end
     end
     for k, ent in pairs(Bodyguard.heli.list) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
-            entities.delete_by_handle(ent)
+            entities.delete(ent)
         end
     end
     for k, v in pairs(Bodyguard.heli.menu_list) do
@@ -5138,7 +5300,7 @@ menu.toggle_loop(Protect_options, "移除防空区域", {}, "不知有何作用(
 end)
 menu.toggle_loop(Protect_options, "移除载具上的黏弹", {}, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= 0 then
+    if vehicle ~= INVALID_GUID then
         NETWORK.REMOVE_ALL_STICKY_BOMBS_FROM_ENTITY(vehicle)
     end
 end)
@@ -5302,6 +5464,9 @@ function map_all_blip.generate_menu(menu_parent, blip)
     ----- 标记点设置 -----
     local blip_setting = menu.list(menu_parent, "标记点设置", {}, "")
 
+    menu.toggle(blip_setting, "Flashs", {}, "", function(toggle)
+        HUD.SET_BLIP_FLASHES(blip, toggle)
+    end, HUD.IS_BLIP_FLASHING(blip))
     menu.click_slider(blip_setting, "Set Sprite", { "set_blip" .. sprite .. "sprite" }, "", 0, 826, sprite, 1,
         function(value)
             HUD.SET_BLIP_SPRITE(blip, value)
@@ -5315,15 +5480,12 @@ function map_all_blip.generate_menu(menu_parent, blip)
         HUD.GET_BLIP_INFO_ID_DISPLAY(blip) + 1, function(value)
             HUD.SET_BLIP_DISPLAY(blip, value - 1)
         end)
-    menu.toggle(blip_setting, "Flashs", {}, "", function(toggle)
-        HUD.SET_BLIP_FLASHES(blip, toggle)
-    end, HUD.IS_BLIP_FLASHING(blip))
     menu.toggle(blip_setting, "Set As Short Range", {},
         "Sets whether or not the specified blip should only be displayed when nearby, or on the minimap.",
         function(toggle)
             HUD.SET_BLIP_AS_SHORT_RANGE(blip, toggle)
         end, HUD.IS_BLIP_SHORT_RANGE(blip))
-    menu.slider_text(blip_setting, "Set Friendly", {}, "", { "Friendly", "Enemy" }, function(value)
+    menu.textslider_stateful(blip_setting, "Set Friendly", {}, "", { "Friendly", "Enemy" }, function(value)
         local toggle = true
         if value == 2 then
             toggle = false
@@ -5405,11 +5567,11 @@ menu.action(All_Blip_On_Map, "获取地图显示的全部标记点", {}, "重复
     function()
         map_all_blip.init_list_data()
 
-        for i = 0, 826, 1 do
+        for i = 0, 866, 1 do
             -- local blip = HUD.GET_FIRST_BLIP_INFO_ID(i)
             local blip = HUD.GET_CLOSEST_BLIP_INFO_ID(i)
             if HUD.DOES_BLIP_EXIST(blip) then
-                local blip_name = All_Blips[i + 1]
+                local blip_name = All_Blips[i + 1] or ""
                 local blip_type = GET_BLIP_TYPE(blip)
 
                 -- menu.list

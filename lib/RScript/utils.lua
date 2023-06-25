@@ -1,3 +1,4 @@
+--- 菜单
 rs_menu = {}
 
 rs_menu.weapon_list = {
@@ -140,6 +141,11 @@ function rs_menu.delete_menu_list(menu_list)
     end
 end
 
+----------------
+----------------
+----------------
+
+--- 内存
 memory_utils = {}
 
 --- @param blip Blip

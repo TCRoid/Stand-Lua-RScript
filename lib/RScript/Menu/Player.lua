@@ -143,7 +143,7 @@ local Player_options = function(pid)
         end
     end, function()
         if ENTITY.DOES_ENTITY_EXIST(trace_kosatka) then
-            entities.delete_by_handle(trace_kosatka)
+            entities.delete(trace_kosatka)
         end
     end)
 

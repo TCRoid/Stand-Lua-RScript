@@ -667,7 +667,7 @@ end)
 menu.action(Fun_options, "在动画中摧毁载具", { "explode_veh_cutscence" }, "当前载具或上一辆载具",
     function()
         local vehicle = entities.get_user_vehicle_as_handle()
-        if vehicle ~= 0 then
+        if vehicle ~= INVALID_GUID then
             RequestControl(vehicle)
             VEHICLE.EXPLODE_VEHICLE_IN_CUTSCENE(vehicle)
         end

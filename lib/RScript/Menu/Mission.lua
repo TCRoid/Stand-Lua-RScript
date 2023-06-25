@@ -1461,7 +1461,6 @@ doomsday_preps_deluxo_menu = menu.list_action(Mission_Assistant_Doomsday_Preps, 
 menu.action(Mission_Assistant_Doomsday_Preps, "德罗索：当前载具 随机主色调", {},
     "无需去改车王改装\n基于Stand命令", function()
         if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-            local vehicle = entities.get_user_vehicle_as_handle()
             local colour = get_random_colour()
             menu.trigger_commands("vehprimaryred " .. colour.r)
             menu.trigger_commands("vehprimarygreen " .. colour.g)

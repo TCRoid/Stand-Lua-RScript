@@ -61,7 +61,7 @@ menu.action(Entity_Quick_Ped, "删除", { "delete_ped" }, "", function()
             end
 
             if ped ~= nil then
-                entities.delete_by_handle(ped)
+                entities.delete(ped)
             end
         end
     end
@@ -119,7 +119,7 @@ menu.toggle_loop(Entity_Quick_Ped, "删除", { "delete_cop" }, "", function()
     for _, ent in pairs(entities.get_all_peds_as_handles()) do
         local hash = ENTITY.GET_ENTITY_MODEL(ent)
         if hash == 1581098148 or hash == -1320879687 or hash == -1920001264 then
-            entities.delete_by_handle(ent)
+            entities.delete(ent)
         end
     end
 end)
@@ -290,7 +290,7 @@ menu.action(Entity_Quick_Object, "删除", { "delete_cam" }, "", function()
         local EntityModel = ENTITY.GET_ENTITY_MODEL(ent)
         for i = 1, #Cams do
             if EntityModel == Cams[i] then
-                entities.delete_by_handle(ent)
+                entities.delete(ent)
             end
         end
     end
@@ -334,7 +334,7 @@ menu.action(Entity_Quick_Object, "删除门", { "delete_perico_door" }, "", func
         local EntityModel = ENTITY.GET_ENTITY_MODEL(ent)
         for i = 1, #Perico_Doors do
             if EntityModel == Perico_Doors[i] then
-                entities.delete_by_handle(ent)
+                entities.delete(ent)
             end
         end
     end
@@ -1426,7 +1426,7 @@ menu.slider_float(Nearby_Ped_Trolling_options, "强度", { "nearby_ped_forcefiel
 , function(value)
     control_nearby_ped.data.force_field.strength = value * 0.01
 end)
-menu.slider_text(Nearby_Ped_Trolling_options, "方向", {}, "", { "推开", "拉进" }, function(value)
+menu.textslider_stateful(Nearby_Ped_Trolling_options, "方向", {}, "", { "推开", "拉进" }, function(value)
     control_nearby_ped.data.force_field.direction = value
 end)
 menu.toggle(Nearby_Ped_Trolling_options, "摔倒", {}, "", function(toggle)
@@ -3438,7 +3438,7 @@ menu.action(Contract_Dre, "上流社会泄密：干掉飞行员", {}, "快速进
         local entity_list = get_entities_by_hash("ped", true, -413447396)
         if next(entity_list) ~= nil then
             for k, ent in pairs(entity_list) do
-                entities.delete_by_handle(ent)
+                entities.delete(ent)
             end
         end
     end)
@@ -4163,7 +4163,7 @@ menu.action(LS_Robbery_TBC, "删除 银行金库铁门", {}, "", function()
     local entity_list = get_entities_by_hash("object", false, -1591004109)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
-            entities.delete_by_handle(ent)
+            entities.delete(ent)
         end
     end
 end)

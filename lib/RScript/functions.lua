@@ -267,7 +267,7 @@ function TP_INTO_VEHICLE(vehicle, door, driver)
                 local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(vehicle, 0.0, 5.0, 3.0)
                 SET_ENTITY_COORDS(ped, coords)
             elseif driver == "delete" then
-                entities.delete_by_handle(ped)
+                entities.delete(ped)
             end
         end
         --tp into
@@ -1396,6 +1396,23 @@ end
 -- Weapon Functions
 -----------------------------
 
+---获取Ped当前使用的武器或载具武器的Hash
+---@param ped Ped
+---@return Hash
+function get_ped_current_weapon(ped)
+    local weaponHash = 0
+    if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
+        local ptr = memory.alloc_int()
+        if WEAPON.GET_CURRENT_PED_WEAPON(ped, ptr, true) then
+            weaponHash = memory.read_int(ptr)
+        end
+        if WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(ped, ptr) then
+            weaponHash = memory.read_int(ptr)
+        end
+    end
+    return weaponHash
+end
+
 ---获取Ped当前的武器Hash
 ---@param ped Ped
 ---@return Hash
@@ -1403,8 +1420,9 @@ function get_ped_weapon(ped)
     local weaponHash = 0
     if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
         local ptr = memory.alloc_int()
-        WEAPON.GET_CURRENT_PED_WEAPON(ped, ptr, true)
-        weaponHash = memory.read_int(ptr)
+        if WEAPON.GET_CURRENT_PED_WEAPON(ped, ptr, true) then
+            weaponHash = memory.read_int(ptr)
+        end
     end
     return weaponHash
 end
