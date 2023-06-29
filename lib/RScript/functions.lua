@@ -587,7 +587,7 @@ end
 function set_entity_godmode(ent, toggle)
     ENTITY.SET_ENTITY_INVINCIBLE(ent, toggle)
     ENTITY.SET_ENTITY_PROOFS(ent, toggle, toggle, toggle, toggle, toggle, toggle, toggle, toggle)
-    ENTITY.SET_ENTITY_CAN_BE_DAMAGED(ent, toggle)
+    ENTITY.SET_ENTITY_CAN_BE_DAMAGED(ent, not toggle)
 end
 
 ---@param entity Entity
@@ -1406,7 +1406,7 @@ function get_ped_current_weapon(ped)
         if WEAPON.GET_CURRENT_PED_WEAPON(ped, ptr, true) then
             weaponHash = memory.read_int(ptr)
         end
-        if WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(ped, ptr) then
+        if weaponHash == 0 and WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(ped, ptr) then
             weaponHash = memory.read_int(ptr)
         end
     end
@@ -1439,6 +1439,20 @@ function get_ped_vehicle_weapon(ped)
         end
     end
     return weaponHash
+end
+
+---通过武器Hash获取武器名称
+---@param weaponHash Hash
+---@return string
+function get_weapon_name_by_hash(weaponHash)
+    if WEAPON.IS_WEAPON_VALID(weaponHash) then
+        for _, item in pairs(util.get_weapons()) do
+            if item.hash == weaponHash then
+                return util.get_label_text(item.label_key)
+            end
+        end
+    end
+    return ""
 end
 
 -----------------------------

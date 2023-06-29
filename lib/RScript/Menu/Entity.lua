@@ -1911,11 +1911,6 @@ end)
 local Nearby_Area_Clear = menu.list(Nearby_Area_options, "清理区域", {}, "MISC::CLEAR_AREA")
 
 local cls_broadcast = false
-menu.toggle(Nearby_Area_Clear, "同步到其它玩家", { "cls_broadcast" }, "", function(toggle)
-    cls_broadcast = toggle
-    util.toast("清理区域 网络同步: " .. tostring(cls_broadcast))
-end)
-menu.divider(Nearby_Area_Clear, "选项")
 menu.toggle_loop(Nearby_Area_Clear, "清理区域", { "cls_area" }, "清理区域内所有东西", function()
     local coords = ENTITY.GET_ENTITY_COORDS(PLAYER.PLAYER_PED_ID())
     MISC.CLEAR_AREA(coords.x, coords.y, coords.z, nearby_area.radius, true, false, false, cls_broadcast)
@@ -1941,6 +1936,11 @@ menu.toggle_loop(Nearby_Area_Clear, "清理投掷物", { "cls_proj" }, "清理�
 , function()
     local coords = ENTITY.GET_ENTITY_COORDS(PLAYER.PLAYER_PED_ID())
     MISC.CLEAR_AREA_OF_PROJECTILES(coords.x, coords.y, coords.z, nearby_area.radius, cls_broadcast)
+end)
+menu.divider(Nearby_Area_Clear, "设置")
+menu.toggle(Nearby_Area_Clear, "同步到其它玩家", { "cls_broadcast" }, "", function(toggle)
+    cls_broadcast = toggle
+    util.toast("清理区域 网络同步: " .. tostring(cls_broadcast))
 end)
 
 
@@ -5344,6 +5344,14 @@ function Entity_Info.entity_info(entity)
             info = { "Short Range", "False" }
         end
         table.insert(entity_info.blip, info)
+
+        -- Scale
+        local blip_scale_x, blip_scale_y = memory_utils.get_blip_scale_2d(blip)
+        info = { "Blip Scale X", blip_scale_x }
+        table.insert(entity_info.blip, info)
+
+        info = { "Blip Scale Y", blip_scale_y }
+        table.insert(entity_info.blip, info)
     end
 
 
@@ -5474,7 +5482,7 @@ function Entity_Info.ped_info(ped)
 
     -- Player Relationship Group Hash
     local my_rel_group_hash = PED.GET_PED_RELATIONSHIP_GROUP_HASH(players.user_ped())
-    info = { "Player Relationship Group Hash", rel_group_hash }
+    info = { "Player Relationship Group Hash", my_rel_group_hash }
     table.insert(ped_info.rel_group, info)
 
     -- Group Relationship
