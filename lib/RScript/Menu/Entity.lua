@@ -4409,8 +4409,51 @@ menu.action(Air_Freight, "货物(载具) 传送到我", {}, "", function()
         end
     end
 end)
+menu.action(Air_Freight, "陆地货物 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("pickup", true, -204239524, 2085196638)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            if ENTITY.IS_ENTITY_ATTACHED(ent) then
+                local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
+                entities.delete(attached_ent)
+                util.yield(500)
+            end
+            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+        end
+    else
+        util.toast("No Air Product Found")
+    end
+end)
 
-menu.action(Air_Freight, "毁掉 泰坦号", {}, "", function()
+menu.divider(Air_Freight, "")
+menu.action(Air_Freight, "陆地：炸掉发电机", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, 209668540)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            local coords = ENTITY.GET_ENTITY_COORDS(ent)
+            coords.z = coords.z + 1.0
+            add_owned_explosion(players.user_ped(), coords, 4)
+        end
+    end
+end)
+menu.action(Air_Freight, "陆地：传送到 释放开关", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, 162166615)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.0, -0.5, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
+        end
+    end
+end)
+menu.action(Air_Freight, "陆地：传送进 阿维萨", {}, "然后再传送到货物", function()
+    local entity_list = get_entities_by_hash("vehicle", true, -1706603682)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            PED.SET_PED_INTO_VEHICLE(players.user_ped(), ent, -1)
+        end
+    end
+end)
+menu.action(Air_Freight, "航空：毁掉泰坦号", {}, "直接任务失败", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1981688531)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -4442,6 +4485,16 @@ menu.action(Air_Freight, "爆炸 所有敌对物体", { "obj_hostile_explode" },
         if IS_HOSTILE_ENTITY(object) then
             local coords = ENTITY.GET_ENTITY_COORDS(object)
             add_owned_explosion(players.user_ped(), coords, 4, { isAudible = false })
+        end
+    end
+end)
+
+menu.action(Air_Freight, "传送到 鲁斯特", {}, "让他去拉货", function()
+    local entity_list = get_entities_by_hash("ped", true, 2086307585)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.0, 1.0, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent, 180.0)
         end
     end
 end)
