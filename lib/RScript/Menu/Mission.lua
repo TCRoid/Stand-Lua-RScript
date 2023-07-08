@@ -11,7 +11,6 @@ local Mission_options = menu.list(menu.my_root(), "任务选项", {}, "")
 ---------------------
 local Heist_Cut_Editor = menu.list(Mission_options, "抢劫分红编辑", {}, "")
 
-local cut_global_base = 1978495 + 825 + 56
 local HeistCut = {
     ListItem = {
         { "佩里科岛" },
@@ -23,7 +22,10 @@ local HeistCut = {
         1971696 + 2325,
         1967630 + 812 + 50,
     },
+    NonHost = 2684820 + 6606,
 }
+
+local cut_global_base = HeistCut.ValueList[1]
 menu.list_select(Heist_Cut_Editor, "当前抢劫", {}, "", HeistCut.ListItem, 1, function(value)
     cut_global_base = HeistCut.ValueList[value]
 end)
@@ -40,6 +42,11 @@ end)
 menu.click_slider(Heist_Cut_Editor, "玩家4", { "cut4edit" }, "", 0, 300, 85, 5, function(value)
     SET_INT_GLOBAL(cut_global_base + 4, value)
 end)
+menu.divider(Heist_Cut_Editor, "")
+menu.click_slider(Heist_Cut_Editor, "自己 (非主机)", { "cutmyselfedit" }, "", 0, 300, 85, 5, function(value)
+    SET_INT_GLOBAL(HeistCut.NonHost, value)
+end)
+
 
 
 
@@ -1660,8 +1667,8 @@ menu.action(Mission_options, "跳过破解", { "skip_hacking" }, "所有的破�
         SET_INT_LOCAL(script, 1266 + 135, 3) -- For ACT III
 
         -- Fleeca Heist
-        -- SET_INT_LOCAL(script, 11757 + 24, 7)     -- Skip The Hacking Process
-        -- SET_FLOAT_LOCAL(script, 10058 + 11, 100) -- Skip Drilling
+        SET_INT_LOCAL(script, 11760 + 24, 7)     -- Skip The Hacking Process
+        SET_FLOAT_LOCAL(script, 10061 + 11, 100) -- Skip Drilling
 
         -- Pacific Standard Heist
         SET_LOCAL_BIT(script, 9767, 9) -- Skip The Hacking Process

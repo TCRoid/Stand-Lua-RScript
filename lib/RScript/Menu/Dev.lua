@@ -22,6 +22,29 @@ menu.action(Dev_options, "Clear Player Ped Tasks", { "clstask" }, "", function()
     TASK.TASK_CLEAR_DEFENSIVE_AREA(ped)
     TASK.CLEAR_DRIVEBY_TASK_UNDERNEATH_DRIVING_TASK(ped)
 end)
+menu.action(Dev_options, "Get Interior ID", { "getinteriorid" }, "", function()
+    if INTERIOR.IS_INTERIOR_SCENE() then
+        local text = ""
+        local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+        local interior = INTERIOR.GET_INTERIOR_AT_COORDS(coords.x, coords.y, coords.z)
+        if INTERIOR.IS_VALID_INTERIOR(interior) then
+            text = text .. "Interior ID: " .. interior
+        end
+
+        local interior2 = INTERIOR.GET_INTERIOR_FROM_PRIMARY_VIEW()
+        if INTERIOR.IS_VALID_INTERIOR(interior2) and interior2 ~= interior then
+            text = text .. "\nInterior ID 2: " .. interior2
+        end
+
+        local interior3 = INTERIOR.GET_INTERIOR_FROM_ENTITY(players.user_ped())
+        if INTERIOR.IS_VALID_INTERIOR(interior3) and interior3 ~= interior then
+            text = text .. "\nInterior ID 3: " .. interior3
+        end
+
+        util.toast(text)
+    end
+end)
+
 menu.action(Dev_options, "GET_PICKUP_GENERATION_RANGE_MULTIPLIER", {}, "", function()
     util.toast(OBJECT.GET_PICKUP_GENERATION_RANGE_MULTIPLIER())
 end)
@@ -104,4 +127,3 @@ menu.toggle_loop(Dev_options, "Event Network Entity Damage", {}, "", function()
         end
     end
 end)
-

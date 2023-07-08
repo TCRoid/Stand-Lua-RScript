@@ -479,7 +479,7 @@ local ent_quick_pickup = {
     },
     -- 连线显示
     draw_line = {
-        draw_ar = false,
+        draw_ar = true,
         draw_distance = false,
     },
     screen_x = memory.alloc(8),
@@ -562,6 +562,7 @@ function ent_quick_pickup.generate_command(ent, menu_parent, index)
     menu.on_tick_in_viewport(menu_teleport, function()
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             DRAW_LINE_TO_ENTITY(ent)
+            util.draw_ar_beacon(ENTITY.GET_ENTITY_COORDS(ent))
         end
     end)
 end
@@ -696,7 +697,7 @@ end)
 menu.divider(ent_quick_pickup.menu_draw_line, "设置")
 menu.toggle(ent_quick_pickup.menu_draw_line, "绘制灯塔", {}, "", function(toggle)
     ent_quick_pickup.draw_line.draw_ar = toggle
-end)
+end, true)
 menu.toggle(ent_quick_pickup.menu_draw_line, "绘制距离", {}, "", function(toggle)
     ent_quick_pickup.draw_line.draw_distance = toggle
 end)
@@ -4501,6 +4502,211 @@ end)
 
 --#endregion Air Freight
 
+--#region LSA Operations
+
+------- LSA行动 -------
+local LSA_Operations = menu.list(Mission_Entity, "LSA行动", {}, "")
+
+------
+local LSA_Direct_Action = menu.list(LSA_Operations, "直接行动", {}, "")
+
+menu.action(LSA_Direct_Action, "传送到 集装箱", {}, "有图拉尔多的集装箱", function()
+    local entity_list = get_entities_by_hash("vehicle", true, 1455990255)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.0, 4.0, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent, 180.0)
+            set_entity_godmode(ent, true)
+            VEHICLE.SET_VEHICLE_ENGINE_ON(ent, true, true, false)
+        end
+    end
+end)
+menu.divider(LSA_Direct_Action, "附加行动")
+menu.action(LSA_Direct_Action, "传送进 雷兽", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, 239897677)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            set_entity_godmode(ent, true)
+            TP_INTO_VEHICLE(ent)
+        end
+    end
+end)
+menu.action(LSA_Direct_Action, "爆炸 防空系统", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, -888936273)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            local coords = ENTITY.GET_ENTITY_COORDS(ent)
+            add_owned_explosion(players.user_ped(), coords, 4)
+        end
+    end
+end)
+menu.action(LSA_Direct_Action, "传送到 鲁斯特机库", {}, "", function()
+    local blip = HUD.GET_NEXT_BLIP_INFO_ID(359)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        TELEPORT(-1254.44189, -3355.82641, 15.155522, 150.995437)
+    end
+end)
+local LSA_Direct_Action_box = {}
+menu.textslider(LSA_Direct_Action, "传送到 梅利威瑟箱子", {}, "放置追踪器",
+    { "获取", "1", "2", "3" }, function(value)
+        if value == 1 then
+            local entity_list = get_entities_by_hash("object", true, 238227635)
+            if next(entity_list) ~= nil then
+                LSA_Direct_Action_box = entity_list
+                util.toast("完成！")
+            end
+        else
+            local ent = LSA_Direct_Action_box[value - 1]
+            if ent ~= nil and ENTITY.DOES_ENTITY_EXIST(ent) then
+                TP_TO_ENTITY(ent, 1.5, 0.0, 0.0)
+                SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent, 90.0)
+            end
+        end
+    end)
+
+------
+local LSA_Surgical_Strike = menu.list(LSA_Operations, "外科手术式攻击", {}, "")
+menu.action(LSA_Surgical_Strike, "走私犯 传送到我", {}, "会传送到空中然后摔死", function()
+    local entity_list = get_entities_by_hash("ped", true, 664399832)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ME(ent, 0.0, 2.0, 10.0)
+        end
+    end
+end)
+menu.action(LSA_Surgical_Strike, "信号弹标记货物", {}, "标记3个货物", function()
+    local entity_list = get_entities_by_hash("object", true, -1297668303, 2104596125, -899949922)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            local pos = ENTITY.GET_ENTITY_COORDS(ent)
+            MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(pos.x, pos.y, pos.z + 0.2,
+                pos.x, pos.y, pos.z,
+                1000,
+                false,
+                1198879012, -- WEAPON_FLAREGUN
+                players.user_ped(),
+                true, true, 1000.0)
+        end
+    end
+end)
+menu.click_slider(LSA_Surgical_Strike, "传送到 货物", {}, "放置追踪器",
+    1, 3, 1, 1, function(value)
+        local data = {
+            { hash = -1297668303, offset_y = -1.0, heading = 0 },
+            { hash = 2104596125,  offset_y = 2.5,  heading = 180 },
+            { hash = -899949922,  offset_y = 1.5,  heading = 180 },
+        }
+
+        local entity_list = get_entities_by_hash("object", true, data[value].hash)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                TP_TO_ENTITY(ent, 0.0, data[value].offset_y, 0.8)
+                SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent, data[value].heading)
+            end
+        end
+    end)
+menu.action(LSA_Surgical_Strike, "HVY威胁者 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, 2044532910)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_VEHICLE_TO_ME(ent, "", "delete")
+        end
+    end
+end)
+menu.divider(LSA_Surgical_Strike, "附加行动")
+menu.action(LSA_Surgical_Strike, "夜鲨 传送到我", {}, "偷取梅利威瑟套装", function()
+    local entity_list = get_entities_by_hash("vehicle", true, 433954513)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_VEHICLE_TO_ME(ent)
+        end
+    end
+end)
+menu.action(LSA_Surgical_Strike, "传送到 蓝图", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, 705213476)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.0, 0.0, 0.5)
+        end
+    end
+end)
+menu.action(LSA_Surgical_Strike, "传送到 工艺品", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, 1468594282)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.0, 0.0, 0.5)
+        end
+    end
+end)
+
+------
+local LSA_Whistleblower = menu.list(LSA_Operations, "告密者", {}, "")
+
+menu.action(LSA_Whistleblower, "传送进 运兵直升机", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, 1621617168)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            set_entity_godmode(ent, true)
+            TP_INTO_VEHICLE(ent)
+            VEHICLE.SET_HELI_BLADES_FULL_SPEED(ent)
+        end
+    end
+end)
+menu.action(LSA_Whistleblower, "电磁脉冲 传送到直升机挂钩位置", {}, "运兵直升机提前放下吊钩",
+    function()
+        local entity_list = get_entities_by_hash("object", true, 256023367)
+        if next(entity_list) ~= nil then
+            local veh = GET_VEHICLE_PED_IS_IN(players.user_ped())
+            if veh ~= 0 and VEHICLE.DOES_CARGOBOB_HAVE_PICK_UP_ROPE(veh) then
+                local pos = VEHICLE.GET_ATTACHED_PICK_UP_HOOK_POSITION(veh)
+                for k, ent in pairs(entity_list) do
+                    pos.z = pos.z + 1.0
+                    SET_ENTITY_COORDS(ent, pos)
+                end
+            end
+        end
+    end)
+menu.click_slider(LSA_Whistleblower, "传送到 硬盘", {}, "", 1, 3, 1, 1, function(value)
+    if INTERIOR.IS_INTERIOR_SCENE() and INTERIOR.GET_INTERIOR_FROM_ENTITY(players.user_ped()) == 270081 then
+        local data = {
+            { coords = { x = 2059.83105, y = 2992.87133, z = -67.701660 }, heading = 91.0812683 },
+            { coords = { x = 2064.04785, y = 2998.16528, z = -67.701675 }, heading = 45.7618637 },
+            { coords = { x = 2073.84204, y = 2991.28125, z = -67.701660 }, heading = 290.621582 },
+        }
+        TELEPORT2(data[value].coords, data[value].heading)
+    end
+end)
+menu.divider(LSA_Whistleblower, "附加行动")
+menu.action(LSA_Whistleblower, "爆炸 备用发电机", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, 440559194)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            local coords = ENTITY.GET_ENTITY_COORDS(ent)
+            add_owned_explosion(players.user_ped(), coords, 4)
+        end
+    end
+end)
+menu.action(LSA_Whistleblower, "传送到 服务器主机", {}, "上传病毒", function()
+    local entity_list = get_entities_by_hash("object", true, -1449766933)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.8, -1.0, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
+        end
+    end
+end)
+menu.action(LSA_Whistleblower, "传送到 案件卷宗", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, -2135102209)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.0, 0.0, 0.5)
+        end
+    end
+end)
+
+--#endregion LSA Operations
+
+
 --#region Other
 
 ------- 其它 -------
@@ -4584,6 +4790,8 @@ menu.action(Mission_Entity_other, "通知 藏匿屋密码", { "stash_house_code"
 end)
 
 --#endregion Other
+
+
 
 
 
