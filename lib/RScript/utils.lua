@@ -1,6 +1,10 @@
---- 菜单
+----------------------------
+-------- [[ Menu ]] --------
+----------------------------
+
 rs_menu = {}
 
+--- [[ 武器 ]] ---
 rs_menu.weapon_list = {
     reference = 0,
     menu_name = "",
@@ -110,26 +114,121 @@ function rs_menu.all_weapons_without_melee(menu_parent, menu_name, command_names
 end
 
 --- @param weapon_menu_list CommandRef
+--- @param action_name string
 --- @param on_click function?
 --- @param change_menu_name boolean? [default: false]
-function rs_menu.current_weapon_action(weapon_menu_list, on_click, change_menu_name)
-    local weapon_menu_name = menu.get_menu_name(weapon_menu_list)
+function rs_menu.current_weapon_action(weapon_menu_list, action_name, on_click, change_menu_name)
+    local menu_name = menu.get_menu_name(weapon_menu_list)
+    local menu_children = menu.get_children(weapon_menu_list)
 
-    menu.action(weapon_menu_list, "玩家当前使用的武器", {}, "", function()
+    menu.attach_before(menu_children[1], menu.action(menu.shadow_root(), action_name, {}, "", function()
         if on_click then
             on_click()
         end
 
         if change_menu_name then
-            menu.set_menu_name(weapon_menu_list, weapon_menu_name .. ": 玩家当前使用的武器")
+            menu.set_menu_name(weapon_menu_list, menu_name .. ": " .. action_name)
         end
         menu.focus(weapon_menu_list)
-    end)
+    end))
 
     if change_menu_name then
-        menu.set_menu_name(weapon_menu_list, weapon_menu_name .. ": 玩家当前使用的武器")
+        menu.set_menu_name(weapon_menu_list, menu_name .. ": " .. action_name)
     end
 end
+
+--- [[ 载具武器 ]] ---
+rs_menu.vehicle_weapon_list = {
+    reference = 0,
+    menu_name = "",
+    command_names = {},
+    help_text = "",
+    on_click = nil,
+    change_menu_name = false,
+}
+rs_menu.vehicle_weapon_list.__index = rs_menu.vehicle_weapon_list
+
+function rs_menu.vehicle_weapon_list:create_class_list()
+    local class_menu = {}
+    local class_list = { 0, 1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 14, 15, 16, 18, 19, 20 }
+
+    for _, id in pairs(class_list) do
+        local name = util.get_label_text("VEH_CLASS_" .. id)
+        class_menu[id] = menu.list(self.reference, name, {}, "")
+    end
+
+    return class_menu
+end
+
+function rs_menu.vehicle_weapon_list:add_action(item)
+    -- Vehicle List
+    if self.vehicle_menu[item.vehicle_model] == nil then
+        local menu_parent = self.class[item.class_id]
+        local vehicle_name = util.get_label_text(item.display_name_label)
+
+        local command_names = {}
+        if next(self.command_names) ~= nil then
+            command_names = { self.command_names[1] .. item.vehicle_model }
+        end
+
+        self.vehicle_menu[item.vehicle_model] = menu.list(menu_parent, vehicle_name, command_names, "")
+    end
+    local vehicle_menu = self.vehicle_menu[item.vehicle_model]
+
+    -- Vehicle Weapon Action
+    local weapon_name = ""
+    if item.weapon_label ~= "" then
+        weapon_name = util.get_label_text(item.weapon_label)
+    else
+        weapon_name = string.gsub(item.weapon_model, "VEHICLE_WEAPON_", "")
+    end
+
+    local command_names = {}
+    if next(self.command_names) ~= nil then
+        command_names = { self.command_names[1] .. weapon_name }
+    end
+
+    menu.action(vehicle_menu, weapon_name, command_names, "", function(click_type)
+        if self.change_menu_name then
+            local menu_new_name = string.format("%s: %s", self.menu_name, weapon_name)
+            menu.set_menu_name(self.reference, menu_new_name)
+        end
+
+        if click_type == CLICK_MENU then menu.focus(self.reference) end
+
+        local weapon_hash = util.joaat(item.weapon_model)
+        if self.on_click then self.on_click(weapon_hash, item.weapon_model) end
+    end)
+end
+
+--- Your on_click function will be called with hash and model.
+--- @param menu_parent CommandRef
+--- @param menu_name string
+--- @param command_names table<any, string>
+--- @param help_text string
+--- @param on_click function?
+--- @param change_menu_name boolean? [default: false]
+--- @return CommandRef|CommandUniqPtr
+function rs_menu.vehicle_weapons(menu_parent, menu_name, command_names, help_text, on_click, change_menu_name)
+    local self = setmetatable({}, rs_menu.vehicle_weapon_list)
+
+    self.menu_name = menu_name
+    self.command_names = command_names
+    self.help_text = help_text
+    self.on_click = on_click
+    self.change_menu_name = change_menu_name
+    self.reference = menu.list(menu_parent, menu_name, command_names, help_text)
+    self.class = self:create_class_list()
+    self.vehicle_menu = {}
+
+    for key, item in pairs(VehicleWeapons) do
+        self:add_action(item)
+    end
+
+    return self.reference
+end
+
+--- [[ 其它 ]] ---
 
 --- 删除 menu list (table)
 --- @param menu_list table<int, CommandRef>
@@ -141,11 +240,10 @@ function rs_menu.delete_menu_list(menu_list)
     end
 end
 
-----------------
-----------------
-----------------
+------------------------------
+-------- [[ Memory ]] --------
+------------------------------
 
---- 内存
 memory_utils = {}
 
 --- @param blip Blip

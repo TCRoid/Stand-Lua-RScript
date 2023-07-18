@@ -1542,37 +1542,1714 @@ ExplosionType_ListItem = {
 
 
 -- 载具武器
-local VehicleWeapons = {
-    -- { model_name, label_key }
-    { "VEHICLE_WEAPON_TANK",                 "WT_V_TANK" },
-    { "VEHICLE_WEAPON_SPACE_ROCKET",         "WT_V_PLANEMSL" },
-    { "VEHICLE_WEAPON_PLANE_ROCKET",         "WT_V_PLANEMSL" },
-    { "VEHICLE_WEAPON_PLAYER_LASER",         "WT_V_PLRLSR" },
-    { "VEHICLE_WEAPON_PLAYER_BULLET",        "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_PLAYER_BUZZARD",       "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_PLAYER_HUNTER",        "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_PLAYER_LAZER",         "WT_V_LZRCAN" },
-    { "VEHICLE_WEAPON_ENEMY_LASER",          "WT_A_ENMYLSR" },
-    { "VEHICLE_WEAPON_TURRET_INSURGENT",     "WT_V_TURRET" },
-    { "VEHICLE_WEAPON_TURRET_TECHNICAL",     "WT_V_TURRET" },
-    { "VEHICLE_WEAPON_NOSE_TURRET_VALKYRIE", "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_TURRET_VALKYRIE",      "WT_V_TURRET" },
-    { "VEHICLE_WEAPON_PLAYER_SAVAGE",        "WT_V_LZRCAN" },
-    { "VEHICLE_WEAPON_TURRET_LIMO",          "WT_V_TURRET" },
-    { "VEHICLE_WEAPON_TURRET_BOXVILLE",      "WT_V_TURRET" },
-    { "VEHICLE_WEAPON_CANNON_BLAZER",        "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_RUINER_BULLET",        "WT_V_PLRBUL" },
-    { "VEHICLE_WEAPON_RUINER_ROCKET",        "WT_V_PLANEMSL" },
+-- weapon_model, weapon_label, display_name_label, class_id, vehicle_model
+VehicleWeapons = {
+    {
+        weapon_model = "VEHICLE_WEAPON_AKULA_TURRET_SINGLE",
+        weapon_label = "",
+        display_name_label = "akula",
+        class_id = 15,
+        vehicle_model = "akula"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AKULA_MISSILE",
+        weapon_label = "",
+        display_name_label = "akula",
+        class_id = 15,
+        vehicle_model = "akula"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AKULA_TURRET_DUAL",
+        weapon_label = "",
+        display_name_label = "akula",
+        class_id = 15,
+        vehicle_model = "akula"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AKULA_MINIGUN",
+        weapon_label = "",
+        display_name_label = "akula",
+        class_id = 15,
+        vehicle_model = "akula"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AKULA_BARRAGE",
+        weapon_label = "",
+        display_name_label = "akula",
+        class_id = 15,
+        vehicle_model = "akula"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_PLAYER_BUZZARD",
+        weapon_label = "WT_V_PLRBUL",
+        display_name_label = "ANNIHL",
+        class_id = 15,
+        vehicle_model = "annihilator"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPACE_ROCKET",
+        weapon_label = "WT_V_PLANEMSL",
+        display_name_label = "ANNIHL",
+        class_id = 15,
+        vehicle_model = "annihilator"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ANNIHILATOR2_MINI",
+        weapon_label = "",
+        display_name_label = "ANNIHLATOR2",
+        class_id = 15,
+        vehicle_model = "annihilator2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ANNIHILATOR2_MISSILE",
+        weapon_label = "",
+        display_name_label = "ANNIHLATOR2",
+        class_id = 15,
+        vehicle_model = "annihilator2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ANNIHILATOR2_BARRAGE",
+        weapon_label = "",
+        display_name_label = "ANNIHLATOR2",
+        class_id = 15,
+        vehicle_model = "annihilator2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_APC_CANNON",
+        weapon_label = "",
+        display_name_label = "APC",
+        class_id = 19,
+        vehicle_model = "apc"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_APC_MISSILE",
+        weapon_label = "",
+        display_name_label = "APC",
+        class_id = 19,
+        vehicle_model = "apc"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_APC_MG",
+        weapon_label = "",
+        display_name_label = "APC",
+        class_id = 19,
+        vehicle_model = "apc"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ARDENT_MG",
+        weapon_label = "",
+        display_name_label = "ARDENT",
+        class_id = 5,
+        vehicle_model = "ardent"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AVENGER_CANNON",
+        weapon_label = "",
+        display_name_label = "avenger",
+        class_id = 16,
+        vehicle_model = "avenger"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AVENGER_CANNON",
+        weapon_label = "",
+        display_name_label = "avenger",
+        class_id = 16,
+        vehicle_model = "avenger2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AVENGER_CANNON",
+        weapon_label = "",
+        display_name_label = "avenger3",
+        class_id = 16,
+        vehicle_model = "avenger3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AVENGER3_MINIGUN",
+        weapon_label = "",
+        display_name_label = "avenger3",
+        class_id = 16,
+        vehicle_model = "avenger3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AVENGER3_MISSILE",
+        weapon_label = "",
+        display_name_label = "avenger3",
+        class_id = 16,
+        vehicle_model = "avenger3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AVENGER_CANNON",
+        weapon_label = "",
+        display_name_label = "avenger3",
+        class_id = 16,
+        vehicle_model = "avenger4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AVENGER3_MINIGUN",
+        weapon_label = "",
+        display_name_label = "avenger3",
+        class_id = 16,
+        vehicle_model = "avenger4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_AVENGER3_MISSILE",
+        weapon_label = "",
+        display_name_label = "avenger3",
+        class_id = 16,
+        vehicle_model = "avenger4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BARRAGE_TOP_MG",
+        weapon_label = "",
+        display_name_label = "barrage",
+        class_id = 19,
+        vehicle_model = "barrage"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BARRAGE_TOP_MINIGUN",
+        weapon_label = "",
+        display_name_label = "barrage",
+        class_id = 19,
+        vehicle_model = "barrage"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BARRAGE_REAR_MG",
+        weapon_label = "",
+        display_name_label = "barrage",
+        class_id = 19,
+        vehicle_model = "barrage"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BARRAGE_REAR_MINIGUN",
+        weapon_label = "",
+        display_name_label = "barrage",
+        class_id = 19,
+        vehicle_model = "barrage"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BARRAGE_REAR_GL",
+        weapon_label = "",
+        display_name_label = "barrage",
+        class_id = 19,
+        vehicle_model = "barrage"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_CANNON_BLAZER",
+        weapon_label = "WT_V_PLRBUL",
+        display_name_label = "BLAZER5",
+        class_id = 9,
+        vehicle_model = "blazer5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BOMBUSHKA_DUALMG",
+        weapon_label = "",
+        display_name_label = "BOMBUSHKA",
+        class_id = 16,
+        vehicle_model = "bombushka"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BOMBUSHKA_CANNON",
+        weapon_label = "",
+        display_name_label = "BOMBUSHKA",
+        class_id = 16,
+        vehicle_model = "bombushka"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_BOXVILLE",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "BOXVILLE5",
+        class_id = 12,
+        vehicle_model = "boxville5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BRUISER_50CAL",
+        weapon_label = "",
+        display_name_label = "Bruiser",
+        class_id = 9,
+        vehicle_model = "bruiser"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BRUISER_50CAL",
+        weapon_label = "",
+        display_name_label = "bruiser2",
+        class_id = 9,
+        vehicle_model = "bruiser2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BRUISER2_50CAL_LASER",
+        weapon_label = "",
+        display_name_label = "bruiser2",
+        class_id = 9,
+        vehicle_model = "bruiser2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BRUISER_50CAL",
+        weapon_label = "",
+        display_name_label = "bruiser3",
+        class_id = 9,
+        vehicle_model = "bruiser3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BRUTUS_50CAL",
+        weapon_label = "",
+        display_name_label = "brutus",
+        class_id = 9,
+        vehicle_model = "brutus"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BRUTUS_50CAL",
+        weapon_label = "",
+        display_name_label = "brutus2",
+        class_id = 9,
+        vehicle_model = "brutus2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BRUTUS2_50CAL_LASER",
+        weapon_label = "",
+        display_name_label = "brutus2",
+        class_id = 9,
+        vehicle_model = "brutus2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_BRUTUS_50CAL",
+        weapon_label = "",
+        display_name_label = "brutus3",
+        class_id = 9,
+        vehicle_model = "brutus3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_GRANGER2_MG",
+        weapon_label = "",
+        display_name_label = "BUFFALO4",
+        class_id = 4,
+        vehicle_model = "buffalo4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_PLAYER_BUZZARD",
+        weapon_label = "WT_V_PLRBUL",
+        display_name_label = "buzzard",
+        class_id = 15,
+        vehicle_model = "buzzard"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPACE_ROCKET",
+        weapon_label = "WT_V_PLANEMSL",
+        display_name_label = "buzzard",
+        class_id = 15,
+        vehicle_model = "buzzard"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "buzzard",
+        class_id = 15,
+        vehicle_model = "buzzard"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "buzzard2",
+        class_id = 15,
+        vehicle_model = "Buzzard2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_CARACARA_MG",
+        weapon_label = "",
+        display_name_label = "caracara",
+        class_id = 9,
+        vehicle_model = "caracara"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_CARACARA_MINIGUN",
+        weapon_label = "",
+        display_name_label = "caracara",
+        class_id = 9,
+        vehicle_model = "caracara"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_FLAMETHROWER",
+        weapon_label = "",
+        display_name_label = "cerberus",
+        class_id = 20,
+        vehicle_model = "cerberus"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_FLAMETHROWER_SCIFI",
+        weapon_label = "",
+        display_name_label = "cerberus2",
+        class_id = 20,
+        vehicle_model = "cerberus2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_FLAMETHROWER",
+        weapon_label = "",
+        display_name_label = "cerberus3",
+        class_id = 20,
+        vehicle_model = "cerberus3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_GRANGER2_MG",
+        weapon_label = "",
+        display_name_label = "Champion",
+        class_id = 7,
+        vehicle_model = "champion"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_CHERNO_MISSILE",
+        weapon_label = "",
+        display_name_label = "chernobog",
+        class_id = 19,
+        vehicle_model = "chernobog"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_COMET_MG",
+        weapon_label = "",
+        display_name_label = "comet4",
+        class_id = 6,
+        vehicle_model = "comet4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_CONADA2_MINIGUN",
+        weapon_label = "",
+        display_name_label = "conada2",
+        class_id = 15,
+        vehicle_model = "conada2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_CONADA2_MISSILE",
+        weapon_label = "",
+        display_name_label = "conada2",
+        class_id = 15,
+        vehicle_model = "conada2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "conada2",
+        class_id = 15,
+        vehicle_model = "conada2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DEATHBIKE_DUALMINIGUN",
+        weapon_label = "",
+        display_name_label = "deathbike",
+        class_id = 8,
+        vehicle_model = "deathbike"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DEATHBIKE2_MINIGUN_LASER",
+        weapon_label = "",
+        display_name_label = "deathbike2",
+        class_id = 8,
+        vehicle_model = "deathbike2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DEATHBIKE_DUALMINIGUN",
+        weapon_label = "",
+        display_name_label = "deathbike3",
+        class_id = 8,
+        vehicle_model = "deathbike3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_GRANGER2_MG",
+        weapon_label = "",
+        display_name_label = "DEITY",
+        class_id = 1,
+        vehicle_model = "deity"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DELUXO_MG",
+        weapon_label = "",
+        display_name_label = "deluxo",
+        class_id = 5,
+        vehicle_model = "deluxo"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DELUXO_MISSILE",
+        weapon_label = "",
+        display_name_label = "deluxo",
+        class_id = 5,
+        vehicle_model = "deluxo"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "DINGHY",
+        class_id = 14,
+        vehicle_model = "Dinghy"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "DINGHY",
+        class_id = 14,
+        vehicle_model = "dinghy2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "DINGHY",
+        class_id = 14,
+        vehicle_model = "dinghy3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "DINGHY",
+        class_id = 14,
+        vehicle_model = "dinghy4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_DINGHY5_50CAL",
+        weapon_label = "",
+        display_name_label = "dinghy5",
+        class_id = 14,
+        vehicle_model = "dinghy5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOMINATOR4_50CAL",
+        weapon_label = "",
+        display_name_label = "dominator4",
+        class_id = 4,
+        vehicle_model = "dominator4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOMINATOR4_50CAL",
+        weapon_label = "",
+        display_name_label = "dominator5",
+        class_id = 4,
+        vehicle_model = "dominator5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOMINATOR5_50CAL_LASER",
+        weapon_label = "",
+        display_name_label = "dominator5",
+        class_id = 4,
+        vehicle_model = "dominator5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOMINATOR4_50CAL",
+        weapon_label = "",
+        display_name_label = "dominator6",
+        class_id = 4,
+        vehicle_model = "dominator6"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DUNE_MG",
+        weapon_label = "",
+        display_name_label = "DUNE3",
+        class_id = 9,
+        vehicle_model = "dune3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DUNE_GRENADELAUNCHER",
+        weapon_label = "",
+        display_name_label = "DUNE3",
+        class_id = 9,
+        vehicle_model = "dune3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DUNE_MINIGUN",
+        weapon_label = "",
+        display_name_label = "DUNE3",
+        class_id = 9,
+        vehicle_model = "dune3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_WATER_CANNON",
+        weapon_label = "",
+        display_name_label = "firetruk",
+        class_id = 18,
+        vehicle_model = "firetruk"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "frogger",
+        class_id = 15,
+        vehicle_model = "Frogger"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "frogger",
+        class_id = 15,
+        vehicle_model = "frogger2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_GRANGER2_MG",
+        weapon_label = "",
+        display_name_label = "GRANGER2",
+        class_id = 2,
+        vehicle_model = "granger2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_HALFTRACK_DUALMG",
+        weapon_label = "",
+        display_name_label = "HALFTRACK",
+        class_id = 19,
+        vehicle_model = "halftrack"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_HALFTRACK_QUADMG",
+        weapon_label = "",
+        display_name_label = "HALFTRACK",
+        class_id = 19,
+        vehicle_model = "halftrack"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_HAVOK_MINIGUN",
+        weapon_label = "",
+        display_name_label = "HAVOK",
+        class_id = 15,
+        vehicle_model = "havok"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_HUNTER_MG",
+        weapon_label = "",
+        display_name_label = "Hunter",
+        class_id = 15,
+        vehicle_model = "hunter"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_HUNTER_MISSILE",
+        weapon_label = "",
+        display_name_label = "Hunter",
+        class_id = 15,
+        vehicle_model = "hunter"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_HUNTER_CANNON",
+        weapon_label = "",
+        display_name_label = "Hunter",
+        class_id = 15,
+        vehicle_model = "hunter"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_HUNTER_BARRAGE",
+        weapon_label = "",
+        display_name_label = "Hunter",
+        class_id = 15,
+        vehicle_model = "hunter"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_PLAYER_LAZER",
+        weapon_label = "WT_V_LZRCAN",
+        display_name_label = "HYDRA",
+        class_id = 16,
+        vehicle_model = "hydra"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPACE_ROCKET",
+        weapon_label = "WT_V_PLANEMSL",
+        display_name_label = "HYDRA",
+        class_id = 16,
+        vehicle_model = "hydra"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_IGNUS2_TURRET_MINI",
+        weapon_label = "",
+        display_name_label = "IGNUS2",
+        class_id = 7,
+        vehicle_model = "ignus2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_IMPALER2_50CAL",
+        weapon_label = "",
+        display_name_label = "impaler2",
+        class_id = 4,
+        vehicle_model = "impaler2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_IMPALER2_50CAL",
+        weapon_label = "",
+        display_name_label = "impaler3",
+        class_id = 4,
+        vehicle_model = "impaler3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_IMPALER3_50CAL_LASER",
+        weapon_label = "",
+        display_name_label = "impaler3",
+        class_id = 4,
+        vehicle_model = "impaler3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_IMPALER2_50CAL",
+        weapon_label = "",
+        display_name_label = "impaler4",
+        class_id = 4,
+        vehicle_model = "impaler4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_IMPERATOR_50CAL",
+        weapon_label = "",
+        display_name_label = "imperator",
+        class_id = 4,
+        vehicle_model = "imperator"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MORTAR_KINETIC",
+        weapon_label = "",
+        display_name_label = "imperator",
+        class_id = 4,
+        vehicle_model = "imperator"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_IMPERATOR_50CAL",
+        weapon_label = "",
+        display_name_label = "imperator2",
+        class_id = 4,
+        vehicle_model = "imperator2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MORTAR_KINETIC",
+        weapon_label = "",
+        display_name_label = "imperator2",
+        class_id = 4,
+        vehicle_model = "imperator2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_IMPERATOR2_50CAL_LASER",
+        weapon_label = "",
+        display_name_label = "imperator2",
+        class_id = 4,
+        vehicle_model = "imperator2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_IMPERATOR_50CAL",
+        weapon_label = "",
+        display_name_label = "imperator3",
+        class_id = 4,
+        vehicle_model = "imperator3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MORTAR_KINETIC",
+        weapon_label = "",
+        display_name_label = "imperator3",
+        class_id = 4,
+        vehicle_model = "imperator3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_INSURGENT",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "insurgent",
+        class_id = 9,
+        vehicle_model = "insurgent"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_INSURGENT",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "INSURGENT2",
+        class_id = 9,
+        vehicle_model = "insurgent2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_INSURGENT",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "insurgent3",
+        class_id = 9,
+        vehicle_model = "insurgent3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_INSURGENT_MINIGUN",
+        weapon_label = "",
+        display_name_label = "insurgent3",
+        class_id = 9,
+        vehicle_model = "insurgent3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ISSI4_50CAL",
+        weapon_label = "",
+        display_name_label = "issi4",
+        class_id = 0,
+        vehicle_model = "issi4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MORTAR_KINETIC",
+        weapon_label = "",
+        display_name_label = "issi4",
+        class_id = 0,
+        vehicle_model = "issi4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ISSI4_50CAL",
+        weapon_label = "",
+        display_name_label = "issi5",
+        class_id = 0,
+        vehicle_model = "issi5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ISSI5_50CAL_LASER",
+        weapon_label = "",
+        display_name_label = "issi5",
+        class_id = 0,
+        vehicle_model = "issi5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MORTAR_KINETIC",
+        weapon_label = "",
+        display_name_label = "issi5",
+        class_id = 0,
+        vehicle_model = "issi5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ISSI4_50CAL",
+        weapon_label = "",
+        display_name_label = "issi6",
+        class_id = 0,
+        vehicle_model = "issi6"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MORTAR_KINETIC",
+        weapon_label = "",
+        display_name_label = "issi6",
+        class_id = 0,
+        vehicle_model = "issi6"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_JB700_MG",
+        weapon_label = "",
+        display_name_label = "jb7002",
+        class_id = 5,
+        vehicle_model = "jb7002"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_GRANGER2_MG",
+        weapon_label = "",
+        display_name_label = "JUBILEE",
+        class_id = 2,
+        vehicle_model = "jubilee"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_KHANJALI_CANNON",
+        weapon_label = "",
+        display_name_label = "khanjali",
+        class_id = 19,
+        vehicle_model = "khanjali"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_KHANJALI_CANNON_HEAVY",
+        weapon_label = "",
+        display_name_label = "khanjali",
+        class_id = 19,
+        vehicle_model = "khanjali"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_KHANJALI_MG",
+        weapon_label = "",
+        display_name_label = "khanjali",
+        class_id = 19,
+        vehicle_model = "khanjali"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_KHANJALI_GL",
+        weapon_label = "",
+        display_name_label = "khanjali",
+        class_id = 19,
+        vehicle_model = "khanjali"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_KOSATKA_TORPEDO",
+        weapon_label = "",
+        display_name_label = "kosatka",
+        class_id = 14,
+        vehicle_model = "kosatka"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_PLAYER_LAZER",
+        weapon_label = "WT_V_LZRCAN",
+        display_name_label = "LAZER",
+        class_id = 16,
+        vehicle_model = "Lazer"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_PLANE_ROCKET",
+        weapon_label = "WT_V_PLANEMSL",
+        display_name_label = "LAZER",
+        class_id = 16,
+        vehicle_model = "Lazer"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_LIMO",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "LIMO2",
+        class_id = 1,
+        vehicle_model = "limo2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "maverick",
+        class_id = 15,
+        vehicle_model = "maverick"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_INSURGENT",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "menacer",
+        class_id = 9,
+        vehicle_model = "menacer"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_INSURGENT_MINIGUN",
+        weapon_label = "",
+        display_name_label = "menacer",
+        class_id = 9,
+        vehicle_model = "menacer"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MENACER_MG",
+        weapon_label = "",
+        display_name_label = "menacer",
+        class_id = 9,
+        vehicle_model = "menacer"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MICROLIGHT_MG",
+        weapon_label = "",
+        display_name_label = "MICROLIGHT",
+        class_id = 16,
+        vehicle_model = "microlight"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_RCTANK_GUN",
+        weapon_label = "",
+        display_name_label = "minitank",
+        class_id = 19,
+        vehicle_model = "minitank"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_RCTANK_FLAME",
+        weapon_label = "",
+        display_name_label = "minitank",
+        class_id = 19,
+        vehicle_model = "minitank"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_RCTANK_ROCKET",
+        weapon_label = "",
+        display_name_label = "minitank",
+        class_id = 19,
+        vehicle_model = "minitank"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_RCTANK_LAZER",
+        weapon_label = "",
+        display_name_label = "minitank",
+        class_id = 19,
+        vehicle_model = "minitank"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MOGUL_NOSE",
+        weapon_label = "",
+        display_name_label = "MOGUL",
+        class_id = 16,
+        vehicle_model = "mogul"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MOGUL_DUALNOSE",
+        weapon_label = "",
+        display_name_label = "MOGUL",
+        class_id = 16,
+        vehicle_model = "mogul"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MOGUL_TURRET",
+        weapon_label = "",
+        display_name_label = "MOGUL",
+        class_id = 16,
+        vehicle_model = "mogul"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MOGUL_DUALTURRET",
+        weapon_label = "",
+        display_name_label = "MOGUL",
+        class_id = 16,
+        vehicle_model = "mogul"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOGFIGHTER_MG",
+        weapon_label = "",
+        display_name_label = "MOLOTOK",
+        class_id = 16,
+        vehicle_model = "molotok"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOGFIGHTER_MISSILE",
+        weapon_label = "",
+        display_name_label = "MOLOTOK",
+        class_id = 16,
+        vehicle_model = "molotok"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MONSTER3_GLKIN",
+        weapon_label = "",
+        display_name_label = "monster3",
+        class_id = 9,
+        vehicle_model = "monster3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MONSTER3_GLKIN",
+        weapon_label = "",
+        display_name_label = "monster4",
+        class_id = 9,
+        vehicle_model = "monster4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MONSTER3_GLKIN",
+        weapon_label = "",
+        display_name_label = "monster5",
+        class_id = 9,
+        vehicle_model = "monster5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MULE4_MG",
+        weapon_label = "",
+        display_name_label = "mule4",
+        class_id = 20,
+        vehicle_model = "mule4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MULE4_MISSILE",
+        weapon_label = "",
+        display_name_label = "mule4",
+        class_id = 20,
+        vehicle_model = "mule4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MULE4_TURRET_GL",
+        weapon_label = "",
+        display_name_label = "mule4",
+        class_id = 20,
+        vehicle_model = "mule4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_NIGHTSHARK_MG",
+        weapon_label = "",
+        display_name_label = "NIGHTSHARK",
+        class_id = 9,
+        vehicle_model = "nightshark"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOGFIGHTER_MG",
+        weapon_label = "",
+        display_name_label = "NOKOTA",
+        class_id = 16,
+        vehicle_model = "nokota"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOGFIGHTER_MISSILE",
+        weapon_label = "",
+        display_name_label = "NOKOTA",
+        class_id = 16,
+        vehicle_model = "nokota"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_OPPRESSOR_MG",
+        weapon_label = "",
+        display_name_label = "OPPRESSOR",
+        class_id = 8,
+        vehicle_model = "oppressor"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_OPPRESSOR_MISSILE",
+        weapon_label = "",
+        display_name_label = "OPPRESSOR",
+        class_id = 8,
+        vehicle_model = "oppressor"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_OPPRESSOR2_MG",
+        weapon_label = "",
+        display_name_label = "oppressor2",
+        class_id = 8,
+        vehicle_model = "oppressor2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_OPPRESSOR2_CANNON",
+        weapon_label = "",
+        display_name_label = "oppressor2",
+        class_id = 8,
+        vehicle_model = "oppressor2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_OPPRESSOR2_MISSILE",
+        weapon_label = "",
+        display_name_label = "oppressor2",
+        class_id = 8,
+        vehicle_model = "oppressor2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_PARAGON2_MG",
+        weapon_label = "",
+        display_name_label = "paragon2",
+        class_id = 6,
+        vehicle_model = "paragon2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_GRANGER2_MG",
+        weapon_label = "",
+        display_name_label = "PATRIOT3",
+        class_id = 9,
+        vehicle_model = "patriot3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_PATROLBOAT_50CAL",
+        weapon_label = "",
+        display_name_label = "patrolboat",
+        class_id = 14,
+        vehicle_model = "patrolboat"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_PATROLBOAT_DUALMG",
+        weapon_label = "",
+        display_name_label = "patrolboat",
+        class_id = 14,
+        vehicle_model = "patrolboat"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "polmav",
+        class_id = 15,
+        vehicle_model = "polmav"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_POUNDER2_MINI",
+        weapon_label = "",
+        display_name_label = "pounder2",
+        class_id = 20,
+        vehicle_model = "pounder2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_POUNDER2_MISSILE",
+        weapon_label = "",
+        display_name_label = "pounder2",
+        class_id = 20,
+        vehicle_model = "pounder2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_POUNDER2_BARRAGE",
+        weapon_label = "",
+        display_name_label = "pounder2",
+        class_id = 20,
+        vehicle_model = "pounder2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_POUNDER2_GL",
+        weapon_label = "",
+        display_name_label = "pounder2",
+        class_id = 20,
+        vehicle_model = "pounder2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_RADAR",
+        weapon_label = "",
+        display_name_label = "predator",
+        class_id = 14,
+        vehicle_model = "Predator"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOGFIGHTER_MG",
+        weapon_label = "",
+        display_name_label = "PYRO",
+        class_id = 16,
+        vehicle_model = "pyro"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOGFIGHTER_MISSILE",
+        weapon_label = "",
+        display_name_label = "PYRO",
+        class_id = 16,
+        vehicle_model = "pyro"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_RAIJU_CANNONS",
+        weapon_label = "",
+        display_name_label = "raiju",
+        class_id = 16,
+        vehicle_model = "raiju"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_RAIJU_MISSILES",
+        weapon_label = "",
+        display_name_label = "raiju",
+        class_id = 16,
+        vehicle_model = "raiju"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_REVOLTER_MG",
+        weapon_label = "",
+        display_name_label = "revolter",
+        class_id = 6,
+        vehicle_model = "revolter"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TANK",
+        weapon_label = "WT_V_TANK",
+        display_name_label = "rhino",
+        class_id = 19,
+        vehicle_model = "RHINO"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_WATER_CANNON",
+        weapon_label = "",
+        display_name_label = "riot2",
+        class_id = 18,
+        vehicle_model = "riot2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ROGUE_MG",
+        weapon_label = "",
+        display_name_label = "Rogue",
+        class_id = 16,
+        vehicle_model = "rogue"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ROGUE_CANNON",
+        weapon_label = "",
+        display_name_label = "Rogue",
+        class_id = 16,
+        vehicle_model = "rogue"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ROGUE_MISSILE",
+        weapon_label = "",
+        display_name_label = "Rogue",
+        class_id = 16,
+        vehicle_model = "rogue"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_RUINER_BULLET",
+        weapon_label = "WT_V_PLRBUL",
+        display_name_label = "RUINER2",
+        class_id = 4,
+        vehicle_model = "ruiner2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_RUINER_ROCKET",
+        weapon_label = "WT_V_PLANEMSL",
+        display_name_label = "RUINER2",
+        class_id = 4,
+        vehicle_model = "ruiner2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_PLAYER_SAVAGE",
+        weapon_label = "WT_V_LZRCAN",
+        display_name_label = "savage",
+        class_id = 15,
+        vehicle_model = "savage"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPACE_ROCKET",
+        weapon_label = "WT_V_PLANEMSL",
+        display_name_label = "savage",
+        class_id = 15,
+        vehicle_model = "savage"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SAVESTRA_MG",
+        weapon_label = "",
+        display_name_label = "savestra",
+        class_id = 5,
+        vehicle_model = "savestra"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SCARAB_50CAL",
+        weapon_label = "",
+        display_name_label = "scarab",
+        class_id = 19,
+        vehicle_model = "scarab"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SCARAB_50CAL",
+        weapon_label = "",
+        display_name_label = "scarab2",
+        class_id = 19,
+        vehicle_model = "scarab2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SCARAB2_50CAL_LASER",
+        weapon_label = "",
+        display_name_label = "scarab2",
+        class_id = 19,
+        vehicle_model = "scarab2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SCARAB_50CAL",
+        weapon_label = "",
+        display_name_label = "scarab3",
+        class_id = 19,
+        vehicle_model = "scarab3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SCRAMJET_MG",
+        weapon_label = "",
+        display_name_label = "scramjet",
+        class_id = 7,
+        vehicle_model = "scramjet"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SCRAMJET_MISSILE",
+        weapon_label = "",
+        display_name_label = "scramjet",
+        class_id = 7,
+        vehicle_model = "scramjet"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEABREEZE_MG",
+        weapon_label = "",
+        display_name_label = "SEABREEZE",
+        class_id = 16,
+        vehicle_model = "seabreeze"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_HAVOK_MINIGUN",
+        weapon_label = "",
+        display_name_label = "Sparrow",
+        class_id = 15,
+        vehicle_model = "seasparrow"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPACE_ROCKET",
+        weapon_label = "WT_V_PLANEMSL",
+        display_name_label = "Sparrow",
+        class_id = 15,
+        vehicle_model = "seasparrow"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEASPARROW2_MINIGUN",
+        weapon_label = "",
+        display_name_label = "SPARROW2",
+        class_id = 15,
+        vehicle_model = "seasparrow2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPACE_ROCKET",
+        weapon_label = "WT_V_PLANEMSL",
+        display_name_label = "SPARROW2",
+        class_id = 15,
+        vehicle_model = "seasparrow2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEASPARROW2_MINIGUN",
+        weapon_label = "",
+        display_name_label = "SPARROW3",
+        class_id = 15,
+        vehicle_model = "seasparrow3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPACE_ROCKET",
+        weapon_label = "WT_V_PLANEMSL",
+        display_name_label = "SPARROW3",
+        class_id = 15,
+        vehicle_model = "seasparrow3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SLAMVAN4_50CAL",
+        weapon_label = "",
+        display_name_label = "slamvan4",
+        class_id = 4,
+        vehicle_model = "slamvan4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SLAMVAN4_50CAL",
+        weapon_label = "",
+        display_name_label = "slamvan5",
+        class_id = 4,
+        vehicle_model = "slamvan5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SLAMVAN5_50CAL_LASER",
+        weapon_label = "",
+        display_name_label = "slamvan5",
+        class_id = 4,
+        vehicle_model = "slamvan5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SLAMVAN4_50CAL",
+        weapon_label = "",
+        display_name_label = "slamvan6",
+        class_id = 4,
+        vehicle_model = "slamvan6"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPEEDO4_MG",
+        weapon_label = "",
+        display_name_label = "speedo4",
+        class_id = 12,
+        vehicle_model = "speedo4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPEEDO4_TURRET_MG",
+        weapon_label = "",
+        display_name_label = "speedo4",
+        class_id = 12,
+        vehicle_model = "speedo4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPEEDO4_TURRET_MINI",
+        weapon_label = "",
+        display_name_label = "speedo4",
+        class_id = 12,
+        vehicle_model = "speedo4"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPEEDO4_MG",
+        weapon_label = "",
+        display_name_label = "speedo4",
+        class_id = 12,
+        vehicle_model = "speedo5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPEEDO4_TURRET_MG",
+        weapon_label = "",
+        display_name_label = "speedo4",
+        class_id = 12,
+        vehicle_model = "speedo5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SPEEDO4_TURRET_MINI",
+        weapon_label = "",
+        display_name_label = "speedo4",
+        class_id = 12,
+        vehicle_model = "speedo5"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOGFIGHTER_MG",
+        weapon_label = "",
+        display_name_label = "STARLING",
+        class_id = 16,
+        vehicle_model = "starling"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_DOGFIGHTER_MISSILE",
+        weapon_label = "",
+        display_name_label = "STARLING",
+        class_id = 16,
+        vehicle_model = "starling"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_STREAMER_NOSEMG",
+        weapon_label = "",
+        display_name_label = "streamer216",
+        class_id = 16,
+        vehicle_model = "streamer216"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_STRIKEFORCE_CANNON",
+        weapon_label = "",
+        display_name_label = "strikeforce",
+        class_id = 16,
+        vehicle_model = "strikeforce"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_STRIKEFORCE_MISSILE",
+        weapon_label = "",
+        display_name_label = "strikeforce",
+        class_id = 16,
+        vehicle_model = "strikeforce"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_STRIKEFORCE_BARRAGE",
+        weapon_label = "",
+        display_name_label = "strikeforce",
+        class_id = 16,
+        vehicle_model = "strikeforce"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SUBCAR_MG",
+        weapon_label = "",
+        display_name_label = "stromberg",
+        class_id = 5,
+        vehicle_model = "stromberg"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SUBCAR_MISSILE",
+        weapon_label = "",
+        display_name_label = "stromberg",
+        class_id = 5,
+        vehicle_model = "stromberg"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SUBCAR_TORPEDO",
+        weapon_label = "",
+        display_name_label = "stromberg",
+        class_id = 5,
+        vehicle_model = "stromberg"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "SVOLITO",
+        class_id = 15,
+        vehicle_model = "supervolito"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "SVOLITO2",
+        class_id = 15,
+        vehicle_model = "supervolito2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "SWIFT",
+        class_id = 15,
+        vehicle_model = "swift"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "swift2",
+        class_id = 15,
+        vehicle_model = "swift2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TAMPA_MISSILE",
+        weapon_label = "",
+        display_name_label = "TAMPA3",
+        class_id = 4,
+        vehicle_model = "tampa3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TAMPA_MORTAR",
+        weapon_label = "",
+        display_name_label = "TAMPA3",
+        class_id = 4,
+        vehicle_model = "tampa3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TAMPA_FIXEDMINIGUN",
+        weapon_label = "",
+        display_name_label = "TAMPA3",
+        class_id = 4,
+        vehicle_model = "tampa3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TAMPA_DUALMINIGUN",
+        weapon_label = "",
+        display_name_label = "TAMPA3",
+        class_id = 4,
+        vehicle_model = "tampa3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_TECHNICAL",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "TECHNICAL",
+        class_id = 9,
+        vehicle_model = "technical"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_TECHNICAL",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "TECHNICAL2",
+        class_id = 9,
+        vehicle_model = "technical2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_TECHNICAL",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "technical3",
+        class_id = 9,
+        vehicle_model = "technical3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TECHNICAL_MINIGUN",
+        weapon_label = "",
+        display_name_label = "technical3",
+        class_id = 9,
+        vehicle_model = "technical3"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_HACKER_MISSILE",
+        weapon_label = "",
+        display_name_label = "terbyte",
+        class_id = 20,
+        vehicle_model = "terbyte"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_HACKER_MISSILE_HOMING",
+        weapon_label = "",
+        display_name_label = "terbyte",
+        class_id = 20,
+        vehicle_model = "terbyte"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_THRUSTER_MG",
+        weapon_label = "",
+        display_name_label = "thruster",
+        class_id = 19,
+        vehicle_model = "thruster"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_THRUSTER_MISSILE",
+        weapon_label = "",
+        display_name_label = "thruster",
+        class_id = 19,
+        vehicle_model = "thruster"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SUBCAR_MG",
+        weapon_label = "",
+        display_name_label = "toreador",
+        class_id = 5,
+        vehicle_model = "toreador"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SUBCAR_MISSILE",
+        weapon_label = "",
+        display_name_label = "toreador",
+        class_id = 5,
+        vehicle_model = "toreador"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SUBCAR_TORPEDO",
+        weapon_label = "",
+        display_name_label = "toreador",
+        class_id = 5,
+        vehicle_model = "toreador"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_MOBILEOPS_CANNON",
+        weapon_label = "",
+        display_name_label = "TRLARGE",
+        class_id = 11,
+        vehicle_model = "trailerlarge"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TRAILER_QUADMG",
+        weapon_label = "",
+        display_name_label = "TRSMALL2",
+        class_id = 19,
+        vehicle_model = "trailersmall2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TRAILER_MISSILE",
+        weapon_label = "",
+        display_name_label = "TRSMALL2",
+        class_id = 19,
+        vehicle_model = "trailersmall2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TRAILER_DUALAA",
+        weapon_label = "",
+        display_name_label = "TRSMALL2",
+        class_id = 19,
+        vehicle_model = "trailersmall2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TULA_NOSEMG",
+        weapon_label = "",
+        display_name_label = "TULA",
+        class_id = 16,
+        vehicle_model = "tula"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TULA_MG",
+        weapon_label = "",
+        display_name_label = "TULA",
+        class_id = 16,
+        vehicle_model = "tula"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TULA_DUALMG",
+        weapon_label = "",
+        display_name_label = "TULA",
+        class_id = 16,
+        vehicle_model = "tula"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TULA_MINIGUN",
+        weapon_label = "",
+        display_name_label = "TULA",
+        class_id = 16,
+        vehicle_model = "tula"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_NOSE_TURRET_VALKYRIE",
+        weapon_label = "WT_V_PLRBUL",
+        display_name_label = "VALKYRIE",
+        class_id = 15,
+        vehicle_model = "valkyrie"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_VALKYRIE",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "VALKYRIE",
+        class_id = 15,
+        vehicle_model = "valkyrie"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_TURRET_VALKYRIE",
+        weapon_label = "WT_V_TURRET",
+        display_name_label = "VALKYRI2",
+        class_id = 15,
+        vehicle_model = "valkyrie2"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_VIGILANTE_MG",
+        weapon_label = "",
+        display_name_label = "Vigilante",
+        class_id = 7,
+        vehicle_model = "vigilante"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_VIGILANTE_MISSILE",
+        weapon_label = "",
+        display_name_label = "Vigilante",
+        class_id = 7,
+        vehicle_model = "vigilante"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_VISERIS_MG",
+        weapon_label = "",
+        display_name_label = "viseris",
+        class_id = 5,
+        vehicle_model = "viseris"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_VOLATOL_DUALMG",
+        weapon_label = "",
+        display_name_label = "volatol",
+        class_id = 16,
+        vehicle_model = "volatol"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_SEARCHLIGHT",
+        weapon_label = "",
+        display_name_label = "VOLATUS",
+        class_id = 15,
+        vehicle_model = "volatus"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ZR380_50CAL",
+        weapon_label = "",
+        display_name_label = "zr380",
+        class_id = 6,
+        vehicle_model = "zr380"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ZR380_50CAL",
+        weapon_label = "",
+        display_name_label = "zr3802",
+        class_id = 6,
+        vehicle_model = "zr3802"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ZR3802_50CAL_LASER",
+        weapon_label = "",
+        display_name_label = "zr3802",
+        class_id = 6,
+        vehicle_model = "zr3802"
+    },
+    {
+        weapon_model = "VEHICLE_WEAPON_ZR380_50CAL",
+        weapon_label = "",
+        display_name_label = "zr3803",
+        class_id = 6,
+        vehicle_model = "zr3803"
+    },
 }
-
-All_VehicleWeapons_ListItem = {
-    { "载具当前使用的武器", {}, "VEHICLE_CURRENT_WEAPON" }
-}
-
-for k, v in pairs(VehicleWeapons) do
-    local t = { "label", {}, "hash" }
-    local label = util.get_label_text(v[2]) .. " (" .. string.gsub(v[1], "VEHICLE_WEAPON_", "") .. ")"
-    t[1] = label
-    t[3] = tostring(util.joaat(v[1]))
-    table.insert(All_VehicleWeapons_ListItem, t)
-end

@@ -162,6 +162,33 @@ function Business.GetBusinessProduct(slot)
     return STAT_GET_INT("PRODTOTALFORFACTORY" .. slot)
 end
 
+function Business.MCBusinessPropertyType(slot)
+    local mapping  = {
+        [1]  = 3,
+        [2]  = 1,
+        [3]  = 4,
+        [4]  = 2,
+        [5]  = 0,
+        [6]  = 3,
+        [7]  = 1,
+        [8]  = 4,
+        [9]  = 2,
+        [10] = 0,
+        [11] = 3,
+        [12] = 1,
+        [13] = 4,
+        [14] = 2,
+        [15] = 0,
+        [16] = 3,
+        [17] = 1,
+        [18] = 4,
+        [19] = 2,
+        [20] = 0
+    }
+    local property = STAT_GET_INT("factoryslot" .. slot) -- returns a property ID number
+    return mapping[property]
+end
+
 Business.Menu = {
     bunker = {
         supplies,
@@ -219,7 +246,12 @@ menu.action(Business_Monitor, "刷新状态", {}, "", function()
         --- Nightclub ---
         text = math.floor(STAT_GET_INT('CLUB_POPULARITY') / 10) .. '%'
         menu.set_value(Business.Menu.nightclub.popularity, text)
-        menu.set_value(Business.Menu.nightclub.safe_cash, STAT_GET_INT("CLUB_SAFE_CASH_VALUE"))
+
+        text = STAT_GET_INT("CLUB_SAFE_CASH_VALUE")
+        if text == 250000 then
+            text = "[!] " .. text
+        end
+        menu.set_value(Business.Menu.nightclub.safe_cash, text)
 
         for i = 0, 6 do
             product = Business.GetNightclubValue(i)
@@ -242,20 +274,31 @@ menu.action(Business_Monitor, "刷新状态", {}, "", function()
         menu.set_value(Business.Menu.acid_lab.product, text)
 
         --- Safe Cash ---
-        menu.set_value(Business.Menu.safe_cash.arcade, STAT_GET_INT("ARCADE_SAFE_CASH_VALUE"))
-        menu.set_value(Business.Menu.safe_cash.agency, STAT_GET_INT("FIXER_SAFE_CASH_VALUE"))
+        text = STAT_GET_INT("ARCADE_SAFE_CASH_VALUE")
+        if text == 100000 then
+            text = "[!] " .. text
+        end
+        menu.set_value(Business.Menu.safe_cash.arcade, text)
+
+        text = STAT_GET_INT("FIXER_SAFE_CASH_VALUE")
+        if text == 250000 then
+            text = "[!] " .. text
+        end
+        menu.set_value(Business.Menu.safe_cash.agency, text)
 
         --- MCBusiness ---
         for i = 0, 4 do
+            local type_number = Business.MCBusinessPropertyType(i)
+            
             text = Business.GetBusinessSupplies(i) .. "%"
-            menu.set_value(Business.Menu.mc_business[i].supplies, text)
+            menu.set_value(Business.Menu.mc_business[type_number].supplies, text)
 
             product = Business.GetBusinessProduct(i)
-            text = product .. "/" .. Business.Caps.MCBusiness[i]
-            if product == Business.Caps.MCBusiness[i] then
+            text = product .. "/" .. Business.Caps.MCBusiness[type_number]
+            if product == Business.Caps.MCBusiness[type_number] then
                 text = "[!] " .. text
             end
-            menu.set_value(Business.Menu.mc_business[i].product, text)
+            menu.set_value(Business.Menu.mc_business[type_number].product, text)
         end
     else
         util.toast("仅在线上模式战局内可用")
@@ -349,16 +392,19 @@ end
 local Remote_Computer = menu.list(Online_options, "远程电脑", {}, "")
 
 local remote_computer_list = {
-    { menu_name = "地堡电脑",             script = "appbunkerbusiness" },
-    { menu_name = "机库电脑",             script = "appsmuggler" },
-    { menu_name = "夜总会电脑",          script = "appbusinesshub" },
-    { menu_name = "摩托帮电脑",          script = "appbikerbusiness" },
-    { menu_name = "游戏厅主控制终端", script = "apparcadebusinesshub" },
-    { menu_name = "恐霸电脑",             script = "apphackertruck" },
+    { menu_name = "地堡电脑",             script = "appbunkerbusiness",    command = "bunker" },
+    { menu_name = "机库电脑",             script = "appsmuggler",          command = "hangar" },
+    { menu_name = "夜总会电脑",          script = "appbusinesshub",       command = "nightclub" },
+    { menu_name = "摩托帮电脑",          script = "appbikerbusiness",     command = "biker" },
+    { menu_name = "游戏厅主控制终端", script = "apparcadebusinesshub", command = "arcade" },
+    { menu_name = "恐霸电脑",             script = "apphackertruck",       command = "terrorbyte" },
+    { menu_name = "事务所电脑",          script = "appfixersecurity",     command = "agency" },
+    { menu_name = "复仇者操作终端",    script = "appavengeroperations", command = "avenger" },
+    -- { menu_name = "机动作战指挥中心", script = "appcovertops" },
 }
 
 for _, item in pairs(remote_computer_list) do
-    menu.action(Remote_Computer, item.menu_name, {}, "", function()
+    menu.action(Remote_Computer, item.menu_name, { "app" .. item.command }, "", function()
         if IS_IN_SESSION() then
             START_SCRIPT(item.script, 5000)
         end
@@ -375,7 +421,7 @@ local Fast_Teleport = menu.list(Online_options, "快捷传送", {}, "")
 local FastTP = {
     property_list = {
         { sprite = 557, name = "地堡",    command = "bunker" },
-        { sprite = 569, name = "机库",    command = "Hangar" },
+        { sprite = 569, name = "机库",    command = "hangar" },
         { sprite = 590, name = "设施",    command = "facility" },
         { sprite = 614, name = "夜总会", command = "nightclub" },
         { sprite = 740, name = "游戏厅", command = "arcade" },

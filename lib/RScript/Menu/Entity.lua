@@ -2016,7 +2016,7 @@ local Nearby_Area_Shoot_Weapon = rs_menu.all_weapons_without_melee(Nearby_Area_S
     function(hash)
         nearby_area_shoot.weapon_hash = hash
     end, true)
-rs_menu.current_weapon_action(Nearby_Area_Shoot_Weapon, function()
+rs_menu.current_weapon_action(Nearby_Area_Shoot_Weapon, "玩家当前使用的武器", function()
     nearby_area_shoot.weapon_hash = "PLAYER_CURRENT_WEAPON"
 end, true)
 

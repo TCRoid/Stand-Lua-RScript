@@ -174,30 +174,28 @@ end
 ---@param z float
 ---@param heading? float
 function TELEPORT(x, y, z, heading)
-    local tp = players.user_ped()
-    local veh = GET_VEHICLE_PED_IS_IN(tp)
-    if veh ~= 0 then
-        tp = veh
+    local ent = entities.get_user_vehicle_as_handle(false)
+    if ent == INVALID_GUID then
+        ent = players.user_ped()
     end
-    SET_ENTITY_COORDS(tp, v3.new(x, y, z))
+    SET_ENTITY_COORDS(ent, v3.new(x, y, z))
 
     if heading ~= nil then
-        ENTITY.SET_ENTITY_HEADING(tp, heading)
+        ENTITY.SET_ENTITY_HEADING(ent, heading)
     end
 end
 
 ---@param coords v3
 ---@param heading? float
 function TELEPORT2(coords, heading)
-    local tp = players.user_ped()
-    local veh = GET_VEHICLE_PED_IS_IN(tp)
-    if veh ~= 0 then
-        tp = veh
+    local ent = entities.get_user_vehicle_as_handle(false)
+    if ent == INVALID_GUID then
+        ent = players.user_ped()
     end
-    SET_ENTITY_COORDS(tp, coords)
+    SET_ENTITY_COORDS(ent, coords)
 
     if heading ~= nil then
-        ENTITY.SET_ENTITY_HEADING(tp, heading)
+        ENTITY.SET_ENTITY_HEADING(ent, heading)
     end
 end
 
@@ -205,10 +203,9 @@ end
 ---@param heading? float
 ---@return float
 function PLAYER_HEADING(heading)
-    local ent = players.user_ped()
-    local veh = GET_VEHICLE_PED_IS_IN(ent)
-    if veh ~= 0 then
-        ent = veh
+    local ent = entities.get_user_vehicle_as_handle(false)
+    if ent == INVALID_GUID then
+        ent = players.user_ped()
     end
 
     if heading ~= nil then
@@ -1816,7 +1813,7 @@ function to_stand_colour(colour)
 end
 
 local org_blip_colours <const> = {
-    [-1] = 4,
+    [-1] = 0,
     [0] = -140542977,
     [1] = -494486529,
     [2] = -269576193,

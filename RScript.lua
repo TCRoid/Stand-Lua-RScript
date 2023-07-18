@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("1681379138")
 
-local SCRIPT_VERSION <const> = "2023/7/8"
+local SCRIPT_VERSION <const> = "2023/7/18"
 
 local SUPPORT_GTAO <const> = 1.67
 
@@ -946,15 +946,16 @@ function Entity_Control.movement(menu_parent, ent, index)
         end)
 
     menu.divider(movement_options, "坐标")
+    local coord_menu = {}
     menu.action(movement_options, "刷新坐标", {}, "", function()
         local coords = ENTITY.GET_ENTITY_COORDS(ent)
         local pos = {}
-        pos.x = string.format("%.2f", coords.x)
-        pos.y = string.format("%.2f", coords.y)
-        pos.z = string.format("%.2f", coords.z)
-        menu.trigger_commands("ctrlent" .. index .. "x " .. pos.x)
-        menu.trigger_commands("ctrlent" .. index .. "y " .. pos.y)
-        menu.trigger_commands("ctrlent" .. index .. "z " .. pos.z)
+        pos.x = string.format("%.2f", coords.x) * 100
+        pos.y = string.format("%.2f", coords.y) * 100
+        pos.z = string.format("%.2f", coords.z) * 100
+        menu.set_value(coord_menu.x, math.ceil(pos.x))
+        menu.set_value(coord_menu.y, math.ceil(pos.y))
+        menu.set_value(coord_menu.z, math.ceil(pos.z))
     end)
 
     local coords = ENTITY.GET_ENTITY_COORDS(ent)
@@ -962,23 +963,29 @@ function Entity_Control.movement(menu_parent, ent, index)
     pos.x = string.format("%.2f", coords.x) * 100
     pos.y = string.format("%.2f", coords.y) * 100
     pos.z = string.format("%.2f", coords.z) * 100
-    menu.slider_float(movement_options, "X:", { "ctrl_ent" .. index .. "_x" }, "",
-        -1000000, 1000000, math.ceil(pos.x), 50, function(value)
-            local coords = ENTITY.GET_ENTITY_COORDS(ent)
-            coords.x = value * 0.01
-            SET_ENTITY_COORDS(ent, coords)
+    coord_menu.x = menu.slider_float(movement_options, "X:", { "ctrl_ent" .. index .. "_x" }, "",
+        -1000000, 1000000, math.ceil(pos.x), 50, function(value, prev_value, click_type)
+            if click_type ~= CLICK_SCRIPTED then
+                local coords = ENTITY.GET_ENTITY_COORDS(ent)
+                coords.x = value * 0.01
+                SET_ENTITY_COORDS(ent, coords)
+            end
         end)
-    menu.slider_float(movement_options, "Y:", { "ctrl_ent" .. index .. "_y" }, "",
-        -1000000, 1000000, math.ceil(pos.y), 50, function(value)
-            local coords = ENTITY.GET_ENTITY_COORDS(ent)
-            coords.y = value * 0.01
-            SET_ENTITY_COORDS(ent, coords)
+    coord_menu.y = menu.slider_float(movement_options, "Y:", { "ctrl_ent" .. index .. "_y" }, "",
+        -1000000, 1000000, math.ceil(pos.y), 50, function(value, prev_value, click_type)
+            if click_type ~= CLICK_SCRIPTED then
+                local coords = ENTITY.GET_ENTITY_COORDS(ent)
+                coords.y = value * 0.01
+                SET_ENTITY_COORDS(ent, coords)
+            end
         end)
-    menu.slider_float(movement_options, "Z:", { "ctrl_ent" .. index .. "_z" }, "",
-        -1000000, 1000000, math.ceil(pos.z), 50, function(value)
-            local coords = ENTITY.GET_ENTITY_COORDS(ent)
-            coords.z = value * 0.01
-            SET_ENTITY_COORDS(ent, coords)
+    coord_menu.z = menu.slider_float(movement_options, "Z:", { "ctrl_ent" .. index .. "_z" }, "",
+        -1000000, 1000000, math.ceil(pos.z), 50, function(value, prev_value, click_type)
+            if click_type ~= CLICK_SCRIPTED then
+                local coords = ENTITY.GET_ENTITY_COORDS(ent)
+                coords.z = value * 0.01
+                SET_ENTITY_COORDS(ent, coords)
+            end
         end)
 end
 
@@ -1209,10 +1216,10 @@ function Entity_Control.ped_combat(menu_parent, ped, index)
         increase_ped_combat_attributes(ped)
         util.toast("完成！")
     end)
-    menu.click_slider(ped_combat_options, "射击频率", {}, "", 0, 1000, 100, 10, function(value)
+    menu.click_slider(ped_combat_options, "射击频率", {}, "", 0, 1000, 1000, 50, function(value)
         PED.SET_PED_SHOOT_RATE(ped, value)
     end)
-    menu.click_slider(ped_combat_options, "精准度", {}, "", 0, 100, 50, 10, function(value)
+    menu.click_slider(ped_combat_options, "精准度", {}, "", 0, 100, 100, 10, function(value)
         PED.SET_PED_ACCURACY(ped, value)
     end)
     menu.textslider_stateful(ped_combat_options, "战斗能力", {}, "", enum_CombatAbility, function(value)
@@ -1233,37 +1240,47 @@ function Entity_Control.ped_combat(menu_parent, ped, index)
 
 
     --- Ped Combat Attributes ---
-    local combat_attributes_options = menu.list(ped_combat_options, "Ped Combat Attributes", {}, "")
+    local combat_attributes_options
     local combat_attributes_menus = {}
-    menu.toggle(combat_attributes_options, "全部开/关", {}, "", function(toggle)
-        for i, the_menu in pairs(combat_attributes_menus) do
-            menu.set_value(the_menu, toggle)
+    combat_attributes_options = menu.list(ped_combat_options, "Ped Combat Attributes", {}, "", function()
+        if next(combat_attributes_menus) == nil then
+            for key, data in pairs(Ped_CombatAttributes.List) do
+                local id = Ped_CombatAttributes.ValueList[key]
+                combat_attributes_menus[key] = menu.toggle(combat_attributes_options, data[1], {}, data[2],
+                    function(toggle)
+                        PED.SET_PED_COMBAT_ATTRIBUTES(ped, id, toggle)
+                    end)
+            end
         end
     end)
-    for key, data in pairs(Ped_CombatAttributes.List) do
-        local id = Ped_CombatAttributes.ValueList[key]
-        combat_attributes_menus[key] = menu.toggle(combat_attributes_options, data[1], {}, data[2], function(toggle)
-            PED.SET_PED_COMBAT_ATTRIBUTES(ped, id, toggle)
-        end)
-    end
+    menu.toggle(combat_attributes_options, "全部开/关", {}, "", function(toggle)
+        for i, command in pairs(combat_attributes_menus) do
+            if menu.is_ref_valid(command) then
+                menu.set_value(command, toggle)
+            end
+        end
+    end)
+
 
 
     --- Ped Combat Float ---
-    local combat_float_options = menu.list(ped_combat_options, "Ped Combat Float", {}, "")
+    local combat_float_options
     local combat_float_menus = {}
-    for key, data in pairs(Ped_CombatFloat.List) do
-        local default_num = string.format("%.2f", PED.GET_COMBAT_FLOAT(ped, id))
-        default_num = tonumber(default_num) * 100
-        if default_num > 50000 or default_num < -50000 then
-            default_num = 0
+    combat_float_options = menu.list(ped_combat_options, "Ped Combat Float", {}, "", function()
+        if next(combat_float_menus) == nil then
+            for key, data in pairs(Ped_CombatFloat.List) do
+                local id = Ped_CombatFloat.ValueList[key]
+                combat_float_menus[id] = menu.text_input(combat_float_options, data[1], { "ped" .. index .. data[1] },
+                    data[2],
+                    function(value)
+                        value = tonumber(value)
+                        if value ~= nil then
+                            PED.SET_COMBAT_FLOAT(ped, id, value)
+                        end
+                    end, PED.GET_COMBAT_FLOAT(ped, id))
+            end
         end
-        local id = Ped_CombatFloat.ValueList[key]
-
-        combat_float_menus[id] = menu.click_slider_float(combat_float_options, data[1], {}, data[2],
-            -50000, 50000, math.floor(default_num), 10, function(value)
-                PED.SET_COMBAT_FLOAT(ped, id, value * 0.01)
-            end)
-    end
+    end)
 end
 
 function Entity_Control.ped_task(menu_parent, ped, index)
@@ -2740,14 +2757,6 @@ menu.action(Weapon_options, "移除黏弹和感应地雷", { "remove_projectiles
 local Weapon_Attributes = menu.list(Weapon_options, "武器属性修改", {}, "修改当前武器属性，应用修改后会一直生效")
 
 local weapon_attributes = {
-    offset = {
-        m_reload_time_mp = 0x128,
-        m_reload_time_sp = 0x12c,
-        m_vehicle_reload_time = 0x130,
-        m_anim_reload_time = 0x134,
-        m_time_between_shots = 0x13c,
-        m_alternate_wait_time = 0x150,
-    },
     item_list = {
         { command = "anim_reload_time",    name = "换弹动作速度",               offset = 0x134, default = 100 },
         { command = "vehicle_reload_time", name = "载具内换弹时间",            offset = 0x130, default = 50 },
@@ -2767,19 +2776,25 @@ local weapon_attributes = {
         list_item = {
             { "载具导弹 无限快速连发" },
             { "载具机枪 快速射击" },
+            { "手持武器 通用设置",      {}, "换弹动作速度+0.2, 载具内换弹时间=0, 射击间隔时间-0.02" },
         },
         data_list = {
             {
-                { menu = 3, value = 0.2 },
-                { menu = 4, value = 0.2 },
-                { menu = 5, value = 0 },
-                { menu = 6, value = 0 },
+                { menu = 3, value = 0.2, override = true },
+                { menu = 4, value = 0.2, override = true },
+                { menu = 5, value = 0,   override = true },
+                { menu = 6, value = 0,   override = true },
             },
             {
-                { menu = 3, value = 0 },
-                { menu = 4, value = 0 },
-                { menu = 5, value = 0 },
-                { menu = 6, value = 0 },
+                { menu = 3, value = 0, override = true },
+                { menu = 4, value = 0, override = true },
+                { menu = 5, value = 0, override = true },
+                { menu = 6, value = 0, override = true },
+            },
+            {
+                { menu = 1, value = 0.2,   override = false },
+                { menu = 2, value = 0,     override = true },
+                { menu = 3, value = -0.02, override = false },
             },
         }
     }
@@ -2795,7 +2810,7 @@ function weapon_attributes.CWeaponInfo()
     local CVehicleWeaponInfo = memory.read_long(m_vehicle_weapon_info)
 
     local Addr = 0
-    if CWeaponInfo ~= 0 then
+    if CWeaponInfo ~= 0 and WEAPON.IS_PED_ARMED(players.user_ped(), 4) then
         Addr = CWeaponInfo
     elseif CWeaponInfo_Vehicle ~= 0 then
         Addr = CVehicleWeaponInfo
@@ -2806,14 +2821,7 @@ end
 function weapon_attributes.generate_menu(menu_parent, CWeaponInfo)
     local weaponHash = get_ped_current_weapon(players.user_ped())
     if not weapon_attributes.menu[weaponHash] then
-        -- 获取武器名字
-        local weapon_name = get_weapon_name_by_hash(weaponHash)
-        if weapon_name == "" then
-            weapon_name = util.reverse_joaat(weaponHash)
-        end
-        if weapon_name == "" then
-            weapon_name = tostring(weaponHash)
-        end
+        local weapon_name = weapon_attributes.get_weapon_name(weaponHash)
 
         -- menu.list 存进表内
         local menu_list = menu.list(menu_parent, weapon_name, {}, "")
@@ -2850,11 +2858,7 @@ function weapon_attributes.generate_menu(menu_parent, CWeaponInfo)
         menu.textslider_stateful(menu_list, "读取武器属性", {}, "", {
             "仅通知", "通知并保存到日志"
         }, function(value)
-            local text = "武器: " .. weapon_name
-            for key, item in pairs(weapon_attributes.item_list) do
-                local default_value = memory.read_float(CWeaponInfo + item.offset)
-                text = text .. "\n" .. item.name .. ": " .. default_value
-            end
+            local text = weapon_attributes.read_attribute(CWeaponInfo, weapon_name)
 
             THEFEED_POST.TEXT(text)
             if value == 2 then
@@ -2898,18 +2902,38 @@ function weapon_attributes.set_attribute(offset, value)
     end
 end
 
+function weapon_attributes.get_weapon_name(weaponHash)
+    local weaponName = get_weapon_name_by_hash(weaponHash)
+    if weaponName == "" then
+        weaponName = util.reverse_joaat(weaponHash)
+        weaponName = string.gsub(weaponName, "VEHICLE_WEAPON_", "")
+    end
+    if weaponName == "" then
+        weaponName = tostring(weaponHash)
+    end
+
+    return weaponName
+end
+
+function weapon_attributes.read_attribute(CWeaponInfo, weaponName)
+    local text = "武器: " .. weaponName
+
+    for _, item in pairs(weapon_attributes.item_list) do
+        local default_value = memory.read_float(CWeaponInfo + item.offset)
+        text = text .. "\n" .. item.name .. ": " .. default_value
+    end
+
+    return text
+end
+
 menu.textslider_stateful(Weapon_Attributes, "读取当前武器属性", {}, "", {
     "仅通知", "通知并保存到日志"
 }, function(value)
     local CWeaponInfo = weapon_attributes.CWeaponInfo()
     if CWeaponInfo ~= 0 then
         local weaponHash = get_ped_current_weapon(players.user_ped())
-
-        local text       = "武器: " .. get_weapon_name_by_hash(weaponHash)
-        for key, item in pairs(weapon_attributes.item_list) do
-            local default_value = memory.read_float(CWeaponInfo + item.offset)
-            text = text .. "\n" .. item.name .. ": " .. default_value
-        end
+        local weaponName = weapon_attributes.get_weapon_name(weaponHash)
+        local text = weapon_attributes.read_attribute(CWeaponInfo, weaponName)
 
         THEFEED_POST.TEXT(text)
         if value == 2 then
@@ -2922,17 +2946,29 @@ menu.list_action(Weapon_Attributes, "预设", {}, "", weapon_attributes.preset.l
     local CWeaponInfo = weapon_attributes.CWeaponInfo()
     if CWeaponInfo ~= 0 then
         for _, item in pairs(weapon_attributes.preset.data_list[value]) do
-            local item_menu = weapon_attributes.item_menu[item.menu]
-            if item_menu ~= nil and menu.is_ref_valid(item_menu) then
-                menu.set_value(item_menu, item.value * 100)
-            end
-
             local offset = weapon_attributes.item_list[item.menu].offset
             local weapon_addr = CWeaponInfo + offset
-            if memory.read_float(weapon_addr) ~= -1 then
+            local default_value = memory.read_float(weapon_addr)
+
+            local new_value = 0
+            if item.override then
+                new_value = item.value
+            else
+                new_value = default_value + item.value
+                if new_value < 0 then
+                    new_value = 0
+                end
+            end
+
+            -- local item_menu = weapon_attributes.item_menu[item.menu]
+            -- if item_menu ~= nil and menu.is_ref_valid(item_menu) then
+            --     menu.set_value(item_menu, new_value * 100)
+            -- end
+
+            if default_value ~= -1 then
                 weapon_attributes.generate_menu(Weapon_Attributes, CWeaponInfo)
 
-                memory.write_float(weapon_addr, item.value)
+                memory.write_float(weapon_addr, new_value)
             end
         end
     end
@@ -3173,13 +3209,17 @@ local Cam_Gun_shoot_player_weapon = rs_menu.all_weapons_without_melee(Cam_Gun_sh
     function(hash)
         Cam_Gun.shoot_setting.weapon_hash = hash
     end, true)
-rs_menu.current_weapon_action(Cam_Gun_shoot_player_weapon, function()
+rs_menu.current_weapon_action(Cam_Gun_shoot_player_weapon, "玩家当前使用的武器", function()
     Cam_Gun.shoot_setting.weapon_hash = "PLAYER_CURRENT_WEAPON"
 end, true)
 
-menu.list_select(Cam_Gun_shoot_weapon, "载具武器", {}, "", All_VehicleWeapons_ListItem, 1, function(value)
-    Cam_Gun.shoot_setting.vehicle_weapon_hash = All_VehicleWeapons_ListItem[value][3]
-end)
+local Cam_Gun_shoot_vehicle_weapon = rs_menu.vehicle_weapons(Cam_Gun_shoot_weapon, "载具武器", {}, "",
+    function(hash)
+        Cam_Gun.shoot_setting.vehicle_weapon_hash = hash
+    end, true)
+rs_menu.current_weapon_action(Cam_Gun_shoot_vehicle_weapon, "载具当前使用的武器", function()
+    Cam_Gun.shoot_setting.vehicle_weapon_hash = "VEHICLE_CURRENT_WEAPON"
+end, true)
 
 menu.toggle(Cam_Gun_shoot, "署名射击", {}, "以玩家名义", function(toggle)
     Cam_Gun.shoot_setting.is_owned = toggle
@@ -3845,17 +3885,21 @@ menu.list_select(Vehicle_Weapon_select, "武器类型", {}, "", { { "手持武�
         Vehicle_Weapon.weapon_select = value
     end)
 
-local Vehicle_Weapon_player_select = rs_menu.all_weapons_without_melee(Vehicle_Weapon_select, "手持武器", {}, "",
+local Vehicle_Weapon_select_player = rs_menu.all_weapons_without_melee(Vehicle_Weapon_select, "手持武器", {}, "",
     function(hash)
         Vehicle_Weapon.weapon_hash = hash
     end, true)
-rs_menu.current_weapon_action(Vehicle_Weapon_player_select, function()
+rs_menu.current_weapon_action(Vehicle_Weapon_select_player, "玩家当前使用的武器", function()
     Vehicle_Weapon.weapon_hash = "PLAYER_CURRENT_WEAPON"
 end, true)
 
-menu.list_select(Vehicle_Weapon_select, "载具武器", {}, "", All_VehicleWeapons_ListItem, 1, function(value)
-    Vehicle_Weapon.vehicle_weapon_hash = All_VehicleWeapons_ListItem[value][3]
-end)
+local Vehicle_Weapon_select_vehicle = rs_menu.vehicle_weapons(Vehicle_Weapon_select, "载具武器", {}, "",
+    function(hash)
+        Vehicle_Weapon.vehicle_weapon_hash = hash
+    end, true)
+rs_menu.current_weapon_action(Vehicle_Weapon_select_vehicle, "载具当前使用的武器", function()
+    Vehicle_Weapon.vehicle_weapon_hash = "VEHICLE_CURRENT_WEAPON"
+end, true)
 
 menu.slider(Vehicle_Weapon_options, "发射数量", { "veh_weapon_launch_num" }, "", 1, 3, 3, 1, function(value)
     Vehicle_Weapon.launch_num = value
