@@ -2,61 +2,89 @@
 ------------ 线上选项 -----------
 --------------------------------
 
-local Online_options = menu.list(menu.my_root(), "线上选项", {}, "")
+local Online_Options = menu.list(menu.my_root(), "线上选项", {}, "")
+
+
+
+---------------------
+-- 玩家语言
+---------------------
+local Player_Language = menu.list(Online_Options, "玩家游戏语言", {}, "")
+
+local player_lang = {
+    language = {
+        [-1] = "未定义",
+        [0] = "英语",
+        [1] = "法语",
+        [2] = "德语",
+        [3] = "意大利语",
+        [4] = "西班牙语",
+        [5] = "葡萄牙语",
+        [6] = "波兰语",
+        [7] = "俄语",
+        [8] = "韩语",
+        [9] = "繁体中文",
+        [10] = "日语",
+        [11] = "墨西哥语",
+        [12] = "简体中文"
+    },
+
+    menu_list = {},
+    notify = true,
+}
+
+menu.action(Player_Language, "获取玩家语言列表", { "player_language" }, "", function()
+    rs_menu.delete_menu_list(player_lang.menu_list)
+    player_lang.menu_list = {}
+
+    local text = ""
+    for k, pid in pairs(players.list()) do
+        local name                 = players.get_name(pid)
+        local rank                 = players.get_rank(pid)
+        local lang                 = players.get_language(pid)
+        local lang_text            = player_lang.language[lang]
+        local title                = name .. " (" .. rank .. "级)"
+
+        player_lang.menu_list[pid] = menu.readonly(Player_Language, title, lang_text)
+
+        if text ~= "" then
+            text = text .. "\n"
+        end
+        text = text .. title .. "     " .. lang_text
+    end
+
+    if player_lang.notify then
+        util.toast(text)
+    end
+end)
+menu.toggle(Player_Language, "通知", {}, "", function(toggle)
+    player_lang.notify = toggle
+end, true)
+menu.divider(Player_Language, "列表")
 
 
 
 ---------------------
 -- 请求服务
 ---------------------
-local Request_Service = menu.list(Online_options, "请求服务", {}, "")
+local Request_Service = menu.list(Online_Options, "请求服务", {}, "")
 
-local Request_Service_Remove = menu.list(Request_Service, "移除冷却时间和费用", {}, "切换战局后会失效，需要重新操作")
-menu.toggle(Request_Service_Remove, "CEO技能冷却时间", {}, "", function(toggle)
-    if toggle then
-        for k, v in pairs(Globals.CEO_Ability.Cooldown) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, 0)
-        end
-    else
-        for k, v in pairs(Globals.CEO_Ability.Cooldown) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, v[2])
-        end
-    end
+local Request_Service_Cooldown = menu.list(Request_Service, "移除冷却时间", {}, "")
+menu.toggle(Request_Service_Cooldown, "CEO技能", {}, "", function(toggle)
+    Globals.RemoveCooldown.CeoAbility(toggle)
+    Transition_Handler.Globals.Cooldown.CeoAbility = toggle
 end)
-menu.toggle(Request_Service_Remove, "CEO技能费用", {}, "", function(toggle)
-    if toggle then
-        for k, v in pairs(Globals.CEO_Ability.Cost) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, 0)
-        end
-    else
-        for k, v in pairs(Globals.CEO_Ability.Cost) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, v[2])
-        end
-    end
-end)
-menu.toggle(Request_Service_Remove, "CEO载具请求冷却时间", {}, "", function(toggle)
+menu.toggle(Request_Service_Cooldown, "CEO载具请求", {}, "", function(toggle)
     if toggle then
         SET_INT_GLOBAL(Globals.GB_CALL_VEHICLE_COOLDOWN, 0)
     else
         SET_INT_GLOBAL(Globals.GB_CALL_VEHICLE_COOLDOWN, 120000)
     end
+    Transition_Handler.Globals.Cooldown.CeoVehicle = toggle
 end)
-menu.toggle(Request_Service_Remove, "CEO载具请求费用", {}, "", function(toggle)
-    if toggle then
-        for k, v in pairs(Globals.CEO_Vehicle_Request_Cost) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, 0)
-        end
-    else
-        for k, v in pairs(Globals.CEO_Vehicle_Request_Cost) do
-            local addr = 262145 + v[1]
-            SET_INT_GLOBAL(addr, v[2])
-        end
-    end
+menu.toggle(Request_Service_Cooldown, "其它载具请求", {}, "", function(toggle)
+    Globals.RemoveCooldown.OtherVehicle(toggle)
+    Transition_Handler.Globals.Cooldown.OtherVehicle = toggle
 end)
 
 menu.action(Request_Service, "请求重型装甲", { "ammo_drop" }, "请求弹道装甲和火神机枪",
@@ -127,7 +155,7 @@ menu.click_slider(Request_Service, "幽灵组织 倒计时时间", {}, "单位: 
 ---------------------
 -- 资产监视
 ---------------------
-local Business_Monitor = menu.list(Online_options, "资产监视", { "business_monitor" }, "")
+local Business_Monitor = menu.list(Online_Options, "资产监视", { "business_monitor" }, "")
 
 local Business = {
     Caps = {
@@ -164,6 +192,7 @@ end
 
 function Business.MCBusinessPropertyType(slot)
     local mapping  = {
+        [0]  = -1,
         [1]  = 3,
         [2]  = 1,
         [3]  = 4,
@@ -240,7 +269,7 @@ menu.action(Business_Monitor, "刷新状态", {}, "", function()
         end
         menu.set_value(Business.Menu.bunker.product, text)
 
-        text = STAT_GET_INT("RESEARCHTOTALFORFACTORY5")
+        text = STAT_GET_INT("RESEARCHTOTALFORFACTORY5") .. "/60"
         menu.set_value(Business.Menu.bunker.research, text)
 
         --- Nightclub ---
@@ -289,16 +318,17 @@ menu.action(Business_Monitor, "刷新状态", {}, "", function()
         --- MCBusiness ---
         for i = 0, 4 do
             local type_number = Business.MCBusinessPropertyType(i)
-            
-            text = Business.GetBusinessSupplies(i) .. "%"
-            menu.set_value(Business.Menu.mc_business[type_number].supplies, text)
+            if type_number ~= -1 then
+                text = Business.GetBusinessSupplies(i) .. "%"
+                menu.set_value(Business.Menu.mc_business[type_number].supplies, text)
 
-            product = Business.GetBusinessProduct(i)
-            text = product .. "/" .. Business.Caps.MCBusiness[type_number]
-            if product == Business.Caps.MCBusiness[type_number] then
-                text = "[!] " .. text
+                product = Business.GetBusinessProduct(i)
+                text = product .. "/" .. Business.Caps.MCBusiness[type_number]
+                if product == Business.Caps.MCBusiness[type_number] then
+                    text = "[!] " .. text
+                end
+                menu.set_value(Business.Menu.mc_business[type_number].product, text)
             end
-            menu.set_value(Business.Menu.mc_business[type_number].product, text)
         end
     else
         util.toast("仅在线上模式战局内可用")
@@ -339,7 +369,7 @@ end
 ---------------------
 -- 资产统计数据
 ---------------------
-local Business_Stats = menu.list(Online_options, "资产统计数据", {}, "")
+local Business_Stats = menu.list(Online_Options, "资产统计数据", {}, "")
 
 local BusinessStats = {
     Bunker = {
@@ -389,17 +419,17 @@ end
 ---------------------
 -- 远程电脑
 ---------------------
-local Remote_Computer = menu.list(Online_options, "远程电脑", {}, "")
+local Remote_Computer = menu.list(Online_Options, "远程电脑", {}, "")
 
 local remote_computer_list = {
-    { menu_name = "地堡电脑",             script = "appbunkerbusiness",    command = "bunker" },
-    { menu_name = "机库电脑",             script = "appsmuggler",          command = "hangar" },
-    { menu_name = "夜总会电脑",          script = "appbusinesshub",       command = "nightclub" },
-    { menu_name = "摩托帮电脑",          script = "appbikerbusiness",     command = "biker" },
+    { menu_name = "地堡电脑", script = "appbunkerbusiness", command = "bunker" },
+    { menu_name = "机库电脑", script = "appsmuggler", command = "hangar" },
+    { menu_name = "夜总会电脑", script = "appbusinesshub", command = "nightclub" },
+    { menu_name = "摩托帮会所电脑", script = "appbikerbusiness", command = "biker" },
     { menu_name = "游戏厅主控制终端", script = "apparcadebusinesshub", command = "arcade" },
-    { menu_name = "恐霸电脑",             script = "apphackertruck",       command = "terrorbyte" },
-    { menu_name = "事务所电脑",          script = "appfixersecurity",     command = "agency" },
-    { menu_name = "复仇者操作终端",    script = "appavengeroperations", command = "avenger" },
+    { menu_name = "恐霸电脑", script = "apphackertruck", command = "terrorbyte" },
+    { menu_name = "事务所电脑", script = "appfixersecurity", command = "agency" },
+    { menu_name = "复仇者操作终端", script = "appavengeroperations", command = "avenger" },
     -- { menu_name = "机动作战指挥中心", script = "appcovertops" },
 }
 
@@ -416,23 +446,26 @@ end
 ---------------------
 -- 快捷传送
 ---------------------
-local Fast_Teleport = menu.list(Online_options, "快捷传送", {}, "")
+local Fast_Teleport = menu.list(Online_Options, "快捷传送", {}, "")
 
 local FastTP = {
     property_list = {
-        { sprite = 557, name = "地堡",    command = "bunker" },
-        { sprite = 569, name = "机库",    command = "hangar" },
-        { sprite = 590, name = "设施",    command = "facility" },
+        { sprite = 557, name = "地堡", command = "bunker" },
+        { sprite = 569, name = "机库", command = "hangar" },
+        { sprite = 590, name = "设施", command = "facility" },
         { sprite = 614, name = "夜总会", command = "nightclub" },
         { sprite = 740, name = "游戏厅", command = "arcade" },
         { sprite = 779, name = "改装铺", command = "autoshop" },
         { sprite = 826, name = "事务所", command = "agency" },
+        { sprite = 475, name = "办公室", command = "office" },
+        { sprite = 492, name = "摩托帮会所", command = "biker" },
     },
     event_list = {
-        { sprite = 430, name = "时间挑战赛",         command = "timetrial" },
+        { sprite = 430, name = "时间挑战赛", command = "timetrial" },
         { sprite = 673, name = "RC匪徒时间挑战赛", command = "rctimetrial" },
-        { sprite = 842, name = "杰拉德包裹",         command = "gcaches" },
-        { sprite = 845, name = "藏匿屋",               command = "stashhouse" },
+        { sprite = 842, name = "杰拉德包裹", command = "gcaches" },
+        { sprite = 845, name = "藏匿屋", command = "stashhouse" },
+        { sprite = 860, name = "拉机能量时间挑战赛", command = "junktimetrial" },
     },
 }
 
@@ -516,71 +549,188 @@ end
 
 
 
----------------------
--- 玩家语言
----------------------
-local Player_Language = menu.list(Online_options, "玩家游戏语言", {}, "")
+--#region Local Editor
 
-local player_lang = {
-    language = {
-        [-1] = "未定义",
-        [0] = "英语",
-        [1] = "法语",
-        [2] = "德语",
-        [3] = "意大利语",
-        [4] = "西班牙语",
-        [5] = "葡萄牙语",
-        [6] = "波兰语",
-        [7] = "俄语",
-        [8] = "韩语",
-        [9] = "繁体中文",
-        [10] = "日语",
-        [11] = "墨西哥语",
-        [12] = "简体中文"
-    },
+---------------------
+-- Local Editor
+---------------------
+local Local_Editor = menu.list(Online_Options, "Local Editor", { "local_editor" }, "")
 
-    menu_list = {},
-    notify = true,
+local local_editor = {
+    script = "fm_mission_controller",
+    address = 0,
+    type = "int",
+    write = "",
 }
 
-menu.action(Player_Language, "获取玩家语言列表", { "player_language" }, "", function()
-    for k, v in pairs(player_lang.menu_list) do
-        if menu.is_ref_valid(v) then
-            menu.delete(v)
-        end
-    end
-    player_lang.menu_list = {}
-
-    local text = ""
-    for k, pid in pairs(players.list()) do
-        local name                 = players.get_name(pid)
-        local rank                 = players.get_rank(pid)
-        local lang                 = players.get_language(pid)
-        local lang_text            = player_lang.language[lang]
-        local title                = name .. " (" .. rank .. "级)"
-
-        player_lang.menu_list[pid] = menu.readonly(Player_Language, title, lang_text)
-
-        if text ~= "" then
-            text = text .. "\n"
-        end
-        text = text .. title .. "     " .. lang_text
-    end
-
-    if player_lang.notify then
-        util.toast(text)
+menu.list_select(Local_Editor, "选择脚本", {}, "", {
+    { "fm_mission_controller" },
+    { "fm_mission_controller_2020" },
+}, 1, function(index)
+    if index == 1 then
+        local_editor.script = "fm_mission_controller"
+    elseif index == 2 then
+        local_editor.script = "fm_mission_controller_2020"
     end
 end)
-menu.toggle(Player_Language, "通知", {}, "", function(toggle)
-    player_lang.notify = toggle
-end, true)
-menu.divider(Player_Language, "列表")
+
+menu.slider(Local_Editor, "地址", { "local_address" }, "输入计算总和",
+    0, 16777216, 0, 1, function(value)
+        local_editor.address = value
+    end)
+menu.list_select(Local_Editor, "数值类型", {}, "", { { "INT" }, { "FLOAT" } }, 1, function(value)
+    if value == 1 then
+        local_editor.type = "int"
+    elseif value == 2 then
+        local_editor.type = "float"
+    end
+end)
+
+menu.divider(Local_Editor, "读")
+menu.action(Local_Editor, "读取", {}, "", function()
+    local script = local_editor.script
+    local address = local_editor.address
+    if SCRIPT.HAS_SCRIPT_LOADED(script) then
+        local value
+        if local_editor.type == "int" then
+            value = GET_INT_LOCAL(script, address)
+        elseif local_editor.type == "float" then
+            value = GET_FLOAT_LOCAL(script, address)
+        end
+
+        if value ~= nil then
+            menu.set_value(local_editor.readonly, value)
+        else
+            menu.set_value(local_editor.readonly, "NULL")
+        end
+    else
+        util.toast("This Script Has Not Loaded")
+    end
+end)
+local_editor.readonly = menu.readonly(Local_Editor, "值")
+
+menu.divider(Local_Editor, "写")
+menu.text_input(Local_Editor, "要写入的值", { "local_write" }, "务必注意int类型和float类型的格式",
+    function(value)
+        local_editor.write = value
+    end)
+menu.action(Local_Editor, "写入", {}, "", function()
+    local script = local_editor.script
+    local address = local_editor.address
+    local value = tonumber(local_editor.write)
+    if value ~= nil then
+        if SCRIPT.HAS_SCRIPT_LOADED(script) then
+            if local_editor.type == "int" then
+                SET_INT_LOCAL(script, address, value)
+            elseif local_editor.type == "float" then
+                SET_FLOAT_LOCAL(script, address, value)
+            end
+        else
+            util.toast("This Script Has Not Loaded")
+        end
+    end
+end)
+menu.toggle_loop(Local_Editor, "锁定写入", {}, "更改地址类型，锁定的也会跟着改变", function()
+    local script = local_editor.script
+    local address = local_editor.address
+    local value = tonumber(local_editor.write)
+    if value ~= nil then
+        if SCRIPT.HAS_SCRIPT_LOADED(script) then
+            if local_editor.type == "int" then
+                SET_INT_LOCAL(script, address, value)
+            elseif local_editor.type == "float" then
+                SET_FLOAT_LOCAL(script, address, value)
+            end
+        end
+    end
+end)
+
+--#endregion
+
+
+
+--#region Global Editor
+
+---------------------
+-- Global Editor
+---------------------
+local Global_Editor = menu.list(Online_Options, "Global Editor", { "global_editor" }, "")
+
+local global_editor = {
+    address1 = 262145,
+    address2 = 0,
+    type = "int",
+    write = "",
+}
+
+menu.slider(Global_Editor, "地址1", { "global_address1" }, "", 0, 16777216, 262145, 1, function(value)
+    global_editor.address1 = value
+end)
+menu.slider(Global_Editor, "地址2", { "global_address2" }, "", 0, 16777216, 0, 1, function(value)
+    global_editor.address2 = value
+end)
+menu.list_select(Global_Editor, "数值类型", {}, "", { { "INT" }, { "FLOAT" } }, 1, function(value)
+    if value == 1 then
+        global_editor.type = "int"
+    elseif value == 2 then
+        global_editor.type = "float"
+    end
+end)
+
+menu.divider(Global_Editor, "读")
+menu.action(Global_Editor, "读取", {}, "", function()
+    local address = global_editor.address1 + global_editor.address2
+    local value
+    if global_editor.type == "int" then
+        value = GET_INT_GLOBAL(address)
+    elseif global_editor.type == "float" then
+        value = GET_FLOAT_GLOBAL(address)
+    end
+
+    if value ~= nil then
+        menu.set_value(global_editor.readonly, value)
+    else
+        menu.set_value(global_editor.readonly, "NULL")
+    end
+end)
+global_editor.readonly = menu.readonly(Global_Editor, "值")
+
+menu.divider(Global_Editor, "写")
+menu.text_input(Global_Editor, "要写入的值", { "global_write" }, "务必注意int类型和float类型的格式",
+    function(value)
+        global_editor.write = value
+    end)
+menu.action(Global_Editor, "写入", {}, "", function()
+    local address = global_editor.address1 + global_editor.address2
+    local value = tonumber(global_editor.write)
+    if value ~= nil then
+        if global_editor.type == "int" then
+            SET_INT_GLOBAL(address, value)
+        elseif global_editor.type == "float" then
+            SET_FLOAT_GLOBAL(address, value)
+        end
+    end
+end)
+menu.toggle_loop(Global_Editor, "锁定写入", {}, "更改地址类型，锁定的也会跟着改变", function()
+    local address = global_editor.address1 + global_editor.address2
+    local value = tonumber(global_editor.write)
+    if value ~= nil then
+        if global_editor.type == "int" then
+            SET_INT_GLOBAL(address, value)
+        elseif global_editor.type == "float" then
+            SET_FLOAT_GLOBAL(address, value)
+        end
+    end
+end)
+
+--#endregion
+
 
 
 
 
 ----------
-menu.toggle(Online_options, "战局雪天", { "turn_snow" }, "切换战局后会失效，需要重新操作",
+menu.toggle(Online_Options, "战局雪天", { "turn_snow" }, "切换战局后会失效，需要重新操作",
     function(toggle)
         if toggle then
             SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 1)
@@ -588,7 +738,11 @@ menu.toggle(Online_options, "战局雪天", { "turn_snow" }, "切换战局后会
             SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 0)
         end
     end)
-menu.click_slider_float(Online_options, "AI血量", { "ai_health" }, "切换战局后会失效，需要重新操作",
+menu.click_slider_float(Online_Options, "AI血量", { "ai_health" }, "切换战局后会失效，需要重新操作",
     0, 1000, 100, 10, function(value)
         SET_FLOAT_GLOBAL(Globals.AI_HEALTH, value * 0.01)
     end)
+menu.toggle(Online_Options, "禁用产业劫货", {}, "", function(toggle)
+    Globals.DisableBusinessRaid(toggle)
+    Transition_Handler.Globals.DisableBusinessRaid = toggle
+end)

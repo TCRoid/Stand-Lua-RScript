@@ -91,11 +91,11 @@ function player_damage.attacker_reaction(attacker, eventData)
     local toggle = player_damage.attacker.toggle
 
     -- 排除玩家
-    if toggle.exclude_player and IS_PED_PLAYER(attacker) then
+    if toggle.exclude_player and is_player_ped(attacker) then
     else
         -- 死亡
         if toggle.dead then
-            ENTITY.SET_ENTITY_HEALTH(attacker, 0)
+            SET_ENTITY_HEALTH(attacker, 0)
         end
         -- 匿名爆炸
         if toggle.explosion then
@@ -109,7 +109,7 @@ function player_damage.attacker_reaction(attacker, eventData)
         end
         -- 爆头击杀
         if toggle.shoot_head then
-            shoot_ped_head(attacker, util.joaat("WEAPON_PISTOL"))
+            shoot_ped_head(attacker, util.joaat("WEAPON_PISTOL"), players.user_ped())
         end
         -- 燃烧
         if toggle.fire then
@@ -270,7 +270,7 @@ menu.toggle_loop(Self_Death_Reaction, "启用", {}, "", function()
             local ent = PED.GET_PED_SOURCE_OF_DEATH(player_ped)
             if IS_AN_ENTITY(ent) and ent ~= player_ped then
                 -- 排除玩家
-                if self_death_reaction.killer.exclude_player and IS_PED_PLAYER(ent) then
+                if self_death_reaction.killer.exclude_player and is_player_ped(ent) then
                 else
                     local pos = ENTITY.GET_ENTITY_COORDS(ent)
                     -- 爆炸
@@ -324,7 +324,7 @@ menu.toggle_loop(Self_Death_Reaction, "启用", {}, "", function()
                     end
                     -- 死亡
                     if self_death_reaction.killer.dead then
-                        ENTITY.SET_ENTITY_HEALTH(ent, 0)
+                        SET_ENTITY_HEALTH(ent, 0)
                     end
                     -- 冻结
                     if self_death_reaction.killer.freeze then
@@ -379,10 +379,10 @@ menu.slider(Self_Death_Reaction, "爆炸", { "death_reaction_killer_explosion" }
     function(value)
         self_death_reaction.killer.explosion = value
     end)
-menu.slider(Self_Death_Reaction, "坠落爆炸", { "death_reaction_killer_fall_explosion" }, "坠落次数", 0, 10, 0, 1
-, function(value)
-    self_death_reaction.killer.fall_explosion = value
-end)
+menu.slider(Self_Death_Reaction, "坠落爆炸", { "death_reaction_killer_fall_explosion" }, "坠落次数", 0, 10, 0, 1,
+    function(value)
+        self_death_reaction.killer.fall_explosion = value
+    end)
 menu.slider(Self_Death_Reaction, "RPG轰炸", { "death_reaction_killer_rpg" }, "轰炸次数", 0, 10, 0, 1,
     function(value)
         self_death_reaction.killer.rpg = value
@@ -640,8 +640,7 @@ menu.toggle(Cargobob_Pickup, "连线指示", {}, "", function(toggle)
     cargobob_pickup_setting.draw_line = toggle
 end, true)
 menu.slider(Cargobob_Pickup, "范围半径", { "cargobob_pickup_radius" }, "获取最近距离载具的范围",
-    0, 10000, 30, 5,
-    function(value)
+    0, 10000, 30, 5, function(value)
         cargobob_pickup_setting.radius = value
     end)
 menu.slider(Cargobob_Pickup, "Bone Index", { "cargobob_pickup_bone" }, "", -1, 16777216, -1, 1, function(value)

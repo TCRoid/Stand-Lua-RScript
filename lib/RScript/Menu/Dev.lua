@@ -9,8 +9,11 @@ menu.action(Dev_options, "Copy My Coords & Heading", { "copymypos" }, "", functi
     util.copy_to_clipboard(text, false)
     util.toast("Copied!\n" .. text)
 end)
-menu.action(Dev_options, "GET_NETWORK_TIME", {}, "", function()
-    util.toast(NETWORK.GET_NETWORK_TIME())
+menu.action(Dev_options, "Get Network Time", {}, "", function()
+    util.toast("Network Time: " .. NETWORK.GET_NETWORK_TIME() ..
+        "\nNetwork Time(String): " .. NETWORK.GET_TIME_AS_STRING(NETWORK.GET_NETWORK_TIME()) ..
+        "\nAccurate Network Time: " .. NETWORK.GET_NETWORK_TIME_ACCURATE() ..
+        "\nCloud Time: " .. NETWORK.GET_CLOUD_TIME_AS_INT())
 end)
 menu.action(Dev_options, "Clear Player Ped Tasks", { "clstask" }, "", function()
     local ped = players.user_ped()
@@ -127,3 +130,58 @@ menu.toggle_loop(Dev_options, "Event Network Entity Damage", {}, "", function()
         end
     end
 end)
+
+
+
+--------------------
+-- 地图标记点
+--------------------
+local dev_map_blips = menu.list(Dev_options, "地图标记点", { "dev_map_blips" }, "")
+
+local map_blips = {
+    menu_list = {},
+}
+
+menu.action(dev_map_blips, "获取地图所有标记点", {}, "相同的获取最近的, 由近到远排序", function()
+    rs_menu.delete_menu_list(map_blips.menu_list)
+    map_blips.menu_list = {}
+
+    local blip_list = {}
+    for i = 0, 866, 1 do
+        local blip = HUD.GET_CLOSEST_BLIP_INFO_ID(i)
+        if HUD.DOES_BLIP_EXIST(blip) then
+            table.insert(blip_list, blip)
+        end
+    end
+
+    if next(blip_list) ~= nil then
+        -- sort
+        local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+        table.sort(blip_list, function(a, b)
+            local distance_a = v3.distance(HUD.GET_BLIP_COORDS(a), player_pos)
+            local distance_b = v3.distance(HUD.GET_BLIP_COORDS(b), player_pos)
+            return distance_a < distance_b
+        end)
+
+        for _, blip in pairs(blip_list) do
+            local blip_type = GET_BLIP_TYPE(blip)
+
+            -- menu_list
+            local menu_name = HUD.GET_BLIP_SPRITE(blip) .. ". " .. blip_type
+            local menu_list = menu.list(dev_map_blips, menu_name, {}, "")
+            table.insert(map_blips.menu_list, menu_list)
+
+            -- generate_menu
+            menu.toggle(menu_list, "Flashs", {}, "", function(toggle)
+                HUD.SET_BLIP_FLASHES(blip, toggle)
+            end, HUD.IS_BLIP_FLASHING(blip))
+            menu.readonly(menu_list, "Colour", HUD.GET_BLIP_COLOUR(blip))
+            menu.readonly(menu_list, "HUD Colour", HUD.GET_BLIP_HUD_COLOUR(blip))
+        end
+    end
+end)
+menu.action(dev_map_blips, "清空", {}, "", function()
+    rs_menu.delete_menu_list(map_blips.menu_list)
+    map_blips.menu_list = {}
+end)
+menu.divider(dev_map_blips, "列表")

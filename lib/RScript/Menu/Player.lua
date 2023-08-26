@@ -34,7 +34,7 @@ local Player_options = function(pid)
 
         PED.SET_PED_MONEY(g_ped, 2000)
         ENTITY.SET_ENTITY_MAX_HEALTH(g_ped, 30000)
-        ENTITY.SET_ENTITY_HEALTH(g_ped, 30000)
+        SET_ENTITY_HEALTH(g_ped, 30000)
 
         increase_ped_combat_ability(g_ped, false, false)
         increase_ped_combat_attributes(g_ped)
@@ -58,7 +58,7 @@ local Player_options = function(pid)
 
             PED.SET_PED_MONEY(g_ped, 2000)
             ENTITY.SET_ENTITY_MAX_HEALTH(g_ped, 30000)
-            ENTITY.SET_ENTITY_HEALTH(g_ped, 30000)
+            SET_ENTITY_HEALTH(g_ped, 30000)
             PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(g_ped, false)
             PED.SET_PED_CAN_BE_DRAGGED_OUT(g_ped, false)
 
@@ -92,7 +92,7 @@ local Player_options = function(pid)
 
             PED.SET_PED_MONEY(g_ped, 2000)
             ENTITY.SET_ENTITY_MAX_HEALTH(g_ped, 30000)
-            ENTITY.SET_ENTITY_HEALTH(g_ped, 30000)
+            SET_ENTITY_HEALTH(g_ped, 30000)
             PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(g_ped, false)
             PED.SET_PED_CAN_BE_DRAGGED_OUT(g_ped, false)
 
@@ -166,7 +166,7 @@ local Player_options = function(pid)
                 if player_tp_entities.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
                 else
                     if Type == "Ped" and ENTITY.IS_ENTITY_A_PED(ent) then
-                        if not IS_PED_PLAYER(ent) then
+                        if not is_player_ped(ent) then
                             RequestControl(ent)
                             TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
                             i = i + 1
@@ -269,7 +269,7 @@ local Player_options = function(pid)
         for _, vehicle in pairs(GET_NEARBY_VEHICLES(pid, player_nearby_vehicle.radius)) do
             local driver = GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
             if driver ~= 0 then
-                if not IS_PED_PLAYER(driver) and not TASK.GET_IS_TASK_ACTIVE(driver, 363) then
+                if not is_player_ped(driver) and not TASK.GET_IS_TASK_ACTIVE(driver, 363) then
                     RequestControl(driver)
 
                     PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
@@ -294,7 +294,7 @@ local Player_options = function(pid)
         for _, vehicle in pairs(GET_NEARBY_VEHICLES(pid, player_nearby_vehicle.radius)) do
             local driver = GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
             if driver ~= 0 then
-                if not IS_PED_PLAYER(driver) and TASK.GET_ACTIVE_VEHICLE_MISSION_TYPE(vehicle) ~= player_nearby_vehicle.mission_type then
+                if not is_player_ped(driver) and TASK.GET_ACTIVE_VEHICLE_MISSION_TYPE(vehicle) ~= player_nearby_vehicle.mission_type then
                     RequestControl(driver)
 
                     PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(driver, true)
@@ -335,7 +335,7 @@ local Player_options = function(pid)
     menu.toggle_loop(Trolling_NearbyPed, "附近行人逮捕此玩家", {}, "", function()
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         for _, ped in pairs(GET_NEARBY_PEDS(pid, player_nearby_ped.radius)) do
-            if not IS_PED_PLAYER(ped) and not TASK.GET_IS_TASK_ACTIVE(ped, 62) then
+            if not is_player_ped(ped) and not TASK.GET_IS_TASK_ACTIVE(ped, 62) then
                 RequestControl(ped)
 
                 PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
@@ -354,7 +354,7 @@ local Player_options = function(pid)
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         local weapon_smoke = util.joaat("WEAPON_SMOKEGRENADE")
         for _, ped in pairs(GET_NEARBY_PEDS(pid, player_nearby_ped.radius)) do
-            if not IS_PED_PLAYER(ped) and not PED.IS_PED_IN_COMBAT(ped, player_ped) then
+            if not is_player_ped(ped) and not PED.IS_PED_IN_COMBAT(ped, player_ped) then
                 RequestControl(ped)
 
                 WEAPON.GIVE_WEAPON_TO_PED(ped, weapon_smoke, -1, false, false)
@@ -363,7 +363,7 @@ local Player_options = function(pid)
                 WEAPON.SET_PED_DROPS_WEAPONS_WHEN_DEAD(ped, false)
 
                 local health = ENTITY.GET_ENTITY_MAX_HEALTH(ped)
-                ENTITY.SET_ENTITY_HEALTH(ped, health * player_nearby_ped.combat.health_mult)
+                SET_ENTITY_HEALTH(ped, health * player_nearby_ped.combat.health_mult)
 
                 PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
                 TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
@@ -647,35 +647,15 @@ local Player_options = function(pid)
         local weaponHash = util.joaat("WEAPON_APPISTOL")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         for _, ped in pairs(entities.get_all_peds_as_handles()) do
-            if not IS_PED_PLAYER(ped) and not ENTITY.IS_ENTITY_DEAD(ped) then
-                local head_pos = PED.GET_PED_BONE_COORDS(ped, 0x322c, 0, 0, 0)
-                local vector = ENTITY.GET_ENTITY_FORWARD_VECTOR(ped)
-                local start_pos = {}
-                start_pos.x = head_pos.x + vector.x
-                start_pos.y = head_pos.y + vector.y
-                start_pos.z = head_pos.z + vector.z
-
-                local ped_veh = GET_VEHICLE_PED_IS_IN(ped)
-                if ped_veh ~= 0 then
-                    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
-                        start_pos.x, start_pos.y, start_pos.z,
-                        head_pos.x, head_pos.y, head_pos.z,
-                        1000, false, weaponHash, player_ped,
-                        false, false, 1000, ped_veh)
-                else
-                    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(
-                        start_pos.x, start_pos.y, start_pos.z,
-                        head_pos.x, head_pos.y, head_pos.z,
-                        1000, false, weaponHash, player_ped,
-                        false, false, 1000)
-                end
+            if not ENTITY.IS_ENTITY_DEAD(ped) and not is_player_ped(ped) then
+                shoot_ped_head(ped, weaponHash, player_ped)
             end
         end
     end)
     menu.action(As_This_Player, "爆炸全部NPC", {}, "隐形无声的爆炸", function()
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         for _, ped in pairs(entities.get_all_peds_as_handles()) do
-            if not IS_PED_PLAYER(ped) and not ENTITY.IS_ENTITY_DEAD(ped) then
+            if not ENTITY.IS_ENTITY_DEAD(ped) and not is_player_ped(ped) then
                 local coords = ENTITY.GET_ENTITY_COORDS(ped)
                 add_owned_explosion(player_ped, coords, 4, { isAudible = false, isInvisible = true })
             end

@@ -1,173 +1,6 @@
---------------------------------------------
--- Alternative for Native Functions
---------------------------------------------
-
----@param entity Entity
----@param coords v3
-function SET_ENTITY_COORDS(entity, coords)
-    ENTITY.SET_ENTITY_COORDS_NO_OFFSET(entity, coords.x, coords.y, coords.z, true, false, false)
-end
-
----@param vehicle Vehicle
----@param seat integer
----@return Ped
-function GET_PED_IN_VEHICLE_SEAT(vehicle, seat)
-    if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, seat, false) then
-        return VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, seat)
-    end
-    return 0
-end
-
----@param ped Ped
----@return Vehicle
-function GET_VEHICLE_PED_IS_IN(ped)
-    if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
-        return PED.GET_VEHICLE_PED_IS_IN(ped, false)
-    end
-    return 0
-end
-
----`colour` range: r, g, b, alpha = 0-255
----@param start_pos v3
----@param end_pos v3
----@param colour? Colour
-function DRAW_LINE(start_pos, end_pos, colour)
-    colour = colour or { r = 255, g = 0, b = 255, a = 255 }
-    GRAPHICS.DRAW_LINE(start_pos.x, start_pos.y, start_pos.z, end_pos.x, end_pos.y, end_pos.z, colour.r, colour.g,
-        colour.b, colour.a)
-end
-
----`colour` range: r, g, b = 0-255, alpha = 0-1.0
----@param coords v3
----@param radius float
----@param colour? Colour
-function DRAW_MARKER_SPHERE(coords, radius, colour)
-    colour = colour or { r = 200, g = 50, b = 200, a = 0.5 }
-    GRAPHICS.DRAW_MARKER_SPHERE(coords.x, coords.y, coords.z, radius, colour.r, colour.g, colour.b, colour.a)
-end
-
----Creates an explosion at the co-ordinates.
----@param coords v3
----@param explosionType? integer [default = 2]
----@param optionalParams? table<key, value>
---- - - -
---- **optionalParams:**
---- - `damageScale` *float* [default = 1.0]
---- - `isAudible` *boolean* [default = true]
---- - `isInvisible` *boolean* [default = false]
---- - `cameraShake` *float* [default = 0.0]
---- - `noDamage` *boolean* [default = false]
-function add_explosion(coords, explosionType, optionalParams)
-    explosionType = explosionType or 2
-    local Params = optionalParams or {}
-    Params.damageScale = Params.damageScale or 1.0
-    if Params.isAudible == nil then Params.isAudible = true end
-    Params.cameraShake = Params.cameraShake or 0.0
-
-    FIRE.ADD_EXPLOSION(coords.x, coords.y, coords.z,
-        explosionType,
-        Params.damageScale, Params.isAudible, Params.isInvisible, Params.cameraShake, Params.noDamage)
-end
-
----Creates an explosion at the co-ordinates owned by a specific ped.
----@param owner Ped
----@param coords v3
----@param explosionType? integer [default = 2]
----@param optionalParams? table<key, value>
---- - - -
---- **optionalParams:**
---- - `damageScale` *float* [default = 1.0]
---- - `isAudible` *boolean* [default = true]
---- - `isInvisible` *boolean* [default = false]
---- - `cameraShake` *float* [default = 0.0]
-function add_owned_explosion(owner, coords, explosionType, optionalParams)
-    explosionType = explosionType or 2
-    local Params = optionalParams or {}
-    Params.damageScale = Params.damageScale or 1.0
-    if Params.isAudible == nil then Params.isAudible = true end
-    Params.cameraShake = Params.cameraShake or 0.0
-
-    FIRE.ADD_OWNED_EXPLOSION(owner, coords.x, coords.y, coords.z,
-        explosionType,
-        Params.damageScale, Params.isAudible, Params.isInvisible, Params.cameraShake)
-end
-
----!!! DON'T USE
----
----Fires an instant hit bullet between the two points taking into account an entity to ignore for damage.
----@param startCoords v3
----@param endCoords v3
----@param optionalParams? table<key, value>
---- - - -
---- **optionalParams:**
---- - `damage` *integer* [default = 1000]
---- - `perfectAccuracy` *boolean* [default = false]
---- - `weaponHash` *Hash* [default = 4058111347(WEAPON_APPISTOL)]
---- - `owner` *Ped* [default = NULL]
---- - `createTraceVfx` *boolean* [default = true]
---- - `allowRumble` *boolean* [default = true]
---- - `speed` *integer* [default = 1000]
---- - `ignoreEntity` *Entity* [default = 0]
-function shoot_single_bullet(startCoords, endCoords, optionalParams)
-    local Params = optionalParams or {}
-    Params.damage = Params.damage or 1000
-    Params.weaponHash = Params.weaponHash or 4058111347
-    Params.owner = Params.owner or 0
-    if Params.createTraceVfx == nil then Params.createTraceVfx = true end
-    if Params.allowRumble == nil then Params.allowRumble = true end
-    Params.speed = Params.speed or 1000
-    Params.ignoreEntity = Params.ignoreEntity or 0
-
-    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
-        startCoords.x, startCoords.y, startCoords.z,
-        endCoords.x, endCoords.y, endCoords.z,
-        Params.damage, Params.perfectAccuracy, Params.weaponHash, Params.owner,
-        Params.createTraceVfx, Params.allowRumble, Params.speed, Params.ignoreEntity)
-end
-
----Trigger a set piece (non looped) particle effect on an entity with an offset position and orientation.
----@param fxName string
----@param entity Entity
----@param offset v3?
----@param rotation v3?
----@param scale float?
----@param invertAxis table<key, boolean>?
-function start_ptfx_on_entity(fxName, entity, offset, rotation, scale, invertAxis)
-    offset = offset or v3(0, 0, 0)
-    rotation = rotation or v3(0, 0, 0)
-    scale = scale or 1.0
-    invertAxis = invertAxis or { x = false, y = false, z = false }
-
-    GRAPHICS.START_NETWORKED_PARTICLE_FX_NON_LOOPED_ON_ENTITY(fxName, entity,
-        offset.x, offset.y, offset.z,
-        rotation.x, rotation.y, rotation.z,
-        scale,
-        invertAxis.x, invertAxis.y, invertAxis.z)
-end
-
----Trigger a set piece (non looped) particle effect at a world position and orientation.
----@param fxName string
----@param coords v3
----@param rotation v3?
----@param scale float?
----@param invertAxis table<key, boolean>?
----@param ignoreScopeChecks boolean? use this ONLY for the ion cannon effects, otherwise request permission from network code
-function start_ptfx_at_coord(fxName, coords, rotation, scale, invertAxis, ignoreScopeChecks)
-    rotation = rotation or v3(0, 0, 0)
-    scale = scale or 1.0
-    invertAxis = invertAxis or { x = false, y = false, z = false }
-
-    GRAPHICS.START_NETWORKED_PARTICLE_FX_NON_LOOPED_AT_COORD(fxName,
-        coords.x, coords.y, coords.z,
-        rotation.x, rotation.y, rotation.z,
-        scale,
-        invertAxis.x, invertAxis.y, invertAxis.z,
-        ignoreScopeChecks)
-end
-
-----------------------------------------
--- Only Work for Player Functions
-----------------------------------------
+--------------------------------
+-- Local Player Functions
+--------------------------------
 
 ---@param x float
 ---@param y float
@@ -213,6 +46,15 @@ function PLAYER_HEADING(heading)
     end
 
     return ENTITY.GET_ENTITY_HEADING(ent)
+end
+
+---获取玩家室内ID，不在室内则返回-1
+---@return integer
+function PLAYER_INTERIOR()
+    if INTERIOR.IS_INTERIOR_SCENE() then
+        return INTERIOR.GET_INTERIOR_FROM_ENTITY(players.user_ped())
+    end
+    return -1
 end
 
 ---传送实体到玩家
@@ -334,18 +176,10 @@ function hasControl(entity)
     return NETWORK.NETWORK_HAS_CONTROL_OF_ENTITY(entity)
 end
 
----判断是否为玩家
----@param Ped Ped
+---@param ped Ped
 ---@return boolean
-function IS_PED_PLAYER(Ped)
-    if ENTITY.IS_ENTITY_A_PED(Ped) then
-        if PED.GET_PED_TYPE(Ped) >= 4 then
-            return false
-        else
-            return true
-        end
-    end
-    return false
+function is_player_ped(ped)
+    return entities.is_player_ped(ped)
 end
 
 ---判断是否为玩家载具
@@ -355,10 +189,11 @@ function IS_PLAYER_VEHICLE(vehicle)
     if ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         if vehicle == entities.get_user_vehicle_as_handle() or vehicle == entities.get_user_personal_vehicle_as_handle() then
             return true
-        elseif not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
+        end
+        if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
             local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
             if ped ~= 0 then
-                if IS_PED_PLAYER(ped) then
+                if is_player_ped(ped) then
                     return true
                 end
             end
@@ -403,15 +238,15 @@ function IS_HOSTILE_ENTITY(entity)
 
         if ENTITY.IS_ENTITY_A_VEHICLE(entity) then
             local driver = GET_PED_IN_VEHICLE_SEAT(entity, -1)
-            if is_hostile_ped(entity) then
+            if is_hostile_ped(driver) then
                 return true
             end
         end
 
         local blip = HUD.GET_BLIP_FROM_ENTITY(entity)
         if HUD.DOES_BLIP_EXIST(blip) then
-            local blip_color = HUD.GET_BLIP_COLOUR(blip)
-            if isInTable(Blip_Color_Red, blip_color) then
+            local blip_colour = HUD.GET_BLIP_COLOUR(blip)
+            if blip_colour == 1 or blip_colour == 59 then
                 return true
             end
         end
@@ -439,13 +274,14 @@ function GET_ENTITY_TYPE(entity, text_type)
             end
         end
     end
+
     if text_type == 1 then
         return string.lower(entity_type)
-    elseif text_type == 3 then
-        return string.upper(entity_type)
-    else
-        return entity_type
     end
+    if text_type == 3 then
+        return string.upper(entity_type)
+    end
+    return entity_type
 end
 
 ---String to Integer
@@ -455,17 +291,20 @@ end
 ---@return integer
 function GET_ENTITY_TYPE_INDEX(Type)
     Type = string.lower(Type)
+
     if Type == "ped" then
         return 1
-    elseif Type == "vehicle" then
-        return 2
-    elseif Type == "object" then
-        return 3
-    elseif Type == "pickup" then
-        return 4
-    else
-        return 5
     end
+    if Type == "vehicle" then
+        return 2
+    end
+    if Type == "object" then
+        return 3
+    end
+    if Type == "pickup" then
+        return 4
+    end
+    return 5
 end
 
 ---设置实体左右、前后、上下移动
@@ -513,9 +352,6 @@ function set_entity_networked(ent, can_migrate)
     if ENTITY.DOES_ENTITY_EXIST(ent) then
         if can_migrate == nil then can_migrate = true end
 
-        ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(ent, true)
-        ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(ent, true)
-
         NETWORK.NETWORK_REGISTER_ENTITY_AS_NETWORKED(ent)
 
         local net_id = NETWORK.NETWORK_GET_NETWORK_ID_FROM_ENTITY(ent)
@@ -536,18 +372,22 @@ end
 ---@param Type string
 ---@return table<int, entity>
 function get_all_entities(Type)
-    local all_entity = {}
     Type = string.lower(Type)
+
     if Type == "ped" then
-        all_entity = entities.get_all_peds_as_handles()
-    elseif Type == "vehicle" then
-        all_entity = entities.get_all_vehicles_as_handles()
-    elseif Type == "object" then
-        all_entity = entities.get_all_objects_as_handles()
-    elseif Type == "pickup" then
-        all_entity = entities.get_all_pickups_as_handles()
+        return entities.get_all_peds_as_handles()
     end
-    return all_entity
+    if Type == "vehicle" then
+        return entities.get_all_vehicles_as_handles()
+    end
+    if Type == "object" then
+        return entities.get_all_objects_as_handles()
+    end
+    if Type == "pickup" then
+        return entities.get_all_pickups_as_handles()
+    end
+
+    return {}
 end
 
 ---通过model hash寻找实体
@@ -559,11 +399,11 @@ function get_entities_by_hash(Type, isMission, ...)
     local all_entity = get_all_entities(Type)
 
     local entity_list = {}
-    local args = { ... } -- Hash list
+    local hash_list = { ... }
 
     for k, ent in pairs(all_entity) do
         local EntityHash = ENTITY.GET_ENTITY_MODEL(ent)
-        for _, Hash in pairs(args) do
+        for _, Hash in pairs(hash_list) do
             if EntityHash == Hash then
                 if isMission then
                     if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
@@ -598,6 +438,15 @@ function get_distance_between_entities(entity, target)
     return ENTITY.GET_ENTITY_COORDS(target, true):distance(pos)
 end
 
+---Detach Product
+---@param entity Entity
+function detach_product_entity(entity)
+    if ENTITY.IS_ENTITY_ATTACHED(entity) then
+        ENTITY.DETACH_ENTITY(entity, true, true)
+        ENTITY.SET_ENTITY_VISIBLE(entity, true, false)
+    end
+end
+
 -----------------------------------
 -- Create Entity Functions
 -----------------------------------
@@ -613,7 +462,7 @@ function Create_Network_Ped(pedType, modelHash, x, y, z, heading)
     request_model(modelHash)
     local ped = PED.CREATE_PED(pedType, modelHash, x, y, z, heading, true, true)
 
-    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(ped, true)
+    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(ped, true, 1)
     ENTITY.SET_ENTITY_AS_MISSION_ENTITY(ped, true, false)
     ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(ped, true)
 
@@ -645,7 +494,7 @@ function Create_Network_Vehicle(modelHash, x, y, z, heading)
     VEHICLE.SET_VEHICLE_STAYS_FROZEN_WHEN_CLEANED_UP(veh, true)
     VEHICLE.SET_CLEAR_FREEZE_WAITING_ON_COLLISION_ONCE_PLAYER_ENTERS(veh, false)
 
-    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(veh, true)
+    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(veh, true, 1)
     ENTITY.SET_ENTITY_AS_MISSION_ENTITY(veh, true, false)
     ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(veh, true)
 
@@ -674,7 +523,7 @@ function Create_Network_Pickup(pickupHash, x, y, z, modelHash, value)
 
     OBJECT.SET_PICKUP_OBJECT_COLLECTABLE_IN_VEHICLE(pickup)
 
-    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(pickup, true)
+    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(pickup, true, 1)
     ENTITY.SET_ENTITY_AS_MISSION_ENTITY(pickup, true, false)
     ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(pickup, true)
 
@@ -699,7 +548,7 @@ function Create_Network_Object(modelHash, x, y, z)
     request_model(modelHash)
     local obj = OBJECT.CREATE_OBJECT_NO_OFFSET(modelHash, x, y, z, true, true, false)
 
-    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(obj, true)
+    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(obj, true, 1)
     ENTITY.SET_ENTITY_AS_MISSION_ENTITY(obj, true, false)
     ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(obj, true)
 
@@ -729,7 +578,7 @@ function create_ped(ped_type, hash, coords, heading, is_networked, is_mission)
     request_model(hash)
     local ped = PED.CREATE_PED(ped_type, hash, coords.x, coords.y, coords.z, heading, is_networked, is_mission)
 
-    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(ped, true)
+    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(ped, true, 1)
     ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(ped, true)
 
     if is_mission then
@@ -765,7 +614,7 @@ function create_vehicle(hash, coords, heading, is_networked, is_mission)
     request_model(hash)
     local veh = VEHICLE.CREATE_VEHICLE(hash, coords.x, coords.y, coords.z, heading, is_networked, is_mission, false)
 
-    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(veh, true)
+    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(veh, true, 1)
     ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(veh, true)
 
     if is_mission then
@@ -800,7 +649,7 @@ function create_object(hash, coords, is_networked, is_mission)
     request_model(hash)
     local obj = OBJECT.CREATE_OBJECT_NO_OFFSET(hash, coords.x, coords.y, coords.z, is_networked, is_mission, false)
 
-    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(obj, true)
+    ENTITY.SET_ENTITY_LOAD_COLLISION_FLAG(obj, true, 1)
     ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(obj, true)
 
     if is_mission then
@@ -1102,8 +951,8 @@ function strong_vehicle(vehicle)
         --Damage
         VEHICLE.VEHICLE_SET_RAMP_AND_RAMMING_CARS_TAKE_DAMAGE(vehicle, false)
         VEHICLE.SET_INCREASE_WHEEL_CRUSH_DAMAGE(vehicle, false)
-        VEHICLE.SET_DISABLE_DAMAGE_WITH_PICKED_UP_ENTITY(vehicle, true)
-        VEHICLE.SET_VEHICLE_USES_MP_PLAYER_DAMAGE_MULTIPLIER(vehicle, true)
+        VEHICLE.SET_DISABLE_DAMAGE_WITH_PICKED_UP_ENTITY(vehicle, 1)
+        VEHICLE.SET_VEHICLE_USES_MP_PLAYER_DAMAGE_MULTIPLIER(vehicle, 1)
 
         --Explode
         VEHICLE.SET_VEHICLE_NO_EXPLOSION_DAMAGE_FROM_DRIVER(vehicle, true)
@@ -1114,7 +963,7 @@ function strong_vehicle(vehicle)
 
         --Heli
         VEHICLE.SET_HELI_TAIL_BOOM_CAN_BREAK_OFF(vehicle, false)
-        VEHICLE.SET_DISABLE_HELI_EXPLODE_FROM_BODY_DAMAGE(vehicle, true)
+        VEHICLE.SET_DISABLE_HELI_EXPLODE_FROM_BODY_DAMAGE(vehicle, 1)
 
         --MP Only
         VEHICLE.SET_PLANE_RESIST_TO_EXPLOSION(vehicle, true)
@@ -1381,7 +1230,7 @@ end
 ---@return boolean
 function is_friendly_ped(ped)
     if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
-        local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ent, players.user_ped())
+        local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ped, players.user_ped())
         if rel == 0 or rel == 1 then -- Respect or Like
             return true
         end
@@ -1485,20 +1334,6 @@ function GET_BLIP_TYPE(blip)
 
     local blip_type = HUD.GET_BLIP_INFO_ID_TYPE(blip)
     return enum_BlipType[blip_type]
-end
-
----判断标记点是否为实体
----@param blip Blip
----@return boolean
-function IS_BLIP_ENTITY(blip)
-    if not HUD.DOES_BLIP_EXIST(blip) then
-        return false
-    end
-    local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-    if ENTITY.DOES_ENTITY_EXIST(ent) then
-        return true
-    end
-    return false
 end
 
 ---为实体添加地图标记
@@ -1813,7 +1648,7 @@ function to_stand_colour(colour)
 end
 
 local org_blip_colours <const> = {
-    [-1] = 0,
+    [-1] = 4,
     [0] = -140542977,
     [1] = -494486529,
     [2] = -269576193,
@@ -2006,29 +1841,66 @@ function fall_entity_explosion(entity, owner)
     end
 end
 
----玩家爆头击杀NPC
+---爆头击杀NPC
 ---@param ped Ped
 ---@param weaponHash Hash
-function shoot_ped_head(ped, weaponHash)
-    local head_pos = PED.GET_PED_BONE_COORDS(ped, 0x322c, 0, 0, 0)
-    local vector = ENTITY.GET_ENTITY_FORWARD_VECTOR(ped)
+---@param owner Ped
+function shoot_ped_head(targetPed, weaponHash, owner)
+    local head_pos = PED.GET_PED_BONE_COORDS(targetPed, 0x322c, 0, 0, 0)
+    local vector = ENTITY.GET_ENTITY_FORWARD_VECTOR(targetPed)
     local start_pos = {}
     start_pos.x = head_pos.x + vector.x
     start_pos.y = head_pos.y + vector.y
     start_pos.z = head_pos.z + vector.z
 
-    local ped_veh = GET_VEHICLE_PED_IS_IN(ped)
-    if ped_veh ~= 0 then
-        MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
-            start_pos.x, start_pos.y, start_pos.z,
-            head_pos.x, head_pos.y, head_pos.z,
-            1000, false, weaponHash, players.user_ped(),
-            false, false, 1000, ped_veh)
-    else
-        MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(
-            start_pos.x, start_pos.y, start_pos.z,
-            head_pos.x, head_pos.y, head_pos.z,
-            1000, false, weaponHash, players.user_ped(),
-            false, false, 1000)
+    local target_ped_veh = GET_VEHICLE_PED_IS_IN(targetPed)
+
+    MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
+        start_pos.x, start_pos.y, start_pos.z,
+        head_pos.x, head_pos.y, head_pos.z,
+        1000, true,
+        weaponHash, owner,
+        false, false, 1000,
+        target_ped_veh, targetPed)
+end
+
+---玩家爆炸敌对载具(无声)
+function explode_hostile_vehicles()
+    for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
+        if IS_HOSTILE_ENTITY(vehicle) then
+            local coords = ENTITY.GET_ENTITY_COORDS(vehicle)
+            add_owned_explosion(players.user_ped(), coords, 4, { isAudible = false })
+        end
     end
+end
+
+---玩家爆炸敌对物体(无声)
+function explode_hostile_objects()
+    for _, object in pairs(entities.get_all_objects_as_handles()) do
+        if IS_HOSTILE_ENTITY(object) then
+            local coords = ENTITY.GET_ENTITY_COORDS(object)
+            add_owned_explosion(players.user_ped(), coords, 4, { isAudible = false })
+        end
+    end
+end
+
+---生成实体阻挡任务刷新点
+---@param point_list table<int, table<pos_x, pos_y, pos_z, heading>>
+---@param hash Hash?
+function block_mission_generate_point(point_list, hash)
+    hash = hash or util.joaat("khanjali")
+
+    local i = 0
+    request_model(hash)
+    for _, data in pairs(point_list) do
+        local coords = v3.new(data[1], data[2], data[3])
+        local vehicle = entities.create_vehicle(hash, coords, data[4])
+        if vehicle ~= INVALID_GUID then
+            i = i + 1
+            VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle, 5.0)
+        end
+    end
+    STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(hash)
+
+    util.toast("完成！\n数量: " .. i)
 end
