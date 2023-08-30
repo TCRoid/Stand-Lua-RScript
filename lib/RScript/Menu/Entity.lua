@@ -16,7 +16,7 @@ local ent_quick_action = {
     ped_select = 1,
     weak_ped = {
         select = 1,
-        time_delay = 1000,
+        time_delay = 2000,
         toggle = {
             health = false,
             weapon_damage = true,
@@ -244,7 +244,7 @@ end, true)
 menu.toggle(Entity_Quick_WeakPed, "禁用载具武器", {}, "", function(toggle)
     ent_quick_action.weak_ped.toggle.disable_vehicle_weapon = toggle
 end)
-menu.slider(Entity_Quick_WeakPed, "循环间隔", { "setting_weak_ped_time_delay" }, "单位: 毫秒", 0, 5000, 1000, 100,
+menu.slider(Entity_Quick_WeakPed, "循环间隔", { "setting_weak_ped_time_delay" }, "单位: 毫秒", 0, 5000, 2000, 100,
     function(value)
         ent_quick_action.weak_ped.time_delay = value
     end)
@@ -397,6 +397,7 @@ local ent_quick_pickup = {
         y = 2.0,
         z = 0.0,
         delay = 500,
+        collect_in_vehicle = false,
     },
     -- 连线显示
     draw_line = {
@@ -479,7 +480,15 @@ function ent_quick_pickup.generate_command(ent, menu_parent, index)
         end
     end)
 
-    -----
+    menu.divider(menu_list, "拾取物设置")
+    menu.click_slider(menu_list, "最大携带数量", {}, "", 1, 20, 8, 1, function(value)
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(hash, value)
+    end)
+
+
+
+
+    ----------
     menu.on_tick_in_viewport(menu_teleport, function()
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             DRAW_LINE_TO_ENTITY(ent)
@@ -553,6 +562,9 @@ menu.action(ent_quick_pickup.menu_tp_to_me, "传送到我", {}, "", function()
         for key, ent in pairs(ent_quick_pickup.entity_list) do
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 RequestControl(ent)
+                if ent_quick_pickup.tp_to_me.collect_in_vehicle then
+                    OBJECT.SET_PICKUP_OBJECT_COLLECTABLE_IN_VEHICLE(ent)
+                end
                 TP_TO_ME(ent, ent_quick_pickup.tp_to_me.x, ent_quick_pickup.tp_to_me.y, ent_quick_pickup.tp_to_me.z)
 
                 if hasControl(ent) then
@@ -584,6 +596,9 @@ menu.slider(ent_quick_pickup.menu_tp_to_me, "时间间隔", { "ent_quick_pickup_
     100, function(value)
         ent_quick_pickup.tp_to_me.delay = value
     end)
+menu.toggle(ent_quick_pickup.menu_tp_to_me, "在载具内也可收集", {}, "拾取物", function(toggle)
+    ent_quick_pickup.tp_to_me.collect_in_vehicle = toggle
+end)
 
 --- 连线显示 ---
 ent_quick_pickup.menu_draw_line = menu.list(Entity_Quick_Pickup, "连线显示", {}, "")
@@ -668,6 +683,15 @@ menu.toggle(ent_quick_pickup.menu_add_blip, "标记点上添加数字", {}, "", 
                         HUD.HIDE_NUMBER_ON_BLIP(blip)
                     end
                 end
+            end
+        end
+    end
+end)
+menu.toggle(ent_quick_pickup.menu_add_blip, "箭头标记", {}, "拾取物", function(toggle)
+    if next(ent_quick_pickup.entity_list) ~= nil then
+        for key, ent in pairs(ent_quick_pickup.entity_list) do
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                OBJECT.SET_PICKUP_OBJECT_ARROW_MARKER(ent, toggle)
             end
         end
     end
@@ -1833,37 +1857,37 @@ end)
 ---------------
 local Nearby_Area_Clear = menu.list(Nearby_Area_options, "清理区域", {}, "MISC::CLEAR_AREA")
 
-local cls_broadcast = false
+local cls_broadcast = 0
 menu.toggle_loop(Nearby_Area_Clear, "清理区域", { "cls_area" }, "清理区域内所有东西", function()
-    local coords = ENTITY.GET_ENTITY_COORDS(PLAYER.PLAYER_PED_ID())
+    local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
     MISC.CLEAR_AREA(coords.x, coords.y, coords.z, nearby_area.radius, true, false, false, cls_broadcast)
 end)
 menu.toggle_loop(Nearby_Area_Clear, "清理载具", { "cls_veh" }, "清理区域内所有载具", function()
-    local coords = ENTITY.GET_ENTITY_COORDS(PLAYER.PLAYER_PED_ID())
+    local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
     MISC.CLEAR_AREA_OF_VEHICLES(coords.x, coords.y, coords.z, nearby_area.radius, false, false, false, false,
-        cls_broadcast, false, false)
+        cls_broadcast, false, 0)
 end)
 menu.toggle_loop(Nearby_Area_Clear, "清理行人", { "cls_ped" }, "清理区域内所有行人", function()
-    local coords = ENTITY.GET_ENTITY_COORDS(PLAYER.PLAYER_PED_ID())
+    local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
     MISC.CLEAR_AREA_OF_PEDS(coords.x, coords.y, coords.z, nearby_area.radius, cls_broadcast)
 end)
 menu.toggle_loop(Nearby_Area_Clear, "清理警察", { "cls_cop" }, "清理区域内所有警察", function()
-    local coords = ENTITY.GET_ENTITY_COORDS(PLAYER.PLAYER_PED_ID())
+    local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
     MISC.CLEAR_AREA_OF_COPS(coords.x, coords.y, coords.z, nearby_area.radius, cls_broadcast)
 end)
 menu.toggle_loop(Nearby_Area_Clear, "清理物体", { "cls_obj" }, "清理区域内所有物体", function()
-    local coords = ENTITY.GET_ENTITY_COORDS(PLAYER.PLAYER_PED_ID())
+    local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
     MISC.CLEAR_AREA_OF_OBJECTS(coords.x, coords.y, coords.z, nearby_area.radius, cls_broadcast)
 end)
-menu.toggle_loop(Nearby_Area_Clear, "清理投掷物", { "cls_proj" }, "清理区域内所有子弹、炮弹、投掷物等"
-, function()
-    local coords = ENTITY.GET_ENTITY_COORDS(PLAYER.PLAYER_PED_ID())
-    MISC.CLEAR_AREA_OF_PROJECTILES(coords.x, coords.y, coords.z, nearby_area.radius, cls_broadcast)
-end)
+menu.toggle_loop(Nearby_Area_Clear, "清理投掷物", { "cls_proj" }, "清理区域内所有子弹、炮弹、投掷物等",
+    function()
+        local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+        MISC.CLEAR_AREA_OF_PROJECTILES(coords.x, coords.y, coords.z, nearby_area.radius, cls_broadcast)
+    end)
 menu.divider(Nearby_Area_Clear, "设置")
 menu.toggle(Nearby_Area_Clear, "同步到其它玩家", { "cls_broadcast" }, "", function(toggle)
-    cls_broadcast = toggle
-    util.toast("清理区域 网络同步: " .. tostring(cls_broadcast))
+    cls_broadcast = toggle and 1 or 0
+    util.toast("清理区域 网络同步: " .. tostring(toggle and "开" or "关"))
 end)
 
 

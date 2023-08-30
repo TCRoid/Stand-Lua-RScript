@@ -358,7 +358,7 @@ local Player_options = function(pid)
                 RequestControl(ped)
 
                 WEAPON.GIVE_WEAPON_TO_PED(ped, weapon_smoke, -1, false, false)
-                WEAPON.GIVE_WEAPON_TO_PED(ped, player_nearby_ped.combatweapon, -1, false, true)
+                WEAPON.GIVE_WEAPON_TO_PED(ped, player_nearby_ped.combat.weapon, -1, false, true)
                 WEAPON.SET_CURRENT_PED_WEAPON(ped, player_nearby_ped.combat.weapon, false)
                 WEAPON.SET_PED_DROPS_WEAPONS_WHEN_DEAD(ped, false)
 

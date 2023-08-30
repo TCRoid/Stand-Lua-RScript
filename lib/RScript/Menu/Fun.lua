@@ -5,6 +5,98 @@
 local Fun_options = menu.list(menu.my_root(), "娱乐选项", {}, "")
 
 
+----------------------
+-- 绘制NPC盒子
+----------------------
+local Draw_Ped_Box = menu.list(Fun_options, "绘制NPC盒子", {}, "")
+
+local draw_ped_box = {
+    ped_select = 1,
+    exclude_vehicle = true,
+    radius = 200.0,
+    line_height = 1.0,
+    box_colour = { r = 255, g = 0, b = 255, a = 220 },
+    line_colour = { r = 255, g = 0, b = 255, a = 255 },
+}
+
+function draw_ped_box.check_ped(ped)
+    if not ENTITY.IS_ENTITY_ON_SCREEN(ped) or not ENTITY.HAS_ENTITY_CLEAR_LOS_TO_ENTITY(players.user_ped(), ped, 17) then
+        return false
+    end
+
+    if ENTITY.IS_ENTITY_DEAD(ped) or entities.is_player_ped(ped) then
+        return false
+    end
+
+    if draw_ped_box.exclude_vehicle and PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
+        return false
+    end
+
+    if draw_ped_box.ped_select == 1 and is_friendly_ped(ped) then
+        return false
+    end
+
+    if draw_ped_box.ped_select == 2 and not is_hostile_ped(ped) then
+        return false
+    end
+
+    return true
+end
+
+menu.toggle_loop(Draw_Ped_Box, "绘制NPC头部盒子", {}, "", function()
+    for _, ped in pairs(entities.get_all_peds_as_handles()) do
+        if draw_ped_box.check_ped(ped) then
+            local head_pos = PED.GET_PED_BONE_COORDS(ped, 0x322c, 0, 0, 0)
+            -- offsetX: up/down, offsetY: forward/backward, offsetZ: left/right
+
+            if v3.distance(head_pos, ENTITY.GET_ENTITY_COORDS(players.user_ped())) <= draw_ped_box.radius then
+                local pos1 = PED.GET_PED_BONE_COORDS(ped, 0x322c, 0.2, 0.2, 0.2)
+                local pos2 = PED.GET_PED_BONE_COORDS(ped, 0x322c, -0.05, -0.2, -0.2)
+
+                GRAPHICS.DRAW_BOX(pos1.x, pos1.y, pos1.z,
+                    pos2.x, pos2.y, pos2.z,
+                    draw_ped_box.box_colour.r, draw_ped_box.box_colour.g, draw_ped_box.box_colour.b,
+                    draw_ped_box.box_colour.a)
+
+                local pos3 = PED.GET_PED_BONE_COORDS(ped, 0x322c, draw_ped_box.line_height, 0, 0)
+                if PED.IS_PED_HURT(ped) then -- ground behaviour
+                    pos3 = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(ped, 0.0, 0.0, draw_ped_box.line_height)
+                end
+                DRAW_LINE(head_pos, pos3, draw_ped_box.line_colour)
+            end
+        end
+    end
+end)
+
+menu.divider(Draw_Ped_Box, "设置")
+menu.list_select(Draw_Ped_Box, "NPC类型", {}, "", {
+    { "全部NPC(排除友好)", {}, "" },
+    { "敌对NPC", {}, "" },
+    { "全部NPC", {}, "" },
+}, 1, function(value)
+    draw_ped_box.ped_select = value
+end)
+menu.toggle(Draw_Ped_Box, "排除载具内NPC", {}, "", function(toggle)
+    draw_ped_box.exclude_vehicle = toggle
+end, true)
+menu.slider_float(Draw_Ped_Box, "范围", { "draw_ped_box_radius" }, "",
+    1000, 500000, 20000, 5000, function(value)
+        draw_ped_box.radius = value * 0.01
+    end)
+menu.slider_float(Draw_Ped_Box, "指示线高度", { "draw_ped_box_line_height" }, "",
+    10, 1000, 100, 10, function(value)
+        draw_ped_box.line_height = value * 0.01
+    end)
+menu.colour(Draw_Ped_Box, "指示线颜色", { "draw_ped_box_line_colour" }, "",
+    to_stand_colour(draw_ped_box.line_colour), true, function(colour)
+        draw_ped_box.line_colour = to_rage_colour(colour)
+    end)
+menu.colour(Draw_Ped_Box, "盒子颜色", { "draw_ped_box_colour" }, "",
+    to_stand_colour(draw_ped_box.box_colour), true, function(colour)
+        draw_ped_box.box_colour = to_rage_colour(colour)
+    end)
+
+
 
 
 ----------------------

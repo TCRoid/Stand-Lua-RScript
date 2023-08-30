@@ -40,6 +40,7 @@ Globals.SpecialCargo = {
         15824, -- EXEC_DISABLE_BUY_HELITAKEDOWN
         15825, -- EXEC_DISABLE_BUY_IMPOUNDED
         15831, -- EXEC_DISABLE_BUY_MOVEDCOLLECTION
+        15832, -- EXEC_DISABLE_BUY_MOVINGCOLLECTION
         15833, -- EXEC_DISABLE_BUY_MULTIPLEMOVINGVEHICLES
         15834, -- EXEC_DISABLE_BUY_POLICESTING
         15840, -- EXEC_DISABLE_BUY_STEALTRANSPORTER
@@ -50,25 +51,26 @@ Globals.SpecialCargo = {
         15850, -- EXEC_DISABLE_BUY_VEHICLECOLLECTION
     },
     Buy_Names = {
-        "Aftermath",
-        "Ambushed",
-        "Assassinate",
-        "Boat Attack",
-        "Break Up Deal",
-        "Cargo Drop",
-        "Crash Site",
-        "Gang Hide Out",
-        "Heli Takedown",
-        "Impounded",
-        "Moved Collection",
-        "Multiple Moving Vehicles",
-        "Police Sting",
-        "Steal Transporter",
-        "Thief",
-        "Trackify",
-        "Trapped",
-        "Valkyrie Takedown",
-        "Vehicle Collection",
+        { "Aftermath", "包裹*3\n无需踩黄点" },
+        { "Ambushed", "被埋伏\n厢型车" },
+        { "Assassinate", "前往有利位置干掉目标" },
+        { "Boat Attack", "出海，摧毁船只" },
+        { "Break Up Deal", "厢型车\n不用踩黄点" },
+        { "Air Drop", "在空投区扔信号弹" },
+        { "Crash Site", "坠机点" },
+        { "Gang Fights", "厢型车\n不用踩黄点" },
+        { "Heli Takedown", "干掉直升机" },
+        { "Police Confiscation", "走漏风声，货被羁押" },
+        { "Spooked", "卖家收到惊吓，前往备用交易点" },
+        { "Moving Collection", "第三方势力抢走货物" },
+        { "Multiple Moving Vehicles", "多个追踪器信号" },
+        { "Police Sting", "警察埋伏\n不用踩黄点" },
+        { "Police Transporter", "执法人员扣押货物" },
+        { "Thief", "干掉盗贼" },
+        { "Trackify Searching", "追踪载具" },
+        { "Trapped", "厢型车\n不用踩黄点" },
+        { "Valkyrie Takedown", "干掉女武神" },
+        { "Vehicle Collection", "厢型车\n不用踩黄点" },
     },
     Sell_Offsets = {
         15855, -- EXEC_DISABLE_SELL_AIRATTACKED
@@ -87,20 +89,20 @@ Globals.SpecialCargo = {
         15929, -- EXEC_DISABLE_SELL_TRACKIFY
     },
     Sell_Names = {
-        "Air Attacked",
-        "Air Clear Area",
-        "Air Drop",
-        "Air Fly Low",
-        "Air Restricted",
-        "Attacked",
-        "Default",
-        "Defend",
-        "Multiple",
-        "No Damage",
-        "Sea Attacked",
-        "Sea Defend",
-        "Sting",
-        "Trackify",
+        { "Air Attacked", "" },
+        { "Air Clear Area", "" },
+        { "Air Drop", "" },
+        { "Air Fly Low", "" },
+        { "Air Restricted", "" },
+        { "Attacked", "卡车\n每辆车1个点" },
+        { "Default", "卡车\n每辆车1个点" },
+        { "Defend", "卡车，干掉敌人保护货物\n每辆车1个点" },
+        { "Multiple", "卡车\n每辆车5个点" },
+        { "(推荐) No Damage", "卡车，完好无损送达加运送奖励\n每辆车1个点" },
+        { "Sea Attacked", "" },
+        { "Sea Defend", "" },
+        { "Sting", "卡车，会触发通缉\n每辆车5个点" },
+        { "Trackify", "" },
     },
 }
 
@@ -123,19 +125,19 @@ Globals.Bunker = {
         21857, -- GR_STEAL_MINIGUNS_STEAL_MINIGUNS_WEIGHTING
     },
     Steal_Names = {
-        "Steal Van",
-        "Steal Apc",
-        "Steal Rhino",
-        "Rival Operation",
-        "Steal Technical",
-        "Diversion",
-        "Flashlight",
-        "Altruist",
-        "Destroy Trucks",
-        "Yacht Search",
-        "Fly Swatter",
-        "Steal Railguns",
-        "Steal Miniguns",
+        { "偷取厢型车", "" },
+        { "偷取APC", "" },
+        { "偷取坦克", "" },
+        { "消灭对手行动单位", "" },
+        { "偷取铁尼高", "" },
+        { "Diversion", "不可进行" },
+        { "矿坑", "" },
+        { "利他教营地", "" },
+        { "(推荐) 摧毁卡车", "不用踩黄点" },
+        { "搜查码头或游艇", "" },
+        { "干掉直升机", "" },
+        { "偷取电磁步枪", "" },
+        { "Steal Miniguns", "不可进行" },
     },
     Sell_Offsets = {
         21868, -- GR_MOVE_WEAPONS_MOVE_WEAPONS_WEIGHTING
@@ -146,12 +148,12 @@ Globals.Bunker = {
         21880, -- GR_PHANTOM_PHANTOM_WEIGHTING
     },
     Sell_Names = {
-        "Move Weapons",
-        "Unknown",
-        "Ambushed",
-        "Hill Climb",
-        "Rough Terrain",
-        "Phantom",
+        { "Move Weapons", "" },
+        { "Unknown", "" },
+        { "Ambushed", "" },
+        { "Hill Climb", "" },
+        { "Rough Terrain", "" },
+        { "(推荐) 尖锥魅影", "两辆" },
     },
 }
 
@@ -173,20 +175,20 @@ Globals.AirFreight = {
         22968, -- SMUG_STEAL_BOMB_ROOF_WEIGHTING
     },
     Steal_Names = {
-        "Steal Aircraft",
-        "Thermal Scope",
-        "Beacon Grab",
-        "Infiltration",
-        "特技表演",
-        "Bomb Base",
-        "Splash Landing",
-        "Blackbox",
-        "Dogfight",
-        "拦截货机",
-        "Roof Attack",
-        "Bombing Run",
-        "护送泰坦",
-        "Bomb Roof",
+        { "Steal Aircraft", "" },
+        { "Air Ambulance", "多人任务" },
+        { "摧毁干扰器", "" },
+        { "运兵直升机潜入监狱", "需要进入运兵直升机" },
+        { "特技表演", "" },
+        { "摧毁基地", "不用踩黄点" },
+        { "打捞点", "飞往打捞点，消灭打捞团队" },
+        { "(推荐) 搜寻坠毁的小蛮牛", "不用踩黄点" },
+        { "拦截梅利威瑟喷气机", "不用踩黄点" },
+        { "拦截货机", "" },
+        { "屋顶", "飞往屋顶，摧毁箱子" },
+        { "摧毁目标", "不用踩黄点" },
+        { "护送泰坦", "" },
+        { "Roof Bombings", "多人任务" },
     },
     Sell_Offsets = {
         22970, -- SMUG_SELL_HEAVY_LIFTING_WEIGHTING
@@ -200,22 +202,22 @@ Globals.AirFreight = {
         23021, -- 1786784008
     },
     Sell_Names = {
-        "Heavy Lifting",
-        "Contested",
-        "Unknown1",
-        "Precision Delivery",
-        "Flying Fortress",
-        "Fly Low",
-        "Air Delivery",
-        "Air Police",
-        "Unknown2",
+        { "吊挂直升机", "一个点" },
+        { "猎杀者", "在投放点消灭敌人\n5个点" },
+        { "浩劫者", "每架两个点" },
+        { "运兵直升机", "" },
+        { "Flying Fortress", "多人任务" },
+        { "Fly Low", "5个点" },
+        { "Air Delivery", "5个点" },
+        { "莫古尔", "会有通缉\n5个点" },
+        { "Unknown", "不可进行" },
     },
 }
 
 Globals.Biker = {
     BIKER_RESUPPLY_PACKAGE_VALUE = 262145 + 18560,
     BIKER_RESUPPLY_VEHICLE_VALUE = 262145 + 18561,
-    Resupply_Offsets = {
+    Steal_Offsets = {
         18570, -- BIKER_RESUPPLY_WEED_FARM_WEIGHTING
         18577, -- BIKER_RESUPPLY_FRAGILE_SUPPLIES_WEIGHTING
         18585, -- BIKER_RESUPPLY_LURE_WEIGHTING
@@ -233,23 +235,23 @@ Globals.Biker = {
         18651, -- BIKER_RESUPPLY_SIGNAL_FLARE_WEIGHTING
         18656, -- BIKER_RESUPPLY_INTIMIDATION_WEIGHTING
     },
-    Resupply_Names = {
-        "Weed Farm",
-        "Fragile Supplies",
-        "Lure",
-        "Meet Contact",
-        "Destroy Crates",
-        "Security Vans",
-        "Repairman",
-        "Bank",
-        "Drug Lab",
-        "Chemicals",
-        "Kill Dealers",
-        "Steal Vehicle",
-        "Unknown",
-        "Biker Melee",
-        "Signal Flare",
-        "Intimidation",
+    Steal_Names = {
+        { "Raid Nasty People", "仅大麻种植场可进行" },
+        { "易碎原材料", "" },
+        { "引诱警察", "吸引警察注意，保持通缉等级，直到原材料出现" },
+        { "Meeting a Contact", "仅证件伪造办公室可进行" },
+        { "摧毁箱子", "" },
+        { "搜寻运载原材料的厢形车", "" },
+        { "Repairman", "" },
+        { "Fleeca Bank Robbery", "仅假钞工厂可进行" },
+        { "Colombian Flake", "仅冰毒实验室可进行" },
+        { "Disrupt Operations", "仅可卡因作坊可进行" },
+        { "干掉敌人", "" },
+        { "(推荐) 偷取载具", "不用踩黄点" },
+        { "龙舌兰酒吧", "传送到门口后杀死所有敌人" },
+        { "将敌人从摩托车上击落", "" },
+        { "投掷信号弹", "" },
+        { "威胁目标", "" },
     },
     Sell_Offsets = {
         18693, -- BIKER_DISABLE_SELL_CONVOY
@@ -267,19 +269,19 @@ Globals.Biker = {
         18758, -- BIKER_DISABLE_CLUB_RUN
     },
     Sell_Names = {
-        "Convoy",
-        "Trashmaster",
-        "Proven",
-        "Unknown1",
-        "Border Patrol",
-        "Helicopter Drop",
-        "Postman",
-        "Unknown2",
-        "Sting Op",
-        "Benson",
-        "Bag Drop",
-        "Race",
-        "Club Run",
+        { "(推荐) Convoy", "卡车\n1个点" },
+        { "Trashmaster", "垃圾车\n每辆车5个点" },
+        { "Proven", "不可进行" },
+        { "Unknown1", "不可进行" },
+        { "Border Patrol", "船\n每只船5个点" },
+        { "Helicopter Drop", "直升机\n每架5个点" },
+        { "Postman", "厢型车\n每辆车5个点" },
+        { "Unknown2", "嘟嘟鸟飞机\n每架5个点" },
+        { "Sting Op", "不可进行" },
+        { "Benson", "摩托车\n每辆车1个点" },
+        { "Bag Drop", "多人任务" },
+        { "Race", "多人任务" },
+        { "Club Run", "多人任务" },
     },
 }
 
@@ -312,6 +314,93 @@ Globals.Payphone = {
     },
 }
 
+function Globals.SpecialCargo.ClearMissionHistory()
+    local EXEC_BUY_MISSIONS_HISTORY = 262145 + 16264
+    local buy_base = 1895156 + 1 + players.user() * 609 + 10 + 312 + 1
+    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_312[iVar0] = ..., Search EXEC_BUY_MISSIONS_HISTORY
+
+    local i = 0
+    while i < GET_INT_GLOBAL(EXEC_BUY_MISSIONS_HISTORY) do
+        SET_INT_GLOBAL(buy_base + i, -1)
+        i = i + 1
+    end
+
+    local EXEC_SELL_MISSIONS_HISTORY = 262145 + 16265
+    local sell_base = 2794162 + 5231 + 349 + 1
+    -- gb_contraband_sell.c if (Global_2794162.f_5231.f_349[iVar0] == iParam0), Search EXEC_SELL_MISSIONS_HISTORY
+
+    local i = 0
+    while i < GET_INT_GLOBAL(EXEC_SELL_MISSIONS_HISTORY) do
+        SET_INT_GLOBAL(sell_base + i, -1)
+        i = i + 1
+    end
+end
+
+function Globals.Bunker.ClearMissionHistory()
+    local GR_RESUPPLY_GENERAL_HISTORY_LIST = 262145 + 21818 -- -405844416
+    local resupply_base = 1895156 + 1 + players.user() * 609 + 10 + 378 + 1
+    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_378[iVar0] = ..., Search GR_RESUPPLY_GENERAL_HISTORY_LIST
+
+    local i = 0
+    while i < GET_INT_GLOBAL(GR_RESUPPLY_GENERAL_HISTORY_LIST) do
+        SET_INT_GLOBAL(resupply_base + i, -1)
+        i = i + 1
+    end
+
+    local GR_GENERAL_HISTORY_LIST = 262145 + 21860 -- 1667999010
+    local sell_base = 1895156 + 1 + players.user() * 609 + 10 + 387 + 1
+    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_387[iVar0] = ..., Search GR_GENERAL_HISTORY_LIST
+
+    local i = 0
+    while i < GET_INT_GLOBAL(GR_GENERAL_HISTORY_LIST) do
+        SET_INT_GLOBAL(sell_base + i, -1)
+        i = i + 1
+    end
+end
+
+function Globals.AirFreight.ClearMissionHistory()
+    local SMUG_BUY_HISTORY_LIST = 262145 + 22885 -- -1676961419
+    local buy_base = 1895156 + 1 + players.user() * 609 + 10 + 394 + 1
+    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_394[iVar0] = ..., Search -1676961419
+
+    local i = 0
+    while i < GET_INT_GLOBAL(SMUG_BUY_HISTORY_LIST) do
+        SET_INT_GLOBAL(buy_base + i, -1)
+        i = i + 1
+    end
+
+    local SMUG_SELL_HISTORY_LIST = 262145 + 22975
+    local sell_base = 1895156 + 1 + players.user() * 609 + 10 + 403 + 1
+    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_403[iVar0] = ..., Search SMUG_SELL_HISTORY_LIST
+
+    local i = 0
+    while i < GET_INT_GLOBAL(SMUG_SELL_HISTORY_LIST) do
+        SET_INT_GLOBAL(sell_base + i, -1)
+        i = i + 1
+    end
+end
+
+function Globals.Biker.ClearMissionHistory()
+    local BIKER_RESUPPLY_HISTORY_LIST = 262145 + 18567 -- 1185530883
+    local resupply_base = 1895156 + 1 + players.user() * 609 + 10 + 196 + 1
+    -- freemode.c if (Global_1895156[iVar0 /*609*/].f_10.f_196[iVar1] == iParam0), Search 1185530883
+
+    local i = 0
+    while i < GET_INT_GLOBAL(BIKER_RESUPPLY_HISTORY_LIST) do
+        SET_INT_GLOBAL(resupply_base + i, -1)
+        i = i + 1
+    end
+
+    local BIKER_SELL_HISTORY_LIST = 262145 + 18687 -- 731581918
+    local sell_base = 2794162 + 5231 + 358 + 1
+    -- gb_biker_contraband_sell.c if (Global_2794162.f_5231.f_358[iVar0] == iParam0), Search 731581918
+
+    local i = 0
+    while i < GET_INT_GLOBAL(BIKER_SELL_HISTORY_LIST) do
+        SET_INT_GLOBAL(sell_base + i, -1)
+        i = i + 1
+    end
+end
 
 Globals.RemoveCooldown = {}
 
@@ -474,8 +563,7 @@ end
 Locals = {
     -- fm_mission_controller_2020
     MC_TLIVES_2020 = 51905 + 868 + 1,
+
     -- fm_mission_controller
     MC_TLIVES = 26136 + 1325 + 1,
-
-    appHackerTruckArgs = 4592, -- arg count needed to properly start the script, possibly outdated
 }

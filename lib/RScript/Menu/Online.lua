@@ -175,12 +175,39 @@ local Business = {
             [3] = 20, -- Meth
             [4] = 10  -- Cocaine
         },
+        Bunker = 100,
+        AcidLab = 160,
+        Warehouse = {
+            [1]  = 16,  -- "MP_WHOUSE_0",
+            [2]  = 16,  -- "MP_WHOUSE_1",
+            [3]  = 16,  -- "MP_WHOUSE_2",
+            [4]  = 16,  -- "MP_WHOUSE_3",
+            [5]  = 16,  -- "MP_WHOUSE_4",
+            [6]  = 111, -- "MP_WHOUSE_5",
+            [7]  = 42,  -- "MP_WHOUSE_6",
+            [8]  = 111, -- "MP_WHOUSE_7",
+            [9]  = 16,  -- "MP_WHOUSE_8",
+            [10] = 42,  -- "MP_WHOUSE_9",
+            [11] = 42,  -- "MP_WHOUSE_10",
+            [12] = 42,  -- "MP_WHOUSE_11",
+            [13] = 42,  -- "MP_WHOUSE_12",
+            [14] = 42,  -- "MP_WHOUSE_13",
+            [15] = 42,  -- "MP_WHOUSE_14",
+            [16] = 111, -- "MP_WHOUSE_15",
+            [17] = 111, -- "MP_WHOUSE_16",
+            [18] = 111, -- "MP_WHOUSE_17",
+            [19] = 111, -- "MP_WHOUSE_18",
+            [20] = 111, -- "MP_WHOUSE_19",
+            [21] = 42,  -- "MP_WHOUSE_20",
+            [22] = 111, -- "MP_WHOUSE_21",
+        }
+    },
+    SafeCash = {
+        NightClub = 250000,
+        Arcade = 100000,
+        Agency = 250000,
     },
 }
-
-function Business.GetNightclubValue(slot)
-    return STAT_GET_INT("HUB_PROD_TOTAL_" .. slot)
-end
 
 function Business.GetBusinessSupplies(slot)
     return STAT_GET_INT("MATTOTALFORFACTORY" .. slot)
@@ -219,39 +246,28 @@ function Business.MCBusinessPropertyType(slot)
 end
 
 Business.Menu = {
-    bunker = {
-        supplies,
-        product,
-        research,
-    },
+    bunker = {},
     nightclub = {
-        safe_cash,
-        popularity,
         product = {
-            [0] = { name = "运输货物", menu },
-            [1] = { name = "体育用品", menu },
-            [2] = { name = "南美进口货", menu },
-            [3] = { name = "药学研究产品", menu },
-            [4] = { name = "有机农产品", menu },
-            [5] = { name = "印刷品", menu },
-            [6] = { name = "印钞", menu },
+            [0] = { name = "运输货物" },
+            [1] = { name = "体育用品" },
+            [2] = { name = "南美进口货" },
+            [3] = { name = "药学研究产品" },
+            [4] = { name = "有机农产品" },
+            [5] = { name = "印刷品" },
+            [6] = { name = "印钞" },
         },
     },
-    acid_lab = {
-        supplies,
-        product,
-    },
-    safe_cash = {
-        arcade,
-        agency,
-    },
+    acid_lab = {},
+    safe_cash = {},
     mc_business = {
-        [0] = { name = "伪造证件", supplies, product },
-        [1] = { name = "大麻", supplies, product },
-        [2] = { name = "假钞", supplies, product },
-        [3] = { name = "冰毒", supplies, product },
-        [4] = { name = "可卡因", supplies, product },
+        [0] = { name = "伪造证件" },
+        [1] = { name = "大麻" },
+        [2] = { name = "假钞" },
+        [3] = { name = "冰毒" },
+        [4] = { name = "可卡因" },
     },
+    special_cargo = {}
 }
 
 menu.action(Business_Monitor, "刷新状态", {}, "", function()
@@ -263,8 +279,8 @@ menu.action(Business_Monitor, "刷新状态", {}, "", function()
         menu.set_value(Business.Menu.bunker.supplies, text)
 
         product = Business.GetBusinessProduct(5)
-        text = product .. "/100"
-        if product == 100 then
+        text = product .. "/" .. Business.Caps.Bunker
+        if product == Business.Caps.Bunker then
             text = "[!] " .. text
         end
         menu.set_value(Business.Menu.bunker.product, text)
@@ -277,13 +293,13 @@ menu.action(Business_Monitor, "刷新状态", {}, "", function()
         menu.set_value(Business.Menu.nightclub.popularity, text)
 
         text = STAT_GET_INT("CLUB_SAFE_CASH_VALUE")
-        if text == 250000 then
+        if text == Business.SafeCash.NightClub then
             text = "[!] " .. text
         end
         menu.set_value(Business.Menu.nightclub.safe_cash, text)
 
         for i = 0, 6 do
-            product = Business.GetNightclubValue(i)
+            product = STAT_GET_INT("HUB_PROD_TOTAL_" .. i)
             text = product .. "/" .. Business.Caps.NightClub[i]
             if product == Business.Caps.NightClub[i] then
                 text = "[!] " .. text
@@ -296,26 +312,26 @@ menu.action(Business_Monitor, "刷新状态", {}, "", function()
         menu.set_value(Business.Menu.acid_lab.supplies, text)
 
         product = Business.GetBusinessProduct(6)
-        text = product .. "/160"
-        if product == 160 then
+        text = product .. "/" .. Business.Caps.AcidLab
+        if product == Business.Caps.AcidLab then
             text = "[!] " .. text
         end
         menu.set_value(Business.Menu.acid_lab.product, text)
 
         --- Safe Cash ---
         text = STAT_GET_INT("ARCADE_SAFE_CASH_VALUE")
-        if text == 100000 then
+        if text == Business.SafeCash.Arcade then
             text = "[!] " .. text
         end
         menu.set_value(Business.Menu.safe_cash.arcade, text)
 
         text = STAT_GET_INT("FIXER_SAFE_CASH_VALUE")
-        if text == 250000 then
+        if text == Business.SafeCash.Agency then
             text = "[!] " .. text
         end
         menu.set_value(Business.Menu.safe_cash.agency, text)
 
-        --- MCBusiness ---
+        --- MC Business ---
         for i = 0, 4 do
             local type_number = Business.MCBusinessPropertyType(i)
             if type_number ~= -1 then
@@ -328,6 +344,27 @@ menu.action(Business_Monitor, "刷新状态", {}, "", function()
                     text = "[!] " .. text
                 end
                 menu.set_value(Business.Menu.mc_business[type_number].product, text)
+            end
+        end
+
+        --- Special Cargo ---
+        for i = 0, 4 do
+            local warehouse_slot = STAT_GET_INT("PROP_WHOUSE_SLOT" .. i) -- same stat: WARHOUSESLOT
+            if warehouse_slot ~= 0 then
+                local sp_crate = STAT_GET_INT("CONTOTALFORWHOUSE" .. i)
+                local sp_item = STAT_GET_INT("SPCONTOTALFORWHOUSE" .. i)
+                local warehouse_name = util.get_label_text("MP_WHOUSE_" .. warehouse_slot - 1)
+                local warehouse_cap = Business.Caps.Warehouse[warehouse_slot]
+
+                text = sp_crate .. "(" .. sp_item .. ")/" .. warehouse_cap
+                if sp_crate == warehouse_cap then
+                    text = "[!] " .. text
+                end
+                menu.set_value(Business.Menu.special_cargo[i], text)
+                menu.set_menu_name(Business.Menu.special_cargo[i], warehouse_name)
+            else
+                menu.set_value(Business.Menu.special_cargo[i], "")
+                menu.set_menu_name(Business.Menu.special_cargo[i], "无")
             end
         end
     else
@@ -364,6 +401,11 @@ for i = 0, 4 do
     Business.Menu.mc_business[i].product = menu.readonly(Business_Monitor_MC, "产品")
 end
 
+local Business_Monitor_SpecialCargo = menu.list(Business_Monitor, "特种货物", {}, "括号里是特殊物品数量")
+for i = 0, 4 do
+    Business.Menu.special_cargo[i] = menu.readonly(Business_Monitor_SpecialCargo, "无")
+end
+
 
 
 ---------------------
@@ -373,18 +415,18 @@ local Business_Stats = menu.list(Online_Options, "资产统计数据", {}, "")
 
 local BusinessStats = {
     Bunker = {
-        [1] = { name = "总营收", stat = "LIFETIME_BKR_SELL_EARNINGS5", menu },
-        [2] = { name = "送达原材料次数", stat = "LFETIME_BIKER_BUY_COMPLET5", menu },
-        [3] = { name = "开启原材料任务次数", stat = "LFETIME_BIKER_BUY_UNDERTA5", menu },
-        [4] = { name = "成功卖货次数", stat = "LFETIME_BIKER_SELL_COMPLET5", menu },
-        [5] = { name = "开启卖货任务次数", stat = "LFETIME_BIKER_SELL_UNDERTA5", menu },
+        [1] = { name = "总营收", stat = "LIFETIME_BKR_SELL_EARNINGS5" },
+        [2] = { name = "送达原材料次数", stat = "LFETIME_BIKER_BUY_COMPLET5" },
+        [3] = { name = "开启原材料任务次数", stat = "LFETIME_BIKER_BUY_UNDERTA5" },
+        [4] = { name = "成功卖货次数", stat = "LFETIME_BIKER_SELL_COMPLET5" },
+        [5] = { name = "开启卖货任务次数", stat = "LFETIME_BIKER_SELL_UNDERTA5" },
     },
     SpecialCargo = {
-        [1] = { name = "总营收", stat = "LIFETIME_CONTRA_EARNINGS", menu },
-        [2] = { name = "成功拉货次数", stat = "LIFETIME_BUY_COMPLETE", menu },
-        [3] = { name = "开启拉货任务次数", stat = "LIFETIME_BUY_UNDERTAKEN", menu },
-        [4] = { name = "成功卖货次数", stat = "LIFETIME_SELL_COMPLETE", menu },
-        [5] = { name = "开启卖货任务次数", stat = "LIFETIME_SELL_UNDERTAKEN", menu },
+        [1] = { name = "总营收", stat = "LIFETIME_CONTRA_EARNINGS" },
+        [2] = { name = "成功拉货次数", stat = "LIFETIME_BUY_COMPLETE" },
+        [3] = { name = "开启拉货任务次数", stat = "LIFETIME_BUY_UNDERTAKEN" },
+        [4] = { name = "成功卖货次数", stat = "LIFETIME_SELL_COMPLETE" },
+        [5] = { name = "开启卖货任务次数", stat = "LIFETIME_SELL_UNDERTAKEN" },
     },
 }
 
@@ -436,6 +478,7 @@ local remote_computer_list = {
 for _, item in pairs(remote_computer_list) do
     menu.action(Remote_Computer, item.menu_name, { "app" .. item.command }, "", function()
         if IS_IN_SESSION() then
+            SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 1)
             START_SCRIPT(item.script, 5000)
         end
     end)

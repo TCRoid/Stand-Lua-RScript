@@ -1623,7 +1623,7 @@ function get_random_colour()
     return colour
 end
 
---- 颜色数值 [0 - 1]格式 转换到 [0 - 255]格式
+--- 颜色数值 [0 - 1]格式 转换到 [0 - 255]格式 (float -> int)
 ---@param colour Colour
 ---@return Colour
 function to_rage_colour(colour)
@@ -1635,15 +1635,15 @@ function to_rage_colour(colour)
     }
 end
 
---- 颜色数值 [0 - 255]格式 转换到 [0 - 1]格式
+--- 颜色数值 [0 - 255]格式 转换到 [0 - 1]格式 (int -> float)
 ---@param colour Colour
 ---@return Colour
 function to_stand_colour(colour)
     return {
-        r = colour.r / 255,
-        g = colour.g / 255,
-        b = colour.b / 255,
-        a = colour.a / 255
+        r = string.format("%.2f", colour.r / 255),
+        g = string.format("%.2f", colour.g / 255),
+        b = string.format("%.2f", colour.b / 255),
+        a = string.format("%.2f", colour.a / 255),
     }
 end
 
@@ -1842,9 +1842,9 @@ function fall_entity_explosion(entity, owner)
 end
 
 ---爆头击杀NPC
----@param ped Ped
+---@param targetPed Ped
 ---@param weaponHash Hash
----@param owner Ped
+---@param owner Ped?
 function shoot_ped_head(targetPed, weaponHash, owner)
     local head_pos = PED.GET_PED_BONE_COORDS(targetPed, 0x322c, 0, 0, 0)
     local vector = ENTITY.GET_ENTITY_FORWARD_VECTOR(targetPed)
@@ -1859,7 +1859,8 @@ function shoot_ped_head(targetPed, weaponHash, owner)
         start_pos.x, start_pos.y, start_pos.z,
         head_pos.x, head_pos.y, head_pos.z,
         1000, true,
-        weaponHash, owner,
+        weaponHash,
+        owner or 0,
         false, false, 1000,
         target_ped_veh, targetPed)
 end

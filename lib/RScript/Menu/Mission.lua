@@ -13,6 +13,8 @@ local Property_Mission = menu.list(Mission_Options, "资产任务", {}, "")
 
 local Special_Cargo = menu.list(Property_Mission, "办公室拉货", {}, "")
 
+--#region Special Cargo Tool
+
 local Special_Cargo_Tool = menu.list(Special_Cargo, "工具", {}, "")
 
 menu.divider(Special_Cargo_Tool, "移除冷却时间")
@@ -27,52 +29,76 @@ end)
 
 menu.divider(Special_Cargo_Tool, "")
 
-local Special_Cargo_Buy_MenuCreated = false
-local Special_Cargo_Buy
-Special_Cargo_Buy = menu.list(Special_Cargo_Tool, "禁用货物购买任务", {}, "", function()
-    if not Special_Cargo_Buy_MenuCreated then
+local special_cargo_missions = {
+    buy = {},
+    sell = {}
+}
+
+special_cargo_missions.menu_buy = menu.list(Special_Cargo_Tool, "禁用购买货物任务", {}, "", function()
+    if not special_cargo_missions.buy.created then
         Transition_Handler.Globals.SpecialCargo.Buy = {}
 
+        special_cargo_missions.buy.toggle_menus = {}
+        menu.toggle(special_cargo_missions.menu_buy, "全部开/关", {}, "", function(toggle)
+            for key, value in pairs(special_cargo_missions.buy.toggle_menus) do
+                menu.set_value(value, toggle)
+            end
+        end)
+
         for key, offset in pairs(Globals.SpecialCargo.Buy_Offsets) do
-            local name = Globals.SpecialCargo.Buy_Names[key]
+            local name = Globals.SpecialCargo.Buy_Names[key][1]
+            local help = Globals.SpecialCargo.Buy_Names[key][2]
             local global = 262145 + offset
 
-            menu.toggle(Special_Cargo_Buy, name, {}, "", function(toggle)
-                if toggle then
-                    SET_INT_GLOBAL(global, 1)
-                else
-                    SET_INT_GLOBAL(global, 0)
-                end
-                Transition_Handler.Globals.SpecialCargo.Buy[global] = toggle
-            end)
+            special_cargo_missions.buy.toggle_menus[global] = menu.toggle(special_cargo_missions.menu_buy, name, {}, help,
+                function(toggle)
+                    if toggle then
+                        SET_INT_GLOBAL(global, 1)
+                    else
+                        SET_INT_GLOBAL(global, 0)
+                    end
+                    Transition_Handler.Globals.SpecialCargo.Buy[global] = toggle
+                end)
         end
 
-        Special_Cargo_Buy_MenuCreated = true
+        special_cargo_missions.buy.created = true
     end
 end)
 
-local Special_Cargo_Sell_MenuCreated = false
-local Special_Cargo_Sell
-Special_Cargo_Sell = menu.list(Special_Cargo_Tool, "禁用货物出售任务", {}, "", function()
-    if not Special_Cargo_Sell_MenuCreated then
+special_cargo_missions.menu_sell = menu.list(Special_Cargo_Tool, "禁用出售货物任务", {}, "", function()
+    if not special_cargo_missions.sell.created then
         Transition_Handler.Globals.SpecialCargo.Sell = {}
 
+        special_cargo_missions.sell.toggle_menus = {}
+        menu.toggle(special_cargo_missions.menu_sell, "全部开/关", {}, "", function(toggle)
+            for key, value in pairs(special_cargo_missions.sell.toggle_menus) do
+                menu.set_value(value, toggle)
+            end
+        end)
+
         for key, offset in pairs(Globals.SpecialCargo.Sell_Offsets) do
-            local name = Globals.SpecialCargo.Sell_Names[key]
+            local name = Globals.SpecialCargo.Sell_Names[key][1]
+            local help = Globals.SpecialCargo.Sell_Names[key][2]
             local global = 262145 + offset
 
-            menu.toggle(Special_Cargo_Sell, name, {}, "", function(toggle)
-                if toggle then
-                    SET_INT_GLOBAL(global, 1)
-                else
-                    SET_INT_GLOBAL(global, 0)
-                end
-                Transition_Handler.Globals.SpecialCargo.Sell[global] = toggle
-            end)
+            special_cargo_missions.sell.toggle_menus[global] = menu.toggle(special_cargo_missions.menu_sell, name, {},
+                help,
+                function(toggle)
+                    if toggle then
+                        SET_INT_GLOBAL(global, 1)
+                    else
+                        SET_INT_GLOBAL(global, 0)
+                    end
+                    Transition_Handler.Globals.SpecialCargo.Sell[global] = toggle
+                end)
         end
 
-        Special_Cargo_Sell_MenuCreated = true
+        special_cargo_missions.sell.created = true
     end
+end)
+
+menu.toggle_loop(Special_Cargo_Tool, "清空任务记录", {}, "就可以重复做同一个任务了", function()
+    Globals.SpecialCargo.ClearMissionHistory()
 end)
 
 menu.divider(Special_Cargo_Tool, "")
@@ -83,6 +109,42 @@ menu.slider_float(Special_Cargo_Tool, "特殊物品概率", { "special_item_chan
         Transition_Handler.Globals.SpecialCargo.Special_Item_Chance = value
     end)
 
+menu.divider(Special_Cargo_Tool, "")
+menu.action(Special_Cargo_Tool, "购买货物 任务助手", {},
+    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我\n记得设置移除冷却时间",
+    function()
+        if IS_SCRIPT_RUNNING("gb_contraband_buy") then
+            local entity_list = get_entities_by_hash("pickup", true, -265116550, 1688540826, -1143129136)
+            if next(entity_list) ~= nil then
+                OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(ENTITY.GET_ENTITY_MODEL(entity_list[1]), 3)
+                for k, ent in pairs(entity_list) do
+                    TP_TO_ME(ent)
+                end
+            else
+                util.toast("未找到货物")
+            end
+        else
+            if players.get_org_type(players.user()) ~= 0 then
+                menu.trigger_commands("ceostart")
+                util.toast("已自动成为CEO")
+            end
+
+            Globals.SpecialCargo.ClearMissionHistory()
+            for key, offset in pairs(Globals.SpecialCargo.Buy_Offsets) do
+                if key == 1 then
+                    SET_INT_GLOBAL(262145 + offset, 0)
+                else
+                    SET_INT_GLOBAL(262145 + offset, 1)
+                end
+            end
+            menu.trigger_commands("appterrorbyte")
+            PAD.SET_CURSOR_POSITION(0.718, 0.272)
+
+            util.toast("请先开启任务")
+        end
+    end)
+
+--#endregion
 
 menu.action(Special_Cargo, "传送到 特种货物", { "tp_cargo" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(478)
@@ -94,8 +156,9 @@ end)
 menu.action(Special_Cargo, "特种货物 传送到我", { "tpme_cargo" }, "", function()
     local entity_list = get_entities_by_hash("pickup", true, -265116550, 1688540826, -1143129136) --货物
     if next(entity_list) ~= nil then
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(ENTITY.GET_ENTITY_MODEL(entity_list[1]), 3)
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     else
         local blip = HUD.GET_NEXT_BLIP_INFO_ID(478)
@@ -103,7 +166,7 @@ menu.action(Special_Cargo, "特种货物 传送到我", { "tpme_cargo" }, "", fu
             local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
-                TP_TO_ME(ent, 0.0, 2.0, -0.5)
+                TP_TO_ME(ent)
 
                 if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
                     TP_INTO_VEHICLE(ent, "delete", "delete")
@@ -129,6 +192,13 @@ menu.action(Special_Cargo, "特种货物(载具) 传送到我", {}, "Trackify追
 end)
 
 menu.divider(Special_Cargo, "")
+menu.action(Special_Cargo, "传送到 仓库助理", { "tp_cargo_assistant" }, "让他去拉货", function()
+    local blip = HUD.GET_NEXT_BLIP_INFO_ID(480)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        local coords = HUD.GET_BLIP_COORDS(blip)
+        TELEPORT(coords.x - 1.0, coords.y, coords.z)
+    end
+end)
 local special_cargo_lupe_menu
 local special_cargo_lupe_ent -- 实体列表
 special_cargo_lupe_menu = menu.list_action(Special_Cargo, "卢佩: 传送到 水下货箱", {}, "",
@@ -166,14 +236,6 @@ special_cargo_lupe_menu = menu.list_action(Special_Cargo, "卢佩: 传送到 水
             end
         end
     end)
-menu.action(Special_Cargo, "传送到 仓库助理", { "tp_cargo_assistant" }, "让他去拉货", function()
-    local blip = HUD.GET_NEXT_BLIP_INFO_ID(480)
-    if HUD.DOES_BLIP_EXIST(blip) then
-        local coords = HUD.GET_BLIP_COORDS(blip)
-        TELEPORT(coords.x - 1.0, coords.y, coords.z)
-    end
-end)
-
 menu.action(Special_Cargo, "出货: 阻挡飞机生成点", {}, "任务开始前使用\n通过阻挡任务刷新点来避免触发该任务",
     function()
         local point_list = {
@@ -252,6 +314,8 @@ vehicle_cargo_menu = menu.list_action(Special_Cargo, "任务载具列表", {}, "
 
 local Bunker = menu.list(Property_Mission, "地堡拉货", {}, "")
 
+--#region Bunker Tool
+
 local Bunker_Tool = menu.list(Bunker, "工具", {}, "")
 
 menu.divider(Bunker_Tool, "补充原材料")
@@ -266,59 +330,117 @@ end)
 
 menu.divider(Bunker_Tool, "")
 
-local Bunker_Steal_MenuCreated = false
-local Bunker_Steal
-Bunker_Steal = menu.list(Bunker_Tool, "偷取任务触发概率", {}, "概率改为0可禁止触发对应任务",
-    function()
-        if not Bunker_Steal_MenuCreated then
-            Transition_Handler.Globals.Bunker.Steal = {}
+local bunker_missions = {
+    steal = {},
+    sell = {}
+}
 
-            for key, offset in pairs(Globals.Bunker.Steal_Offsets) do
-                local name = Globals.Bunker.Steal_Names[key]
-                local global = 262145 + offset
-                Transition_Handler.Globals.Bunker.Steal[global] = 1.0
+bunker_missions.menu_steal = menu.list(Bunker_Tool, "禁用偷取原材料任务", {}, "", function()
+    if not bunker_missions.steal.created then
+        Transition_Handler.Globals.Bunker.Steal = {}
 
-                menu.slider_float(Bunker_Steal, name, { "bunker_steal_weight" .. key }, "",
-                    0, 100, 100, 10, function(value)
-                        value = value * 0.01
-                        SET_FLOAT_GLOBAL(global, value)
-                        Transition_Handler.Globals.Bunker.Steal[global] = value
-                    end)
+        bunker_missions.steal.toggle_menus = {}
+        menu.toggle(bunker_missions.menu_steal, "全部开/关", {}, "", function(toggle)
+            for key, value in pairs(bunker_missions.steal.toggle_menus) do
+                menu.set_value(value, toggle)
             end
+        end)
 
-            Bunker_Steal_MenuCreated = true
+        for key, offset in pairs(Globals.Bunker.Steal_Offsets) do
+            local name = Globals.Bunker.Steal_Names[key][1]
+            local help = Globals.Bunker.Steal_Names[key][2]
+            local global = 262145 + offset
+
+            bunker_missions.steal.toggle_menus[global] = menu.toggle(bunker_missions.menu_steal, name, {}, help,
+                function(toggle)
+                    if toggle then
+                        SET_FLOAT_GLOBAL(global, 0)
+                    else
+                        SET_FLOAT_GLOBAL(global, 1)
+                    end
+                    Transition_Handler.Globals.Bunker.Steal[global] = toggle
+                end)
         end
-    end)
 
-local Bunker_Sell_MenuCreated = false
-local Bunker_Sell
-Bunker_Sell = menu.list(Bunker_Tool, "出售任务触发概率", {}, "概率改为0可禁止触发对应任务",
-    function()
-        if not Bunker_Sell_MenuCreated then
-            Transition_Handler.Globals.Bunker.Sell = {}
+        bunker_missions.steal.created = true
+    end
+end)
 
-            for key, offset in pairs(Globals.Bunker.Sell_Offsets) do
-                local name = Globals.Bunker.Sell_Names[key]
-                local global = 262145 + offset
-                Transition_Handler.Globals.Bunker.Sell[global] = 1.0
+bunker_missions.menu_sell = menu.list(Bunker_Tool, "禁用出售货物任务", {}, "", function()
+    if not bunker_missions.sell.created then
+        Transition_Handler.Globals.Bunker.Sell = {}
 
-                menu.slider_float(Bunker_Sell, name, { "bunker_sell_weight" .. key }, "",
-                    0, 100, 100, 10, function(value)
-                        value = value * 0.01
-                        SET_FLOAT_GLOBAL(global, value)
-                        Transition_Handler.Globals.Bunker.Sell[global] = value
-                    end)
+        bunker_missions.sell.toggle_menus = {}
+        menu.toggle(bunker_missions.menu_sell, "全部开/关", {}, "", function(toggle)
+            for key, value in pairs(bunker_missions.sell.toggle_menus) do
+                menu.set_value(value, toggle)
             end
+        end)
 
-            Bunker_Sell_MenuCreated = true
+        for key, offset in pairs(Globals.Bunker.Sell_Offsets) do
+            local name = Globals.Bunker.Sell_Names[key][1]
+            local help = Globals.Bunker.Sell_Names[key][2]
+            local global = 262145 + offset
+
+            bunker_missions.sell.toggle_menus[global] = menu.toggle(bunker_missions.menu_sell, name, {}, help,
+                function(toggle)
+                    if toggle then
+                        SET_FLOAT_GLOBAL(global, 0)
+                    else
+                        SET_FLOAT_GLOBAL(global, 1)
+                    end
+                    Transition_Handler.Globals.Bunker.Sell[global] = toggle
+                end)
         end
-    end)
+
+        bunker_missions.sell.created = true
+    end
+end)
+
+menu.toggle_loop(Bunker_Tool, "清空任务记录", {}, "就可以重复做同一个任务了", function()
+    Globals.Bunker.ClearMissionHistory()
+end)
 
 menu.divider(Bunker_Tool, "")
 menu.action(Bunker_Tool, "移除地堡武器零件冷却时间", {}, "STAT", function()
     STAT_SET_INT("BUNKER_CRATE_COOLDOWN", 0)
 end)
 
+menu.divider(Bunker_Tool, "")
+menu.action(Bunker_Tool, "偷取原材料 任务助手", {},
+    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我",
+    function()
+        if IS_SCRIPT_RUNNING("gb_gunrunning") then
+            local entity_list = get_entities_by_hash("vehicle", true, 1026149675)
+            if next(entity_list) ~= nil then
+                for k, ent in pairs(entity_list) do
+                    TP_VEHICLE_TO_ME(ent)
+                end
+            else
+                util.toast("未找到原材料")
+            end
+        else
+            if players.get_org_type(players.user()) == -1 then
+                menu.trigger_commands("ceostart")
+                util.toast("已自动成为CEO")
+            end
+
+            Globals.Bunker.ClearMissionHistory()
+            for key, offset in pairs(Globals.Bunker.Steal_Offsets) do
+                if key == 1 then
+                    SET_FLOAT_GLOBAL(262145 + offset, 1)
+                else
+                    SET_FLOAT_GLOBAL(262145 + offset, 0)
+                end
+            end
+            menu.trigger_commands("appterrorbyte")
+            PAD.SET_CURSOR_POSITION(0.501, 0.651)
+
+            util.toast("请先开启任务")
+        end
+    end)
+
+--#endregion
 
 menu.action(Bunker, "传送到 原材料", { "tp_bk_supply" }, "", function()
     local blip1 = HUD.GET_NEXT_BLIP_INFO_ID(556)
@@ -342,14 +464,14 @@ menu.action(Bunker, "原材料 传送到我", { "tpme_bk_supply" }, "", function
         local entity_list = get_entities_by_hash("pickup", true, -955159266)
         if next(entity_list) ~= nil then
             for k, ent in pairs(entity_list) do
-                TP_TO_ME(ent, 0.0, 2.0, 0.0)
+                TP_TO_ME(ent)
             end
         end
     else
         local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
-            TP_TO_ME(ent, 0.0, 2.0, 0.0)
+            TP_TO_ME(ent)
 
             if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
                 TP_INTO_VEHICLE(ent, "delete", "delete")
@@ -380,7 +502,7 @@ menu.action(Bunker, "长鳍追飞机: 掉落货物 传送到我", {}, "", functi
     local entity_list = get_entities_by_hash("object", true, 91541528)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 1.0, 1.0)
+            TP_TO_ME(ent, 0.0, 0.0, 1.0)
         end
     end
 end)
@@ -403,6 +525,8 @@ menu.action(Bunker, "长鳍追飞机: 炸掉长鳍", {},
 
 local Air_Freight = menu.list(Property_Mission, "机库拉货", {}, "")
 
+--#region Air Freight Tool
+
 local Air_Freight_Tool = menu.list(Air_Freight, "工具", {}, "")
 
 menu.toggle(Air_Freight_Tool, "移除冷却时间", { "nocd_airfreight" }, "进货和出售\n任务开始前启用",
@@ -413,54 +537,114 @@ menu.toggle(Air_Freight_Tool, "移除冷却时间", { "nocd_airfreight" }, "进�
 
 menu.divider(Air_Freight_Tool, "")
 
-local Air_Freight_Steal_MenuCreated = false
-local Air_Freight_Steal
-Air_Freight_Steal = menu.list(Air_Freight_Tool, "偷取任务触发概率", {}, "概率改为0可禁止触发对应任务",
-    function()
-        if not Air_Freight_Steal_MenuCreated then
-            Transition_Handler.Globals.AirFreight.Steal = {}
+local air_freight_missions = {
+    steal = {},
+    sell = {}
+}
 
+air_freight_missions.menu_steal = menu.list(Air_Freight_Tool, "禁用航空偷取货物任务", {}, "", function()
+    if not air_freight_missions.steal.created then
+        Transition_Handler.Globals.AirFreight.Steal = {}
+
+        air_freight_missions.steal.toggle_menus = {}
+        menu.toggle(air_freight_missions.menu_steal, "全部开/关", {}, "", function(toggle)
+            for key, value in pairs(air_freight_missions.steal.toggle_menus) do
+                menu.set_value(value, toggle)
+            end
+        end)
+
+        for key, offset in pairs(Globals.AirFreight.Steal_Offsets) do
+            local name = Globals.AirFreight.Steal_Names[key][1]
+            local help = Globals.AirFreight.Steal_Names[key][2]
+            local global = 262145 + offset
+
+            air_freight_missions.steal.toggle_menus[global] = menu.toggle(air_freight_missions.menu_steal, name, {}, help,
+                function(toggle)
+                    if toggle then
+                        SET_FLOAT_GLOBAL(global, 0)
+                    else
+                        SET_FLOAT_GLOBAL(global, 1)
+                    end
+                    Transition_Handler.Globals.AirFreight.Steal[global] = toggle
+                end)
+        end
+
+        air_freight_missions.steal.created = true
+    end
+end)
+
+air_freight_missions.menu_sell = menu.list(Air_Freight_Tool, "禁用航空出售货物任务", {}, "", function()
+    if not air_freight_missions.sell.created then
+        Transition_Handler.Globals.AirFreight.Sell = {}
+
+        air_freight_missions.sell.toggle_menus = {}
+        menu.toggle(air_freight_missions.menu_sell, "全部开/关", {}, "", function(toggle)
+            for key, value in pairs(air_freight_missions.sell.toggle_menus) do
+                menu.set_value(value, toggle)
+            end
+        end)
+
+        for key, offset in pairs(Globals.AirFreight.Sell_Offsets) do
+            local name = Globals.AirFreight.Sell_Names[key][1]
+            local help = Globals.AirFreight.Sell_Names[key][2]
+            local global = 262145 + offset
+
+            air_freight_missions.sell.toggle_menus[global] = menu.toggle(air_freight_missions.menu_sell, name, {}, help,
+                function(toggle)
+                    if toggle then
+                        SET_FLOAT_GLOBAL(global, 0)
+                    else
+                        SET_FLOAT_GLOBAL(global, 1)
+                    end
+                    Transition_Handler.Globals.AirFreight.Sell[global] = toggle
+                end)
+        end
+
+        air_freight_missions.sell.created = true
+    end
+end)
+
+menu.toggle_loop(Air_Freight_Tool, "清空任务记录", {}, "就可以重复做同一个任务了", function()
+    Globals.AirFreight.ClearMissionHistory()
+end)
+
+menu.divider(Air_Freight_Tool, "")
+menu.action(Air_Freight_Tool, "偷取货物 航空任务助手", {},
+    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我\n记得设置移除冷却时间",
+    function()
+        if IS_SCRIPT_RUNNING("gb_smuggler") then
+            local entity_list = get_entities_by_hash("pickup", true, -1270906188, -204239524, 2085196638, 886033073,
+                1419829219, 1248987568, -2037094101, -49487954)
+            if next(entity_list) ~= nil then
+                for k, ent in pairs(entity_list) do
+                    detach_product_entity(ent)
+                    TP_TO_ME(ent)
+                end
+            else
+                util.toast("未找到货物")
+            end
+        else
+            if players.get_org_type(players.user()) == -1 then
+                menu.trigger_commands("ceostart")
+                util.toast("已自动成为CEO")
+            end
+
+            Globals.AirFreight.ClearMissionHistory()
             for key, offset in pairs(Globals.AirFreight.Steal_Offsets) do
-                local name = Globals.AirFreight.Steal_Names[key]
-                local global = 262145 + offset
-                Transition_Handler.Globals.AirFreight.Steal[global] = 1.0
-
-                menu.slider_float(Air_Freight_Steal, name, { "air_freight_steal_weight" .. key }, "",
-                    0, 100, 100, 10, function(value)
-                        value = value * 0.01
-                        SET_FLOAT_GLOBAL(global, value)
-                        Transition_Handler.Globals.AirFreight.Steal[global] = value
-                    end)
+                if key == 8 then
+                    SET_FLOAT_GLOBAL(262145 + offset, 1)
+                else
+                    SET_FLOAT_GLOBAL(262145 + offset, 0)
+                end
             end
+            menu.trigger_commands("apphangar")
+            PAD.SET_CURSOR_POSITION(0.631, 0.0881)
 
-            Air_Freight_Steal_MenuCreated = true
+            util.toast("请先开启任务")
         end
     end)
 
-local Air_Freight_Sell_MenuCreated = false
-local Air_Freight_Sell
-Air_Freight_Sell = menu.list(Air_Freight_Tool, "出售任务触发概率", {}, "概率改为0可禁止触发对应任务",
-    function()
-        if not Air_Freight_Sell_MenuCreated then
-            Transition_Handler.Globals.AirFreight.Sell = {}
-
-            for key, offset in pairs(Globals.AirFreight.Sell_Offsets) do
-                local name = Globals.AirFreight.Sell_Names[key]
-                local global = 262145 + offset
-                Transition_Handler.Globals.AirFreight.Sell[global] = 1.0
-
-                menu.slider_float(Air_Freight_Sell, name, { "air_freight_sell_weight" .. key }, "",
-                    0, 100, 100, 10, function(value)
-                        value = value * 0.01
-                        SET_FLOAT_GLOBAL(global, value)
-                        Transition_Handler.Globals.AirFreight.Sell[global] = value
-                    end)
-            end
-
-            Air_Freight_Sell_MenuCreated = true
-        end
-    end)
-
+--#endregion
 
 menu.action(Air_Freight, "传送到 货物", { "tp_air_product" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(568)
@@ -470,18 +654,19 @@ menu.action(Air_Freight, "传送到 货物", { "tp_air_product" }, "", function(
     end
 end)
 menu.action(Air_Freight, "货物 传送到我", { "tpme_air_product" }, "", function()
-    local entity_list = get_entities_by_hash("pickup", true, -1270906188, -204239524, 2085196638, 886033073)
+    local entity_list = get_entities_by_hash("pickup", true, -1270906188, -204239524, 2085196638, 886033073, 1419829219,
+        1248987568, -2037094101, -49487954)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
             detach_product_entity(ent)
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     else
         local blip = HUD.GET_NEXT_BLIP_INFO_ID(568)
         if HUD.DOES_BLIP_EXIST(blip) then
             local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
             if ENTITY.DOES_ENTITY_EXIST(ent) then
-                TP_TO_ME(ent, 0.0, 2.0, -0.5)
+                TP_TO_ME(ent)
             else
                 util.toast("目标不是实体，无法传送到我")
             end
@@ -570,6 +755,8 @@ end)
 
 local MC_Factory = menu.list(Property_Mission, "摩托帮工厂", {}, "")
 
+--#region MC Factory Tool
+
 local MC_Factory_Tool = menu.list(MC_Factory, "工具", {}, "")
 
 menu.divider(MC_Factory_Tool, "补充原材料")
@@ -586,54 +773,113 @@ menu.slider(MC_Factory_Tool, "载具原材料 补充进度", { "mc_resupply_vehi
 
 menu.divider(MC_Factory_Tool, "")
 
-local Biker_Resupply_MenuCreated = false
-local Biker_Resupply
-Biker_Resupply = menu.list(MC_Factory_Tool, "补货任务触发概率", {}, "概率改为0可禁止触发对应任务",
-    function()
-        if not Biker_Resupply_MenuCreated then
-            Transition_Handler.Globals.Biker.Resupply = {}
+local biker_missions = {
+    steal = {},
+    sell = {}
+}
 
-            for key, offset in pairs(Globals.Biker.Resupply_Offsets) do
-                local name = Globals.Biker.Resupply_Names[key]
-                local global = 262145 + offset
-                Transition_Handler.Globals.Biker.Resupply[global] = 1.0
+biker_missions.menu_steal = menu.list(MC_Factory_Tool, "禁用偷取原材料任务", {}, "", function()
+    if not biker_missions.steal.created then
+        Transition_Handler.Globals.Biker.Steal = {}
 
-                menu.slider_float(Biker_Resupply, name, { "biker_resupply_weight" .. key }, "",
-                    0, 100, 100, 10, function(value)
-                        value = value * 0.01
-                        SET_FLOAT_GLOBAL(global, value)
-                        Transition_Handler.Globals.Biker.Resupply[global] = value
-                    end)
+        biker_missions.steal.toggle_menus = {}
+        menu.toggle(biker_missions.menu_steal, "全部开/关", {}, "", function(toggle)
+            for key, value in pairs(biker_missions.steal.toggle_menus) do
+                menu.set_value(value, toggle)
             end
+        end)
 
-            Biker_Resupply_MenuCreated = true
-        end
-    end)
-
-local Biker_Sell_MenuCreated = false
-local Biker_Sell
-Biker_Sell = menu.list(MC_Factory_Tool, "禁用货物出售任务", {}, "", function()
-    if not Biker_Sell_MenuCreated then
-        Transition_Handler.Globals.Biker.Sell = {}
-
-        for key, offset in pairs(Globals.Biker.Sell_Offsets) do
-            local name = Globals.Biker.Sell_Names[key]
+        for key, offset in pairs(Globals.Biker.Steal_Offsets) do
+            local name = Globals.Biker.Steal_Names[key][1]
+            local help = Globals.Biker.Steal_Names[key][2]
             local global = 262145 + offset
 
-            menu.toggle(Biker_Sell, name, {}, "", function(toggle)
-                if toggle then
-                    SET_INT_GLOBAL(global, 1)
-                else
-                    SET_INT_GLOBAL(global, 0)
-                end
-                Transition_Handler.Globals.Biker.Sell[global] = toggle
-            end)
+            biker_missions.steal.toggle_menus[global] = menu.toggle(biker_missions.menu_steal, name, {}, help,
+                function(toggle)
+                    if toggle then
+                        SET_FLOAT_GLOBAL(global, 0)
+                    else
+                        SET_FLOAT_GLOBAL(global, 1)
+                    end
+                    Transition_Handler.Globals.Biker.Steal[global] = toggle
+                end)
         end
 
-        Biker_Sell_MenuCreated = true
+        biker_missions.steal.created = true
     end
 end)
 
+biker_missions.menu_sell = menu.list(MC_Factory_Tool, "禁用出售货物任务", {}, "", function()
+    if not biker_missions.sell.created then
+        Transition_Handler.Globals.Biker.Sell = {}
+
+        biker_missions.sell.toggle_menus = {}
+        menu.toggle(biker_missions.menu_sell, "全部开/关", {}, "", function(toggle)
+            for key, value in pairs(biker_missions.sell.toggle_menus) do
+                menu.set_value(value, toggle)
+            end
+        end)
+
+        for key, offset in pairs(Globals.Biker.Sell_Offsets) do
+            local name = Globals.Biker.Sell_Names[key][1]
+            local help = Globals.Biker.Sell_Names[key][2]
+            local global = 262145 + offset
+
+            biker_missions.sell.toggle_menus[global] = menu.toggle(biker_missions.menu_sell, name, {}, help,
+                function(toggle)
+                    if toggle then
+                        SET_INT_GLOBAL(global, 1)
+                    else
+                        SET_INT_GLOBAL(global, 0)
+                    end
+                    Transition_Handler.Globals.Biker.Sell[global] = toggle
+                end)
+        end
+
+        biker_missions.sell.created = true
+    end
+end)
+
+menu.toggle_loop(MC_Factory_Tool, "清空任务记录", {}, "就可以重复做同一个任务了", function()
+    Globals.Biker.ClearMissionHistory()
+end)
+
+menu.divider(MC_Factory_Tool, "")
+menu.action(MC_Factory_Tool, "偷取原材料 任务助手", {},
+    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我",
+    function()
+        if IS_SCRIPT_RUNNING("gb_illicit_goods_resupply") then
+            local blip = HUD.GET_NEXT_BLIP_INFO_ID(501)
+            if HUD.DOES_BLIP_EXIST(blip) then
+                local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+                if ENTITY.DOES_ENTITY_EXIST(ent) then
+                    TP_VEHICLE_TO_ME(ent, "", "delete")
+                end
+            else
+                util.toast("未找到原材料")
+            end
+        else
+            if players.get_org_type(players.user()) ~= 1 then
+                menu.trigger_commands("mcstart")
+                util.toast("已自动成为摩托帮首领")
+            end
+
+            Globals.Biker.ClearMissionHistory()
+            for key, offset in pairs(Globals.Biker.Steal_Offsets) do
+                if key == 12 then
+                    SET_FLOAT_GLOBAL(262145 + offset, 1)
+                else
+                    SET_FLOAT_GLOBAL(262145 + offset, 0)
+                end
+            end
+            menu.trigger_commands("appterrorbyte")
+            PAD.SET_CURSOR_POSITION(0.724, 0.604)
+
+            util.toast("请先开启任务")
+        end
+    end)
+
+--#endregion
 
 menu.action(MC_Factory, "传送到 货物", { "tp_mc_product" }, "", function()
     local blip1 = HUD.GET_NEXT_BLIP_INFO_ID(501)
@@ -661,13 +907,26 @@ menu.action(MC_Factory, "货物 传送到我", { "tpme_mc_product" }, "", functi
         local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
-            TP_TO_ME(ent, 0.0, 2.0, 0.0)
+            TP_TO_ME(ent)
 
             if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
                 TP_INTO_VEHICLE(ent, "delete", "delete")
             end
         else
             util.toast("目标不是实体，无法传送到我")
+        end
+    end
+end)
+menu.action(MC_Factory, "货物(载具) 传送到我", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, 788248216)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            if ENTITY.IS_ENTITY_ATTACHED(ent) then
+                local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
+                if ENTITY.IS_ENTITY_A_VEHICLE(attached_ent) then
+                    TP_VEHICLE_TO_ME(attached_ent, "delete", "delete")
+                end
+            end
         end
     end
 end)
@@ -693,7 +952,7 @@ menu.action(Acid_Lab, "原材料 传送到我", {}, "", function()
         local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         else
             util.toast("目标不是实体，无法传送到我")
         end
@@ -1140,9 +1399,10 @@ local Diamond_Casino_Preps = menu.list(Diamond_Casino, "相同前置", {}, "")
 menu.action(Diamond_Casino_Preps, "武器 传送到我", {}, "杀死/爆炸所有NPC", function()
     local entity_list = get_entities_by_hash("pickup", true, 798951501, -1628917549)
     if next(entity_list) ~= nil then
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(ENTITY.GET_ENTITY_MODEL(entity_list[1]), 2)
         for k, ent in pairs(entity_list) do
             detach_product_entity(ent)
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     end
 end)
@@ -1157,7 +1417,7 @@ menu.action(Diamond_Casino_Preps, "骇入设备 传送到我", {}, "拿到门禁
         local entity_list = get_entities_by_hash("pickup", true, -155327337)
         if next(entity_list) ~= nil then
             for k, ent in pairs(entity_list) do
-                TP_TO_ME(ent, 0.0, 2.0, -0.5)
+                TP_TO_ME(ent)
             end
         end
     end)
@@ -1258,15 +1518,16 @@ menu.action(Diamond_Casino_Silent, "无人机零件 传送到我", {},
         entity_list = get_entities_by_hash("pickup", true, -1285013058)
         if next(entity_list) ~= nil then
             for k, ent in pairs(entity_list) do
-                TP_TO_ME(ent, 0.0, 2.0, -0.5)
+                TP_TO_ME(ent)
             end
         end
     end)
 menu.action(Diamond_Casino_Silent, "金库激光器 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, 1953119208)
     if next(entity_list) ~= nil then
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(1953119208, 2)
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     end
 end)
@@ -1298,8 +1559,9 @@ menu.action(Diamond_Casino_Silent, "电磁脉冲 传送到直升机挂钩位置"
 menu.action(Diamond_Casino_Silent, "潜行套装 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, -1496506919)
     if next(entity_list) ~= nil then
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(-1496506919, 2)
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     end
 end)
@@ -1311,24 +1573,27 @@ local Diamond_Casino_BigCon = menu.list(Diamond_Casino, "兵不厌诈", {}, "")
 menu.action(Diamond_Casino_BigCon, "古倍科技套装 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, 1425667258)
     if next(entity_list) ~= nil then
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(1425667258, 2)
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     end
 end)
 menu.action(Diamond_Casino_BigCon, "金库钻孔机 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, 415149220)
     if next(entity_list) ~= nil then
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(415149220, 2)
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     end
 end)
 menu.action(Diamond_Casino_BigCon, "国安局套装 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, -1713985235)
     if next(entity_list) ~= nil then
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(-1713985235, 2)
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     end
 end)
@@ -1340,24 +1605,27 @@ local Diamond_Casino_Aggressive = menu.list(Diamond_Casino, "气势汹汹", {}, 
 menu.action(Diamond_Casino_Aggressive, "热能炸药 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, -2043162923)
     if next(entity_list) ~= nil then
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(-2043162923, 2)
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     end
 end)
 menu.action(Diamond_Casino_Aggressive, "金库炸药 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, -681938663)
     if next(entity_list) ~= nil then
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(-681938663, 2)
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     end
 end)
 menu.action(Diamond_Casino_Aggressive, "加固防弹衣 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, 1715697304)
     if next(entity_list) ~= nil then
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(1715697304, 2)
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, 0.0)
+            TP_TO_ME(ent)
         end
     end
 end)
@@ -1365,7 +1633,7 @@ menu.action(Diamond_Casino_Aggressive, "加固防弹衣: 潜水套装 传送到�
     local entity_list = get_entities_by_hash("object", true, 788248216)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+            TP_TO_ME(ent)
         end
     end
 end)
@@ -1754,7 +2022,7 @@ menu.action(LS_Robbery_TLC, "实验室地点: 炸药 传送到我", {}, "", func
     local entity_list = get_entities_by_hash("pickup", true, -957953964)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 0.0, 0.0)
+            TP_TO_ME(ent)
         end
     end
 end)
@@ -2767,7 +3035,7 @@ end)
 menu.action(Freemode_Mission, "打开 恐霸屏幕", { "open_terrorbyte" }, "", function()
     if IS_IN_SESSION() then
         SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 1)
-        START_SCRIPT("appHackerTruck", Locals.appHackerTruckArgs)
+        START_SCRIPT("appHackerTruck", 4592) -- arg count needed to properly start the script, possibly outdated
     end
 end)
 menu.action(Freemode_Mission, "传送到 夜总会VIP客户", { "tp_radar_vip" }, "", function()

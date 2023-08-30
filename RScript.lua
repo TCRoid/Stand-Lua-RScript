@@ -5,9 +5,12 @@
 util.keep_running()
 util.require_natives("2944b", "init")
 
-local SCRIPT_VERSION <const> = "2023/8/26"
+local SCRIPT_VERSION <const> = "2023/8/30"
 
 local SUPPORT_GTAO <const> = 1.67
+
+DEV_MODE = false
+
 
 
 
@@ -378,6 +381,11 @@ end
 --------------------------------------
 
 Loop_Handler = {
+    ------ 菜单 ------
+    self = {
+        defense_modifier = { value = 1.0 },
+    },
+
     ------ 主要 ------
     main = {
         draw_point_on_screen = false,
@@ -431,6 +439,13 @@ function Loop_Handler.control_ent.clear()
 end
 
 util.create_tick_handler(function()
+    -------- Menu --------
+    if Loop_Handler.self.defense_modifier.value ~= 1.0 then
+        Loop_Handler.self.defense_modifier.callback(Loop_Handler.self.defense_modifier.value)
+    end
+
+
+
     -------- Main --------
     if Loop_Handler.main.draw_point_on_screen then
         draw_point_in_center()
@@ -551,6 +566,7 @@ util.create_tick_handler(function()
 end)
 
 
+
 ---------------------------------------
 ---- Transition Finished Functions ----
 ---------------------------------------
@@ -624,15 +640,15 @@ util.on_transition_finished(function()
     end
     if t_globals.Bunker.Steal then
         for global, value in pairs(t_globals.Bunker.Steal) do
-            if value ~= 1.0 then
-                SET_FLOAT_GLOBAL(global, value)
+            if value then
+                SET_FLOAT_GLOBAL(global, 0)
             end
         end
     end
     if t_globals.Bunker.Sell then
         for global, value in pairs(t_globals.Bunker.Sell) do
-            if value ~= 1.0 then
-                SET_FLOAT_GLOBAL(global, value)
+            if value then
+                SET_FLOAT_GLOBAL(global, 0)
             end
         end
     end
@@ -640,15 +656,15 @@ util.on_transition_finished(function()
     ----- Air Freight -----
     if t_globals.AirFreight.Steal then
         for global, value in pairs(t_globals.AirFreight.Steal) do
-            if value ~= 1.0 then
-                SET_FLOAT_GLOBAL(global, value)
+            if value then
+                SET_FLOAT_GLOBAL(global, 0)
             end
         end
     end
     if t_globals.AirFreight.Sell then
         for global, value in pairs(t_globals.AirFreight.Sell) do
-            if value ~= 1.0 then
-                SET_FLOAT_GLOBAL(global, value)
+            if value then
+                SET_FLOAT_GLOBAL(global, 0)
             end
         end
     end
@@ -660,10 +676,10 @@ util.on_transition_finished(function()
     if t_globals.Biker.Resupply_Vehicle_Value and t_globals.Biker.Resupply_Vehicle_Value ~= 40 then
         SET_INT_GLOBAL(Globals.Biker.BIKER_RESUPPLY_VEHICLE_VALUE, t_globals.Biker.Resupply_Vehicle_Value)
     end
-    if t_globals.Biker.Resupply then
-        for global, value in pairs(t_globals.Biker.Resupply) do
-            if value ~= 1.0 then
-                SET_FLOAT_GLOBAL(global, value)
+    if t_globals.Biker.Steal then
+        for global, value in pairs(t_globals.Biker.Steal) do
+            if value then
+                SET_FLOAT_GLOBAL(global, 0)
             end
         end
     end
@@ -703,6 +719,11 @@ util.on_transition_finished(function()
 
     if Transition_Handler.traffic_density.toggle then
         Transition_Handler.traffic_density.callback()
+    end
+
+
+    if DEV_MODE then
+        util.toast("[RScript] on_transition_finished", TOAST_ALL)
     end
 end)
 
@@ -763,6 +784,10 @@ function Entity_Control.generate_menu(menu_parent, ent, index)
 
     if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
         Entity_Control.vehicle(menu_parent, ent, index)
+    end
+
+    if IS_ENTITY_A_PICKUP(ent) then
+        Entity_Control.pickup(menu_parent, ent, index)
     end
 end
 
@@ -1768,6 +1793,70 @@ function Entity_Control.vehicle_task(menu_parent, vehicle, index)
     end
 end
 
+----------------
+-- Pickup
+----------------
+
+function Entity_Control.pickup(menu_parent, pickup, index)
+    ----- Pickup(Object) 选项 -----
+    local pickup_options = menu.list(menu_parent, "Pickup 选项", {}, "")
+
+    menu.action(pickup_options, "Attach to Self", {}, "", function()
+        OBJECT.ATTACH_PORTABLE_PICKUP_TO_PED(pickup, players.user_ped())
+    end)
+    menu.action(pickup_options, "Detach from Ped", {}, "", function()
+        OBJECT.DETACH_PORTABLE_PICKUP_FROM_PED(pickup)
+    end)
+    menu.toggle(pickup_options, "Hide When Detached", {}, "", function(toggle)
+        OBJECT.HIDE_PORTABLE_PICKUP_WHEN_DETACHED(pickup, toggle)
+    end)
+    menu.toggle(pickup_options, "Suppress Sound", {}, "", function(toggle)
+        OBJECT.SUPPRESS_PICKUP_SOUND_FOR_PICKUP(pickup, toggle and 1 or 0)
+    end)
+    menu.toggle(pickup_options, "Glow When Uncollectable", {}, "", function(toggle)
+        OBJECT.SET_PICKUP_OBJECT_GLOW_WHEN_UNCOLLECTABLE(pickup, toggle)
+    end)
+    menu.toggle(pickup_options, "Arrow Marker", {}, "", function(toggle)
+        OBJECT.SET_PICKUP_OBJECT_ARROW_MARKER(pickup, toggle)
+    end)
+    menu.toggle(pickup_options, "Arrow Marker When Uncollectable", {}, "", function(toggle)
+        OBJECT.ALLOW_PICKUP_ARROW_MARKER_WHEN_UNCOLLECTABLE(pickup, toggle)
+    end)
+    menu.toggle(pickup_options, "Transparent When Uncollectable", {}, "", function(toggle)
+        OBJECT.SET_PICKUP_OBJECT_TRANSPARENT_WHEN_UNCOLLECTABLE(pickup, toggle)
+    end)
+    menu.toggle(pickup_options, "Set Pickup Presist", {}, "Sets a portable pickup to persist after converting to ambient",
+        function(toggle)
+            OBJECT.SET_PORTABLE_PICKUP_PERSIST(pickup, toggle)
+        end)
+    menu.action(pickup_options, "Collectable in Vehicle", {}, "", function()
+        OBJECT.SET_PICKUP_OBJECT_COLLECTABLE_IN_VEHICLE(pickup)
+    end)
+    menu.list_action(pickup_options, "阻止收集", {}, "", {
+        "阻止", "阻止(仅本地)", "不阻止", "不阻止(仅本地)"
+    }, function(value)
+        local bPrevent, bLocalOnly = true, false
+        if value == 2 then
+            bPrevent, bLocalOnly = true, true
+        elseif value == 3 then
+            bPrevent, bLocalOnly = false, false
+        elseif value == 4 then
+            bPrevent, bLocalOnly = false, true
+        end
+
+        OBJECT.PREVENT_COLLECTION_OF_PORTABLE_PICKUP(pickup, bPrevent, bLocalOnly)
+    end)
+
+    menu.divider(pickup_options, "Model Hash")
+    local hash = ENTITY.GET_ENTITY_MODEL(pickup)
+    menu.click_slider(pickup_options, "最大携带数量", {}, "", 1, 20, 8, 1, function(value)
+        OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(hash, value)
+    end)
+    menu.toggle(pickup_options, "允许收集(本地)", {}, "", function(toggle)
+        OBJECT.SET_LOCAL_PLAYER_PERMITTED_TO_COLLECT_PICKUPS_WITH_MODEL(hash, toggle)
+    end)
+end
+
 ---------------------
 -- All Entities
 ---------------------
@@ -2162,7 +2251,6 @@ end
 
 
 
-
 menu.divider(menu.my_root(), "RScript")
 
 
@@ -2172,6 +2260,9 @@ menu.divider(menu.my_root(), "RScript")
 ------------ 自我选项 ------------
 --------------------------------
 local Self_options = menu.list(menu.my_root(), "自我选项", {}, "")
+
+
+--#region Custom Health & Armour
 
 --------------------
 --- 自定义血量护甲 ---
@@ -2225,7 +2316,10 @@ menu.click_slider(Self_Custom_options, "设置当前护甲值", { "set_armour" }
         PED.SET_PED_ARMOUR(players.user_ped(), value)
     end)
 
+--#endregion
 
+
+--#region Custom Health Recharge
 
 --------------------
 --- 自定义生命恢复 ---
@@ -2310,6 +2404,8 @@ menu.slider(Self_Custom_recharge_setting, "恢复速度", { "recharge_vehicle_mu
     1, 100, 1, 1, function(value)
         custom_recharge.vehicle_mult = value
     end)
+
+--#endregion
 
 
 
@@ -2484,6 +2580,21 @@ menu.toggle_loop(Self_options, "禁止被爆头一枪击杀", {}, "", function()
 end, function()
     PED.SET_PED_SUFFERS_CRITICAL_HITS(players.user_ped(), true)
 end)
+
+Loop_Handler.self.defense_modifier.callback = function(value)
+    PLAYER.SET_PLAYER_WEAPON_DEFENSE_MODIFIER(players.user(), value)
+    PLAYER.SET_PLAYER_WEAPON_MINIGUN_DEFENSE_MODIFIER(players.user(), value)
+    PLAYER.SET_PLAYER_MELEE_WEAPON_DEFENSE_MODIFIER(players.user(), value)
+    PLAYER.SET_PLAYER_VEHICLE_DEFENSE_MODIFIER(players.user(), value)
+    PLAYER.SET_PLAYER_WEAPON_TAKEDOWN_DEFENSE_MODIFIER(players.user(), value)
+end
+menu.slider_float(Self_options, "受伤倍数修改", { "defense_multiplier" }, "数值越低，受到的伤害就越低",
+    10, 100, 100, 10, function(value)
+        value = value * 0.01
+
+        Loop_Handler.self.defense_modifier.value = value
+        Loop_Handler.self.defense_modifier.callback(value)
+    end)
 
 --#endregion Self Options
 
@@ -3366,6 +3477,17 @@ local vehicle_upgrade = {
     health_multiplier = 1,
     no_driver_explosion_damage = true,
     other_strong = true,
+    ---
+    collision_damage_mult = 0.1,
+    weapon_damamge_mult = 0.1,
+    engine_damage_mult = 0.0,
+}
+
+vehicle_upgrade.memory = {
+    handling_data = 0,
+    collision_damage_mult = 0,
+    weapon_damamge_mult = 0,
+    engine_damage_mult = 0,
 }
 
 function vehicle_upgrade.upgrade(vehicle)
@@ -3458,6 +3580,33 @@ function vehicle_upgrade.upgrade(vehicle)
         VEHICLE.REMOVE_VEHICLE_UPSIDEDOWN_CHECK(vehicle)
         VEHICLE.REMOVE_VEHICLE_STUCK_CHECK(vehicle)
     end
+
+    -- 受到伤害倍数
+    local CHandlingData = entities.vehicle_get_handling(entities.handle_to_pointer(vehicle))
+    if CHandlingData ~= 0 then
+        -- 是否更换了载具
+        if CHandlingData ~= vehicle_upgrade.memory.handling_data then
+            -- 上一辆载具恢复初始属性
+            if vehicle_upgrade.memory.handling_data ~= 0 then
+                memory.write_float(vehicle_upgrade.memory.handling_data + 0xF0,
+                    vehicle_upgrade.memory.collision_damage_mult)
+                memory.write_float(vehicle_upgrade.memory.handling_data + 0xF4,
+                    vehicle_upgrade.memory.weapon_damamge_mult)
+                memory.write_float(vehicle_upgrade.memory.handling_data + 0xFC,
+                    vehicle_upgrade.memory.engine_damage_mult)
+            end
+
+            -- 存储当前载具初始属性
+            vehicle_upgrade.memory.handling_data = CHandlingData
+            vehicle_upgrade.memory.collision_damage_mult = memory.read_float(CHandlingData + 0xF0)
+            vehicle_upgrade.memory.weapon_damamge_mult = memory.read_float(CHandlingData + 0xF4)
+            vehicle_upgrade.memory.engine_damage_mult = memory.read_float(CHandlingData + 0xFC)
+        end
+        -- 设置当前载具属性
+        memory.write_float(CHandlingData + 0xF0, vehicle_upgrade.collision_damage_mult)
+        memory.write_float(CHandlingData + 0xF4, vehicle_upgrade.weapon_damamge_mult)
+        memory.write_float(CHandlingData + 0xFC, vehicle_upgrade.engine_damage_mult)
+    end
 end
 
 menu.action(Vehicle_Upgrade_options, "升级强化载具", { "strong_veh" }, "升级强化当前或上一辆载具",
@@ -3528,8 +3677,19 @@ menu.toggle(Vehicle_Upgrade_options, "其它属性增强", {}, "其它属性的�
         vehicle_upgrade.other_strong = toggle
     end, true)
 
---#endregion
+menu.divider(Vehicle_Upgrade_options, "受到伤害倍数")
+menu.slider_float(Vehicle_Upgrade_options, "碰撞伤害", {}, "", 0, 200, 10, 10, function(value)
+    vehicle_upgrade.collision_damage_mult = value * 0.01
+end)
+menu.slider_float(Vehicle_Upgrade_options, "武器伤害", {}, "", 0, 200, 10, 10, function(value)
+    vehicle_upgrade.weapon_damamge_mult = value * 0.01
+end)
+menu.slider_float(Vehicle_Upgrade_options, "引擎伤害", {}, "", 0, 200, 0, 10, function(value)
+    vehicle_upgrade.engine_damage_mult = value * 0.01
+end)
 
+
+--#endregion
 
 
 --#region Vehicle Weapon
@@ -3824,6 +3984,7 @@ end, true)
 --#endregion
 
 
+--#region Vehicle Window
 
 ---------------
 --- 载具车窗 ---
@@ -3907,6 +4068,10 @@ menu.toggle_loop(Vehicle_Window_options, "粉碎车窗", { "smash_veh_window" },
     end
 end)
 
+--#endregion
+
+
+--#region Vehicle Door
 
 ---------------
 --- 载具车门 ---
@@ -4023,6 +4188,10 @@ menu.toggle(Vehicle_Door_options, "载具对所有团队锁门", {}, "", functio
     end
 end)
 
+--#endregion
+
+
+--#region Vehicle Radio
 
 ---------------
 --- 载具电台 ---
@@ -4062,6 +4231,10 @@ menu.toggle(Vehicle_Radio_options, "电台只播放音乐", {}, "", function(tog
     end
 end)
 
+--#endregion
+
+
+--#region Vehicle Personal
 
 ---------------
 --- 个人载具 ---
@@ -4141,6 +4314,10 @@ menu.toggle(Vehicle_Personal_options, "锁门", { "veh_lock" }, "", function(tog
     end
 end)
 
+--#endregion
+
+
+--#region Vehicle Water
 
 ------------------
 --- 载具水下行为 ---
@@ -4202,6 +4379,10 @@ menu.toggle(Vehicle_Water_options, "在水面生成平台", {}, "载具为船时
     vehicle_water.spawn_block = toggle
 end, true)
 
+--#endregion
+
+
+--#region Vehicle Info
 
 ------------------
 --- 载具信息显示 ---
@@ -4267,6 +4448,10 @@ menu.slider_float(Vehicle_Info_Show_Setting, "文字大小", { "vehicle_info_sca
     0, 1000, 65, 1, function(value)
         vehicle_info.scale = value * 0.01
     end)
+menu.colour(Vehicle_Info_Show_Setting, "文字颜色", { "vehicle_info_colour" }, "", Colors.white, false,
+    function(colour)
+        vehicle_info.color = colour
+    end)
 
 menu.divider(Vehicle_Info_options, "显示的信息")
 menu.toggle(Vehicle_Info_options, "载具名称", {}, "", function(toggle)
@@ -4285,6 +4470,7 @@ menu.toggle(Vehicle_Info_options, "车身外观血量", {}, "", function(toggle)
     vehicle_info.body_health = toggle
 end)
 
+--#endregion
 
 
 
@@ -5365,7 +5551,7 @@ end)
 
 
 
---#region Other options
+--#region Other Options
 
 --------------------------------
 ------------ 其它选项 -----------
@@ -5376,6 +5562,7 @@ Dev_options = menu.list(Other_options, "开发者选项", {}, "")
 require "RScript.Menu.Dev"
 
 
+--#region Snack Armour Editor
 
 ------------------
 --- 零食护甲编辑 ---
@@ -5445,7 +5632,10 @@ menu.click_slider(Snack_Armour_Editor, "霜碧", { "snack_sprunk" }, "+36 Health
         util.toast("完成！")
     end)
 
+--#endregion
 
+
+--#region Map Blip
 
 ------------------------
 ----- 地图标记点选项 -----
@@ -5567,7 +5757,10 @@ for k, data in pairs(Vehicle_Common) do
     end)
 end
 
+--#endregion
 
+
+--#region Chat Options
 
 -------------------
 ----- 聊天选项 -----
@@ -5594,6 +5787,7 @@ menu.divider(Chat_options, "记录打字输入内容")
 local typing_text_list = {}
 local typing_text_list_item = {}
 local typing_text_now = ""
+local typing_text_list_action
 menu.toggle_loop(Chat_options, "开启", {}, "", function()
     if chat.is_open() then
         if chat.get_state() > 0 then
@@ -5629,6 +5823,8 @@ typing_text_list_action = menu.list_action(Chat_options, "查看记录内容", {
         chat.add_to_draft(text)
     end)
 
+--#endregion
+
 
 
 ----------------
@@ -5657,12 +5853,12 @@ menu.slider(Other_options, "模拟点击延迟", { "delay_left_click" }, "单位
 menu.action(Other_options, "清除帮助文本信息", { "cls_help_msg" }, "", function()
     HUD.CLEAR_ALL_HELP_MESSAGES()
 end)
-menu.action(Other_options, "Clear Tick Handler", {}, "用于解决控制实体的描绘连线、显示信息、锁定传送等问题"
-, function()
-    Loop_Handler.control_ent.clear()
-end)
+menu.action(Other_options, "Clear Tick Handler", {}, "用于解决控制实体的描绘连线、显示信息、锁定传送等问题",
+    function()
+        Loop_Handler.control_ent.clear()
+    end)
 
---#endregion Other options
+--#endregion Other Options
 
 
 
@@ -5680,11 +5876,6 @@ menu.readonly(About_options, "Support GTAO Version", SUPPORT_GTAO)
 
 
 
----------------------------------------------------------------
-
-
-
-
 
 
 --------------------------------
@@ -5692,3 +5883,9 @@ menu.readonly(About_options, "Support GTAO Version", SUPPORT_GTAO)
 --------------------------------
 
 require "RScript.Menu.Player"
+
+
+
+
+
+---------------------------------------------------------------

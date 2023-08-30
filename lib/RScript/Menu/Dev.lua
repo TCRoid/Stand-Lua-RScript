@@ -48,7 +48,7 @@ menu.action(Dev_options, "Get Interior ID", { "getinteriorid" }, "", function()
     end
 end)
 
-menu.action(Dev_options, "GET_PICKUP_GENERATION_RANGE_MULTIPLIER", {}, "", function()
+menu.action(Dev_options, "GET_PICKUP_GENERATION_RANGE_MULTIPLIER", {}, "Default: 1.0", function()
     util.toast(OBJECT.GET_PICKUP_GENERATION_RANGE_MULTIPLIER())
 end)
 menu.click_slider_float(Dev_options, "SET_PICKUP_GENERATION_RANGE_MULTIPLIER", { "set_pickup_range" }, "",
@@ -59,6 +59,13 @@ menu.click_slider_float(Dev_options, "SET_PICKUP_GENERATION_RANGE_MULTIPLIER", {
 menu.action(Dev_options, "FORCE_PED_AI_AND_ANIMATION_UPDATE", {}, "", function()
     PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(players.user_ped())
 end)
+menu.action(Dev_options, "关闭恐霸电脑", { "shut_terrorbyte" }, "", function()
+    if IS_SCRIPT_RUNNING("appHackerTruck") then
+        SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 0)
+        MISC.TERMINATE_ALL_SCRIPTS_WITH_THIS_NAME("appHackerTruck")
+    end
+end)
+
 
 
 local radius_draw_sphere = 10.0
