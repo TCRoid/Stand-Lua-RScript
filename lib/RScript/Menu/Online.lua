@@ -29,10 +29,49 @@ local player_lang = {
         [12] = "简体中文"
     },
 
+    info = {
+        max = 4,
+        except_user = true,
+    },
+
     menu_list = {},
     notify = true,
 }
 
+local Player_Language_Info = menu.list(Player_Language, "信息显示", {}, "")
+
+menu.toggle_loop(Player_Language_Info, "开启", {}, "", function()
+    local player_list = players.list()
+    if #player_list > 1 and #player_list <= player_lang.info.max then
+        local text = ""
+        for key, pid in pairs(player_list) do
+            if player_lang.info.except_user and pid == players.user() then
+            else
+                local lang = players.get_language(pid)
+                if lang ~= -1 then
+                    local name      = players.get_name(pid)
+                    local lang_text = player_lang.language[lang]
+
+                    if text ~= "" then
+                        text = text .. "\n"
+                    end
+                    text = text .. name .. ": " .. lang_text
+                end
+            end
+        end
+        util.draw_debug_text(text)
+    end
+end)
+menu.slider(Player_Language_Info, "战局内最大玩家数量", {}, "超过最大数量则不显示",
+    2, 8, 4, 1, function(value)
+        player_lang.info.max = value
+    end)
+menu.toggle(Player_Language_Info, "排除自己", {}, "", function(toggle)
+    player_lang.info.except_user = toggle
+end, true)
+
+
+menu.divider(Player_Language, "")
 menu.action(Player_Language, "获取玩家语言列表", { "player_language" }, "", function()
     rs_menu.delete_menu_list(player_lang.menu_list)
     player_lang.menu_list = {}
@@ -60,6 +99,7 @@ end)
 menu.toggle(Player_Language, "通知", {}, "", function(toggle)
     player_lang.notify = toggle
 end, true)
+
 menu.divider(Player_Language, "列表")
 
 
@@ -478,7 +518,7 @@ local remote_computer_list = {
 for _, item in pairs(remote_computer_list) do
     menu.action(Remote_Computer, item.menu_name, { "app" .. item.command }, "", function()
         if IS_IN_SESSION() then
-            SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 1)
+            -- SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 1)
             START_SCRIPT(item.script, 5000)
         end
     end)

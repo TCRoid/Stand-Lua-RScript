@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("2944b", "init")
 
-local SCRIPT_VERSION <const> = "2023/8/30"
+local SCRIPT_VERSION <const> = "2023/9/9"
 
 local SUPPORT_GTAO <const> = 1.67
 
@@ -82,298 +82,303 @@ require "RScript.utils"
 
 ---返回实体信息 list item data
 function GetEntityInfo_ListItem(ent)
-    if ent ~= nil and ENTITY.DOES_ENTITY_EXIST(ent) then
-        local ent_info_item_data = {}
-        local t = ""
+    if ent == nil or not ENTITY.DOES_ENTITY_EXIST(ent) then
+        return { "实体不存在" }
+    end
 
-        local model_hash = ENTITY.GET_ENTITY_MODEL(ent)
+    local ent_info_item_data = {}
+    local t = ""
+
+    local model_hash = ENTITY.GET_ENTITY_MODEL(ent)
+
+    --Model Name
+    local model_name = util.reverse_joaat(model_hash)
+    if model_name ~= "" then
+        t = "Model Name: " .. model_name
+    end
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Hash
+    t = "Model Hash: " .. model_hash
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Type
+    local entity_type = GET_ENTITY_TYPE(ent, 2)
+    t = "Entity Type: " .. entity_type
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Mission Entity
+    if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
+        t = "Mission Entity: True"
+    else
+        t = "Mission Entity: False"
+    end
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Health
+    t = "Entity Health: " .. ENTITY.GET_ENTITY_HEALTH(ent) .. "/" .. ENTITY.GET_ENTITY_MAX_HEALTH(ent)
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Dead
+    if ENTITY.IS_ENTITY_DEAD(ent) then
+        t = "Entity Dead: True"
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+    end
+
+    --Position
+    local ent_pos = ENTITY.GET_ENTITY_COORDS(ent)
+    t = "Coords: " ..
+        string.format("%.4f", ent_pos.x) ..
+        ", " .. string.format("%.4f", ent_pos.y) .. ", " .. string.format("%.4f", ent_pos.z)
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    local my_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+    -- t = "Your Coords: " ..
+    --     string.format("%.4f", my_pos.x) ..
+    --     ", " .. string.format("%.4f", my_pos.y) .. ", " .. string.format("%.4f", my_pos.z)
+    -- ent_info = newTableValue(1, t)
+    -- table.insert(ent_info_item_data, ent_info)
+
+    --Heading
+    t = "Entity Heading: " .. string.format("%.4f", ENTITY.GET_ENTITY_HEADING(ent))
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    t = "Your Heading: " .. string.format("%.4f", ENTITY.GET_ENTITY_HEADING(players.user_ped()))
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Distance
+    local distance = Vector.dist(my_pos, ent_pos)
+    t = "Distance: " .. string.format("%.4f", distance)
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Subtract with your position
+    local pos_sub = Vector.subtract(my_pos, ent_pos)
+    t = "Subtract Coords X: " ..
+        string.format("%.2f", pos_sub.x) ..
+        ", Y: " .. string.format("%.2f", pos_sub.y) .. ", Z: " .. string.format("%.2f", pos_sub.z)
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Speed
+    local speed = ENTITY.GET_ENTITY_SPEED(ent)
+    t = "Entity Speed: " .. string.format("%.4f", speed)
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Blip
+    local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        local blip_id = HUD.GET_BLIP_SPRITE(blip)
+        t = "Blip Sprite ID: " .. blip_id
+        table.insert(ent_info_item_data, newTableValue(1, t))
+
+        local blip_colour = HUD.GET_BLIP_COLOUR(blip)
+        t = "Blip Colour: " .. blip_colour
+        table.insert(ent_info_item_data, newTableValue(1, t))
+
+        local blip_hud_colour = HUD.GET_BLIP_HUD_COLOUR(blip)
+        t = "Blip HUD Colour: " .. blip_hud_colour
+        table.insert(ent_info_item_data, newTableValue(1, t))
+    end
+
+    --Networked
+    t = "Networked Entity: "
+    if NETWORK.NETWORK_GET_ENTITY_IS_NETWORKED(ent) then
+        t = t .. "Networked"
+    else
+        t = t .. "Local"
+    end
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Owner
+    local owner = entities.get_owner(ent)
+    owner = players.get_name(owner)
+    t = "Entity Owner: " .. owner
+    table.insert(ent_info_item_data, newTableValue(1, t))
+
+    --Script
+    local entity_script = ENTITY.GET_ENTITY_SCRIPT(ent, 0)
+    if entity_script ~= nil then
+        t = "Entity Script: " .. string.lower(entity_script)
+        table.insert(ent_info_item_data, newTableValue(1, t))
+    end
+
+    ----- Attached Entity -----
+    if ENTITY.IS_ENTITY_ATTACHED(ent) then
+        ent_info = newTableValue(1, "\n-----  Attached Entity  -----")
+        table.insert(ent_info_item_data, ent_info)
+
+        local attached_entity = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
+        local attached_hash = ENTITY.GET_ENTITY_MODEL(attached_entity)
 
         --Model Name
-        local model_name = util.reverse_joaat(model_hash)
-        if model_name ~= "" then
-            t = "Model Name: " .. model_name
+        local attached_model_name = util.reverse_joaat(attached_hash)
+        if attached_model_name ~= "" then
+            t = "Model Name: " .. attached_model_name
+            ent_info = newTableValue(1, t)
+            table.insert(ent_info_item_data, ent_info)
         end
-        table.insert(ent_info_item_data, newTableValue(1, t))
 
         --Hash
-        t = "Model Hash: " .. model_hash
-        table.insert(ent_info_item_data, newTableValue(1, t))
+        t = "Model Hash: " .. attached_hash
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
 
         --Type
-        local entity_type = GET_ENTITY_TYPE(ent, 2)
-        t = "Entity Type: " .. entity_type
-        table.insert(ent_info_item_data, newTableValue(1, t))
+        t = "Entity Type: " .. GET_ENTITY_TYPE(attached_entity, 2)
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+    end
 
-        --Mission Entity
-        if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
-            t = "Mission Entity: True"
-        else
-            t = "Mission Entity: False"
+    ----- Ped -----
+    if ENTITY.IS_ENTITY_A_PED(ent) then
+        ent_info = newTableValue(1, "\n-----  Ped  -----")
+        table.insert(ent_info_item_data, ent_info)
+
+        --Ped Type
+        local ped_type = PED.GET_PED_TYPE(ent)
+        t = "Ped Type: " .. enum_PedType[ped_type]
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Armour
+        t = "Armour: " .. PED.GET_PED_ARMOUR(ent)
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Money
+        t = "Money: " .. PED.GET_PED_MONEY(ent)
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Relationship
+        local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ent, players.user_ped())
+        t = "Relationship: " .. enum_RelationshipType[rel]
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Visual Field Center Angle
+        t = "Visual Field Center Angle: " .. PED.GET_PED_VISUAL_FIELD_CENTER_ANGLE(ent)
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Accuracy
+        t = "Accuracy: " .. PED.GET_PED_ACCURACY(ent)
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Combat Movement
+        local combat_movement = PED.GET_PED_COMBAT_MOVEMENT(ent)
+        t = "Combat Movement: " .. enum_CombatMovement[combat_movement]
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Combat Range
+        local combat_range = PED.GET_PED_COMBAT_RANGE(ent)
+        t = "Combat Range: " .. enum_CombatRange[combat_range]
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Alertness
+        local alertness = PED.GET_PED_ALERTNESS(ent)
+        if alertness >= 0 then
+            t = "Alertness: " .. enum_Alertness[alertness]
+            ent_info = newTableValue(1, t)
+            table.insert(ent_info_item_data, ent_info)
         end
-        table.insert(ent_info_item_data, newTableValue(1, t))
-
-        --Health
-        t = "Entity Health: " .. ENTITY.GET_ENTITY_HEALTH(ent) .. "/" .. ENTITY.GET_ENTITY_MAX_HEALTH(ent)
-        table.insert(ent_info_item_data, newTableValue(1, t))
 
         --Dead
-        if ENTITY.IS_ENTITY_DEAD(ent) then
-            t = "Entity Dead: True"
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-        end
-
-        --Position
-        local ent_pos = ENTITY.GET_ENTITY_COORDS(ent)
-        t = "Coords: " ..
-            string.format("%.4f", ent_pos.x) ..
-            ", " .. string.format("%.4f", ent_pos.y) .. ", " .. string.format("%.4f", ent_pos.z)
-        table.insert(ent_info_item_data, newTableValue(1, t))
-
-        local my_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-        -- t = "Your Coords: " ..
-        --     string.format("%.4f", my_pos.x) ..
-        --     ", " .. string.format("%.4f", my_pos.y) .. ", " .. string.format("%.4f", my_pos.z)
-        -- ent_info = newTableValue(1, t)
-        -- table.insert(ent_info_item_data, ent_info)
-
-        --Heading
-        t = "Entity Heading: " .. string.format("%.4f", ENTITY.GET_ENTITY_HEADING(ent))
-        table.insert(ent_info_item_data, newTableValue(1, t))
-
-        t = "Your Heading: " .. string.format("%.4f", ENTITY.GET_ENTITY_HEADING(players.user_ped()))
-        table.insert(ent_info_item_data, newTableValue(1, t))
-
-        --Distance
-        local distance = Vector.dist(my_pos, ent_pos)
-        t = "Distance: " .. string.format("%.4f", distance)
-        table.insert(ent_info_item_data, newTableValue(1, t))
-
-        --Subtract with your position
-        local pos_sub = Vector.subtract(my_pos, ent_pos)
-        t = "Subtract Coords X: " ..
-            string.format("%.2f", pos_sub.x) ..
-            ", Y: " .. string.format("%.2f", pos_sub.y) .. ", Z: " .. string.format("%.2f", pos_sub.z)
-        table.insert(ent_info_item_data, newTableValue(1, t))
-
-        --Speed
-        local speed = ENTITY.GET_ENTITY_SPEED(ent)
-        t = "Entity Speed: " .. string.format("%.4f", speed)
-        table.insert(ent_info_item_data, newTableValue(1, t))
-
-        --Blip
-        local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
-        if HUD.DOES_BLIP_EXIST(blip) then
-            local blip_id = HUD.GET_BLIP_SPRITE(blip)
-            t = "Blip Sprite ID: " .. blip_id
-            table.insert(ent_info_item_data, newTableValue(1, t))
-
-            local blip_colour = HUD.GET_BLIP_COLOUR(blip)
-            t = "Blip Colour: " .. blip_colour
-            table.insert(ent_info_item_data, newTableValue(1, t))
-
-            local blip_hud_colour = HUD.GET_BLIP_HUD_COLOUR(blip)
-            t = "Blip HUD Colour: " .. blip_hud_colour
-            table.insert(ent_info_item_data, newTableValue(1, t))
-        end
-
-        --Networked
-        t = "Networked Entity: "
-        if NETWORK.NETWORK_GET_ENTITY_IS_LOCAL(ent) then
-            t = t .. "Local"
-        end
-        if NETWORK.NETWORK_GET_ENTITY_IS_NETWORKED(ent) then
-            t = t .. " & Networked"
-        end
-        table.insert(ent_info_item_data, newTableValue(1, t))
-
-        --Owner
-        local owner = entities.get_owner(ent)
-        owner = players.get_name(owner)
-        t = "Entity Owner: " .. owner
-        table.insert(ent_info_item_data, newTableValue(1, t))
-
-        ----- Attached Entity -----
-        if ENTITY.IS_ENTITY_ATTACHED(ent) then
-            ent_info = newTableValue(1, "\n-----  Attached Entity  -----")
+        if PED.IS_PED_DEAD_OR_DYING(ent, 1) then
+            ent_info = newTableValue(1, "\n-----  Dead Ped  -----")
             table.insert(ent_info_item_data, ent_info)
 
-            local attached_entity = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
-            local attached_hash = ENTITY.GET_ENTITY_MODEL(attached_entity)
+            local cause_model_hash = PED.GET_PED_CAUSE_OF_DEATH(ent)
 
-            --Model Name
-            local attached_model_name = util.reverse_joaat(attached_hash)
-            if attached_model_name ~= "" then
-                t = "Model Name: " .. attached_model_name
+            --Cause of Death Model
+            local cause_model_name = util.reverse_joaat(cause_model_hash)
+            if cause_model_name ~= "" then
+                t = "Cause of Death Model: " .. cause_model_name
                 ent_info = newTableValue(1, t)
                 table.insert(ent_info_item_data, ent_info)
             end
 
-            --Hash
-            t = "Model Hash: " .. attached_hash
+            --Cause of Death Hash
+            t = "Cause of Death Hash: " .. cause_model_hash
             ent_info = newTableValue(1, t)
             table.insert(ent_info_item_data, ent_info)
 
-            --Type
-            t = "Entity Type: " .. GET_ENTITY_TYPE(attached_entity, 2)
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-        end
-
-        ----- Ped -----
-        if ENTITY.IS_ENTITY_A_PED(ent) then
-            ent_info = newTableValue(1, "\n-----  Ped  -----")
-            table.insert(ent_info_item_data, ent_info)
-
-            --Ped Type
-            local ped_type = PED.GET_PED_TYPE(ent)
-            t = "Ped Type: " .. enum_PedType[ped_type]
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Armour
-            t = "Armour: " .. PED.GET_PED_ARMOUR(ent)
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Money
-            t = "Money: " .. PED.GET_PED_MONEY(ent)
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Relationship
-            local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ent, players.user_ped())
-            t = "Relationship: " .. enum_RelationshipType[rel]
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Visual Field Center Angle
-            t = "Visual Field Center Angle: " .. PED.GET_PED_VISUAL_FIELD_CENTER_ANGLE(ent)
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Accuracy
-            t = "Accuracy: " .. PED.GET_PED_ACCURACY(ent)
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Combat Movement
-            local combat_movement = PED.GET_PED_COMBAT_MOVEMENT(ent)
-            t = "Combat Movement: " .. enum_CombatMovement[combat_movement]
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Combat Range
-            local combat_range = PED.GET_PED_COMBAT_RANGE(ent)
-            t = "Combat Range: " .. enum_CombatRange[combat_range]
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Alertness
-            local alertness = PED.GET_PED_ALERTNESS(ent)
-            if alertness >= 0 then
-                t = "Alertness: " .. enum_Alertness[alertness]
-                ent_info = newTableValue(1, t)
-                table.insert(ent_info_item_data, ent_info)
-            end
-
-            --Dead
-            if PED.IS_PED_DEAD_OR_DYING(ent, 1) then
-                ent_info = newTableValue(1, "\n-----  Dead Ped  -----")
-                table.insert(ent_info_item_data, ent_info)
-
-                local cause_model_hash = PED.GET_PED_CAUSE_OF_DEATH(ent)
-
-                --Cause of Death Model
-                local cause_model_name = util.reverse_joaat(cause_model_hash)
-                if cause_model_name ~= "" then
-                    t = "Cause of Death Model: " .. cause_model_name
-                    ent_info = newTableValue(1, t)
-                    table.insert(ent_info_item_data, ent_info)
-                end
-
-                --Cause of Death Hash
-                t = "Cause of Death Hash: " .. cause_model_hash
-                ent_info = newTableValue(1, t)
-                table.insert(ent_info_item_data, ent_info)
-
-                --Death Time
-                t = "Death Time: " .. PED.GET_PED_TIME_OF_DEATH(ent)
-                ent_info = newTableValue(1, t)
-                table.insert(ent_info_item_data, ent_info)
-            end
-        end
-
-        ----- Vehicle -----
-        if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
-            ent_info = newTableValue(1, "\n-----  Vehicle  -----")
-            table.insert(ent_info_item_data, ent_info)
-
-            --Display Name
-            local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(model_hash))
-            if display_name ~= "NULL" then
-                t = "Display Name: " .. display_name
-                ent_info = newTableValue(1, t)
-                table.insert(ent_info_item_data, ent_info)
-            end
-
-            --Vehicle Class
-            local vehicle_class = VEHICLE.GET_VEHICLE_CLASS(ent)
-            t = "Vehicle Class: " .. util.get_label_text("VEH_CLASS_" .. vehicle_class)
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Engine Health
-            t = "Engine Health: " .. VEHICLE.GET_VEHICLE_ENGINE_HEALTH(ent)
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Petrol Tank Health
-            t = "Petrol Tank Health: " .. VEHICLE.GET_VEHICLE_PETROL_TANK_HEALTH(ent)
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Body Health
-            t = "Body Health: " .. VEHICLE.GET_VEHICLE_BODY_HEALTH(ent)
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --- HELI ---
-            if VEHICLE.IS_THIS_MODEL_A_HELI(model_hash) then
-                --Heli Main Rotor Health
-                t = "Heli Main Rotor Health: " .. VEHICLE.GET_HELI_MAIN_ROTOR_HEALTH(ent)
-                ent_info = newTableValue(1, t)
-                table.insert(ent_info_item_data, ent_info)
-
-                --Heli Tail Rotor Health
-                t = "Heli Tail Rotor Health: " .. VEHICLE.GET_HELI_TAIL_ROTOR_HEALTH(ent)
-                ent_info = newTableValue(1, t)
-                table.insert(ent_info_item_data, ent_info)
-
-                --Heli Boom Rotor Health
-                t = "Heli Boom Rotor Health: " .. VEHICLE.GET_HELI_TAIL_BOOM_HEALTH(ent)
-                ent_info = newTableValue(1, t)
-                table.insert(ent_info_item_data, ent_info)
-            end
-
-            --Dirt Level
-            local dirt_level = VEHICLE.GET_VEHICLE_DIRT_LEVEL(ent)
-            t = "Dirt Level: " .. string.format("%.2f", dirt_level)
-            ent_info = newTableValue(1, t)
-            table.insert(ent_info_item_data, ent_info)
-
-            --Door Lock Status
-            local door_lock_status = VEHICLE.GET_VEHICLE_DOOR_LOCK_STATUS(ent)
-            t = "Door Lock Status: " .. enum_VehicleLockStatus[door_lock_status]
+            --Death Time
+            t = "Death Time: " .. PED.GET_PED_TIME_OF_DEATH(ent)
             ent_info = newTableValue(1, t)
             table.insert(ent_info_item_data, ent_info)
         end
-
-        return ent_info_item_data
-    else
-        local t = { "实体不存在" }
-        return t
     end
+
+    ----- Vehicle -----
+    if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
+        ent_info = newTableValue(1, "\n-----  Vehicle  -----")
+        table.insert(ent_info_item_data, ent_info)
+
+        --Display Name
+        local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(model_hash))
+        if display_name ~= "NULL" then
+            t = "Display Name: " .. display_name
+            ent_info = newTableValue(1, t)
+            table.insert(ent_info_item_data, ent_info)
+        end
+
+        --Vehicle Class
+        local vehicle_class = VEHICLE.GET_VEHICLE_CLASS(ent)
+        t = "Vehicle Class: " .. util.get_label_text("VEH_CLASS_" .. vehicle_class)
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Engine Health
+        t = "Engine Health: " .. VEHICLE.GET_VEHICLE_ENGINE_HEALTH(ent)
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Petrol Tank Health
+        t = "Petrol Tank Health: " .. VEHICLE.GET_VEHICLE_PETROL_TANK_HEALTH(ent)
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Body Health
+        t = "Body Health: " .. VEHICLE.GET_VEHICLE_BODY_HEALTH(ent)
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --- HELI ---
+        if VEHICLE.IS_THIS_MODEL_A_HELI(model_hash) then
+            --Heli Main Rotor Health
+            t = "Heli Main Rotor Health: " .. VEHICLE.GET_HELI_MAIN_ROTOR_HEALTH(ent)
+            ent_info = newTableValue(1, t)
+            table.insert(ent_info_item_data, ent_info)
+
+            --Heli Tail Rotor Health
+            t = "Heli Tail Rotor Health: " .. VEHICLE.GET_HELI_TAIL_ROTOR_HEALTH(ent)
+            ent_info = newTableValue(1, t)
+            table.insert(ent_info_item_data, ent_info)
+
+            --Heli Boom Rotor Health
+            t = "Heli Boom Rotor Health: " .. VEHICLE.GET_HELI_TAIL_BOOM_HEALTH(ent)
+            ent_info = newTableValue(1, t)
+            table.insert(ent_info_item_data, ent_info)
+        end
+
+        --Dirt Level
+        local dirt_level = VEHICLE.GET_VEHICLE_DIRT_LEVEL(ent)
+        t = "Dirt Level: " .. string.format("%.2f", dirt_level)
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+
+        --Door Lock Status
+        local door_lock_status = VEHICLE.GET_VEHICLE_DOOR_LOCK_STATUS(ent)
+        t = "Door Lock Status: " .. enum_VehicleLockStatus[door_lock_status]
+        ent_info = newTableValue(1, t)
+        table.insert(ent_info_item_data, ent_info)
+    end
+
+    return ent_info_item_data
 end
 
 --------------------------------------
@@ -741,35 +746,53 @@ Entity_Control = {}
 function Entity_Control.get_menu_info(ent, k)
     local modelHash = ENTITY.GET_ENTITY_MODEL(ent)
     local modelName = util.reverse_joaat(modelHash)
-    local menu_name = k .. ". "
-    if modelName ~= "" then
-        menu_name = menu_name .. modelName
-    else
-        menu_name = menu_name .. modelHash
-    end
 
+    local menu_name = ""
     local help_text = ""
 
+    if modelName ~= "" then
+        menu_name = modelName
+    else
+        menu_name = modelHash
+    end
+
     if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
-        if ent == entities.get_user_personal_vehicle_as_handle() then
-            menu_name = menu_name .. " (个人载具)"
-        elseif ent == entities.get_user_vehicle_as_handle() then
+        local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(modelHash))
+        if display_name ~= "NULL" then
+            menu_name = display_name
+        end
+
+        if ent == entities.get_user_vehicle_as_handle() then
             if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-                menu_name = menu_name .. " (当前载具)"
+                menu_name = menu_name .. " [当前载具]"
             else
-                menu_name = menu_name .. " (上一辆载具)"
+                menu_name = menu_name .. " [上一辆载具]"
+            end
+        elseif ent == entities.get_user_personal_vehicle_as_handle() then
+            menu_name = menu_name .. " [个人载具]"
+        elseif not VEHICLE.IS_VEHICLE_SEAT_FREE(ent, -1, false) then
+            local driver_player = NETWORK.NETWORK_GET_PLAYER_INDEX_FROM_PED(
+                VEHICLE.GET_PED_IN_VEHICLE_SEAT(ent, -1, false))
+            if players.exists(driver_player) then
+                menu_name = menu_name .. " [" .. players.get_name(driver_player) .. "]"
             end
         end
 
-        local display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(modelHash))
-        if display_name ~= "NULL" then
-            help_text = help_text .. "Display Name: " .. display_name .. "\n"
-        end
+        help_text = "Model: " .. modelName .. "\n"
     end
 
     local owner = entities.get_owner(ent)
     owner = players.get_name(owner)
+
+    menu_name = k .. ". " .. menu_name
     help_text = help_text .. "Hash: " .. modelHash .. "\nOwner: " .. owner
+
+    if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
+        local entity_script = ENTITY.GET_ENTITY_SCRIPT(ent, 0)
+        if entity_script ~= nil then
+            help_text = help_text .. "\nScript: " .. string.lower(entity_script)
+        end
+    end
 
     return menu_name, help_text
 end
@@ -1435,6 +1458,7 @@ function Entity_Control.vehicle(menu_parent, vehicle, index)
                 end
             end
         end)
+
     menu.action(vehicle_options, "清空载具", {}, "将NPC全部传送出去", function()
         local num, peds = get_vehicle_peds(vehicle)
         if num > 0 then
@@ -3478,6 +3502,7 @@ local vehicle_upgrade = {
     no_driver_explosion_damage = true,
     other_strong = true,
     ---
+    damage_mult_toggle = false,
     collision_damage_mult = 0.1,
     weapon_damamge_mult = 0.1,
     engine_damage_mult = 0.0,
@@ -3582,30 +3607,32 @@ function vehicle_upgrade.upgrade(vehicle)
     end
 
     -- 受到伤害倍数
-    local CHandlingData = entities.vehicle_get_handling(entities.handle_to_pointer(vehicle))
-    if CHandlingData ~= 0 then
-        -- 是否更换了载具
-        if CHandlingData ~= vehicle_upgrade.memory.handling_data then
-            -- 上一辆载具恢复初始属性
-            if vehicle_upgrade.memory.handling_data ~= 0 then
-                memory.write_float(vehicle_upgrade.memory.handling_data + 0xF0,
-                    vehicle_upgrade.memory.collision_damage_mult)
-                memory.write_float(vehicle_upgrade.memory.handling_data + 0xF4,
-                    vehicle_upgrade.memory.weapon_damamge_mult)
-                memory.write_float(vehicle_upgrade.memory.handling_data + 0xFC,
-                    vehicle_upgrade.memory.engine_damage_mult)
-            end
+    if vehicle_upgrade.damage_mult_toggle then
+        local CHandlingData = entities.vehicle_get_handling(entities.handle_to_pointer(vehicle))
+        if CHandlingData ~= 0 then
+            -- 是否更换了载具
+            if CHandlingData ~= vehicle_upgrade.memory.handling_data then
+                -- 上一辆载具恢复初始属性
+                if vehicle_upgrade.memory.handling_data ~= 0 then
+                    memory.write_float(vehicle_upgrade.memory.handling_data + 0xF0,
+                        vehicle_upgrade.memory.collision_damage_mult)
+                    memory.write_float(vehicle_upgrade.memory.handling_data + 0xF4,
+                        vehicle_upgrade.memory.weapon_damamge_mult)
+                    memory.write_float(vehicle_upgrade.memory.handling_data + 0xFC,
+                        vehicle_upgrade.memory.engine_damage_mult)
+                end
 
-            -- 存储当前载具初始属性
-            vehicle_upgrade.memory.handling_data = CHandlingData
-            vehicle_upgrade.memory.collision_damage_mult = memory.read_float(CHandlingData + 0xF0)
-            vehicle_upgrade.memory.weapon_damamge_mult = memory.read_float(CHandlingData + 0xF4)
-            vehicle_upgrade.memory.engine_damage_mult = memory.read_float(CHandlingData + 0xFC)
+                -- 存储当前载具初始属性
+                vehicle_upgrade.memory.handling_data = CHandlingData
+                vehicle_upgrade.memory.collision_damage_mult = memory.read_float(CHandlingData + 0xF0)
+                vehicle_upgrade.memory.weapon_damamge_mult = memory.read_float(CHandlingData + 0xF4)
+                vehicle_upgrade.memory.engine_damage_mult = memory.read_float(CHandlingData + 0xFC)
+            end
+            -- 设置当前载具属性
+            memory.write_float(CHandlingData + 0xF0, vehicle_upgrade.collision_damage_mult)
+            memory.write_float(CHandlingData + 0xF4, vehicle_upgrade.weapon_damamge_mult)
+            memory.write_float(CHandlingData + 0xFC, vehicle_upgrade.engine_damage_mult)
         end
-        -- 设置当前载具属性
-        memory.write_float(CHandlingData + 0xF0, vehicle_upgrade.collision_damage_mult)
-        memory.write_float(CHandlingData + 0xF4, vehicle_upgrade.weapon_damamge_mult)
-        memory.write_float(CHandlingData + 0xFC, vehicle_upgrade.engine_damage_mult)
     end
 end
 
@@ -3678,6 +3705,9 @@ menu.toggle(Vehicle_Upgrade_options, "其它属性增强", {}, "其它属性的�
     end, true)
 
 menu.divider(Vehicle_Upgrade_options, "受到伤害倍数")
+menu.toggle(Vehicle_Upgrade_options, "应用开关", {}, "", function(toggle)
+    vehicle_upgrade.damage_mult_toggle = toggle
+end)
 menu.slider_float(Vehicle_Upgrade_options, "碰撞伤害", {}, "", 0, 200, 10, 10, function(value)
     vehicle_upgrade.collision_damage_mult = value * 0.01
 end)
@@ -4168,20 +4198,20 @@ local VehicleDoorsLock_ListItem = {
     { "Locked No Passagers", {}, "" }, -- VEHICLELOCK_LOCKED_NO_PASSENGERS
     { "不能进入", {}, "按F无上车动作" } -- VEHICLELOCK_CANNOT_ENTER
 }
-menu.list_action(Vehicle_Door_options, "设置载具锁门类型", {}, "", VehicleDoorsLock_ListItem, function(value)
+menu.list_action(Vehicle_Door_options, "设置锁门类型", {}, "", VehicleDoorsLock_ListItem, function(value)
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= INVALID_GUID then
         VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, value)
     end
 end)
 
-menu.toggle(Vehicle_Door_options, "载具对所有玩家锁门", {}, "", function(toggle)
+menu.toggle(Vehicle_Door_options, "对所有玩家锁门", {}, "", function(toggle)
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= INVALID_GUID then
         VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_PLAYERS(vehicle, toggle)
     end
 end)
-menu.toggle(Vehicle_Door_options, "载具对所有团队锁门", {}, "", function(toggle)
+menu.toggle(Vehicle_Door_options, "对所有团队锁门", {}, "", function(toggle)
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= INVALID_GUID then
         VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_TEAMS(vehicle, toggle)

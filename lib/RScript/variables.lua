@@ -283,6 +283,7 @@ Globals.Biker = {
         { "Race", "多人任务" },
         { "Club Run", "多人任务" },
     },
+    BIKER_DISABLE_SELL_BORDER_PATROL_0 = 262145 + 18707, -- _9 = 18716
 }
 
 Globals.AcidLab = {

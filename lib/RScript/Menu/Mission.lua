@@ -4,6 +4,7 @@
 
 local Mission_Options = menu.list(menu.my_root(), "任务选项", {}, "")
 
+
 ---------------------
 -- 资产任务
 ---------------------
@@ -131,7 +132,7 @@ menu.action(Special_Cargo_Tool, "购买货物 任务助手", {},
 
             Globals.SpecialCargo.ClearMissionHistory()
             for key, offset in pairs(Globals.SpecialCargo.Buy_Offsets) do
-                if key == 1 then
+                if key == 1 then -- EXEC_DISABLE_BUY_AFTERMATH
                     SET_INT_GLOBAL(262145 + offset, 0)
                 else
                     SET_INT_GLOBAL(262145 + offset, 1)
@@ -141,6 +142,17 @@ menu.action(Special_Cargo_Tool, "购买货物 任务助手", {},
             PAD.SET_CURSOR_POSITION(0.718, 0.272)
 
             util.toast("请先开启任务")
+        end
+    end)
+menu.action(Special_Cargo_Tool, "出售任务助手", {}, "清空任务记录,只保留开启推荐的出售任务,禁用其它任务",
+    function()
+        Globals.SpecialCargo.ClearMissionHistory()
+        for key, offset in pairs(Globals.SpecialCargo.Sell_Offsets) do
+            if key == 10 then -- EXEC_DISABLE_SELL_NODAMAGE
+                SET_INT_GLOBAL(262145 + offset, 0)
+            else
+                SET_INT_GLOBAL(262145 + offset, 1)
+            end
         end
     end)
 
@@ -427,7 +439,7 @@ menu.action(Bunker_Tool, "偷取原材料 任务助手", {},
 
             Globals.Bunker.ClearMissionHistory()
             for key, offset in pairs(Globals.Bunker.Steal_Offsets) do
-                if key == 1 then
+                if key == 1 then -- GR_STEAL_VAN_STEAL_VAN_WEIGHTING
                     SET_FLOAT_GLOBAL(262145 + offset, 1)
                 else
                     SET_FLOAT_GLOBAL(262145 + offset, 0)
@@ -437,6 +449,17 @@ menu.action(Bunker_Tool, "偷取原材料 任务助手", {},
             PAD.SET_CURSOR_POSITION(0.501, 0.651)
 
             util.toast("请先开启任务")
+        end
+    end)
+menu.action(Bunker_Tool, "出售任务助手", {}, "清空任务记录,只保留开启推荐的出售任务,禁用其它任务",
+    function()
+        Globals.Bunker.ClearMissionHistory()
+        for key, offset in pairs(Globals.Bunker.Sell_Offsets) do
+            if key == 6 then -- GR_PHANTOM_PHANTOM_WEIGHTING
+                SET_FLOAT_GLOBAL(262145 + offset, 1)
+            else
+                SET_FLOAT_GLOBAL(262145 + offset, 0)
+            end
         end
     end)
 
@@ -631,7 +654,7 @@ menu.action(Air_Freight_Tool, "偷取货物 航空任务助手", {},
 
             Globals.AirFreight.ClearMissionHistory()
             for key, offset in pairs(Globals.AirFreight.Steal_Offsets) do
-                if key == 8 then
+                if key == 8 then -- SMUG_STEAL_BLACKBOX_WEIGHTING
                     SET_FLOAT_GLOBAL(262145 + offset, 1)
                 else
                     SET_FLOAT_GLOBAL(262145 + offset, 0)
@@ -866,7 +889,7 @@ menu.action(MC_Factory_Tool, "偷取原材料 任务助手", {},
 
             Globals.Biker.ClearMissionHistory()
             for key, offset in pairs(Globals.Biker.Steal_Offsets) do
-                if key == 12 then
+                if key == 12 then -- BIKER_RESUPPLY_STEAL_VEHICLE_WEIGHTING
                     SET_FLOAT_GLOBAL(262145 + offset, 1)
                 else
                     SET_FLOAT_GLOBAL(262145 + offset, 0)
@@ -876,6 +899,20 @@ menu.action(MC_Factory_Tool, "偷取原材料 任务助手", {},
             PAD.SET_CURSOR_POSITION(0.724, 0.604)
 
             util.toast("请先开启任务")
+        end
+    end)
+menu.action(MC_Factory_Tool, "出售任务助手", {}, "清空任务记录,只保留开启推荐的出售任务,禁用其它任务",
+    function()
+        Globals.Biker.ClearMissionHistory()
+        for key, offset in pairs(Globals.Biker.Sell_Offsets) do
+            if key == 1 then -- BIKER_DISABLE_SELL_CONVOY
+                SET_INT_GLOBAL(262145 + offset, 0)
+            else
+                SET_INT_GLOBAL(262145 + offset, 1)
+            end
+        end
+        for i = 0, 9 do
+            SET_INT_GLOBAL(Globals.Biker.BIKER_DISABLE_SELL_BORDER_PATROL_0 + i, 1)
         end
     end)
 
@@ -1017,6 +1054,16 @@ menu.action(Acid_Lab, "仓库: 原材料 传送到 卡车", {}, "", function()
         end
     end
 end)
+menu.action(Acid_Lab, "仓库: 传送进 卡车", {}, "", function()
+    if PLAYER_INTERIOR() == 289537 then
+        local entity_list = get_entities_by_hash("vehicle", true, 1945374990)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                TP_INTO_VEHICLE(ent)
+            end
+        end
+    end
+end)
 menu.action(Acid_Lab, "仓库: 叉车 传送到 卡车后面", {}, "如果没有提示登上卡车\n会将玩家传送进叉车",
     function()
         if PLAYER_INTERIOR() == 289537 then
@@ -1044,16 +1091,6 @@ menu.action(Acid_Lab, "仓库: 叉车 传送到 卡车后面", {}, "如果没有
             end
         end
     end)
-menu.action(Acid_Lab, "仓库: 传送进 卡车", {}, "", function()
-    if PLAYER_INTERIOR() == 289537 then
-        local entity_list = get_entities_by_hash("vehicle", true, 1945374990)
-        if next(entity_list) ~= nil then
-            for k, ent in pairs(entity_list) do
-                TP_INTO_VEHICLE(ent)
-            end
-        end
-    end
-end)
 menu.action(Acid_Lab, "敌痛息仓库: 传送到 时间表", {}, "", function()
     local entity_list = get_entities_by_hash("object", true, 623418081)
     if next(entity_list) ~= nil then
@@ -1689,7 +1726,9 @@ local Contract_Dre = menu.list(Preparation_Mission, "别惹德瑞", {}, "")
 
 menu.divider(Contract_Dre, "夜生活泄密")
 menu.action(Contract_Dre, "夜总会: 传送到 录像带", {}, "", function()
-    TELEPORT(-1617.9883, -3013.7363, -75.20509, 203.7907)
+    if PLAYER_INTERIOR() == 271617 then
+        TELEPORT(-1617.9883, -3013.7363, -75.20509, 203.7907)
+    end
 end)
 menu.action(Contract_Dre, "船坞: 传送到 船里", {}, "绿色的船", function()
     local entity_list = get_entities_by_hash("vehicle", true, 908897389)
@@ -1708,8 +1747,9 @@ menu.action(Contract_Dre, "船坞: 传送到 证据", {}, "德瑞照片", functi
     end
 end)
 menu.action(Contract_Dre, "夜生活泄密: 传送到 抢夺电脑", {}, "", function()
-    TELEPORT(944.01764, 7.9015555, 116.1642)
-    ENTITY.SET_ENTITY_HEADING(players.user_ped(), 279.8804)
+    if PLAYER_INTERIOR() == 274689 then
+        TELEPORT(944.01764, 7.9015555, 116.1642, 279.8804)
+    end
 end)
 
 menu.divider(Contract_Dre, "上流社会泄密")
@@ -1730,40 +1770,30 @@ menu.action(Contract_Dre, "乡村俱乐部: 门禁 传送到我", {}, "车内NPC
         end
     end
 end)
-menu.action(Contract_Dre, "宾客名单: 律师 传送到我", {}, "", function()
-    local entity_list = get_entities_by_hash("ped", true, 600300561)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, 0.0)
+menu.action(Contract_Dre, "宾客名单: 传送到 律师", {}, "同时设置和NPC关系为友好,避免被误杀",
+    function()
+        local entity_list = get_entities_by_hash("ped", true, 600300561)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                TP_TO_ENTITY(ent, 0.0, 1.0, 0.0)
+                PED.SET_PED_RELATIONSHIP_GROUP_HASH(ent, PED.GET_PED_RELATIONSHIP_GROUP_HASH(players.user_ped())) -- Like
+            end
         end
-    end
-end)
-menu.action(Contract_Dre, "上流社会泄密: 炸掉直升机", {}, "", function()
+    end)
+menu.action(Contract_Dre, "上流社会泄密: 炸掉直升机", {}, "快速进入直升机坠落动画", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1075432268)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
+            local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(ent, -1, false)
+            if driver ~= 0 then
+                entities.delete(driver)
+            end
+
             local pos = ENTITY.GET_ENTITY_COORDS(ent)
             add_owned_explosion(players.user_ped(), pos)
         end
     end
 end)
-menu.action(Contract_Dre, "上流社会泄密: 坐进直升机", {}, "", function()
-    local entity_list = get_entities_by_hash("vehicle", true, 1075432268)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            PED.SET_PED_INTO_VEHICLE(players.user_ped(), ent, -2)
-        end
-    end
-end)
-menu.action(Contract_Dre, "上流社会泄密: 干掉飞行员", {}, "快速进入直升机坠落动画",
-    function()
-        local entity_list = get_entities_by_hash("ped", true, -413447396)
-        if next(entity_list) ~= nil then
-            for k, ent in pairs(entity_list) do
-                entities.delete(ent)
-            end
-        end
-    end)
 
 menu.divider(Contract_Dre, "南中心区泄密")
 menu.action(Contract_Dre, "强化弗农", {}, "", function()
@@ -1775,6 +1805,24 @@ menu.action(Contract_Dre, "强化弗农", {}, "", function()
             WEAPON.SET_CURRENT_PED_WEAPON(ent, weaponHash, false)
             increase_ped_combat_ability(ent, true, false)
             increase_ped_combat_attributes(ent)
+            util.toast("完成！")
+        end
+    end
+end)
+menu.action(Contract_Dre, "戴维斯: 传送到高空", {}, "甩掉摩托帮\n提前坐进厢型车", function()
+    local vehicle = entities.get_user_vehicle_as_handle()
+    if vehicle ~= INVALID_GUID then
+        ENTITY.FREEZE_ENTITY_POSITION(vehicle, true)
+
+        local coords = ENTITY.GET_ENTITY_COORDS(vehicle)
+        TELEPORT(coords.x, coords.y, 1500.0)
+    end
+end)
+menu.action(Contract_Dre, "巴勒帮: P 无敌", {}, "避免被误杀", function()
+    local entity_list = get_entities_by_hash("ped", true, -616450833)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            set_entity_godmode(ent, true)
             util.toast("完成！")
         end
     end

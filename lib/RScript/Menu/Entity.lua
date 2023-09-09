@@ -2766,7 +2766,11 @@ menu.action(Mission_Entity_All, "获取实体列表", {}, "", function()
             local menu_name, help_text = Entity_Control.get_menu_info(ent, k)
 
             -- 实体的 menu.list()
-            local menu_list = menu.list(Mission_Entity_All, menu_name, {}, help_text)
+            local menu_list = menu.list(Mission_Entity_All, menu_name, {}, help_text, function()
+                if not ENTITY.DOES_ENTITY_EXIST(ent) then
+                    util.toast("该实体已经不存在")
+                end
+            end)
             table.insert(All_Mission_Entity.entity_menu_list, menu_list)
 
             -- 创建对应实体的menu操作
