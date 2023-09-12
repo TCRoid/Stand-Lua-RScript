@@ -176,6 +176,7 @@ function hasControl(entity)
     return NETWORK.NETWORK_HAS_CONTROL_OF_ENTITY(entity)
 end
 
+---判断是否为玩家
 ---@param ped Ped
 ---@return boolean
 function is_player_ped(ped)
@@ -185,20 +186,18 @@ end
 ---判断是否为玩家载具
 ---@param vehicle Vehicle
 ---@return boolean
-function IS_PLAYER_VEHICLE(vehicle)
-    if ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
-        if vehicle == entities.get_user_vehicle_as_handle() or vehicle == entities.get_user_personal_vehicle_as_handle() then
+function is_player_vehicle(vehicle)
+    if vehicle == entities.get_user_vehicle_as_handle() or vehicle == entities.get_user_personal_vehicle_as_handle() then
+        return true
+    end
+
+    local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
+    if driver ~= 0 then
+        if is_player_ped(driver) then
             return true
         end
-        if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
-            local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
-            if ped ~= 0 then
-                if is_player_ped(ped) then
-                    return true
-                end
-            end
-        end
     end
+
     return false
 end
 

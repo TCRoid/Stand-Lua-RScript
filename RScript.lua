@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("2944b", "init")
 
-local SCRIPT_VERSION <const> = "2023/9/9"
+local SCRIPT_VERSION <const> = "2023/9/12"
 
 local SUPPORT_GTAO <const> = 1.67
 
@@ -632,8 +632,11 @@ util.on_transition_finished(function()
             end
         end
     end
+    if t_globals.SpecialCargo.Type_Refresh_Time and t_globals.SpecialCargo.Type_Refresh_Time ~= 2880 then
+        SET_INT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_TYPE_REFRESH_TIME, t_globals.SpecialCargo.Type_Refresh_Time)
+    end
     if t_globals.SpecialCargo.Special_Item_Chance and t_globals.SpecialCargo.Special_Item_Chance ~= 0.1 then
-        SET_INT_GLOBAL(Globals.EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE, t_globals.SpecialCargo.Special_Item_Chance)
+        SET_INT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE, t_globals.SpecialCargo.Special_Item_Chance)
     end
 
     ----- Bunker -----
@@ -4789,6 +4792,7 @@ menu.action(BlockArea_options, "阻挡", {}, "", function()
             ENTITY.SET_ENTITY_VISIBLE(ent, block_area_data.setting.visible, 0)
             ENTITY.SET_ENTITY_AS_MISSION_ENTITY(ent, true, false)
             ENTITY.SET_ENTITY_INVINCIBLE(ent, true)
+            ENTITY.SET_ENTITY_SHOULD_FREEZE_WAITING_ON_COLLISION(ent, true)
             set_entity_networked(ent, false)
 
             if block_area_data.setting.no_collision then

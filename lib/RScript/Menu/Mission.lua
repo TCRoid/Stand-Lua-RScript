@@ -28,7 +28,53 @@ menu.toggle(Special_Cargo_Tool, "载具货物", { "nocd_vehcargo" }, "购买和�
     Transition_Handler.Globals.Cooldown.VehicleCargo = toggle
 end)
 
-menu.divider(Special_Cargo_Tool, "")
+menu.divider(Special_Cargo_Tool, "任务助手")
+menu.action(Special_Cargo_Tool, "购买货物 任务助手", {},
+    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我\n记得设置移除冷却时间",
+    function()
+        if IS_SCRIPT_RUNNING("gb_contraband_buy") then
+            local entity_list = get_entities_by_hash("pickup", true, -265116550, 1688540826, -1143129136)
+            if next(entity_list) ~= nil then
+                OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(ENTITY.GET_ENTITY_MODEL(entity_list[1]), 3)
+                for k, ent in pairs(entity_list) do
+                    TP_TO_ME(ent)
+                end
+            else
+                util.toast("未找到货物")
+            end
+        else
+            if players.get_org_type(players.user()) ~= 0 then
+                menu.trigger_commands("ceostart")
+                util.toast("已自动成为CEO")
+            end
+
+            Globals.SpecialCargo.ClearMissionHistory()
+            for key, offset in pairs(Globals.SpecialCargo.Buy_Offsets) do
+                if key == 1 then -- EXEC_DISABLE_BUY_AFTERMATH
+                    SET_INT_GLOBAL(262145 + offset, 0)
+                else
+                    SET_INT_GLOBAL(262145 + offset, 1)
+                end
+            end
+            menu.trigger_commands("appterrorbyte")
+            PAD.SET_CURSOR_POSITION(0.718, 0.272)
+
+            util.toast("请先开启任务")
+        end
+    end)
+menu.action(Special_Cargo_Tool, "出售货物 任务助手", {}, "清空任务记录,只保留开启推荐的出售任务,禁用其它任务",
+    function()
+        Globals.SpecialCargo.ClearMissionHistory()
+        for key, offset in pairs(Globals.SpecialCargo.Sell_Offsets) do
+            if key == 10 then -- EXEC_DISABLE_SELL_NODAMAGE
+                SET_INT_GLOBAL(262145 + offset, 0)
+            else
+                SET_INT_GLOBAL(262145 + offset, 1)
+            end
+        end
+    end)
+
+menu.divider(Special_Cargo_Tool, "禁用任务")
 
 local special_cargo_missions = {
     buy = {},
@@ -98,62 +144,20 @@ special_cargo_missions.menu_sell = menu.list(Special_Cargo_Tool, "禁用出售�
     end
 end)
 
+menu.divider(Special_Cargo_Tool, "")
 menu.toggle_loop(Special_Cargo_Tool, "清空任务记录", {}, "就可以重复做同一个任务了", function()
     Globals.SpecialCargo.ClearMissionHistory()
 end)
-
-menu.divider(Special_Cargo_Tool, "")
+menu.slider(Special_Cargo_Tool, "货物类型刷新时间", { "cargo_type_refresh_time" }, "",
+    0, 2880, 2880, 100, function(value)
+        SET_FLOAT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_TYPE_REFRESH_TIME, value)
+        Transition_Handler.Globals.SpecialCargo.Type_Refresh_Time = value
+    end)
 menu.slider_float(Special_Cargo_Tool, "特殊物品概率", { "special_item_chance" }, "",
     0, 100, 10, 10, function(value)
         value = value * 0.01
-        SET_FLOAT_GLOBAL(Globals.EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE, value)
+        SET_FLOAT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE, value)
         Transition_Handler.Globals.SpecialCargo.Special_Item_Chance = value
-    end)
-
-menu.divider(Special_Cargo_Tool, "")
-menu.action(Special_Cargo_Tool, "购买货物 任务助手", {},
-    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我\n记得设置移除冷却时间",
-    function()
-        if IS_SCRIPT_RUNNING("gb_contraband_buy") then
-            local entity_list = get_entities_by_hash("pickup", true, -265116550, 1688540826, -1143129136)
-            if next(entity_list) ~= nil then
-                OBJECT.SET_MAX_NUM_PORTABLE_PICKUPS_CARRIED_BY_PLAYER(ENTITY.GET_ENTITY_MODEL(entity_list[1]), 3)
-                for k, ent in pairs(entity_list) do
-                    TP_TO_ME(ent)
-                end
-            else
-                util.toast("未找到货物")
-            end
-        else
-            if players.get_org_type(players.user()) ~= 0 then
-                menu.trigger_commands("ceostart")
-                util.toast("已自动成为CEO")
-            end
-
-            Globals.SpecialCargo.ClearMissionHistory()
-            for key, offset in pairs(Globals.SpecialCargo.Buy_Offsets) do
-                if key == 1 then -- EXEC_DISABLE_BUY_AFTERMATH
-                    SET_INT_GLOBAL(262145 + offset, 0)
-                else
-                    SET_INT_GLOBAL(262145 + offset, 1)
-                end
-            end
-            menu.trigger_commands("appterrorbyte")
-            PAD.SET_CURSOR_POSITION(0.718, 0.272)
-
-            util.toast("请先开启任务")
-        end
-    end)
-menu.action(Special_Cargo_Tool, "出售任务助手", {}, "清空任务记录,只保留开启推荐的出售任务,禁用其它任务",
-    function()
-        Globals.SpecialCargo.ClearMissionHistory()
-        for key, offset in pairs(Globals.SpecialCargo.Sell_Offsets) do
-            if key == 10 then -- EXEC_DISABLE_SELL_NODAMAGE
-                SET_INT_GLOBAL(262145 + offset, 0)
-            else
-                SET_INT_GLOBAL(262145 + offset, 1)
-            end
-        end
     end)
 
 --#endregion
@@ -340,7 +344,52 @@ menu.slider(Bunker_Tool, "载具原材料 补充进度", { "bk_resupply_vehicle"
     Transition_Handler.Globals.Bunker.Resupply_Vehicle_Value = value
 end)
 
-menu.divider(Bunker_Tool, "")
+menu.divider(Bunker_Tool, "任务助手")
+menu.action(Bunker_Tool, "偷取原材料 任务助手", {},
+    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我",
+    function()
+        if IS_SCRIPT_RUNNING("gb_gunrunning") then
+            local entity_list = get_entities_by_hash("vehicle", true, 1026149675)
+            if next(entity_list) ~= nil then
+                for k, ent in pairs(entity_list) do
+                    TP_VEHICLE_TO_ME(ent)
+                end
+            else
+                util.toast("未找到原材料")
+            end
+        else
+            if players.get_org_type(players.user()) == -1 then
+                menu.trigger_commands("ceostart")
+                util.toast("已自动成为CEO")
+            end
+
+            Globals.Bunker.ClearMissionHistory()
+            for key, offset in pairs(Globals.Bunker.Steal_Offsets) do
+                if key == 1 then -- GR_STEAL_VAN_STEAL_VAN_WEIGHTING
+                    SET_FLOAT_GLOBAL(262145 + offset, 1)
+                else
+                    SET_FLOAT_GLOBAL(262145 + offset, 0)
+                end
+            end
+            menu.trigger_commands("appterrorbyte")
+            PAD.SET_CURSOR_POSITION(0.501, 0.651)
+
+            util.toast("请先开启任务")
+        end
+    end)
+menu.action(Bunker_Tool, "出售货物 任务助手", {}, "清空任务记录,只保留开启推荐的出售任务,禁用其它任务",
+    function()
+        Globals.Bunker.ClearMissionHistory()
+        for key, offset in pairs(Globals.Bunker.Sell_Offsets) do
+            if key == 6 then -- GR_PHANTOM_PHANTOM_WEIGHTING
+                SET_FLOAT_GLOBAL(262145 + offset, 1)
+            else
+                SET_FLOAT_GLOBAL(262145 + offset, 0)
+            end
+        end
+    end)
+
+menu.divider(Bunker_Tool, "禁用任务")
 
 local bunker_missions = {
     steal = {},
@@ -409,59 +458,13 @@ bunker_missions.menu_sell = menu.list(Bunker_Tool, "禁用出售货物任务", {
     end
 end)
 
+menu.divider(Bunker_Tool, "")
 menu.toggle_loop(Bunker_Tool, "清空任务记录", {}, "就可以重复做同一个任务了", function()
     Globals.Bunker.ClearMissionHistory()
 end)
-
-menu.divider(Bunker_Tool, "")
 menu.action(Bunker_Tool, "移除地堡武器零件冷却时间", {}, "STAT", function()
     STAT_SET_INT("BUNKER_CRATE_COOLDOWN", 0)
 end)
-
-menu.divider(Bunker_Tool, "")
-menu.action(Bunker_Tool, "偷取原材料 任务助手", {},
-    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我",
-    function()
-        if IS_SCRIPT_RUNNING("gb_gunrunning") then
-            local entity_list = get_entities_by_hash("vehicle", true, 1026149675)
-            if next(entity_list) ~= nil then
-                for k, ent in pairs(entity_list) do
-                    TP_VEHICLE_TO_ME(ent)
-                end
-            else
-                util.toast("未找到原材料")
-            end
-        else
-            if players.get_org_type(players.user()) == -1 then
-                menu.trigger_commands("ceostart")
-                util.toast("已自动成为CEO")
-            end
-
-            Globals.Bunker.ClearMissionHistory()
-            for key, offset in pairs(Globals.Bunker.Steal_Offsets) do
-                if key == 1 then -- GR_STEAL_VAN_STEAL_VAN_WEIGHTING
-                    SET_FLOAT_GLOBAL(262145 + offset, 1)
-                else
-                    SET_FLOAT_GLOBAL(262145 + offset, 0)
-                end
-            end
-            menu.trigger_commands("appterrorbyte")
-            PAD.SET_CURSOR_POSITION(0.501, 0.651)
-
-            util.toast("请先开启任务")
-        end
-    end)
-menu.action(Bunker_Tool, "出售任务助手", {}, "清空任务记录,只保留开启推荐的出售任务,禁用其它任务",
-    function()
-        Globals.Bunker.ClearMissionHistory()
-        for key, offset in pairs(Globals.Bunker.Sell_Offsets) do
-            if key == 6 then -- GR_PHANTOM_PHANTOM_WEIGHTING
-                SET_FLOAT_GLOBAL(262145 + offset, 1)
-            else
-                SET_FLOAT_GLOBAL(262145 + offset, 0)
-            end
-        end
-    end)
 
 --#endregion
 
@@ -558,7 +561,43 @@ menu.toggle(Air_Freight_Tool, "移除冷却时间", { "nocd_airfreight" }, "进�
         Transition_Handler.Globals.Cooldown.AirFreightCargo = toggle
     end)
 
-menu.divider(Air_Freight_Tool, "")
+menu.divider(Air_Freight_Tool, "任务助手")
+menu.action(Air_Freight_Tool, "偷取货物 航空任务助手", {},
+    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我\n记得设置移除冷却时间",
+    function()
+        if IS_SCRIPT_RUNNING("gb_smuggler") then
+            local entity_list = get_entities_by_hash("pickup", true, -1270906188, -204239524, 2085196638, 886033073,
+                1419829219, 1248987568, -2037094101, -49487954)
+            if next(entity_list) ~= nil then
+                for k, ent in pairs(entity_list) do
+                    detach_product_entity(ent)
+                    TP_TO_ME(ent)
+                end
+            else
+                util.toast("未找到货物")
+            end
+        else
+            if players.get_org_type(players.user()) == -1 then
+                menu.trigger_commands("ceostart")
+                util.toast("已自动成为CEO")
+            end
+
+            Globals.AirFreight.ClearMissionHistory()
+            for key, offset in pairs(Globals.AirFreight.Steal_Offsets) do
+                if key == 8 then -- SMUG_STEAL_BLACKBOX_WEIGHTING
+                    SET_FLOAT_GLOBAL(262145 + offset, 1)
+                else
+                    SET_FLOAT_GLOBAL(262145 + offset, 0)
+                end
+            end
+            menu.trigger_commands("apphangar")
+            PAD.SET_CURSOR_POSITION(0.631, 0.0881)
+
+            util.toast("请先开启任务")
+        end
+    end)
+
+menu.divider(Air_Freight_Tool, "禁用任务")
 
 local air_freight_missions = {
     steal = {},
@@ -627,45 +666,10 @@ air_freight_missions.menu_sell = menu.list(Air_Freight_Tool, "禁用航空出售
     end
 end)
 
+menu.divider(Air_Freight_Tool, "")
 menu.toggle_loop(Air_Freight_Tool, "清空任务记录", {}, "就可以重复做同一个任务了", function()
     Globals.AirFreight.ClearMissionHistory()
 end)
-
-menu.divider(Air_Freight_Tool, "")
-menu.action(Air_Freight_Tool, "偷取货物 航空任务助手", {},
-    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我\n记得设置移除冷却时间",
-    function()
-        if IS_SCRIPT_RUNNING("gb_smuggler") then
-            local entity_list = get_entities_by_hash("pickup", true, -1270906188, -204239524, 2085196638, 886033073,
-                1419829219, 1248987568, -2037094101, -49487954)
-            if next(entity_list) ~= nil then
-                for k, ent in pairs(entity_list) do
-                    detach_product_entity(ent)
-                    TP_TO_ME(ent)
-                end
-            else
-                util.toast("未找到货物")
-            end
-        else
-            if players.get_org_type(players.user()) == -1 then
-                menu.trigger_commands("ceostart")
-                util.toast("已自动成为CEO")
-            end
-
-            Globals.AirFreight.ClearMissionHistory()
-            for key, offset in pairs(Globals.AirFreight.Steal_Offsets) do
-                if key == 8 then -- SMUG_STEAL_BLACKBOX_WEIGHTING
-                    SET_FLOAT_GLOBAL(262145 + offset, 1)
-                else
-                    SET_FLOAT_GLOBAL(262145 + offset, 0)
-                end
-            end
-            menu.trigger_commands("apphangar")
-            PAD.SET_CURSOR_POSITION(0.631, 0.0881)
-
-            util.toast("请先开启任务")
-        end
-    end)
 
 --#endregion
 
@@ -794,7 +798,56 @@ menu.slider(MC_Factory_Tool, "载具原材料 补充进度", { "mc_resupply_vehi
         Transition_Handler.Globals.Biker.Resupply_Vehicle_Value = value
     end)
 
-menu.divider(MC_Factory_Tool, "")
+menu.divider(MC_Factory_Tool, "任务助手")
+menu.action(MC_Factory_Tool, "偷取原材料 任务助手", {},
+    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我",
+    function()
+        if IS_SCRIPT_RUNNING("gb_illicit_goods_resupply") then
+            local blip = HUD.GET_NEXT_BLIP_INFO_ID(501)
+            if HUD.DOES_BLIP_EXIST(blip) then
+                local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+                if ENTITY.DOES_ENTITY_EXIST(ent) then
+                    TP_VEHICLE_TO_ME(ent, "", "delete")
+                end
+            else
+                util.toast("未找到原材料")
+            end
+        else
+            if players.get_org_type(players.user()) ~= 1 then
+                menu.trigger_commands("mcstart")
+                util.toast("已自动成为摩托帮首领")
+            end
+
+            Globals.Biker.ClearMissionHistory()
+            for key, offset in pairs(Globals.Biker.Steal_Offsets) do
+                if key == 12 then -- BIKER_RESUPPLY_STEAL_VEHICLE_WEIGHTING
+                    SET_FLOAT_GLOBAL(262145 + offset, 1)
+                else
+                    SET_FLOAT_GLOBAL(262145 + offset, 0)
+                end
+            end
+            menu.trigger_commands("appterrorbyte")
+            PAD.SET_CURSOR_POSITION(0.724, 0.604)
+
+            util.toast("请先开启任务")
+        end
+    end)
+menu.action(MC_Factory_Tool, "出售货物 任务助手", {}, "清空任务记录,只保留开启推荐的出售任务,禁用其它任务",
+    function()
+        Globals.Biker.ClearMissionHistory()
+        for key, offset in pairs(Globals.Biker.Sell_Offsets) do
+            if key == 1 then -- BIKER_DISABLE_SELL_CONVOY
+                SET_INT_GLOBAL(262145 + offset, 0)
+            else
+                SET_INT_GLOBAL(262145 + offset, 1)
+            end
+        end
+        for i = 0, 9 do
+            SET_INT_GLOBAL(Globals.Biker.BIKER_DISABLE_SELL_BORDER_PATROL_0 + i, 1)
+        end
+    end)
+
+menu.divider(MC_Factory_Tool, "禁用任务")
 
 local biker_missions = {
     steal = {},
@@ -863,58 +916,10 @@ biker_missions.menu_sell = menu.list(MC_Factory_Tool, "禁用出售货物任务"
     end
 end)
 
+menu.divider(MC_Factory_Tool, "")
 menu.toggle_loop(MC_Factory_Tool, "清空任务记录", {}, "就可以重复做同一个任务了", function()
     Globals.Biker.ClearMissionHistory()
 end)
-
-menu.divider(MC_Factory_Tool, "")
-menu.action(MC_Factory_Tool, "偷取原材料 任务助手", {},
-    "需要点击两次\n第一次点击会自动清空任务记录,只保留开启推荐的购买任务,禁用其它任务,打开电脑界面\n开启任务后,第二次点击就会将货物传送到我",
-    function()
-        if IS_SCRIPT_RUNNING("gb_illicit_goods_resupply") then
-            local blip = HUD.GET_NEXT_BLIP_INFO_ID(501)
-            if HUD.DOES_BLIP_EXIST(blip) then
-                local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-                if ENTITY.DOES_ENTITY_EXIST(ent) then
-                    TP_VEHICLE_TO_ME(ent, "", "delete")
-                end
-            else
-                util.toast("未找到原材料")
-            end
-        else
-            if players.get_org_type(players.user()) ~= 1 then
-                menu.trigger_commands("mcstart")
-                util.toast("已自动成为摩托帮首领")
-            end
-
-            Globals.Biker.ClearMissionHistory()
-            for key, offset in pairs(Globals.Biker.Steal_Offsets) do
-                if key == 12 then -- BIKER_RESUPPLY_STEAL_VEHICLE_WEIGHTING
-                    SET_FLOAT_GLOBAL(262145 + offset, 1)
-                else
-                    SET_FLOAT_GLOBAL(262145 + offset, 0)
-                end
-            end
-            menu.trigger_commands("appterrorbyte")
-            PAD.SET_CURSOR_POSITION(0.724, 0.604)
-
-            util.toast("请先开启任务")
-        end
-    end)
-menu.action(MC_Factory_Tool, "出售任务助手", {}, "清空任务记录,只保留开启推荐的出售任务,禁用其它任务",
-    function()
-        Globals.Biker.ClearMissionHistory()
-        for key, offset in pairs(Globals.Biker.Sell_Offsets) do
-            if key == 1 then -- BIKER_DISABLE_SELL_CONVOY
-                SET_INT_GLOBAL(262145 + offset, 0)
-            else
-                SET_INT_GLOBAL(262145 + offset, 1)
-            end
-        end
-        for i = 0, 9 do
-            SET_INT_GLOBAL(Globals.Biker.BIKER_DISABLE_SELL_BORDER_PATROL_0 + i, 1)
-        end
-    end)
 
 --#endregion
 

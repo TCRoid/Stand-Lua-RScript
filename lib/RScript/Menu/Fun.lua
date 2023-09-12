@@ -24,7 +24,7 @@ function draw_ped_box.check_ped(ped)
         return false
     end
 
-    if ENTITY.IS_ENTITY_DEAD(ped) or entities.is_player_ped(ped) then
+    if ENTITY.IS_ENTITY_DEAD(ped) or is_player_ped(ped) then
         return false
     end
 
@@ -544,7 +544,7 @@ menu.toggle_loop(Vehicle_Collision_Reaction, "启用", {}, "", function()
         if ENTITY.HAS_ENTITY_BEEN_DAMAGED_BY_ANY_VEHICLE(player_veh) then
             local vehicle = ENTITY._GET_LAST_ENTITY_HIT_BY_ENTITY(player_veh)
             if ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
-                if not IS_PLAYER_VEHICLE(vehicle) then
+                if not is_player_vehicle(vehicle) then
                     if vehicle_collision_reaction.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(vehicle) then
                     else
                         -- 请求控制

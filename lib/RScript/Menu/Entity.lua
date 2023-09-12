@@ -20,11 +20,7 @@ local ent_quick_action = {
         toggle = {
             health = false,
             weapon_damage = true,
-            disable_vehicle_weapon = false,
-        },
-        value = {
-            health = 100,
-            weapon_damage = 0.01,
+            vehicle_weapon = false,
         },
     },
 }
@@ -170,8 +166,8 @@ menu.list_select(Entity_Quick_WeakPed, "NPC类型", {}, "", {
 end)
 
 menu.toggle_loop(Entity_Quick_WeakPed, "弱化", { "weak_ped" }, "", function()
-    local health = ent_quick_action.weak_ped.value.health
-    local weapon_damage = ent_quick_action.weak_ped.value.weapon_damage
+    local weak_health = 100
+    local weak_weapon_damage = 0.01
 
     for _, ent in pairs(entities.get_all_peds_as_handles()) do
         if not ENTITY.IS_ENTITY_DEAD(ent) and not is_player_ped(ent) then
@@ -191,13 +187,13 @@ menu.toggle_loop(Entity_Quick_WeakPed, "弱化", { "weak_ped" }, "", function()
 
             if ped ~= nil then
                 if ent_quick_action.weak_ped.toggle.health then
-                    if ENTITY.GET_ENTITY_HEALTH(ped) > health then
-                        SET_ENTITY_HEALTH(ped, health)
+                    if ENTITY.GET_ENTITY_HEALTH(ped) > weak_health then
+                        SET_ENTITY_HEALTH(ped, weak_health)
                     end
                 end
 
                 if ent_quick_action.weak_ped.toggle.weapon_damage then
-                    PED.SET_COMBAT_FLOAT(ped, 29, weapon_damage) -- WEAPON_DAMAGE_MODIFIER
+                    PED.SET_COMBAT_FLOAT(ped, 29, weak_weapon_damage) -- WEAPON_DAMAGE_MODIFIER
                 end
 
                 PED.SET_PED_SHOOT_RATE(ped, 0)
@@ -208,7 +204,7 @@ menu.toggle_loop(Entity_Quick_WeakPed, "弱化", { "weak_ped" }, "", function()
                 PED.STOP_PED_WEAPON_FIRING_WHEN_DROPPED(ped)
                 PED.DISABLE_PED_INJURED_ON_GROUND_BEHAVIOUR(ped)
 
-                if ent_quick_action.weak_ped.toggle.disable_vehicle_weapon then
+                if ent_quick_action.weak_ped.toggle.vehicle_weapon then
                     if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
                         local ped_veh = PED.GET_VEHICLE_PED_IS_IN(ped, false)
                         if VEHICLE.DOES_VEHICLE_HAVE_WEAPONS(ped_veh) then
@@ -227,22 +223,15 @@ menu.toggle_loop(Entity_Quick_WeakPed, "弱化", { "weak_ped" }, "", function()
 end)
 
 menu.divider(Entity_Quick_WeakPed, "设置")
-menu.slider(Entity_Quick_WeakPed, "血量", { "setting_weak_ped_health" }, "", 100, 5000, 100, 50,
-    function(value)
-        ent_quick_action.weak_ped.value.health = value
-    end)
-menu.toggle(Entity_Quick_WeakPed, "更改血量", {}, "", function(toggle)
+
+menu.toggle(Entity_Quick_WeakPed, "弱化血量", {}, "修改血量为: 100", function(toggle)
     ent_quick_action.weak_ped.toggle.health = toggle
 end)
-menu.slider_float(Entity_Quick_WeakPed, "武器伤害", { "setting_weak_ped_weapon_damage" }, "", 0, 1000, 1, 1,
-    function(value)
-        ent_quick_action.weak_ped.value.weapon_damage = value * 0.01
-    end)
-menu.toggle(Entity_Quick_WeakPed, "更改武器伤害", {}, "", function(toggle)
+menu.toggle(Entity_Quick_WeakPed, "弱化武器伤害", {}, "修改武器伤害为: 0.01", function(toggle)
     ent_quick_action.weak_ped.toggle.weapon_damage = toggle
 end, true)
 menu.toggle(Entity_Quick_WeakPed, "禁用载具武器", {}, "", function(toggle)
-    ent_quick_action.weak_ped.toggle.disable_vehicle_weapon = toggle
+    ent_quick_action.weak_ped.toggle.vehicle_weapon = toggle
 end)
 menu.slider(Entity_Quick_WeakPed, "循环间隔", { "setting_weak_ped_time_delay" }, "单位: 毫秒", 0, 5000, 2000, 100,
     function(value)
@@ -710,36 +699,19 @@ end)
 --------- 附近载具 ---------
 ---------------------------
 
-local control_nearby_vehicle = {
-    is_tick_handler = false,
+local Nearby_Vehicle = {
+    can_handler_run = false,
+    is_handler_runing = false,
+
     setting = {
-        radius = 30.0,
+        radius = 60.0,
+        vehicle_select = 1,
         time_delay = 1000,
+        exclude_player = true,
         exclude_mission = true,
         exclude_dead = true,
     },
-    toggles = {
-        --Trolling
-        remove_godmode = false,
-        explosion = false,
-        emp = false,
-        broken_door = false,
-        open_door = false,
-        kill_engine = false,
-        burst_tyre = false,
-        full_dirt = false,
-        remove_window = false,
-        leave_vehicle = false,
-        forward_speed = false,
-        max_speed = false,
-        alpha = false,
-        --Friendly
-        godmode = false,
-        fix_vehicle = false,
-        fix_engine = false,
-        fix_tyre = false,
-        clean_dirt = false,
-    },
+    toggles = {},
     data = {
         forward_speed = 30,
         max_speed = 0,
@@ -747,22 +719,49 @@ local control_nearby_vehicle = {
         force_field = 1.0,
         launch_height = 30.0,
     },
+    callback = {},
 }
 
-function control_nearby_vehicle.toggle_switch(toggle_func)
-    toggle_func()
-    if not control_nearby_vehicle.is_tick_handler then
-        control_nearby_vehicle.control_vehicles()
+function Nearby_Vehicle.check_vehicle(vehicle)
+    -- 排除 玩家载具
+    if Nearby_Vehicle.setting.exclude_player and is_player_vehicle(vehicle) then
+        return false
     end
+    -- 排除 任务载具
+    if Nearby_Vehicle.setting.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(vehicle) then
+        return false
+    end
+    -- 排除 已死亡实体
+    if Nearby_Vehicle.setting.exclude_dead and ENTITY.IS_ENTITY_DEAD(vehicle) then
+        return false
+    end
+    -- NPC载具
+    if Nearby_Vehicle.setting.vehicle_select == 2 then
+        local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
+        if not ENTITY.IS_ENTITY_A_PED(driver) then
+            return false
+        end
+    end
+    -- 敌对载具
+    if Nearby_Vehicle.setting.vehicle_select == 3 and not IS_HOSTILE_ENTITY(vehicle) then
+        return false
+    end
+    -- 空载具
+    if Nearby_Vehicle.setting.vehicle_select == 4 and not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
+        return false
+    end
+
+    return true
 end
 
-function control_nearby_vehicle.get_vehicles()
+function Nearby_Vehicle.get_vehicles()
     local vehicles = {}
     local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-    local radius = control_nearby_vehicle.setting.radius
+    local radius = Nearby_Vehicle.setting.radius
 
     for k, ent in pairs(entities.get_all_vehicles_as_handles()) do
         local vehicle = 0
+
         local ent_pos = ENTITY.GET_ENTITY_COORDS(ent)
         if radius <= 0 then
             vehicle = ent
@@ -770,339 +769,420 @@ function control_nearby_vehicle.get_vehicles()
             vehicle = ent
         end
 
-        if vehicle ~= 0 then
-            if IS_PLAYER_VEHICLE(vehicle) then
-                --排除玩家载具
-            elseif control_nearby_vehicle.setting.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(vehicle) then
-                --排除任务载具
-            elseif control_nearby_vehicle.setting.exclude_dead and ENTITY.IS_ENTITY_DEAD(vehicle) then
-                --排除已死亡实体
-            else
-                table.insert(vehicles, vehicle)
-            end
+        if vehicle ~= 0 and Nearby_Vehicle.check_vehicle(vehicle) then
+            table.insert(vehicles, vehicle)
         end
     end
+
     return vehicles
 end
 
-function control_nearby_vehicle.control_vehicles()
-    util.create_tick_handler(function()
-        local is_all_false = true
-        for _, i in pairs(control_nearby_vehicle.toggles) do
-            if i then
-                is_all_false = false
-            end
+function Nearby_Vehicle.toggle_changed(key, toggle)
+    Nearby_Vehicle.toggles[key] = toggle
+
+    Nearby_Vehicle.switch_tick_handler()
+end
+
+function Nearby_Vehicle.select_changed(key, value)
+    if value == 1 then
+        Nearby_Vehicle.toggles[key] = false
+    else
+        Nearby_Vehicle.toggles[key] = true
+    end
+
+    Nearby_Vehicle.switch_tick_handler()
+end
+
+function Nearby_Vehicle.switch_tick_handler()
+    local is_all_false = true
+    for key, bool in pairs(Nearby_Vehicle.toggles) do
+        if bool then
+            is_all_false = false
+            break
         end
-        if is_all_false then
-            control_nearby_vehicle.is_tick_handler = false
+    end
+    if is_all_false then
+        Nearby_Vehicle.can_handler_run = false
+    else
+        if not Nearby_Vehicle.is_handler_running then
+            Nearby_Vehicle.can_handler_run = true
+            Nearby_Vehicle.control_vehicles()
+        end
+    end
+end
+
+function Nearby_Vehicle.control_vehicles()
+    util.create_tick_handler(function()
+        if not Nearby_Vehicle.can_handler_run then
+            Nearby_Vehicle.is_handler_running = false
             util.log("[RScript] Control Nearby Vehicles: Stop Tick Handler")
             return false
         end
-        --------
-        control_nearby_vehicle.is_tick_handler = true
-        for k, vehicle in pairs(control_nearby_vehicle.get_vehicles()) do
-            --请求控制
+
+        Nearby_Vehicle.is_handler_running = true
+
+        for _, vehicle in pairs(Nearby_Vehicle.get_vehicles()) do
             RequestControl(vehicle)
-            --移除无敌
-            if control_nearby_vehicle.toggles.remove_godmode then
-                ENTITY.SET_ENTITY_INVINCIBLE(vehicle, false)
-                ENTITY.SET_ENTITY_PROOFS(vehicle, false, false, false, false, false, false, false, false)
-            end
-            --爆炸
-            if control_nearby_vehicle.toggles.explosion then
-                local pos = ENTITY.GET_ENTITY_COORDS(vehicle)
-                add_explosion(pos)
-            end
-            --电磁脉冲
-            if control_nearby_vehicle.toggles.emp then
-                local pos = ENTITY.GET_ENTITY_COORDS(vehicle)
-                add_explosion(pos, 65, { noDamage = true })
-            end
-            --拆下车门
-            if control_nearby_vehicle.toggles.broken_door then
-                for i = 0, 3 do
-                    VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, i, false)
-                end
-            end
-            --打开车门
-            if control_nearby_vehicle.toggles.open_door then
-                for i = 0, 3 do
-                    VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, i, false, false)
-                end
-            end
-            --破坏引擎
-            if control_nearby_vehicle.toggles.kill_engine then
-                VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, -4000)
-            end
-            --爆胎
-            if control_nearby_vehicle.toggles.burst_tyre then
-                for i = 0, 5 do
-                    if not VEHICLE.IS_VEHICLE_TYRE_BURST(vehicle, i, true) then
-                        VEHICLE.SET_VEHICLE_TYRE_BURST(vehicle, i, true, 1000.0)
+
+            for key, bool in pairs(Nearby_Vehicle.toggles) do
+                if bool then
+                    if Nearby_Vehicle.callback[key] ~= nil then
+                        Nearby_Vehicle.callback[key](vehicle)
                     end
                 end
             end
-            --布满灰尘
-            if control_nearby_vehicle.toggles.full_dirt then
-                VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, 15.0)
-            end
-            --删除车窗
-            if control_nearby_vehicle.toggles.remove_window then
-                for i = 0, 7 do
-                    VEHICLE.REMOVE_VEHICLE_WINDOW(vehicle, i)
-                end
-            end
-            --跳出载具
-            if control_nearby_vehicle.toggles.leave_vehicle then
-                local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
-                if ped and not TASK.GET_IS_TASK_ACTIVE(ped, 176) then
-                    TASK.TASK_LEAVE_VEHICLE(ped, vehicle, 4160)
-                end
-            end
-            --向前加速
-            if control_nearby_vehicle.toggles.forward_speed then
-                VEHICLE.SET_VEHICLE_FORWARD_SPEED(vehicle, control_nearby_vehicle.data.forward_speed)
-            end
-            --实体最大速度
-            if control_nearby_vehicle.toggles.max_speed then
-                ENTITY.SET_ENTITY_MAX_SPEED(vehicle, control_nearby_vehicle.data.max_speed)
-            end
-            --透明度
-            if control_nearby_vehicle.toggles.alpha then
-                ENTITY.SET_ENTITY_ALPHA(vehicle, control_nearby_vehicle.data.alpha, false)
-            end
-
-
-            ------
-            --给予无敌
-            if control_nearby_vehicle.toggles.godmode then
-                ENTITY.SET_ENTITY_INVINCIBLE(vehicle, true)
-            end
-            --修复载具
-            if control_nearby_vehicle.toggles.fix_vehicle then
-                VEHICLE.SET_VEHICLE_FIXED(vehicle)
-            end
-            --修复引擎
-            if control_nearby_vehicle.toggles.fix_engine then
-                VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, 1000)
-            end
-            --修复轮胎
-            if control_nearby_vehicle.toggles.fix_tyre then
-                for i = 0, 3 do
-                    VEHICLE.SET_VEHICLE_TYRE_FIXED(vehicle, i)
-                end
-            end
-            --清理载具
-            if control_nearby_vehicle.toggles.clean_dirt then
-                VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, 0.0)
-            end
         end
 
-
-        util.yield(control_nearby_vehicle.setting.time_delay)
+        util.yield(Nearby_Vehicle.setting.time_delay)
     end)
 end
 
 --------------
 -- Menu
 --------------
-local Nearby_Vehicle_options = menu.list(Entity_options, "管理附近载具", {}, "")
+local Nearby_Vehicle_Options = menu.list(Entity_options, "管理附近载具", {}, "")
 
-menu.slider_float(Nearby_Vehicle_options, "范围半径", { "radius_nearby_vehicle" }, "若半径是0,则为全部范围",
-    0, 100000, 3000, 1000,
-    function(value)
-        control_nearby_vehicle.setting.radius = value * 0.01
+menu.slider_float(Nearby_Vehicle_Options, "范围半径", { "radius_nearby_vehicle" },
+    "若半径是0, 则为全部范围", 0, 100000, 6000, 1000, function(value)
+        Nearby_Vehicle.setting.radius = value * 0.01
     end)
-menu.toggle_loop(Nearby_Vehicle_options, "绘制范围", {}, "", function()
+menu.toggle_loop(Nearby_Vehicle_Options, "绘制范围", {}, "", function()
     local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-    DRAW_MARKER_SPHERE(coords, control_nearby_vehicle.setting.radius)
+    DRAW_MARKER_SPHERE(coords, Nearby_Vehicle.setting.radius)
 end)
 
-local Nearby_Vehicle_Setting = menu.list(Nearby_Vehicle_options, "设置", {}, "")
-menu.slider(Nearby_Vehicle_Setting, "时间间隔", { "delay_nearby_vehicle" }, "单位: ms", 0, 5000, 1000, 100,
-    function(value)
-        control_nearby_vehicle.setting.time_delay = value
+menu.list_select(Nearby_Vehicle_Options, "载具类型", {}, "", {
+    { "全部载具", {}, "" },
+    { "NPC载具", {}, "有NPC作为司机驾驶的载具" },
+    { "敌对载具", {}, "有敌对地图标记点或敌对NPC驾驶的载具" },
+    { "空载具", {}, "无人驾驶的载具" },
+}, 1, function(value)
+    Nearby_Vehicle.setting.vehicle_select = value
+end)
+
+local Nearby_Vehicle_Setting = menu.list(Nearby_Vehicle_Options, "设置", {}, "")
+
+menu.slider(Nearby_Vehicle_Setting, "循环时间间隔", { "delay_nearby_vehicle" }, "单位: ms",
+    0, 5000, 1000, 100, function(value)
+        Nearby_Vehicle.setting.time_delay = value
     end)
-menu.toggle(Nearby_Vehicle_Setting, "排除任务载具", {}, "", function(toggle)
-    control_nearby_vehicle.setting.exclude_mission = toggle
+menu.divider(Nearby_Vehicle_Setting, "排除")
+menu.toggle(Nearby_Vehicle_Setting, "排除 玩家载具", {}, "", function(toggle)
+    Nearby_Vehicle.setting.exclude_player = toggle
 end, true)
-menu.toggle(Nearby_Vehicle_Setting, "排除已死亡实体", {}, "", function(toggle)
-    control_nearby_vehicle.setting.exclude_dead = toggle
+menu.toggle(Nearby_Vehicle_Setting, "排除 任务载具", {}, "", function(toggle)
+    Nearby_Vehicle.setting.exclude_mission = toggle
+end, true)
+menu.toggle(Nearby_Vehicle_Setting, "排除 已死亡实体", {}, "", function(toggle)
+    Nearby_Vehicle.setting.exclude_dead = toggle
 end, true)
 
 
+
+------------------------
+-- 附近载具 恶搞选项
+------------------------
+local Nearby_Vehicle_Trolling = menu.list(Nearby_Vehicle_Options, "恶搞选项", {}, "")
 ----------------------
---  附近载具 恶搞选项
+-- Delay Loop
 ----------------------
-local Nearby_Vehicle_Trolling_options = menu.list(Nearby_Vehicle_options, "恶搞选项", {}, "")
---------------------
--- Loop
---------------------
-menu.toggle(Nearby_Vehicle_Trolling_options, "移除无敌", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.remove_godmode = toggle
-    end)
+menu.toggle(Nearby_Vehicle_Trolling, "移除无敌", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("remove_godmode", toggle)
+
+    Nearby_Vehicle.callback["remove_godmode"] = function(vehicle)
+        set_entity_godmode(vehicle, false)
+    end
 end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "爆炸", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.explosion = toggle
-    end)
+menu.list_select(Nearby_Vehicle_Trolling, "车门", {}, "", {
+    "无操作", "打开", "拆下", "删除"
+}, 1, function(value)
+    Nearby_Vehicle.select_changed("door", value)
+
+    if value == 2 then
+        Nearby_Vehicle.callback["door"] = function(vehicle)
+            for i = 0, 3 do
+                if VEHICLE.GET_IS_DOOR_VALID(vehicle, i) then
+                    VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, i, false, false)
+                end
+            end
+        end
+    elseif value == 3 then
+        Nearby_Vehicle.callback["door"] = function(vehicle)
+            for i = 0, 3 do
+                if VEHICLE.GET_IS_DOOR_VALID(vehicle, i) then
+                    VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, i, false)
+                end
+            end
+        end
+    elseif value == 4 then
+        Nearby_Vehicle.callback["door"] = function(vehicle)
+            for i = 0, 3 do
+                if VEHICLE.GET_IS_DOOR_VALID(vehicle, i) then
+                    VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, i, true)
+                end
+            end
+        end
+    end
 end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "电磁脉冲", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.emp = toggle
-    end)
+menu.list_select(Nearby_Vehicle_Trolling, "车窗", {}, "", {
+    "无操作", "删除", "破坏"
+}, 1, function(value)
+    Nearby_Vehicle.select_changed("window", value)
+
+    if value == 2 then
+        Nearby_Vehicle.callback["window"] = function(vehicle)
+            for i = 0, 7 do
+                VEHICLE.REMOVE_VEHICLE_WINDOW(vehicle, i)
+            end
+        end
+    elseif value == 3 then
+        Nearby_Vehicle.callback["window"] = function(vehicle)
+            for i = 0, 7 do
+                VEHICLE.SMASH_VEHICLE_WINDOW(vehicle, i)
+            end
+        end
+    end
 end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "打开车门", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.open_door = toggle
-    end)
+menu.toggle(Nearby_Vehicle_Trolling, "破坏引擎", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("kill_engine", toggle)
+
+    Nearby_Vehicle.callback["kill_engine"] = function(vehicle)
+        VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, -4000)
+    end
 end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "拆下车门", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.broken_door = toggle
-    end)
+menu.toggle(Nearby_Vehicle_Trolling, "爆胎", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("burst_tyre", toggle)
+
+    Nearby_Vehicle.callback["burst_tyre"] = function(vehicle)
+        for i = 0, 5 do
+            if not VEHICLE.IS_VEHICLE_TYRE_BURST(vehicle, i, true) then
+                VEHICLE.SET_VEHICLE_TYRE_BURST(vehicle, i, true, 1000.0)
+            end
+        end
+    end
 end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "破坏引擎", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.kill_engine = toggle
-    end)
+menu.toggle(Nearby_Vehicle_Trolling, "布满灰尘", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("full_dirt", toggle)
+
+    Nearby_Vehicle.callback["full_dirt"] = function(vehicle)
+        VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, 15.0)
+    end
 end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "爆胎", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.burst_tyre = toggle
-    end)
+menu.toggle(Nearby_Vehicle_Trolling, "分离车轮", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("detach_wheel", toggle)
+
+    Nearby_Vehicle.callback["detach_wheel"] = function(vehicle)
+        for i = 0, 5 do
+            entities.detach_wheel(vehicle, i)
+        end
+    end
 end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "布满灰尘", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.full_dirt = toggle
-    end)
+menu.toggle(Nearby_Vehicle_Trolling, "司机跳出载具", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("leave_vehicle", toggle)
+
+    Nearby_Vehicle.callback["leave_vehicle"] = function(vehicle)
+        local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
+        if ped ~= 0 and not TASK.GET_IS_TASK_ACTIVE(ped, 176) then
+            TASK.TASK_LEAVE_VEHICLE(ped, vehicle, 4160)
+        end
+    end
 end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "删除车窗", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.remove_window = toggle
-    end)
+menu.list_select(Nearby_Vehicle_Trolling, "爆炸", {}, "", {
+    "无操作", "匿名爆炸", "署名爆炸"
+}, 1, function(value)
+    Nearby_Vehicle.select_changed("explosion", value)
+
+    if value == 2 then
+        Nearby_Vehicle.callback["explosion"] = function(vehicle)
+            local pos = ENTITY.GET_ENTITY_COORDS(vehicle)
+            add_explosion(pos)
+        end
+    elseif value == 3 then
+        Nearby_Vehicle.callback["explosion"] = function(vehicle)
+            local pos = ENTITY.GET_ENTITY_COORDS(vehicle)
+            add_owned_explosion(players.user_ped(), pos)
+        end
+    end
 end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "司机跳出载具", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.leave_vehicle = toggle
-    end)
-end)
-menu.slider(Nearby_Vehicle_Trolling_options, "设置向前加的速度", { "nearby_veh_forward_speed" }, "",
+
+menu.slider(Nearby_Vehicle_Trolling, "加速度", { "nearby_veh_forward_speed" }, "",
     0, 1000, 30, 10, function(value)
-        control_nearby_vehicle.data.forward_speed = value
+        Nearby_Vehicle.data.forward_speed = value
     end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "向前加速", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.forward_speed = toggle
-    end)
+menu.toggle(Nearby_Vehicle_Trolling, "设置向前加速", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("forward_speed", toggle)
+
+    Nearby_Vehicle.callback["forward_speed"] = function(vehicle)
+        VEHICLE.SET_VEHICLE_FORWARD_SPEED(vehicle, Nearby_Vehicle.data.forward_speed)
+    end
 end)
-menu.slider(Nearby_Vehicle_Trolling_options, "实体最大的速度", { "nearby_veh_max_speed" }, "",
+
+menu.slider(Nearby_Vehicle_Trolling, "最大速度", { "nearby_veh_max_speed" }, "",
     0, 1000, 0, 10, function(value)
-        control_nearby_vehicle.data.max_speed = value
+        Nearby_Vehicle.data.max_speed = value
     end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "设置实体最大速度", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.max_speed = toggle
-    end)
+menu.toggle(Nearby_Vehicle_Trolling, "设置实体最大速度", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("max_speed", toggle)
+
+    Nearby_Vehicle.callback["max_speed"] = function(vehicle)
+        ENTITY.SET_ENTITY_MAX_SPEED(vehicle, Nearby_Vehicle.data.max_speed)
+    end
 end)
-menu.slider(Nearby_Vehicle_Trolling_options, "透明度", { "nearby_veh_alpha" },
-    "Ranging from 0 to 255 but chnages occur after every 20 percent (after every 51).", 0, 255, 0, 5,
-    function(value)
-        control_nearby_vehicle.data.alpha = value
+
+menu.slider(Nearby_Vehicle_Trolling, "透明度", { "nearby_veh_alpha" },
+    "Ranging from 0 to 255 but chnages occur after every 20 percent (after every 51).", 0, 255, 0, 5, function(value)
+        Nearby_Vehicle.data.alpha = value
     end)
-menu.toggle(Nearby_Vehicle_Trolling_options, "设置透明度", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.alpha = toggle
-    end)
+menu.toggle(Nearby_Vehicle_Trolling, "设置透明度", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("alpha", toggle)
+
+    Nearby_Vehicle.callback["alpha"] = function(vehicle)
+        ENTITY.SET_ENTITY_ALPHA(vehicle, Nearby_Vehicle.data.alpha, false)
+    end
 end)
---------------------
+
+----------------------
 -- No Delay Loop
---------------------
-menu.slider_float(Nearby_Vehicle_Trolling_options, "力场强度", { "nearby_veh_forcefield" }, "",
+----------------------
+menu.divider(Nearby_Vehicle_Trolling, "")
+
+menu.toggle_loop(Nearby_Vehicle_Trolling, "强行停止", {}, "", function()
+    for k, vehicle in pairs(Nearby_Vehicle.get_vehicles()) do
+        VEHICLE.SET_VEHICLE_FORWARD_SPEED(vehicle, 0)
+    end
+end)
+
+menu.slider_float(Nearby_Vehicle_Trolling, "力场强度", { "nearby_veh_forcefield" }, "",
     100, 10000, 100, 100, function(value)
-        control_nearby_vehicle.data.force_field = value * 0.01
+        Nearby_Vehicle.data.force_field = value * 0.01
     end)
-menu.toggle_loop(Nearby_Vehicle_Trolling_options, "力场 (推开)", {}, "", function()
-    for k, vehicle in pairs(control_nearby_vehicle.get_vehicles()) do
+menu.toggle_loop(Nearby_Vehicle_Trolling, "力场 (推开)", {}, "", function()
+    for k, vehicle in pairs(Nearby_Vehicle.get_vehicles()) do
         local force = ENTITY.GET_ENTITY_COORDS(vehicle)
         v3.sub(force, ENTITY.GET_ENTITY_COORDS(players.user_ped()))
         v3.normalise(force)
-        v3.mul(force, control_nearby_vehicle.data.force_field)
-        ENTITY.APPLY_FORCE_TO_ENTITY(vehicle, 3, force.x, force.y, force.z, 0, 0, 0.5, 0, false, false, true,
-            false, false)
+        v3.mul(force, Nearby_Vehicle.data.force_field)
+        ENTITY.APPLY_FORCE_TO_ENTITY(vehicle,
+            3,
+            force.x, force.y, force.z,
+            0, 0, 0.5,
+            0,
+            false, false, true, false, false)
     end
 end)
---------------------
+
+----------------------
 -- Once
---------------------
-menu.action(Nearby_Vehicle_Trolling_options, "颠倒", {}, "", function()
-    for k, vehicle in pairs(control_nearby_vehicle.get_vehicles()) do
-        ENTITY.APPLY_FORCE_TO_ENTITY(vehicle, 1, 0.0, 0.0, 5.0, 5.0, 0.0, 0.0, 0, false, true, true, true, true)
+----------------------
+menu.divider(Nearby_Vehicle_Trolling, "")
+
+menu.action(Nearby_Vehicle_Trolling, "颠倒", {}, "", function()
+    for k, vehicle in pairs(Nearby_Vehicle.get_vehicles()) do
+        ENTITY.APPLY_FORCE_TO_ENTITY(vehicle,
+            1,
+            0.0, 0.0, 5.0,
+            5.0, 0.0, 0.0,
+            0,
+            false, true, true, true, true)
     end
 end)
-menu.action(Nearby_Vehicle_Trolling_options, "随机喷漆", {}, "", function()
-    for k, vehicle in pairs(control_nearby_vehicle.get_vehicles()) do
+menu.action(Nearby_Vehicle_Trolling, "随机喷漆", {}, "", function()
+    for k, vehicle in pairs(Nearby_Vehicle.get_vehicles()) do
         local primary, secundary = get_random_colour(), get_random_colour()
         VEHICLE.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR(vehicle, primary.r, primary.g, primary.b)
         VEHICLE.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR(vehicle, secundary.r, secundary.g, secundary.b)
     end
 end)
-menu.slider(Nearby_Vehicle_Trolling_options, "上天高度", { "nearby_veh_launch" }, "",
+
+menu.slider(Nearby_Vehicle_Trolling, "上天高度", { "nearby_veh_launch" }, "",
     0, 1000, 30, 10, function(value)
-        control_nearby_vehicle.data.launch_height = value
+        Nearby_Vehicle.data.launch_height = value
     end)
-menu.action(Nearby_Vehicle_Trolling_options, "发射上天", {}, "", function()
-    for k, vehicle in pairs(control_nearby_vehicle.get_vehicles()) do
-        ENTITY.APPLY_FORCE_TO_ENTITY(vehicle, 1, 0.0, 0.0, control_nearby_vehicle.data.launch_height, 0.0, 0.0, 0.0, 0,
+menu.action(Nearby_Vehicle_Trolling, "发射上天", {}, "", function()
+    for k, vehicle in pairs(Nearby_Vehicle.get_vehicles()) do
+        ENTITY.APPLY_FORCE_TO_ENTITY(vehicle,
+            1,
+            0.0, 0.0, Nearby_Vehicle.data.launch_height,
+            0.0, 0.0, 0.0,
+            0,
             false, false, true, false, false)
     end
 end)
-menu.action(Nearby_Vehicle_Trolling_options, "坠落爆炸", {}, "", function()
-    for k, vehicle in pairs(control_nearby_vehicle.get_vehicles()) do
-        util.create_thread(function()
-            fall_entity_explosion(vehicle)
-        end)
+
+
+
+------------------------
+-- 附近载具 友好选项
+------------------------
+local Nearby_Vehicle_Friendly = menu.list(Nearby_Vehicle_Options, "友好选项", {}, "")
+----------------------
+-- Delay Loop
+----------------------
+menu.toggle(Nearby_Vehicle_Friendly, "给予无敌", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("give_godmode", toggle)
+
+    Nearby_Vehicle.callback["give_godmode"] = function(vehicle)
+        set_entity_godmode(vehicle, true)
+    end
+end)
+menu.toggle(Nearby_Vehicle_Friendly, "修复载具", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("fix_vehicle", toggle)
+
+    Nearby_Vehicle.callback["fix_vehicle"] = function(vehicle)
+        fix_vehicle(vehicle)
+    end
+end)
+menu.toggle(Nearby_Vehicle_Friendly, "修复引擎", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("fix_engine", toggle)
+
+    Nearby_Vehicle.callback["fix_engine"] = function(vehicle)
+        VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, 1000)
+    end
+end)
+menu.toggle(Nearby_Vehicle_Friendly, "修复车胎", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("fix_tyre", toggle)
+
+    Nearby_Vehicle.callback["fix_tyre"] = function(vehicle)
+        for i = 0, 5 do
+            VEHICLE.SET_VEHICLE_TYRE_FIXED(vehicle, i)
+        end
+    end
+end)
+menu.toggle(Nearby_Vehicle_Friendly, "修复车窗", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("fix_window", toggle)
+
+    Nearby_Vehicle.callback["fix_window"] = function(vehicle)
+        for i = 0, 7 do
+            VEHICLE.FIX_VEHICLE_WINDOW(vehicle, i)
+        end
+    end
+end)
+menu.toggle(Nearby_Vehicle_Friendly, "清洁外观", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("clean_dirt", toggle)
+
+    Nearby_Vehicle.callback["clean_dirt"] = function(vehicle)
+        VEHICLE.SET_VEHICLE_DIRT_LEVEL(vehicle, 0.0)
+    end
+end)
+menu.toggle(Nearby_Vehicle_Friendly, "升级载具", {}, "", function(toggle)
+    Nearby_Vehicle.toggle_changed("upgrade_vehicle", toggle)
+
+    Nearby_Vehicle.callback["upgrade_vehicle"] = function(vehicle)
+        upgrade_vehicle(vehicle)
     end
 end)
 
 
-----------------------
--- 附近载具 友好选项
-----------------------
-local Nearby_Vehicle_Friendly_options = menu.list(Nearby_Vehicle_options, "友好选项", {}, "")
-menu.toggle(Nearby_Vehicle_Friendly_options, "给予无敌", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.godmode = toggle
-    end)
-end)
-menu.toggle(Nearby_Vehicle_Friendly_options, "修复载具", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.fix_vehicle = toggle
-    end)
-end)
-menu.toggle(Nearby_Vehicle_Friendly_options, "修复引擎", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.fix_engine = toggle
-    end)
-end)
-menu.toggle(Nearby_Vehicle_Friendly_options, "修复轮胎", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.fix_tyre = toggle
-    end)
-end)
-menu.toggle(Nearby_Vehicle_Friendly_options, "清理载具", {}, "", function(toggle)
-    control_nearby_vehicle.toggle_switch(function()
-        control_nearby_vehicle.toggles.clean_dirt = toggle
-    end)
-end)
 
+----------------------
+-- 全部范围
+----------------------
+menu.divider(Nearby_Vehicle_Options, "全部范围")
 
------ 全部范围 -----
-menu.divider(Nearby_Vehicle_options, "全部范围")
-menu.action(Nearby_Vehicle_options, "解锁车门", { "unlock_vehs_door" }, "", function()
+menu.action(Nearby_Vehicle_Options, "解锁车门和打开引擎", { "unlock_vehs_door" }, "", function()
     for k, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
         unlock_vehicle_doors(vehicle)
+
         VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, true)
         VEHICLE.SET_VEHICLE_UNDRIVEABLE(vehicle, false)
         VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
@@ -1116,14 +1196,14 @@ menu.action(Nearby_Vehicle_options, "解锁车门", { "unlock_vehs_door" }, "", 
         ENTITY.FREEZE_ENTITY_POSITION(vehicle, false)
     end
 end)
-menu.action(Nearby_Vehicle_options, "打开左右车门和引擎", { "open_vehs_door" }, "", function()
+menu.action(Nearby_Vehicle_Options, "打开左右车门和引擎", { "open_vehs_door" }, "", function()
     for k, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
         VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
         VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 0, false, false)
         VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 1, false, false)
     end
 end)
-menu.action(Nearby_Vehicle_options, "拆下左右车门和打开引擎", { "broken_vehs_door" }, "", function()
+menu.action(Nearby_Vehicle_Options, "拆下左右车门和打开引擎", { "broken_vehs_door" }, "", function()
     for k, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
         VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
         VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, 0, false)
@@ -1143,26 +1223,20 @@ end)
 --------- 附近NPC ---------
 --------------------------
 
-local control_nearby_ped = {
-    is_tick_handler = false,
+local Nearby_Ped = {
+    can_handler_run = false,
+    is_handler_runing = false,
+
     setting = {
-        radius = 30.0,
+        radius = 60.0,
+        ped_select = 1,
         time_delay = 1000,
         exclude_ped_in_vehicle = true,
+        exclude_friendly = true,
         exclude_mission = true,
         exclude_dead = true,
     },
-    toggles = {
-        --Trolling
-        force_forward = false,
-        drop_weapon = false,
-        ignore_events = false,
-        explode_head = false,
-        ragdoll = false,
-        --Friendly
-        drop_money = false,
-        give_weapon = false,
-    },
+    toggles = {},
     data = {
         forward_degree = 30,
         drop_money_amount = 100,
@@ -1174,22 +1248,46 @@ local control_nearby_ped = {
             ragdoll = true,
         },
     },
+    callback = {},
 }
 
-function control_nearby_ped.toggle_switch(toggle_func)
-    toggle_func()
-    if not control_nearby_ped.is_tick_handler then
-        control_nearby_ped.control_peds()
+function Nearby_Ped.check_ped(ped)
+    -- 排除 玩家
+    if is_player_ped(ped) then
+        return false
     end
+    -- 排除 载具内NPC
+    if Nearby_Ped.setting.exclude_ped_in_vehicle and PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
+        return false
+    end
+    -- 排除 友好NPC
+    if Nearby_Ped.setting.exclude_friendly and is_friendly_ped(ped) then
+        return false
+    end
+    -- 排除 任务NPC
+    if Nearby_Ped.setting.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ped) then
+        return false
+    end
+    -- 排除 已死亡实体
+    if Nearby_Ped.setting.exclude_dead and ENTITY.IS_ENTITY_DEAD(ped) then
+        return false
+    end
+    -- 敌对NPC
+    if Nearby_Ped.setting.ped_select == 2 and not is_hostile_ped(ped) then
+        return false
+    end
+
+    return true
 end
 
-function control_nearby_ped.get_peds()
+function Nearby_Ped.get_peds()
     local peds = {}
     local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-    local radius = control_nearby_ped.setting.radius
+    local radius = Nearby_Ped.setting.radius
 
     for k, ent in pairs(entities.get_all_peds_as_handles()) do
         local ped = 0
+
         local ent_pos = ENTITY.GET_ENTITY_COORDS(ent)
         if radius <= 0 then
             ped = ent
@@ -1197,633 +1295,452 @@ function control_nearby_ped.get_peds()
             ped = ent
         end
 
-        if ped ~= 0 then
-            if is_player_ped(ped) then
-                --排除玩家
-            elseif control_nearby_ped.setting.exclude_ped_in_vehicle and PED.IS_PED_IN_ANY_VEHICLE(ped, true) then
-                --排除载具内NPC
-            elseif control_nearby_ped.setting.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ped) then
-                --排除任务NPC
-            elseif control_nearby_ped.setting.exclude_dead and ENTITY.IS_ENTITY_DEAD(ped) then
-                --排除已死亡实体
-            else
-                table.insert(peds, ped)
-            end
+        if ped ~= 0 and Nearby_Ped.check_ped(ped) then
+            table.insert(peds, ped)
         end
     end
     return peds
 end
 
-function control_nearby_ped.control_peds()
-    util.create_tick_handler(function()
-        local is_all_false = true
-        for _, i in pairs(control_nearby_ped.toggles) do
-            if i then
-                is_all_false = false
-            end
+function Nearby_Ped.toggle_changed(key, toggle)
+    Nearby_Ped.toggles[key] = toggle
+
+    Nearby_Ped.switch_tick_handler()
+end
+
+function Nearby_Ped.switch_tick_handler()
+    local is_all_false = true
+    for key, bool in pairs(Nearby_Ped.toggles) do
+        if bool then
+            is_all_false = false
+            break
         end
-        if is_all_false then
-            control_nearby_ped.is_tick_handler = false
+    end
+    if is_all_false then
+        Nearby_Ped.can_handler_run = false
+    else
+        if not Nearby_Ped.is_handler_running then
+            Nearby_Ped.can_handler_run = true
+            Nearby_Ped.control_peds()
+        end
+    end
+end
+
+function Nearby_Ped.control_peds()
+    util.create_tick_handler(function()
+        if not Nearby_Ped.can_handler_run then
+            Nearby_Ped.is_handler_running = false
             util.log("[RScript] Control Nearby Peds: Stop Tick Handler")
             return false
         end
-        --------
-        control_nearby_ped.is_tick_handler = true
-        for k, ped in pairs(control_nearby_ped.get_peds()) do
-            --请求控制
-            RequestControl(ped)
-            --向前推进
-            if control_nearby_ped.toggles.force_forward then
-                ENTITY.SET_ENTITY_MAX_SPEED(ped, 99999)
-                local vector = ENTITY.GET_ENTITY_FORWARD_VECTOR(ped)
-                local force = Vector.mult(vector, control_nearby_ped.data.forward_degree)
-                ENTITY.APPLY_FORCE_TO_ENTITY(ped, 1, force.x, force.y, force.z, 0.0, 0.0, 0.0, 1, false, true,
-                    true, true, true)
-            end
-            --丢弃武器
-            if control_nearby_ped.toggles.drop_weapon then
-                WEAPON.SET_PED_DROPS_WEAPONS_WHEN_DEAD(ped)
-                WEAPON.SET_PED_DROPS_WEAPON(ped)
-                WEAPON.SET_PED_AMMO_TO_DROP(ped, 9999)
-            end
-            --忽略其它临时事件
-            if control_nearby_ped.toggles.ignore_events then
-                PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
-                TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
-            end
-            --爆头
-            if control_nearby_ped.toggles.explode_head then
-                local weaponHash = util.joaat("WEAPON_APPISTOL")
-                PED.EXPLODE_PED_HEAD(ped, weaponHash)
-            end
-            --摔倒
-            if control_nearby_ped.toggles.ragdoll then
-                PED.SET_PED_TO_RAGDOLL(ped, 500, 500, 0, false, false, false)
-            end
 
-            ------
-            --修改掉落现金
-            if control_nearby_ped.toggles.drop_money then
-                PED.SET_PED_MONEY(ped, control_nearby_ped.data.drop_money_amount)
-                PED.SET_AMBIENT_PEDS_DROP_MONEY(true)
-            end
-            --给予武器
-            if control_nearby_ped.toggles.give_weapon then
-                WEAPON.GIVE_WEAPON_TO_PED(ped, control_nearby_ped.data.weapon_hash, -1, false, true)
-                WEAPON.SET_CURRENT_PED_WEAPON(ped, control_nearby_ped.data.weapon_hash, false)
+        Nearby_Ped.is_handler_runing = true
+
+        for _, ped in pairs(Nearby_Ped.get_peds()) do
+            RequestControl(ped)
+
+            for key, bool in pairs(Nearby_Ped.toggles) do
+                if bool then
+                    if Nearby_Ped.callback[key] ~= nil then
+                        Nearby_Ped.callback[key](ped)
+                    end
+                end
             end
         end
 
-
-        util.yield(control_nearby_ped.setting.time_delay)
+        util.yield(Nearby_Ped.setting.time_delay)
     end)
 end
 
 --------------
 -- Menu
 --------------
-local Nearby_Ped_options = menu.list(Entity_options, "管理附近NPC", {}, "")
+local Nearby_Ped_Options = menu.list(Entity_options, "管理附近NPC", {}, "")
 
-menu.slider_float(Nearby_Ped_options, "范围半径", { "radius_nearby_ped" }, "若半径是0,则为全部范围",
-    0, 100000, 3000, 1000, function(value)
-        control_nearby_ped.setting.radius = value * 0.01
+menu.slider_float(Nearby_Ped_Options, "范围半径", { "radius_nearby_ped" },
+    "若半径是0, 则为全部范围", 0, 100000, 6000, 1000, function(value)
+        Nearby_Ped.setting.radius = value * 0.01
     end)
-menu.toggle_loop(Nearby_Ped_options, "绘制范围", {}, "", function()
+menu.toggle_loop(Nearby_Ped_Options, "绘制范围", {}, "", function()
     local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-    DRAW_MARKER_SPHERE(coords, control_nearby_ped.setting.radius)
+    DRAW_MARKER_SPHERE(coords, Nearby_Ped.setting.radius)
+end)
+menu.list_select(Nearby_Ped_Options, "NPC类型", {}, "", {
+    { "全部NPC", {}, "" },
+    { "敌对NPC", {}, "" },
+}, 1, function(value)
+    Nearby_Ped.setting.ped_select = value
 end)
 
-local Nearby_Ped_Setting = menu.list(Nearby_Ped_options, "设置", {}, "")
-menu.slider(Nearby_Ped_Setting, "时间间隔", { "delay_nearby_ped" }, "单位: ms",
+local Nearby_Ped_Setting = menu.list(Nearby_Ped_Options, "设置", {}, "")
+
+menu.slider(Nearby_Ped_Setting, "循环时间间隔", { "delay_nearby_ped" }, "单位: ms",
     0, 5000, 1000, 100, function(value)
-        control_nearby_ped.setting.time_delay = value
+        Nearby_Ped.setting.time_delay = value
     end)
-menu.toggle(Nearby_Ped_Setting, "排除载具内NPC", {}, "", function(toggle)
-    control_nearby_ped.setting.exclude_ped_in_vehicle = toggle
+menu.divider(Nearby_Ped_Setting, "排除")
+menu.toggle(Nearby_Ped_Setting, "排除 载具内NPC", {}, "", function(toggle)
+    Nearby_Ped.setting.exclude_ped_in_vehicle = toggle
 end, true)
-menu.toggle(Nearby_Ped_Setting, "排除任务NPC", {}, "", function(toggle)
-    control_nearby_ped.setting.exclude_mission = toggle
+menu.toggle(Nearby_Ped_Setting, "排除 友好NPC", {}, "", function(toggle)
+    Nearby_Ped.setting.exclude_friendly = toggle
 end, true)
-menu.toggle(Nearby_Ped_Setting, "排除已死亡实体", {}, "", function(toggle)
-    control_nearby_ped.setting.exclude_dead = toggle
+menu.toggle(Nearby_Ped_Setting, "排除 任务NPC", {}, "", function(toggle)
+    Nearby_Ped.setting.exclude_mission = toggle
+end, true)
+menu.toggle(Nearby_Ped_Setting, "排除 已死亡实体", {}, "", function(toggle)
+    Nearby_Ped.setting.exclude_dead = toggle
 end, true)
 
 
-----------------------
+
+------------------------
 --  附近NPC 恶搞选项
-----------------------
-local Nearby_Ped_Trolling_options = menu.list(Nearby_Ped_options, "恶搞选项", {}, "")
+------------------------
+local Nearby_Ped_Trolling = menu.list(Nearby_Ped_Options, "恶搞选项", {}, "")
 --------------------
--- Loop
+-- Delay Loop
 --------------------
-menu.slider(Nearby_Ped_Trolling_options, "设置向前推进程度", { "ped_forward_degree" }, "",
+menu.slider(Nearby_Ped_Trolling, "推进程度", { "nearby_ped_forward_degree" }, "",
     0, 1000, 30, 10, function(value)
-        control_nearby_ped.data.forward_speed = value
+        Nearby_Ped.data.forward_speed = value
     end)
-menu.toggle(Nearby_Ped_Trolling_options, "向前推进", {}, "", function(toggle)
-    control_nearby_ped.toggle_switch(function()
-        control_nearby_ped.toggles.force_forward = toggle
-    end)
+menu.toggle(Nearby_Ped_Trolling, "设置向前推进", {}, "", function(toggle)
+    Nearby_Ped.toggle_changed("force_forward", toggle)
+
+    Nearby_Ped.callback["force_forward"] = function(ped)
+        ENTITY.SET_ENTITY_MAX_SPEED(ped, 99999)
+        local vector = ENTITY.GET_ENTITY_FORWARD_VECTOR(ped)
+        local force = Vector.mult(vector, Nearby_Ped.data.forward_degree)
+        ENTITY.APPLY_FORCE_TO_ENTITY(ped,
+            1,
+            force.x, force.y, force.z,
+            0.0, 0.0, 0.0,
+            1,
+            false, true, true, true, true)
+    end
 end)
-menu.toggle(Nearby_Ped_Trolling_options, "丢弃武器", {}, "", function(toggle)
-    control_nearby_ped.toggle_switch(function()
-        control_nearby_ped.toggles.drop_weapon = toggle
-    end)
+menu.toggle(Nearby_Ped_Trolling, "丢弃武器", {}, "", function(toggle)
+    Nearby_Ped.toggle_changed("drop_weapon", toggle)
+
+    Nearby_Ped.callback["drop_weapon"] = function(ped)
+        WEAPON.SET_PED_DROPS_WEAPONS_WHEN_DEAD(ped)
+        WEAPON.SET_PED_AMMO_TO_DROP(ped, 9999)
+        WEAPON.SET_PED_DROPS_WEAPON(ped)
+    end
 end)
-menu.toggle(Nearby_Ped_Trolling_options, "忽略其它临时事件", {}, "", function(toggle)
-    control_nearby_ped.toggle_switch(function()
-        control_nearby_ped.toggles.ignore_events = toggle
-    end)
+menu.toggle(Nearby_Ped_Trolling, "爆头", {}, "", function(toggle)
+    Nearby_Ped.toggle_changed("explode_head", toggle)
+
+    Nearby_Ped.callback["explode_head"] = function(ped)
+        local weaponHash = util.joaat("WEAPON_APPISTOL")
+        PED.EXPLODE_PED_HEAD(ped, weaponHash)
+    end
 end)
-menu.toggle(Nearby_Ped_Trolling_options, "爆头", {}, "", function(toggle)
-    control_nearby_ped.toggle_switch(function()
-        control_nearby_ped.toggles.explode_head = toggle
-    end)
+menu.toggle(Nearby_Ped_Trolling, "摔倒", {}, "", function(toggle)
+    Nearby_Ped.toggle_changed("ragdoll", toggle)
+
+    Nearby_Ped.callback["ragdoll"] = function(ped)
+        PED.SET_PED_TO_RAGDOLL(ped, 500, 500, 0, false, false, false)
+    end
 end)
-menu.toggle(Nearby_Ped_Trolling_options, "摔倒", {}, "", function(toggle)
-    control_nearby_ped.toggle_switch(function()
-        control_nearby_ped.toggles.ragdoll = toggle
-    end)
+menu.toggle(Nearby_Ped_Trolling, "忽略临时事件", {}, "", function(toggle)
+    Nearby_Ped.toggle_changed("block_temporary", toggle)
+
+    Nearby_Ped.callback["block_temporary"] = function(ped)
+        PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
+        TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, true)
+        PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS_FOR_AMBIENT_PEDS_THIS_FRAME(true)
+    end
 end)
+menu.toggle(Nearby_Ped_Trolling, "清除任务", {}, "", function(toggle)
+    Nearby_Ped.toggle_changed("clear_task", toggle)
+
+    Nearby_Ped.callback["clear_task"] = function(ped)
+        TASK.CLEAR_PED_TASKS(ped)
+        TASK.CLEAR_DEFAULT_PRIMARY_TASK(ped)
+        TASK.CLEAR_PED_SECONDARY_TASK(ped)
+    end
+end)
+menu.toggle(Nearby_Ped_Trolling, "立即清除任务", {}, "", function(toggle)
+    Nearby_Ped.toggle_changed("clear_task_immediately", toggle)
+
+    Nearby_Ped.callback["clear_task_immediately"] = function(ped)
+        TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
+    end
+end)
+
 --------------------
 -- Once
 --------------------
-menu.slider(Nearby_Ped_Trolling_options, "上天高度", { "nearby_ped_launch" }, "",
+menu.divider(Nearby_Ped_Trolling, "")
+
+menu.slider(Nearby_Ped_Trolling, "上天高度", { "nearby_ped_launch" }, "",
     0, 1000, 30, 10, function(value)
-        control_nearby_ped.data.launch_height = value
+        Nearby_Ped.data.launch_height = value
     end)
-menu.action(Nearby_Ped_Trolling_options, "发射上天", {}, "", function()
-    for k, ped in pairs(control_nearby_ped.get_peds()) do
-        ENTITY.APPLY_FORCE_TO_ENTITY(ped, 1, 0.0, 0.0, control_nearby_ped.data.launch_height, 0.0, 0.0, 0.0, 0, false
-        , false, true, false, false)
+menu.action(Nearby_Ped_Trolling, "发射上天", {}, "", function()
+    for k, ped in pairs(Nearby_Ped.get_peds()) do
+        ENTITY.APPLY_FORCE_TO_ENTITY(ped,
+            1,
+            0.0, 0.0, Nearby_Ped.data.launch_height,
+            0.0, 0.0, 0.0,
+            0,
+            false, false, true, false, false)
     end
 end)
-menu.action(Nearby_Ped_Trolling_options, "坠落爆炸", {}, "", function()
-    for k, ped in pairs(control_nearby_ped.get_peds()) do
+menu.action(Nearby_Ped_Trolling, "坠落爆炸", {}, "", function()
+    for k, ped in pairs(Nearby_Ped.get_peds()) do
         util.create_thread(function()
             fall_entity_explosion(ped)
         end)
     end
 end)
+
 --------------------
 -- No Delay Loop
 --------------------
-menu.divider(Nearby_Ped_Trolling_options, "力场")
-menu.slider_float(Nearby_Ped_Trolling_options, "强度", { "nearby_ped_forcefield_strength" }, "", 100, 10000, 100, 100
-, function(value)
-    control_nearby_ped.data.force_field.strength = value * 0.01
+menu.divider(Nearby_Ped_Trolling, "力场")
+
+menu.slider_float(Nearby_Ped_Trolling, "强度", { "nearby_ped_forcefield_strength" }, "",
+    100, 10000, 100, 100, function(value)
+        Nearby_Ped.data.force_field.strength = value * 0.01
+    end)
+menu.textslider_stateful(Nearby_Ped_Trolling, "方向", {}, "", { "推开", "拉进" }, function(value)
+    Nearby_Ped.data.force_field.direction = value
 end)
-menu.textslider_stateful(Nearby_Ped_Trolling_options, "方向", {}, "", { "推开", "拉进" }, function(value)
-    control_nearby_ped.data.force_field.direction = value
-end)
-menu.toggle(Nearby_Ped_Trolling_options, "摔倒", {}, "", function(toggle)
-    control_nearby_ped.data.force_field.ragdoll = toggle
+menu.toggle(Nearby_Ped_Trolling, "摔倒", {}, "", function(toggle)
+    Nearby_Ped.data.force_field.ragdoll = toggle
 end, true)
-menu.toggle_loop(Nearby_Ped_Trolling_options, "开启", {}, "", function()
-    for k, ped in pairs(control_nearby_ped.get_peds()) do
+menu.toggle_loop(Nearby_Ped_Trolling, "开启力场", {}, "", function()
+    for k, ped in pairs(Nearby_Ped.get_peds()) do
         local force = ENTITY.GET_ENTITY_COORDS(ped)
         v3.sub(force, ENTITY.GET_ENTITY_COORDS(players.user_ped()))
         v3.normalise(force)
-        v3.mul(force, control_nearby_ped.data.force_field.strength)
+        v3.mul(force, Nearby_Ped.data.force_field.strength)
 
-        if control_nearby_ped.data.force_field.direction == 2 then
+        if Nearby_Ped.data.force_field.direction == 2 then
             v3.mul(force, -1)
         end
-        if control_nearby_ped.data.force_field.ragdoll then
+        if Nearby_Ped.data.force_field.ragdoll then
             PED.SET_PED_TO_RAGDOLL(ped, 500, 500, 0, false, false, false)
         end
-        ENTITY.APPLY_FORCE_TO_ENTITY(ped, 3, force.x, force.y, force.z, 0, 0, 0.5, 0, false, false, true,
-            false, false)
+        ENTITY.APPLY_FORCE_TO_ENTITY(ped,
+            3,
+            force.x, force.y, force.z,
+            0, 0, 0.5,
+            0,
+            false, false, true, false, false)
     end
 end)
 
 
-----------------------
+
+------------------------
 --  附近NPC 友好选项
-----------------------
-local Nearby_Ped_Friendly_options = menu.list(Nearby_Ped_options, "友好选项", {}, "")
-menu.slider(Nearby_Ped_Friendly_options, "掉落现金数量", { "ped_drop_money_amonut" }, "", 0, 2000, 100, 100,
-    function(value)
-        control_nearby_ped.data.drop_money_amount = value
+------------------------
+local Nearby_Ped_Friendly = menu.list(Nearby_Ped_Options, "友好选项", {}, "")
+--------------------
+-- Delay Loop
+--------------------
+menu.slider(Nearby_Ped_Friendly, "现金数量", { "nearby_ped_drop_money_amonut" }, "",
+    0, 2000, 100, 100, function(value)
+        Nearby_Ped.data.drop_money_amount = value
     end)
-menu.toggle(Nearby_Ped_Friendly_options, "修改掉落现金", {}, "", function(toggle)
-    control_nearby_ped.toggle_switch(function()
-        control_nearby_ped.toggles.drop_money = toggle
-    end)
+menu.toggle(Nearby_Ped_Friendly, "设置掉落现金", {}, "", function(toggle)
+    Nearby_Ped.toggle_changed("drop_money", toggle)
+
+    Nearby_Ped.callback["drop_money"] = function(ped)
+        PED.SET_PED_MONEY(ped, Nearby_Ped.data.drop_money_amount)
+        PED.SET_AMBIENT_PEDS_DROP_MONEY(true)
+    end
 end)
-menu.list_select(Nearby_Ped_Friendly_options, "设置武器", {}, "", Weapon_Common.ListItem, 1, function(value)
-    control_nearby_ped.data.weapon_hash = util.joaat(Weapon_Common.ModelList[value])
+menu.list_select(Nearby_Ped_Friendly, "武器", {}, "", Weapon_Common.ListItem, 1, function(value)
+    Nearby_Ped.data.weapon_hash = util.joaat(Weapon_Common.ModelList[value])
 end)
-menu.toggle(Nearby_Ped_Friendly_options, "给予武器", {}, "", function(toggle)
-    control_nearby_ped.toggle_switch(function()
-        control_nearby_ped.toggles.give_weapon = toggle
-    end)
+menu.toggle(Nearby_Ped_Friendly, "给予武器", {}, "", function(toggle)
+    Nearby_Ped.toggle_changed("give_weapon", toggle)
+
+    Nearby_Ped.callback["give_weapon"] = function(ped)
+        WEAPON.GIVE_WEAPON_TO_PED(ped, Nearby_Ped.data.weapon_hash, -1, false, true)
+        WEAPON.SET_CURRENT_PED_WEAPON(ped, Nearby_Ped.data.weapon_hash, false)
+    end
 end)
 
 
------ 全部范围 -----
-menu.divider(Nearby_Ped_options, "全部范围")
 
-----------------------
+------------------------
 --  附近NPC 作战能力
-----------------------
-local Nearby_Ped_Combat_options = menu.list(Nearby_Ped_options, "作战能力", {}, "")
+------------------------
+local Nearby_Ped_Combat = menu.list(Nearby_Ped_Options, "作战能力", {}, "")
 
-
------ 作战能力 -----
-local nearby_ped_combat = {
+Nearby_Ped.Combat = {
     health = 100,
-    armour = 0,
-    see_range = 0.0,
-    hear_range = 0.0,
-    id_range = 0.0,
-    peripheral_range = 0.0,
-    peripheral_angle = 0.0,
-    highly_perceptive = false,
-    accuracy = 0,
-    shoot_rate = 0,
-    combat_ability = 0,
-    combat_range = 0,
-    combat_movement = 0,
-    target_loss_response = 0,
-    remove_defensive_area = true,
-    stop_drop_fire = true,
-    disable_injured_behaviour = true,
-    dies_when_injured = false,
+    investigate = 1,
+    weapon = 1,
+    ability = 1,
+    range = 1,
+    movement = 1,
+    target_loss_response = 1,
+    behavior = 1,
 }
 
-local Nearby_Ped_Combat_setting = menu.list(Nearby_Ped_Combat_options, "作战能力设置", {}, "")
-menu.slider(Nearby_Ped_Combat_setting, "生命", { "combat_health" }, "生命值低于100就会死", 0, 10000, 100, 50,
-    function(value)
-        nearby_ped_combat.health = value
-    end)
-menu.slider(Nearby_Ped_Combat_setting, "护甲", { "combat_armour" }, "", 0, 100, 0, 10, function(value)
-    nearby_ped_combat.armour = value
-end)
-menu.slider(Nearby_Ped_Combat_setting, "视力范围", { "combat_see_range" }, "", 0.0, 500.0, 0.0, 1.0,
-    function(value)
-        nearby_ped_combat.see_range = value
-    end)
-menu.slider(Nearby_Ped_Combat_setting, "听力范围", { "combat_hear_range" }, "", 0.0, 500.0, 0.0, 1.0,
-    function(value)
-        nearby_ped_combat.hear_range = value
-    end)
-menu.slider(Nearby_Ped_Combat_setting, "识别范围", { "combat_id_range" }, "", 0.0, 500.0, 0.0, 1.0,
-    function(value)
-        nearby_ped_combat.id_range = value
-    end)
-menu.slider(Nearby_Ped_Combat_setting, "锥形视野范围", { "combat_peripheral_range" }, "", 0.0, 500.0, 0.0, 1.0,
-    function(value)
-        nearby_ped_combat.peripheral_range = value
-    end)
-menu.slider(Nearby_Ped_Combat_setting, "侦查视野角度", { "combat_peripheral_angle" }, "", -90.0, 90.0, 0.0, 1.0,
-    function(value)
-        nearby_ped_combat.peripheral_angle = value
-    end)
-menu.toggle(Nearby_Ped_Combat_setting, "高度警觉性", {}, "", function(toggle)
-    nearby_ped_combat.highly_perceptive = toggle
-end)
-menu.slider(Nearby_Ped_Combat_setting, "精准度", { "combat_accuracy" }, "", 0, 100, 0, 5, function(value)
-    nearby_ped_combat.accuracy = value
-end)
-menu.slider(Nearby_Ped_Combat_setting, "射击频率", { "combat_shoot_rate" }, "", 0, 1000, 0, 10, function(value)
-    nearby_ped_combat.shoot_rate = value
-end)
-menu.list_select(Nearby_Ped_Combat_setting, "作战技能", {}, "", {
-    { "弱" }, { "普通" }, { "专业" }
-}, 1, function(value)
-    nearby_ped_combat.combat_ability = value - 1
-end)
-menu.list_select(Nearby_Ped_Combat_setting, "作战范围", {}, "", {
-    { "近" }, { "中等" }, { "远" }, { "非常远" }
-}, 1, function(value)
-    nearby_ped_combat.combat_range = value - 1
-end)
-menu.list_select(Nearby_Ped_Combat_setting, "作战走位", {}, "", {
-    { "站立" }, { "防卫" }, { "会前进" }, { "会后退" }
-}, 1, function(value)
-    nearby_ped_combat.combat_movement = value - 1
-end)
-menu.list_select(Nearby_Ped_Combat_setting, "失去目标时反应", {}, "", {
-    { "退出战斗" }, { "从不失去目标" }, { "寻找目标" }
-}, 1, function(value)
-    nearby_ped_combat.target_loss_response = value - 1
-end)
-menu.toggle(Nearby_Ped_Combat_setting, "移除防卫区域", {}, "Ped will no longer get angry when you stay near him.",
-    function(toggle)
-        nearby_ped_combat.remove_defensive_area = toggle
-    end, true)
-menu.toggle(Nearby_Ped_Combat_setting, "武器掉落时不会走火", {}, "", function(toggle)
-    nearby_ped_combat.stop_drop_fire = toggle
-end, true)
-menu.toggle(Nearby_Ped_Combat_setting, "禁止受伤时在地面打滚", {}, "", function(toggle)
-    nearby_ped_combat.disable_injured_behaviour = toggle
-end, true)
-menu.toggle(Nearby_Ped_Combat_setting, "一受伤就死亡", {}, "", function(toggle)
-    nearby_ped_combat.dies_when_injured = toggle
-end)
+menu.toggle_loop(Nearby_Ped_Combat, "开启", {}, "", function()
+    local combat_data = Nearby_Ped.Combat
 
+    for k, ped in pairs(Nearby_Ped.get_peds()) do
+        -- 生命值
+        if combat_data.health >= 100 then
+            SET_ENTITY_HEALTH(ped, combat_data.health)
+        end
+        -- 侦查能力
+        if combat_data.investigate > 1 then
+            if combat_data.investigate == 2 then
+                -- 弱化
+                PED.SET_PED_SEEING_RANGE(ped, 0)
+                PED.SET_PED_HEARING_RANGE(ped, 0)
+                PED.SET_PED_ID_RANGE(ped, 0)
 
------ 作战属性 -----
-local Nearby_Ped_Combat_Attributes = menu.list(Nearby_Ped_Combat_options, "作战属性设置", {}, "")
+                PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(ped, 0)
+                PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, 0)
+                PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 0)
+                PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, 0)
+                PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 0)
+                PED.SET_PED_VISUAL_FIELD_CENTER_ANGLE(ped, 0)
 
-local nearby_ped_combat_attr = {
-    toggles = {},
-    menus = {}
-}
+                PED.SET_PED_HIGHLY_PERCEPTIVE(ped, false)
 
-local ped_combat_attr_list = {
-    -- { id, name, help_text }
-    { 0, "Use Cover",
-        "AI will only use cover" },
-    { 1, "Use Vehicles",
-        "AI will only use vehicles" },
-    { 2, "Do Drivebys",
-        "AI will only driveby from a vehicle" },
-    { 4, "Can Use Dynamic Strafe Decisions",
-        "This ped can make decisions on whether to strafe or not based on distance to destination, recent bullet events, etc" },
-    { 5, "Always Fight",
-        "Ped will always fight upon getting threat response task" },
-    { 11, "Just Seek Cover",
-        "The ped will seek cover only" },
-    { 12, "Blind Fire In Cover",
-        "Ped will only blind fire when in cover" },
-    { 13, "Aggressive",
-        "Ped may advance" },
-    { 21, "Chase Target On Foot",
-        "Ped will be able to chase their targets if both are on foot and the target is running away" },
-    { 24, "Use Proximity Firing Rate",
-        "Ped is allowed to use proximity based fire rate (increasing fire rate at closer distances)" },
-    { 27, "Perfect Accuracy",
-        "Force ped to be 100% accurate in all situations" },
-    { 41, "Can Commandeer Vehicles",
-        "Ped is allowed to 'jack' vehicles when needing to chase a target in combat" },
-    { 42, "Can Flank",
-        "Ped is allowed to flank" },
-    { 46, "Can Fight Armed Peds When Not Armed",
-        "Ped is allowed to fight armed peds when not armed" },
-    { 52, "Use Vehicle Attack",
-        "Use the vehicle attack mission during combat (only works on driver)" },
-    { 53, "Use Vehicle Attack If Vehicle Has Mounted Guns",
-        "Use the vehicle attack mission during combat if the vehicle has mounted guns (only works on driver)" },
-    { 54, "Always Equip Best Weapon",
-        "Always equip best weapon in combat" },
-    { 86, "Allow Dog Fighting",
-        "Allow peds flying aircraft to use dog fighting behaviours" },
-}
+                PED.SET_PED_COMBAT_ATTRIBUTES(ped, 14, false) -- CA_CAN_INVESTIGATE
+                PED.SET_PED_COMBAT_ATTRIBUTES(ped, 79, false) -- CA_WILL_GENERATE_DEAD_PED_SEEN_SCRIPT_EVENTS
+                PED.SET_PED_COMBAT_ATTRIBUTES(ped, 80, false) -- CA_USE_MAX_SENSE_RANGE_WHEN_RECEIVING_EVENTS
 
-menu.toggle(Nearby_Ped_Combat_Attributes, "全部开/关", {}, "", function(toggle)
-    for i, the_menu in pairs(nearby_ped_combat_attr.menus) do
-        menu.set_value(the_menu, toggle)
-    end
-end)
+                PED.SET_COMBAT_FLOAT(ped, 14, 0)              -- CCF_BULLET_IMPACT_DETECTION_RANGE
+                PED.SET_COMBAT_FLOAT(ped, 21, 0)              -- CCF_MAX_DISTANCE_TO_HEAR_EVENTS
+                PED.SET_COMBAT_FLOAT(ped, 22, 0)              -- CCF_MAX_DISTANCE_TO_HEAR_EVENTS_USING_LOS
 
-for _, data in pairs(ped_combat_attr_list) do
-    local id = data[1]
-    local name = data[2]
-    local help_text = data[3]
-
-    nearby_ped_combat_attr.toggles[id] = false
-
-    nearby_ped_combat_attr.menus[id] = menu.toggle(Nearby_Ped_Combat_Attributes, name, {}, help_text,
-        function(toggle)
-            nearby_ped_combat_attr.toggles[id] = toggle
-        end)
-end
-
-
-
------ 作战能力 开关 -----
-local Nearby_Ped_Combat_toggles = menu.list(Nearby_Ped_Combat_options, "作战能力设置开关", {}, "取消勾选代表不对这一项进行修改")
-
-nearby_ped_combat.settings = {
-    health = true,
-    see_range = true,
-    peripheral_range = true,
-    peripheral_angle = true,
-    combat_movement = true,
-    target_loss_response = true,
-}
-
-menu.toggle(Nearby_Ped_Combat_toggles, "生命", {}, "", function(toggle)
-    nearby_ped_combat.settings.health = toggle
-end, true)
-menu.toggle(Nearby_Ped_Combat_toggles, "视力范围", {}, "", function(toggle)
-    nearby_ped_combat.settings.see_range = toggle
-end, true)
-menu.toggle(Nearby_Ped_Combat_toggles, "锥形视野范围", {}, "", function(toggle)
-    nearby_ped_combat.settings.peripheral_range = toggle
-end, true)
-menu.toggle(Nearby_Ped_Combat_toggles, "侦查视野角度", {}, "", function(toggle)
-    nearby_ped_combat.settings.peripheral_angle = toggle
-end, true)
-menu.toggle(Nearby_Ped_Combat_toggles, "作战走位", {}, "", function(toggle)
-    nearby_ped_combat.settings.combat_movement = toggle
-end, true)
-menu.toggle(Nearby_Ped_Combat_toggles, "失去目标时反应", {}, "", function(toggle)
-    nearby_ped_combat.settings.target_loss_response = toggle
-end, true)
-
-
-local Nearby_Ped_Combat_toggles_Attr = menu.list(Nearby_Ped_Combat_toggles, "作战属性", {}, "")
-
-nearby_ped_combat_attr.setting = {
-    toggles = {},
-    menus = {},
-}
-
-menu.toggle(Nearby_Ped_Combat_toggles_Attr, "全部开/关", {}, "", function(toggle)
-    for i, the_menu in pairs(nearby_ped_combat_attr.setting.menus) do
-        menu.set_value(the_menu, toggle)
-    end
-end, true)
-
-for _, data in pairs(ped_combat_attr_list) do
-    local id = data[1]
-    local name = data[2]
-
-    nearby_ped_combat_attr.setting.toggles[id] = true
-
-    nearby_ped_combat_attr.setting.menus[id] = menu.toggle(Nearby_Ped_Combat_toggles_Attr, name, {}, "",
-        function(toggle)
-            nearby_ped_combat_attr.setting.toggles[id] = toggle
-        end, true)
-end
-
-
-
----------
-menu.divider(Nearby_Ped_Combat_options, "默认设置为弱化NPC")
-
-local neayby_ped_combat_all_setting = {
-    only_combat = true,
-    request_control = false
-}
-menu.toggle(Nearby_Ped_Combat_options, "只作用于敌对NPC", {}, "", function(toggle)
-    neayby_ped_combat_all_setting.only_combat = toggle
-end, true)
-menu.toggle(Nearby_Ped_Combat_options, "请求控制", {}, "如果有其它玩家", function(toggle)
-    neayby_ped_combat_all_setting.request_control = toggle
-end)
-
-local function NearbyPed_Combat(is_once)
-    local mission, nonmission = 0, 0
-
-    for _, ped in pairs(entities.get_all_peds_as_handles()) do
-        if is_player_ped(ped) then
-        elseif PED.IS_PED_DEAD_OR_DYING(ped) or ENTITY.IS_ENTITY_DEAD(ped) then
-        elseif neayby_ped_combat_all_setting.only_combat and not PED.IS_PED_IN_COMBAT(ped, players.user_ped()) then
-        else
-            if neayby_ped_combat_all_setting.request_control then
-                RequestControl(ped)
-            end
-
-            if nearby_ped_combat.settings.health then
-                SET_ENTITY_HEALTH(ped, nearby_ped_combat.health)
-            end
-
-            PED.SET_PED_ARMOUR(ped, nearby_ped_combat.armour)
-
-            if nearby_ped_combat.settings.see_range then
-                PED.SET_PED_SEEING_RANGE(ped, nearby_ped_combat.see_range)
-            end
-
-            PED.SET_PED_HEARING_RANGE(ped, nearby_ped_combat.hear_range)
-            PED.SET_PED_ID_RANGE(ped, nearby_ped_combat.id_range)
-
-            if nearby_ped_combat.settings.peripheral_range then
-                PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(ped, nearby_ped_combat.peripheral_range)
-            end
-
-            PED.SET_PED_HIGHLY_PERCEPTIVE(ped, nearby_ped_combat.highly_perceptive)
-
-            if nearby_ped_combat.settings.peripheral_angle then
-                PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, nearby_ped_combat.peripheral_angle)
-                PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, nearby_ped_combat.peripheral_angle)
-                PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, nearby_ped_combat.peripheral_angle)
-                PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, nearby_ped_combat.peripheral_angle)
-                PED.SET_PED_VISUAL_FIELD_CENTER_ANGLE(ped, nearby_ped_combat.peripheral_angle)
-            end
-
-            PED.SET_PED_ACCURACY(ped, nearby_ped_combat.accuracy)
-            PED.SET_PED_SHOOT_RATE(ped, nearby_ped_combat.shoot_rate)
-            PED.SET_PED_COMBAT_ABILITY(ped, nearby_ped_combat.combat_ability)
-            PED.SET_PED_COMBAT_RANGE(ped, nearby_ped_combat.combat_range)
-
-            if nearby_ped_combat.settings.combat_movement then
-                PED.SET_PED_COMBAT_MOVEMENT(ped, nearby_ped_combat.combat_movement)
-            end
-
-            if nearby_ped_combat.settings.target_loss_response then
-                PED.SET_PED_TARGET_LOSS_RESPONSE(ped, nearby_ped_combat.target_loss_response)
-            end
-
-            PED.SET_PED_DIES_WHEN_INJURED(ped, nearby_ped_combat.dies_when_injured)
-
-            if nearby_ped_combat.remove_defensive_area then
-                PED.REMOVE_PED_DEFENSIVE_AREA(ped, false)
-            end
-
-            if nearby_ped_combat.stop_drop_fire then
-                PED.STOP_PED_WEAPON_FIRING_WHEN_DROPPED(ped)
-            end
-
-            if nearby_ped_combat.disable_injured_behaviour then
-                PED.DISABLE_PED_INJURED_ON_GROUND_BEHAVIOUR(ped)
-            end
-
-            for id, is_enable in pairs(nearby_ped_combat_attr.setting.toggles) do
-                if is_enable then
-                    local toggle = nearby_ped_combat_attr.toggles[id]
-                    PED.SET_PED_COMBAT_ATTRIBUTES(ped, id, is)
-                end
-            end
-
-            ----------
-            if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ped) then
-                mission = mission + 1
+                PED.SET_PED_CONFIG_FLAG(ped, 213, false)      -- PCF_ListensToSoundEvents
+                PED.SET_PED_CONFIG_FLAG(ped, 294, true)       -- PCF_DisableShockingEvents
+                PED.SET_PED_CONFIG_FLAG(ped, 315, false)      -- PCF_CheckLoSForSoundEvents
             else
-                nonmission = nonmission + 1
+                -- 强化
+                PED.SET_PED_SEEING_RANGE(ped, 500)
+                PED.SET_PED_HEARING_RANGE(ped, 500)
+                PED.SET_PED_ID_RANGE(ped, 500)
+
+                PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(ped, 100)
+                PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, 90)
+                PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 90)
+                PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, 90)
+                PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 90)
+                PED.SET_PED_VISUAL_FIELD_CENTER_ANGLE(ped, 90)
+
+                PED.SET_PED_HIGHLY_PERCEPTIVE(ped, true)
+
+                PED.SET_PED_COMBAT_ATTRIBUTES(ped, 14, true) -- CA_CAN_INVESTIGATE
+                PED.SET_PED_COMBAT_ATTRIBUTES(ped, 79, true) -- CA_WILL_GENERATE_DEAD_PED_SEEN_SCRIPT_EVENTS
+                PED.SET_PED_COMBAT_ATTRIBUTES(ped, 80, true) -- CA_USE_MAX_SENSE_RANGE_WHEN_RECEIVING_EVENTS
+
+                PED.SET_COMBAT_FLOAT(ped, 14, 100)           -- CCF_BULLET_IMPACT_DETECTION_RANGE
+                PED.SET_COMBAT_FLOAT(ped, 21, 100)           -- CCF_MAX_DISTANCE_TO_HEAR_EVENTS
+                PED.SET_COMBAT_FLOAT(ped, 22, 100)           -- CCF_MAX_DISTANCE_TO_HEAR_EVENTS_USING_LOS
+
+                PED.SET_PED_CONFIG_FLAG(ped, 213, true)      -- PCF_ListensToSoundEvents
+                PED.SET_PED_CONFIG_FLAG(ped, 294, false)     -- PCF_DisableShockingEvents
+                PED.SET_PED_CONFIG_FLAG(ped, 315, true)      -- PCF_CheckLoSForSoundEvents
             end
         end
-    end
-
-    if is_once then
-        util.toast("完成！\n任务NPC数量: " .. mission .. "\n非任务NPC数量: " .. nonmission)
-    end
-end
-
-menu.action(Nearby_Ped_Combat_options, "设置 (Once)", {}, "", function()
-    NearbyPed_Combat(true)
-end)
-menu.toggle_loop(Nearby_Ped_Combat_options, "设置 (Loop)", {}, "", function()
-    NearbyPed_Combat()
-end)
-
-
-
-
-
-----------------------------
--- 附近NPC 取消NPC执行的任务
-----------------------------
-local Nearby_Ped_ClearTask_options = menu.list(Nearby_Ped_options, "取消NPC执行的任务", {}, "乱用会导致任务无法进行")
-
-local nearby_ped_cleartask = {
-    exclude_mission = false,
-    only_combat = true,
-    clear_task = false,
-    ignore_events = true
-}
-
-menu.toggle(Nearby_Ped_ClearTask_options, "排除任务实体", {}, "", function(toggle)
-    nearby_ped_cleartask.exclude_mission = toggle
-end)
-menu.toggle(Nearby_Ped_ClearTask_options, "只作用于敌对NPC", {}, "", function(toggle)
-    nearby_ped_cleartask.only_combat = toggle
-end, true)
-menu.toggle(Nearby_Ped_ClearTask_options, "取消正在执行的任务", {}, "", function(toggle)
-    nearby_ped_cleartask.clear_task = toggle
-end)
-menu.toggle(Nearby_Ped_ClearTask_options, "忽略其它临时事件", {}, "开枪射击之类的事件",
-    function(toggle)
-        nearby_ped_cleartask.ignore_events = toggle
-    end, true)
-
-local function NearbyPed_ClearTask()
-    for _, ped in pairs(entities.get_all_peds_as_handles()) do
-        if is_player_ped(ped) then
-        elseif PED.IS_PED_DEAD_OR_DYING(ped) or ENTITY.IS_ENTITY_DEAD(ped) then
-        elseif nearby_ped_cleartask.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ped) then
-        elseif nearby_ped_cleartask.only_combat and not PED.IS_PED_IN_COMBAT(ped, players.user_ped()) then
-        else
-            if nearby_ped_cleartask.clear_task then
-                clear_ped_all_tasks(ped)
+        -- 武器能力
+        if combat_data.weapon > 1 then
+            if combat_data.weapon == 2 then
+                -- 弱化
+                PED.SET_PED_ACCURACY(ped, 0)
+                PED.SET_PED_SHOOT_RATE(ped, 0)
+                PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, false) -- CA_PERFECT_ACCURACY
+                PED.SET_COMBAT_FLOAT(ped, 6, 0)               -- CCF_WEAPON_ACCURACY
+            else
+                -- 强化
+                PED.SET_PED_ACCURACY(ped, 100)
+                PED.SET_PED_SHOOT_RATE(ped, 1000)
+                PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, true) -- CA_PERFECT_ACCURACY
+                PED.SET_COMBAT_FLOAT(ped, 6, 1.0)            -- CCF_WEAPON_ACCURACY
             end
-            PED.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, nearby_ped_cleartask.ignore_events)
-            TASK.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(ped, nearby_ped_cleartask.ignore_events)
+        end
+        -- 作战技能
+        if combat_data.ability > 1 then
+            PED.SET_PED_COMBAT_ABILITY(ped, combat_data.ability - 2)
+        end
+        -- 作战范围
+        if combat_data.range > 1 then
+            PED.SET_PED_COMBAT_RANGE(ped, combat_data.range - 2)
+        end
+        -- 作战走位
+        if combat_data.movement > 1 then
+            PED.SET_PED_COMBAT_MOVEMENT(ped, combat_data.movement - 2)
+        end
+        -- 失去目标时反应
+        if combat_data.target_loss_response > 1 then
+            PED.SET_PED_TARGET_LOSS_RESPONSE(ped, combat_data.target_loss_response - 2)
+        end
+        -- 其它行为
+        if Nearby_Ped.Combat.behavior == 2 then
+            PED.STOP_PED_WEAPON_FIRING_WHEN_DROPPED(ped)
+            PED.DISABLE_PED_INJURED_ON_GROUND_BEHAVIOUR(ped)
+            PED.REMOVE_PED_DEFENSIVE_AREA(ped, false)
         end
     end
-end
 
-menu.action(Nearby_Ped_ClearTask_options, "Clear Ped Tasks Immediately", {}, "", function()
-    for _, ped in pairs(entities.get_all_peds_as_handles()) do
-        if is_player_ped(ped) then
-        elseif PED.IS_PED_DEAD_OR_DYING(ped) or ENTITY.IS_ENTITY_DEAD(ped) then
-        elseif nearby_ped_cleartask.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ped) then
-        elseif nearby_ped_cleartask.only_combat and not PED.IS_PED_IN_COMBAT(ped, players.user_ped()) then
-        else
-            TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
-        end
-    end
-    util.toast("完成！")
+    util.yield(Nearby_Ped.setting.time_delay)
 end)
-menu.action(Nearby_Ped_ClearTask_options, "设置 (Once)", {}, "", function()
-    NearbyPed_ClearTask()
+
+menu.divider(Nearby_Ped_Combat, "设置")
+menu.slider(Nearby_Ped_Combat, "生命值", { "nearby_ped_combat_health" }, "数值低于100则不进行修改",
+    0, 10000, 100, 100, function(value)
+        Nearby_Ped.Combat.health = value
+    end)
+menu.list_select(Nearby_Ped_Combat, "侦查能力", {},
+    "视力、听力、识别、锥形视野、视野角度、高度警觉性 等等", {
+        { "无操作", {}, "" },
+        { "弱化", {}, "" },
+        { "强化", {}, "" },
+    }, 1, function(value)
+        Nearby_Ped.Combat.investigate = value
+    end)
+menu.list_select(Nearby_Ped_Combat, "武器能力", {},
+    "精准度、射击频率", {
+        { "无操作", {}, "" },
+        { "弱化", {}, "" },
+        { "强化", {}, "" },
+    }, 1, function(value)
+        Nearby_Ped.Combat.weapon = value
+    end)
+menu.list_select(Nearby_Ped_Combat, "作战技能", {}, "", {
+    "无操作", "弱", "普通", "专业"
+}, 1, function(value)
+    Nearby_Ped.Combat.ability = value
 end)
-menu.toggle_loop(Nearby_Ped_ClearTask_options, "设置 (Loop)", {}, "", function()
-    NearbyPed_ClearTask()
+menu.list_select(Nearby_Ped_Combat, "作战范围", {}, "", {
+    "无操作", "近", "中等", "远", "非常远"
+}, 1, function(value)
+    Nearby_Ped.Combat.range = value
 end)
+menu.list_select(Nearby_Ped_Combat, "作战走位", {}, "", {
+    "无操作", "站立", "防卫", "会前进", "会后退"
+}, 1, function(value)
+    Nearby_Ped.Combat.movement = value
+end)
+menu.list_select(Nearby_Ped_Combat, "失去目标时反应", {}, "", {
+    "无操作", "退出战斗", "从不失去目标", "寻找目标"
+}, 1, function(value)
+    Nearby_Ped.Combat.target_loss_response = value
+end)
+menu.list_select(Nearby_Ped_Combat, "其它行为", {},
+    "武器掉落时走火、受伤时在地面打滚、防卫区域", {
+        { "无操作", {}, "" },
+        { "禁用", {}, "" },
+    }, 1, function(value)
+        Nearby_Ped.Combat.behavior = value
+    end)
+
 
 --#endregion Nearby Ped
 
@@ -2028,7 +1945,7 @@ function nearby_area_shoot.checkVehicle(vehicle)
         return false
     end
 
-    if not IS_PLAYER_VEHICLE(vehicle) then
+    if not is_player_vehicle(vehicle) then
         local target_select = nearby_area_shoot.target.vehicle
         if target_select == 2 then
             return true
@@ -2312,7 +2229,7 @@ function nearby_area_explosion.checkVehicle(vehicle)
         return false
     end
 
-    if not IS_PLAYER_VEHICLE(vehicle) then
+    if not is_player_vehicle(vehicle) then
         local target_select = nearby_area_explosion.target.vehicle
         if target_select == 2 then
             return true

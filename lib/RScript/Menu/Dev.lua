@@ -59,10 +59,17 @@ menu.click_slider_float(Dev_options, "SET_PICKUP_GENERATION_RANGE_MULTIPLIER", {
 menu.action(Dev_options, "FORCE_PED_AI_AND_ANIMATION_UPDATE", {}, "", function()
     PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(players.user_ped())
 end)
-menu.action(Dev_options, "关闭恐霸电脑", { "shut_terrorbyte" }, "", function()
-    if IS_SCRIPT_RUNNING("appHackerTruck") then
-        SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 0)
-        MISC.TERMINATE_ALL_SCRIPTS_WITH_THIS_NAME("appHackerTruck")
+menu.action(Dev_options, "关闭电脑界面", { "shut_computer" }, "", function()
+    local script_list = {
+        "appbunkerbusiness", "appsmuggler", "appbusinesshub", "appbikerbusiness",
+        "apparcadebusinesshub", "apphackertruck", "appfixersecurity", "appavengeroperations",
+        "appcovertops"
+    }
+    for key, script in pairs(script_list) do
+        if IS_SCRIPT_RUNNING(script) then
+            SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 0)
+            MISC.TERMINATE_ALL_SCRIPTS_WITH_THIS_NAME(script)
+        end
     end
 end)
 

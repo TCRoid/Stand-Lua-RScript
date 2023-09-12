@@ -172,7 +172,7 @@ local Player_options = function(pid)
                             i = i + 1
                         end
                     elseif Type == "Vehicle" and ENTITY.IS_ENTITY_A_VEHICLE(ent) then
-                        if not IS_PLAYER_VEHICLE(ent) then
+                        if not is_player_vehicle(ent) then
                             RequestControl(ent)
                             TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
                             i = i + 1
