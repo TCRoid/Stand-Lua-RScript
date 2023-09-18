@@ -1820,7 +1820,7 @@ menu.action(Contract_Dre, "戴维斯: 传送到高空", {}, "甩掉摩托帮\n�
         ENTITY.FREEZE_ENTITY_POSITION(vehicle, true)
 
         local coords = ENTITY.GET_ENTITY_COORDS(vehicle)
-        TELEPORT(coords.x, coords.y, 1500.0)
+        TELEPORT(coords.x, coords.y, 1600.0)
     end
 end)
 menu.action(Contract_Dre, "巴勒帮: P 无敌", {}, "避免被误杀", function()
@@ -2198,29 +2198,39 @@ end)
 
 menu.divider(Franklin_Payphone_Tool, "")
 
-local Franklin_PayphoneHit_MenuCreated = false
-local Franklin_PayphoneHit
-Franklin_PayphoneHit = menu.list(Franklin_Payphone_Tool, "电话暗杀任务触发概率", {}, "概率改为0可禁止触发对应任务",
-    function()
-        if not Franklin_PayphoneHit_MenuCreated then
-            Transition_Handler.Globals.Payphone.Hit = {}
+local franklin_payphone_missions = {
+    hit = {},
+}
 
-            for key, offset in pairs(Globals.Payphone.Hit_Offsets) do
-                local name = Globals.Payphone.Hit_Names[key]
-                local global = 262145 + offset
-                Transition_Handler.Globals.Payphone.Hit[global] = 1.0
+franklin_payphone_missions.menu_hit = menu.list(Franklin_Payphone_Tool, "禁用电话暗杀任务", {}, "", function()
+    if not franklin_payphone_missions.hit.created then
+        Transition_Handler.Globals.Payphone.Hit = {}
 
-                menu.slider_float(Franklin_PayphoneHit, name, { "payphone_hit_weight" .. key }, "",
-                    0, 100, 100, 10, function(value)
-                        value = value * 0.01
-                        SET_FLOAT_GLOBAL(global, value)
-                        Transition_Handler.Globals.Payphone.Hit[global] = value
-                    end)
+        franklin_payphone_missions.hit.toggle_menus = {}
+        menu.toggle(franklin_payphone_missions.menu_hit, "全部开/关", {}, "", function(toggle)
+            for key, value in pairs(franklin_payphone_missions.hit.toggle_menus) do
+                menu.set_value(value, toggle)
             end
+        end)
 
-            Franklin_PayphoneHit_MenuCreated = true
+        for key, offset in pairs(Globals.Payphone.Hit_Offsets) do
+            local name = Globals.Payphone.Hit_Names[key]
+            local global = 262145 + offset
+
+            franklin_payphone_missions.hit.toggle_menus[global] = menu.toggle(franklin_payphone_missions.menu_hit,
+                name, {}, "", function(toggle)
+                    if toggle then
+                        SET_FLOAT_GLOBAL(global, 0)
+                    else
+                        SET_FLOAT_GLOBAL(global, 1)
+                    end
+                    Transition_Handler.Globals.Payphone.Hit[global] = toggle
+                end)
         end
-    end)
+
+        franklin_payphone_missions.hit.created = true
+    end
+end)
 
 
 menu.action(Franklin_Payphone, "传送到 电话亭", { "tppayphone" }, "需要地图上出现电话亭标志",

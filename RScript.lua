@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("2944b", "init")
 
-local SCRIPT_VERSION <const> = "2023/9/12"
+local SCRIPT_VERSION <const> = "2023/9/18"
 
 local SUPPORT_GTAO <const> = 1.67
 
@@ -636,7 +636,8 @@ util.on_transition_finished(function()
         SET_INT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_TYPE_REFRESH_TIME, t_globals.SpecialCargo.Type_Refresh_Time)
     end
     if t_globals.SpecialCargo.Special_Item_Chance and t_globals.SpecialCargo.Special_Item_Chance ~= 0.1 then
-        SET_INT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE, t_globals.SpecialCargo.Special_Item_Chance)
+        SET_INT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE,
+            t_globals.SpecialCargo.Special_Item_Chance)
     end
 
     ----- Bunker -----
@@ -710,8 +711,8 @@ util.on_transition_finished(function()
     ----- Payphone -----
     if t_globals.Payphone.Hit then
         for global, value in pairs(t_globals.Payphone.Hit) do
-            if value ~= 1.0 then
-                SET_FLOAT_GLOBAL(global, value)
+            if value then
+                SET_FLOAT_GLOBAL(global, 0)
             end
         end
     end

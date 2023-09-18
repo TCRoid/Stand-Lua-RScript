@@ -2,11 +2,10 @@
 ------------ 玩家选项 -----------
 --------------------------------
 
-local Player_options = function(pid)
+local Player_Options = function(pid)
     local player_menu_root = menu.list(menu.player_root(pid), "RScript", {}, "")
 
     menu.divider(player_menu_root, "RScript")
-
 
 
 
@@ -149,104 +148,102 @@ local Player_options = function(pid)
 
 
 
-    -------------------
-    -- 传送所有实体
-    -------------------
-    local Trolling_tp_entities = menu.list(Trolling_options, "传送所有实体", {}, "")
+    ----------------------
+    -- 传送实体到此玩家
+    ----------------------
+    local TP_Entities = menu.list(Trolling_options, "传送实体到此玩家", {}, "")
 
-    local player_tp_entities = {
-        delay = 100, -- ms
-        is_running = false,
+    local tp_entities_data = {
+        running = false,
+
+        type_select = 1,
         exclude_mission = true,
+        delay = 100,
+        offset_x = 0.0,
+        offset_y = 0.0,
+        offset_z = 0.0,
     }
-    local function tp_entities_to_player(entity_list, player_ped, Type)
-        local i = 0
-        for k, ent in pairs(entity_list) do
-            if player_tp_entities.is_running then
-                if player_tp_entities.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
-                else
-                    if Type == "Ped" and ENTITY.IS_ENTITY_A_PED(ent) then
-                        if not is_player_ped(ent) then
+
+    menu.list_select(TP_Entities, "实体类型", {}, "", {
+        "NPC", "载具", "物体", "拾取物"
+    }, 1, function(value)
+        tp_entities_data.type_select = value
+    end)
+
+    menu.action(TP_Entities, "传送实体到此玩家", {}, "附近实体", function()
+        if tp_entities_data.running then
+            util.toast("上次的还未传送完成呢")
+        else
+            if players.exists(pid) then
+                tp_entities_data.running = true
+                local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
+
+                local type_text = "NPC"
+                local entity_list = entities.get_all_peds_as_handles()
+                if tp_entities_data.type_select == 2 then
+                    type_text = "载具"
+                    entity_list = entities.get_all_vehicles_as_handles()
+                elseif tp_entities_data.type_select == 3 then
+                    type_text = "物体"
+                    entity_list = entities.get_all_objects_as_handles()
+                elseif tp_entities_data.type_select == 4 then
+                    type_text = "拾取物"
+                    entity_list = entities.get_all_pickups_as_handles()
+                end
+
+                local tp_num = 0
+                for _, ent in pairs(entity_list) do
+                    if tp_entities_data.running then
+                        if tp_entities_data.exclude_mission and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
+                        elseif ENTITY.IS_ENTITY_A_PED(ent) and is_player_ped(ent) then
+                        elseif ENTITY.IS_ENTITY_A_VEHICLE(ent) and is_player_vehicle(ent) then
+                        else
                             RequestControl(ent)
-                            TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
-                            i = i + 1
+                            TP_ENTITY_TO_ENTITY(ent, player_ped,
+                                tp_entities_data.offset_x, tp_entities_data.offset_y, tp_entities_data.offset_z)
+
+                            if hasControl(ent) then
+                                tp_num = tp_num + 1
+                            end
                         end
-                    elseif Type == "Vehicle" and ENTITY.IS_ENTITY_A_VEHICLE(ent) then
-                        if not is_player_vehicle(ent) then
-                            RequestControl(ent)
-                            TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
-                            i = i + 1
-                        end
-                    elseif Type == "Object" and ENTITY.IS_ENTITY_AN_OBJECT(ent) then
-                        RequestControl(ent)
-                        TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
-                        i = i + 1
-                    elseif Type == "Pickup" and IS_ENTITY_A_PICKUP(ent) then
-                        RequestControl(ent)
-                        TP_ENTITY_TO_ENTITY(ent, player_ped, 0.0, 0.0, 2.0)
-                        i = i + 1
+                        util.yield(tp_entities_data.delay)
+                    else
+                        break
                     end
                 end
-                util.yield(player_tp_entities.delay)
-            else
-                -- 停止传送
-                util.toast("完成!\n" .. Type .. " 数量: " .. i)
-                return false
+
+                util.toast("传送实体到玩家 " .. players.get_name(pid) ..
+                    " 完成\n" .. type_text .. " 成功传送数量: " .. tp_num)
+                tp_entities_data.running = false
             end
         end
-        -- 完成传送
-        util.toast("完成!\n" .. Type .. " 数量: " .. i)
-        player_tp_entities.is_running = false
-        return true
-    end
+    end)
+    menu.action(TP_Entities, "停止传送", {}, "", function()
+        tp_entities_data.running = false
+    end)
 
-    menu.slider(Trolling_tp_entities, "传送延时", { "tp_entities_delay" }, "单位: ms", 0, 5000, 100, 100,
-        function(value)
-            player_tp_entities.delay = value
-        end)
-    menu.toggle(Trolling_tp_entities, "排除任务实体", {}, "", function()
-        player_tp_entities.exclude_mission = value
+    menu.divider(TP_Entities, "设置")
+    menu.toggle(TP_Entities, "排除任务实体", {}, "", function()
+        tp_entities_data.exclude_mission = value
     end, true)
+    menu.slider(TP_Entities, "传送延时", { "tp_entities_delay" }, "单位: ms",
+        0, 5000, 100, 100, function(value)
+            tp_entities_data.delay = value
+        end)
+    menu.divider(TP_Entities, "偏移")
+    menu.slider_float(TP_Entities, "前/后", { "tp_entities_offset_y" }, "",
+        -10000, 1000, 0, 50, function(value)
+            tp_entities_data.offset_y = value * 0.01
+        end)
+    menu.slider_float(TP_Entities, "左/右", { "tp_entities_offset_x" }, "",
+        -10000, 1000, 0, 50, function(value)
+            tp_entities_data.offset_x = value * 0.01
+        end)
+    menu.slider_float(TP_Entities, "上/下", { "tp_entities_offset_z" }, "",
+        -10000, 1000, 0, 50, function(value)
+            tp_entities_data.offset_z = value * 0.01
+        end)
 
-    menu.action(Trolling_tp_entities, "传送所有 行人 到此玩家", {}, "", function()
-        if player_tp_entities.is_running then
-            util.toast("上次的还未传送完成呢")
-        else
-            player_tp_entities.is_running = true
-            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
-            tp_entities_to_player(entities.get_all_peds_as_handles(), player_ped, "Ped")
-        end
-    end)
-    menu.action(Trolling_tp_entities, "传送所有 载具 到此玩家", {}, "", function()
-        if player_tp_entities.is_running then
-            util.toast("上次的还未传送完成呢")
-        else
-            player_tp_entities.is_running = true
-            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
-            tp_entities_to_player(entities.get_all_vehicles_as_handles(), player_ped, "Vehicle")
-        end
-    end)
-    menu.action(Trolling_tp_entities, "传送所有 物体 到此玩家", {}, "", function()
-        if player_tp_entities.is_running then
-            util.toast("上次的还未传送完成呢")
-        else
-            player_tp_entities.is_running = true
-            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
-            tp_entities_to_player(entities.get_all_objects_as_handles(), player_ped, "Object")
-        end
-    end)
-    menu.action(Trolling_tp_entities, "传送所有 拾取物 到此玩家", {}, "", function()
-        if player_tp_entities.is_running then
-            util.toast("上次的还未传送完成呢")
-        else
-            player_tp_entities.is_running = true
-            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
-            tp_entities_to_player(entities.get_all_pickups_as_handles(), player_ped, "Pickup")
-        end
-    end)
-    menu.action(Trolling_tp_entities, "停止传送", {}, "", function()
-        player_tp_entities.is_running = false
-    end)
 
 
     --------------------
@@ -310,6 +307,7 @@ local Player_options = function(pid)
             end
         end
     end)
+
 
 
     --------------------
@@ -403,6 +401,7 @@ local Player_options = function(pid)
     end)
 
 
+
     menu.toggle_loop(Trolling_options, "循环举报", { "rs_report" }, "", function()
         if pid ~= players.user() then
             local player_name = players.get_name(pid)
@@ -431,43 +430,44 @@ local Player_options = function(pid)
     local Friendly_options = menu.list(player_menu_root, "友好选项", {}, "")
 
 
-    local Friendly_Generete_Pickup = menu.list(Friendly_options, "生成拾取物", {}, "似乎无用，只有你能看见")
-    menu.action(Friendly_Generete_Pickup, "生成医药包", {}, "", function()
+    local Generete_Pickup = menu.list(Friendly_options, "生成拾取物", {}, "仅自己可见")
+
+    menu.action(Generete_Pickup, "生成医药包", {}, "", function()
         local modelHash = util.joaat("prop_ld_health_pack")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
         local pickupHash = 2406513688
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 100)
     end)
-    menu.action(Friendly_Generete_Pickup, "生成护甲", {}, "", function()
+    menu.action(Generete_Pickup, "生成护甲", {}, "", function()
         local modelHash = util.joaat("prop_armour_pickup")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
         local pickupHash = 1274757841
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 100)
     end)
-    menu.action(Friendly_Generete_Pickup, "生成零食(PQ豆)", {}, "", function()
+    menu.action(Generete_Pickup, "生成零食(PQ豆)", {}, "", function()
         local modelHash = util.joaat("PROP_CHOC_PQ")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
         local pickupHash = 483577702
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 30)
     end)
-    menu.action(Friendly_Generete_Pickup, "生成降落伞", {}, "", function()
+    menu.action(Generete_Pickup, "生成降落伞", {}, "", function()
         local modelHash = util.joaat("p_parachute_s_shop")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
         local pickupHash = 1735599485
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 2)
     end)
-    menu.action(Friendly_Generete_Pickup, "生成呼吸器", {}, "", function()
+    menu.action(Generete_Pickup, "生成呼吸器", {}, "", function()
         local modelHash = util.joaat("PROP_LD_HEALTH_PACK")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
         local pickupHash = 3889104844
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 20)
     end)
-    menu.action(Friendly_Generete_Pickup, "生成火神机枪", {}, "", function()
+    menu.action(Generete_Pickup, "生成火神机枪", {}, "", function()
         local modelHash = util.joaat("W_MG_Minigun")
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
@@ -478,6 +478,7 @@ local Player_options = function(pid)
         pickupHash = 4065984953
         Create_Network_Pickup(pickupHash, coords.x, coords.y, coords.z, modelHash, 9999)
     end)
+
 
 
     menu.toggle_loop(Friendly_options, "循环称赞", {}, "", function()
@@ -530,15 +531,14 @@ local Player_options = function(pid)
             util.toast("Copied!\n" .. num)
         end)
 
-    local EntityType_ListItem = {
+
+    menu.list_select(Custom_Generate_Entity, "实体类型", {}, "", {
         { "Ped" },     --1
         { "Vehicle" }, --2
         { "Object" },  --3
-    }
-    menu.list_select(Custom_Generate_Entity, "实体类型", {}, "", EntityType_ListItem, 1,
-        function(index)
-            custom_generate_entity_data.type = index
-        end)
+    }, 1, function(index)
+        custom_generate_entity_data.type = index
+    end)
     menu.slider_float(Custom_Generate_Entity, "左/右", { "generate_custom_model_x" }, "", -10000, 10000, 0, 50,
         function(value)
             custom_generate_entity_data.x = value * 0.01
@@ -676,5 +676,5 @@ end
 
 
 
-players.on_join(Player_options)
+players.on_join(Player_Options)
 players.dispatch_on_join()

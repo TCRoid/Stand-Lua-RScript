@@ -512,7 +512,8 @@ local remote_computer_list = {
     { menu_name = "恐霸电脑", script = "apphackertruck", command = "terrorbyte" },
     { menu_name = "事务所电脑", script = "appfixersecurity", command = "agency" },
     { menu_name = "复仇者操作终端", script = "appavengeroperations", command = "avenger" },
-    -- { menu_name = "机动作战指挥中心", script = "appcovertops" },
+    -- { menu_name = "办公室电脑", script = "appsecuroserv", command = "office" },
+    -- { menu_name = "机动作战指挥中心", script = "appcovertops", command = "moc"  },
 }
 
 for _, item in pairs(remote_computer_list) do

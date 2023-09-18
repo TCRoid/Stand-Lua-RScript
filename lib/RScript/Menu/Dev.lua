@@ -59,6 +59,7 @@ menu.click_slider_float(Dev_options, "SET_PICKUP_GENERATION_RANGE_MULTIPLIER", {
 menu.action(Dev_options, "FORCE_PED_AI_AND_ANIMATION_UPDATE", {}, "", function()
     PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(players.user_ped())
 end)
+
 menu.action(Dev_options, "关闭电脑界面", { "shut_computer" }, "", function()
     local script_list = {
         "appbunkerbusiness", "appsmuggler", "appbusinesshub", "appbikerbusiness",
@@ -72,8 +73,6 @@ menu.action(Dev_options, "关闭电脑界面", { "shut_computer" }, "", function
         end
     end
 end)
-
-
 
 local radius_draw_sphere = 10.0
 local dev_draw_sphere = menu.slider_float(Dev_options, "DRAW_MARKER_SPHERE", { "radius_draw_sphere" }, "",
@@ -89,9 +88,7 @@ end)
 
 
 
---------------------
--- 其它
---------------------
+
 menu.toggle_loop(Dev_options, "GET_IS_TASK_ACTIVE", { "show_active_task" }, "", function()
     for i = 0, 530, 1 do
         if TASK.GET_IS_TASK_ACTIVE(players.user_ped(), i) then
@@ -142,6 +139,22 @@ menu.toggle_loop(Dev_options, "Event Network Entity Damage", {}, "", function()
                 util.toast(text, TOAST_ALL)
             end
         end
+    end
+end)
+
+
+menu.toggle_loop(Dev_options, "Log Content Info", { "log_content_info" }, "", function()
+    local content_id = NETWORK.UGC_GET_CONTENT_ID(0)
+    if content_id ~= nil then
+        local text = "Content Name: " .. tostring(NETWORK.UGC_GET_CONTENT_NAME(0)) ..
+            "\nContent ID: " .. content_id ..
+            "\nContent Path: " .. tostring(NETWORK.UGC_GET_CONTENT_PATH(0, 0)) ..
+            "\nRoot Content ID: " .. tostring(NETWORK.UGC_GET_ROOT_CONTENT_ID(0)) ..
+            "\nUser: " .. tostring(NETWORK.UGC_GET_CONTENT_USER_NAME(0)) ..
+            " (ID: " .. tostring(NETWORK.UGC_GET_CONTENT_USER_ID(0)) .. ")" ..
+            "\nFile Version: " .. tostring(NETWORK.UGC_GET_CONTENT_FILE_VERSION(0, 0))
+
+        util.toast(text, TOAST_ALL)
     end
 end)
 

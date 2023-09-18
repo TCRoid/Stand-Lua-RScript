@@ -11,11 +11,12 @@ function TELEPORT(x, y, z, heading)
     if ent == INVALID_GUID then
         ent = players.user_ped()
     end
-    SET_ENTITY_COORDS(ent, v3.new(x, y, z))
 
     if heading ~= nil then
         ENTITY.SET_ENTITY_HEADING(ent, heading)
     end
+
+    SET_ENTITY_COORDS(ent, v3.new(x, y, z))
 end
 
 ---@param coords v3
@@ -25,11 +26,12 @@ function TELEPORT2(coords, heading)
     if ent == INVALID_GUID then
         ent = players.user_ped()
     end
-    SET_ENTITY_COORDS(ent, coords)
 
     if heading ~= nil then
         ENTITY.SET_ENTITY_HEADING(ent, heading)
     end
+
+    SET_ENTITY_COORDS(ent, coords)
 end
 
 ---设置/获取玩家的朝向
@@ -1303,6 +1305,22 @@ end
 -----------------------------
 -- Blip Functions
 -----------------------------
+
+---获取标记点实体
+---@param blip Blip
+---@return Entity
+function get_entity_from_blip(blip)
+    if not HUD.DOES_BLIP_EXIST(blip) then
+        return 0
+    end
+
+    local entity = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+    if not ENTITY.DOES_ENTITY_EXIST(entity) then
+        return 0
+    end
+
+    return entity
+end
 
 ---获取标记点坐标
 ---@param blip Blip
