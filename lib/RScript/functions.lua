@@ -45,6 +45,7 @@ function PLAYER_HEADING(heading)
 
     if heading ~= nil then
         ENTITY.SET_ENTITY_HEADING(ent, heading)
+        return heading
     end
 
     return ENTITY.GET_ENTITY_HEADING(ent)
@@ -113,6 +114,7 @@ function TP_INTO_VEHICLE(vehicle, door, driver)
         end
         --tp into
         VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
+        VEHICLE.SET_HELI_BLADES_FULL_SPEED(vehicle)
         PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, -1)
         --door
         if door == "delete" then
@@ -954,6 +956,7 @@ function strong_vehicle(vehicle)
         VEHICLE.SET_INCREASE_WHEEL_CRUSH_DAMAGE(vehicle, false)
         VEHICLE.SET_DISABLE_DAMAGE_WITH_PICKED_UP_ENTITY(vehicle, 1)
         VEHICLE.SET_VEHICLE_USES_MP_PLAYER_DAMAGE_MULTIPLIER(vehicle, 1)
+        VEHICLE.SET_FORCE_VEHICLE_ENGINE_DAMAGE_BY_BULLET(vehicle, false)
 
         --Explode
         VEHICLE.SET_VEHICLE_NO_EXPLOSION_DAMAGE_FROM_DRIVER(vehicle, true)
@@ -1880,6 +1883,16 @@ function shoot_ped_head(targetPed, weaponHash, owner)
         owner or 0,
         false, false, 1000,
         target_ped_veh, targetPed)
+end
+
+---玩家爆炸敌对NPC(无声)
+function explode_hostile_peds()
+    for _, ped in pairs(entities.get_all_peds_as_handles()) do
+        if IS_HOSTILE_ENTITY(ped) then
+            local coords = ENTITY.GET_ENTITY_COORDS(ped)
+            add_owned_explosion(players.user_ped(), coords, 4, { isAudible = false })
+        end
+    end
 end
 
 ---玩家爆炸敌对载具(无声)

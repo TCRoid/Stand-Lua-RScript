@@ -750,18 +750,13 @@ menu.action(Air_Freight, "航空: 毁掉泰坦号", {}, "直接任务失败", fu
     end
 end)
 
-menu.action(Air_Freight, "爆炸 所有敌对载具", { "veh_hostile_explode" }, "", function()
+menu.action(Air_Freight, "爆炸 所有敌对载具", {}, "", function()
     explode_hostile_vehicles()
 end)
-menu.action(Air_Freight, "爆炸 所有敌对NPC", { "ped_hostile_explode" }, "", function()
-    for _, ped in pairs(entities.get_all_peds_as_handles()) do
-        if IS_HOSTILE_ENTITY(ped) then
-            local coords = ENTITY.GET_ENTITY_COORDS(ped)
-            add_owned_explosion(players.user_ped(), coords, 4, { isAudible = false })
-        end
-    end
+menu.action(Air_Freight, "爆炸 所有敌对NPC", {}, "", function()
+    explode_hostile_peds()
 end)
-menu.action(Air_Freight, "爆炸 所有敌对物体", { "obj_hostile_explode" }, "", function()
+menu.action(Air_Freight, "爆炸 所有敌对物体", {}, "", function()
     explode_hostile_objects()
 end)
 
@@ -1104,7 +1099,7 @@ menu.action(Acid_Lab, "敌痛息仓库: 传送到 时间表", {}, "", function()
         end
     end
 end)
-menu.action(Acid_Lab, "敌痛息仓库: 厢形车 传送到我", {}, "", function()
+menu.action(Acid_Lab, "敌痛息仓库: 厢型车 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, 331463704)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -1134,6 +1129,16 @@ menu.action(Acid_Lab, "空投地点: 原材料 传送到我", {}, "", function()
     end
 end)
 
+menu.divider(Acid_Lab, "出售货物")
+menu.action(Acid_Lab, "致幻剂包裹 投进箱子", {}, "", function()
+    local blip = HUD.GET_CLOSEST_BLIP_INFO_ID(1)
+    if HUD.DOES_BLIP_EXIST(blip) then
+        local coords = HUD.GET_BLIP_COORDS(blip)
+        shoot_single_bullet(coords, coords,
+            { weaponHash = 4159824478, owner = players.user_ped() })
+    end
+end)
+
 --#endregion
 
 
@@ -1150,10 +1155,10 @@ local Cayo_Perico = menu.list(Preparation_Mission, "佩里科岛抢劫", {}, "")
 menu.action(Cayo_Perico, "传送到虎鲸 任务面板", { "tpin_kosatka" },
     "需要提前叫出虎鲸", function()
         local blip = HUD.GET_NEXT_BLIP_INFO_ID(760)
-        if not HUD.DOES_BLIP_EXIST(blip) then
-            util.toast("未在地图上找到虎鲸")
-        else
+        if PLAYER_INTERIOR() == 281345 or HUD.DOES_BLIP_EXIST(blip) then
             TELEPORT(1561.2369, 385.8771, -49.689915, 175.0001)
+        else
+            util.toast("未在地图上找到虎鲸")
         end
     end)
 menu.action(Cayo_Perico, "传送到虎鲸 外面甲板", { "tpout_kosatka" },
@@ -1162,9 +1167,9 @@ menu.action(Cayo_Perico, "传送到虎鲸 外面甲板", { "tpout_kosatka" },
         if not HUD.DOES_BLIP_EXIST(blip) then
             util.toast("未在地图上找到虎鲸")
         else
-            local pos = HUD.GET_BLIP_COORDS(blip)
-            local heading = HUD.GET_BLIP_ROTATION(blip)
-            TELEPORT(pos.x - 5.25, pos.y + 30.84, pos.z + 3, heading + 180)
+            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+            TP_TO_ENTITY(ent, 0.0, 31.0, 4.0)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent, 180)
         end
     end)
 
@@ -1190,20 +1195,22 @@ menu.action(Cayo_Perico, "传送到 信号塔", {}, "", function()
 end)
 
 menu.divider(Cayo_Perico, "前置")
-menu.action(Cayo_Perico, "长崎 传送到我并坐进尖锥魅影", {},
-    "生成并坐进尖锥魅影 传送长崎到后面 会直接连接", function()
-        local entity_list = get_entities_by_hash("vehicle", true, -1352468814)
+menu.action(Cayo_Perico, "长鳍 传送到目的地", {}, "先传送到警局踩点\n获取包裹,传送到目的地并坐进卡车",
+    function()
+        local entity_list = get_entities_by_hash("pickup", true, 528555233)
         if next(entity_list) ~= nil then
-            local modelHash = util.joaat("phantom2")
-            local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(players.user_ped(), 0.0, 2.0, 0.0)
-            local veh = Create_Network_Vehicle(modelHash, coords.x, coords.y, coords.z, PLAYER_HEADING())
-
-            TP_INTO_VEHICLE(veh)
-
             for k, ent in pairs(entity_list) do
-                TP_TO_ME(ent, 0.0, -10.0, 0.0)
-                SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
+                detach_product_entity(ent)
+                OBJECT.ATTACH_PORTABLE_PICKUP_TO_PED(ent, players.user_ped())
             end
+        end
+
+        entity_list = get_entities_by_hash("vehicle", true, -1649536104)
+        if next(entity_list) ~= nil then
+            local ent = entity_list[1]
+            SET_ENTITY_COORDS(ent, v3(-154.88900756836, -2663.2165527344, 5.9994849128723))
+            ENTITY.SET_ENTITY_HEADING(ent, 0)
+            PED.SET_PED_INTO_VEHICLE(players.user_ped(), ent, -1)
         end
     end)
 menu.action(Cayo_Perico, "传送到 保险箱密码", {}, "赌场别墅内的保安队长", function()
@@ -1214,7 +1221,7 @@ menu.action(Cayo_Perico, "传送到 保险箱密码", {}, "赌场别墅内的保
         end
     end
 end)
-menu.action(Cayo_Perico, "等离子切割枪包裹 传送到我", {}, "", function()
+menu.action(Cayo_Perico, "等离子切割枪 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, -802406134)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -1258,6 +1265,56 @@ menu.action(Cayo_Perico, "武器 炸掉女武神", {}, "不再等它慢慢的飞
 end)
 
 menu.divider(Cayo_Perico, "")
+
+local Cayo_Perico_Presets = menu.list(Cayo_Perico, "其它前置", {}, "")
+menu.divider(Cayo_Perico_Presets, "载具: 虎鲸")
+menu.action(Cayo_Perico_Presets, "传送到 潜水艇", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, -1428975160)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, -8.0, 0.0, 9.0)
+        end
+    end
+end)
+menu.action(Cayo_Perico_Presets, "传送到 声呐干扰器", {}, "", function()
+    local entity_list = get_entities_by_hash("pickup", true, -1106317414)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.0, -0.5, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
+        end
+    end
+end)
+
+menu.divider(Cayo_Perico_Presets, "载具: 阿尔科诺斯特")
+menu.action(Cayo_Perico_Presets, "传送到 笔记本电脑", {}, "", function()
+    local entity_list = get_entities_by_hash("object", true, 281564928)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_TO_ENTITY(ent, 0.0, -0.5, 0.0)
+            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
+        end
+    end
+end)
+menu.action(Cayo_Perico_Presets, "传送进 阿尔科诺斯特", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, -365873403)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_INTO_VEHICLE(ent)
+        end
+    end
+end)
+
+menu.divider(Cayo_Perico_Presets, "载具: 巡逻艇")
+menu.action(Cayo_Perico_Presets, "传送进 巡逻艇", {}, "", function()
+    local entity_list = get_entities_by_hash("vehicle", true, -276744698)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            TP_INTO_VEHICLE(ent, "", "delete")
+        end
+    end
+end)
+
 local Cayo_Perico_Final = menu.list(Cayo_Perico, "终章", {}, "")
 
 menu.divider(Cayo_Perico_Final, "豪宅外")
@@ -1729,17 +1786,18 @@ casino_vault_trolley_menu = menu.list_action(Diamond_Casino_Final, "金库内传
 
 local Contract_Dre = menu.list(Preparation_Mission, "别惹德瑞", {}, "")
 
+--- Nightlife Leak ---
 menu.divider(Contract_Dre, "夜生活泄密")
 menu.action(Contract_Dre, "夜总会: 传送到 录像带", {}, "", function()
     if PLAYER_INTERIOR() == 271617 then
         TELEPORT(-1617.9883, -3013.7363, -75.20509, 203.7907)
     end
 end)
-menu.action(Contract_Dre, "船坞: 传送到 船里", {}, "绿色的船", function()
-    local entity_list = get_entities_by_hash("vehicle", true, 908897389)
+menu.action(Contract_Dre, "船坞: 传送到 游艇", {}, "不用去开船", function()
+    local entity_list = get_entities_by_hash("object", true, 1321190118)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
-            TP_INTO_VEHICLE(ent)
+            TP_TO_ENTITY(ent, 0.0, -2.0, 0.0)
         end
     end
 end)
@@ -1757,24 +1815,25 @@ menu.action(Contract_Dre, "夜生活泄密: 传送到 抢夺电脑", {}, "", fun
     end
 end)
 
+--- High Society Leak ---
 menu.divider(Contract_Dre, "上流社会泄密")
-menu.action(Contract_Dre, "乡村俱乐部: 炸掉礼车", {}, "", function()
-    local entity_list = get_entities_by_hash("vehicle", true, -420911112)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            local pos = ENTITY.GET_ENTITY_COORDS(ent)
-            add_owned_explosion(players.user_ped(), pos)
+menu.action(Contract_Dre, "乡村俱乐部: 门禁 传送到我", {}, "会先炸掉礼车,然后将车内NPC传送到我",
+    function()
+        local entity_list = get_entities_by_hash("vehicle", true, -420911112)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                local pos = ENTITY.GET_ENTITY_COORDS(ent)
+                add_owned_explosion(players.user_ped(), pos)
+            end
         end
-    end
-end)
-menu.action(Contract_Dre, "乡村俱乐部: 门禁 传送到我", {}, "车内NPC", function()
-    local entity_list = get_entities_by_hash("ped", true, -912318012)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            TP_TO_ME(ent, 0.0, 2.0, 0.0)
+        util.yield(500)
+        local entity_list = get_entities_by_hash("ped", true, -912318012)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                TP_TO_ME(ent, 0.0, 2.0, 0.0)
+            end
         end
-    end
-end)
+    end)
 menu.action(Contract_Dre, "宾客名单: 传送到 律师", {}, "同时设置和NPC关系为友好,避免被误杀",
     function()
         local entity_list = get_entities_by_hash("ped", true, 600300561)
@@ -1785,21 +1844,22 @@ menu.action(Contract_Dre, "宾客名单: 传送到 律师", {}, "同时设置和
             end
         end
     end)
-menu.action(Contract_Dre, "上流社会泄密: 炸掉直升机", {}, "快速进入直升机坠落动画", function()
-    local entity_list = get_entities_by_hash("vehicle", true, 1075432268)
-    if next(entity_list) ~= nil then
-        for k, ent in pairs(entity_list) do
-            local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(ent, -1, false)
-            if driver ~= 0 then
-                entities.delete(driver)
+menu.action(Contract_Dre, "上流社会泄密: 摧毁直升机", {}, "快速进入直升机坠落动画",
+    function()
+        local entity_list = get_entities_by_hash("vehicle", true, 1075432268)
+        if next(entity_list) ~= nil then
+            for k, ent in pairs(entity_list) do
+                VEHICLE.SET_VEHICLE_ENGINE_HEALTH(ent, -1000)
+
+                local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(ent, -1, false)
+                if driver ~= 0 then
+                    entities.delete(driver)
+                end
             end
-
-            local pos = ENTITY.GET_ENTITY_COORDS(ent)
-            add_owned_explosion(players.user_ped(), pos)
         end
-    end
-end)
+    end)
 
+--- South Central Leak ---
 menu.divider(Contract_Dre, "南中心区泄密")
 menu.action(Contract_Dre, "强化弗农", {}, "", function()
     local entity_list = get_entities_by_hash("ped", true, -843935326)
@@ -1814,15 +1874,16 @@ menu.action(Contract_Dre, "强化弗农", {}, "", function()
         end
     end
 end)
-menu.action(Contract_Dre, "戴维斯: 传送到高空", {}, "甩掉摩托帮\n提前坐进厢型车", function()
-    local vehicle = entities.get_user_vehicle_as_handle()
-    if vehicle ~= INVALID_GUID then
-        ENTITY.FREEZE_ENTITY_POSITION(vehicle, true)
+menu.action(Contract_Dre, "戴维斯: 传送到高空", {}, "用来甩掉摩托帮\n提前坐进厢型车,会冻结载具",
+    function()
+        local vehicle = entities.get_user_vehicle_as_handle()
+        if vehicle ~= INVALID_GUID then
+            ENTITY.FREEZE_ENTITY_POSITION(vehicle, true)
 
-        local coords = ENTITY.GET_ENTITY_COORDS(vehicle)
-        TELEPORT(coords.x, coords.y, 1600.0)
-    end
-end)
+            local coords = ENTITY.GET_ENTITY_COORDS(vehicle)
+            TELEPORT(coords.x, coords.y, 1600.0)
+        end
+    end)
 menu.action(Contract_Dre, "巴勒帮: P 无敌", {}, "避免被误杀", function()
     local entity_list = get_entities_by_hash("ped", true, -616450833)
     if next(entity_list) ~= nil then
@@ -1852,7 +1913,8 @@ local LS_Robbery = menu.list(Preparation_Mission, "改装铺合约", {}, "")
 ----- 联合储蓄 Union Depository -----
 local LS_Robbery_UD = menu.list(LS_Robbery, "联合储蓄", {}, "")
 
-menu.action(LS_Robbery_UD, "电梯钥匙: 传送到 腐败商人", {}, "", function()
+menu.divider(LS_Robbery_UD, "电梯钥匙")
+menu.action(LS_Robbery_UD, "传送到 腐败商人", {}, "", function()
     local entity_list = get_entities_by_hash("ped", true, 2093736314)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -1860,21 +1922,37 @@ menu.action(LS_Robbery_UD, "电梯钥匙: 传送到 腐败商人", {}, "", funct
         end
     end
 end)
-menu.action(LS_Robbery_UD, "金库密码: 提示 目标载具(寻找时)", {}, "将载具传送到明显位置，并添加粒子效果",
-    function()
-        local entity_list = get_entities_by_hash("ped", true, -1868718465)
+menu.divider(LS_Robbery_UD, "金库密码")
+menu.action(LS_Robbery_UD, "坐进直升机并传送到目标载具上空", {},
+    "会将目标载具传送到明显位置,设置外观为紫色", function()
+        local heli, target_ped = 0, 0
+        local entity_list = get_entities_by_hash("vehicle", true, 353883353)
         if next(entity_list) ~= nil then
-            for k, ent in pairs(entity_list) do
-                local veh = PED.GET_VEHICLE_PED_IS_IN(ent, false)
-                SET_ENTITY_COORDS(veh, v3(52.6033, -614.41308, 31.0284))
-                ENTITY.SET_ENTITY_HEADING(veh, 247.0814)
+            heli = entity_list[1]
+        end
 
-                request_ptfx_asset("scr_rcbarry2")
-                start_ptfx_on_entity("scr_exp_clown", ent)
-            end
+        entity_list = get_entities_by_hash("ped", true, -1868718465)
+        if next(entity_list) ~= nil then
+            target_ped = entity_list[1]
+        end
+
+        if ENTITY.DOES_ENTITY_EXIST(heli) and ENTITY.DOES_ENTITY_EXIST(target_ped) then
+            TP_INTO_VEHICLE(heli)
+            VEHICLE.SET_HELI_BLADES_FULL_SPEED(heli)
+
+            util.yield(500)
+
+            local veh = PED.GET_VEHICLE_PED_IS_IN(target_ped, false)
+            SET_ENTITY_COORDS(veh, v3(52.6033, -614.41308, 31.0284))
+            ENTITY.SET_ENTITY_HEADING(veh, 247.0814)
+
+            VEHICLE.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR(veh, 255, 0, 255)
+            VEHICLE.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR(veh, 255, 0, 255)
+
+            TP_TO_ENTITY(veh, 0.0, 0.0, 80.0)
         end
     end)
-menu.click_slider(LS_Robbery_UD, "金库密码: 目标载具 传送到目的地", {}, "玩家自己也会跟着传送过去",
+menu.click_slider(LS_Robbery_UD, "目标载具 传送到目的地", {}, "玩家自己也会跟着传送过去",
     1, 2, 1, 1, function(value)
         local entity_list = get_entities_by_hash("ped", true, -1868718465)
         if next(entity_list) ~= nil then
@@ -1890,17 +1968,25 @@ menu.click_slider(LS_Robbery_UD, "金库密码: 目标载具 传送到目的地"
                 SET_ENTITY_COORDS(veh, coords)
                 ENTITY.SET_ENTITY_HEADING(veh, heading)
 
-                TELEPORT(coords.x, coords.y, coords.z + 80.0)
-                ENTITY.SET_ENTITY_HEADING(players.user_ped(), heading)
+                TELEPORT(coords.x, coords.y, coords.z + 80.0, heading)
             end
         end
     end)
+menu.toggle_loop(LS_Robbery_UD, "指示 目标NPC位置", {}, "", function()
+    local entity_list = get_entities_by_hash("ped", true, -1868718465)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            DRAW_LINE_TO_ENTITY(ent)
+        end
+    end
+end)
 
 
 ----- 大钞交易 The Superdollar Deal -----
 local LS_Robbery_TSD = menu.list(LS_Robbery, "大钞交易", {}, "")
 
-menu.action(LS_Robbery_TSD, "追踪设备: 传送到 机动作战中心", {}, "", function()
+menu.divider(LS_Robbery_TSD, "追踪设备")
+menu.action(LS_Robbery_TSD, "传送到 机动作战中心", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1502869817)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -1911,7 +1997,8 @@ menu.action(LS_Robbery_TSD, "追踪设备: 传送到 机动作战中心", {}, ""
         end
     end
 end)
-menu.action(LS_Robbery_TSD, "病毒软件: 黑客 传送到我", {}, "会传送到空中然后摔死", function()
+menu.divider(LS_Robbery_TSD, "病毒软件")
+menu.action(LS_Robbery_TSD, "黑客 传送到我", {}, "会传送到空中然后摔死", function()
     local entity_list = get_entities_by_hash("ped", true, -2039163396)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -1919,7 +2006,7 @@ menu.action(LS_Robbery_TSD, "病毒软件: 黑客 传送到我", {}, "会传送�
         end
     end
 end)
-menu.action(LS_Robbery_TSD, "病毒软件: 传送到 软件", {}, "", function()
+menu.action(LS_Robbery_TSD, "传送到 病毒软件", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, 1112175411)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -1927,7 +2014,6 @@ menu.action(LS_Robbery_TSD, "病毒软件: 传送到 软件", {}, "", function()
         end
     end
 end)
-
 menu.divider(LS_Robbery_TSD, "终章")
 menu.action(LS_Robbery_TSD, "运输载具 传送到我前面", {}, "前面要预留足够的位置\n提前杀死所有NPC",
     function()
@@ -1935,15 +2021,25 @@ menu.action(LS_Robbery_TSD, "运输载具 传送到我前面", {}, "前面要预
         if HUD.DOES_BLIP_EXIST(blip) then
             local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
             SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped())
-            TP_TO_ME(ent, 0.0, 13.0, 0.5)
+            TP_TO_ME(ent, 0.0, 14.0, 0.5)
         end
     end)
+menu.action(LS_Robbery_TSD, "军备箱 传送到我", {}, "会堆在一起", function()
+    local entity_list = get_entities_by_hash("object", true, -680801934)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            SET_ENTITY_HEAD_TO_ENTITY(ent, players.user_ped(), 0.0)
+            TP_TO_ME(ent, 0.0, 2.0, -0.5)
+        end
+    end
+end)
 
 
 ----- 银行合约 The Bank Contract -----
 local LS_Robbery_TBC = menu.list(LS_Robbery, "银行合约", {}, "")
 
-menu.textslider_stateful(LS_Robbery_TBC, "信号干扰器: 传送到", {}, "", {
+menu.divider(LS_Robbery_TBC, "信号干扰器")
+menu.textslider_stateful(LS_Robbery_TBC, "传送到", {}, "", {
     "A", "B", "C", "D", "E", "F"
 }, function(value)
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(534 + value)
@@ -1953,7 +2049,6 @@ menu.textslider_stateful(LS_Robbery_TBC, "信号干扰器: 传送到", {}, "", {
         TELEPORT(coords.x, coords.y, coords.z + 0.5, heading)
     end
 end)
-
 menu.divider(LS_Robbery_TBC, "终章")
 local LS_Robbery_TBC_bank = 1
 menu.list_select(LS_Robbery_TBC, "选择银行", {}, "先传送银行踩点后再传送到金库", {
@@ -1995,7 +2090,8 @@ end)
 ----- 电控单元差事 The ECU Job -----
 local LS_Robbery_TEJ = menu.list(LS_Robbery, "电控单元差事", {}, "")
 
-menu.action(LS_Robbery_TEJ, "火车货运清单: 传送到 清单", {}, "", function()
+menu.divider(LS_Robbery_TEJ, "火车货运清单")
+menu.action(LS_Robbery_TEJ, "传送到 集装箱清单", {}, "", function()
     local entity_list = get_entities_by_hash("object", true, -1398142754)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -2003,7 +2099,7 @@ menu.action(LS_Robbery_TEJ, "火车货运清单: 传送到 清单", {}, "", func
         end
     end
 end)
-menu.action(LS_Robbery_TEJ, "火车货运清单: 传送到 切割锯", {}, "", function()
+menu.action(LS_Robbery_TEJ, "传送到 切割锯", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, 339736694)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -2011,7 +2107,6 @@ menu.action(LS_Robbery_TEJ, "火车货运清单: 传送到 切割锯", {}, "", f
         end
     end
 end)
-
 menu.divider(LS_Robbery_TEJ, "终章")
 menu.action(LS_Robbery_TEJ, "爆炸 刹车气缸", {}, "", function()
     local entity_list = get_entities_by_hash("object", true, 897163609)
@@ -2033,13 +2128,44 @@ end)
 
 
 ----- 监狱合约 The Prison Contract -----
--- local LS_Robbery_TPC = menu.list(LS_Robbery, "监狱合约", {}, "")
+local LS_Robbery_TPC = menu.list(LS_Robbery, "监狱合约", {}, "")
+
+menu.divider(LS_Robbery_TPC, "卧底")
+menu.action(LS_Robbery_TPC, "传送到 警局", {}, "直接让他自首,然后回改装铺", function()
+    TELEPORT(408.9833374, -983.469726, 28.99933374, 359.554412)
+end)
+menu.divider(LS_Robbery_TPC, "入口")
+menu.action(LS_Robbery_TPC, "传送到 拖车", {}, "坐进卡车并连接拖车", function()
+    local entity_list = get_entities_by_hash("vehicle", true, 1518533038)
+    if next(entity_list) ~= nil then
+        local hauler = entity_list[1]
+        ENTITY.SET_ENTITY_HEADING(hauler, 178.14994812012)
+        SET_ENTITY_COORDS(hauler, v3(-1079.2828369141, -482.62564086914, 36.821292877197))
+
+        TP_INTO_VEHICLE(hauler)
+    end
+end)
+menu.divider(LS_Robbery_TPC, "终章")
+menu.action(LS_Robbery_TPC, "小迪 传送到我", {}, "会传送进正在使用的载具", function()
+    local entity_list = get_entities_by_hash("ped", true, -938608286)
+    if next(entity_list) ~= nil then
+        for k, ent in pairs(entity_list) do
+            local veh = entities.get_user_vehicle_as_handle(false)
+            if veh ~= INVALID_GUID then
+                PED.SET_PED_INTO_VEHICLE(ent, veh, -2)
+            else
+                TP_TO_ME(ent, 0.0, 0.0, 2.0)
+            end
+        end
+    end
+end)
 
 
 ----- IAA 交易 The Agency Deal -----
 local LS_Robbery_TAD = menu.list(LS_Robbery, "IAA 交易", {}, "")
 
-menu.action(LS_Robbery_TAD, "入口: 传送到 图纸", {}, "", function()
+menu.divider(LS_Robbery_TAD, "入口")
+menu.action(LS_Robbery_TAD, "传送到 图纸", {}, "", function()
     local entity_list = get_entities_by_hash("object", true, 429364207)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -2047,10 +2173,12 @@ menu.action(LS_Robbery_TAD, "入口: 传送到 图纸", {}, "", function()
         end
     end
 end)
-
+menu.action(LS_Robbery_TAD, "传送到 地下入口", {}, "", function()
+    TELEPORT(139.130081, -608.175415, 17.6501865, 263.53543)
+end)
 menu.divider(LS_Robbery_TAD, "终章")
 menu.action(LS_Robbery_TAD, "传送到 配方", {}, "", function()
-    local entity_list = get_entities_by_hash("object", true, -1862267709)
+    local entity_list = get_entities_by_hash("object", true, -1862267709, 188023466)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
             TP_TO_ENTITY(ent, 0.0, 0.0, 0.5)
@@ -2062,7 +2190,8 @@ end)
 ----- 失落摩托帮合约 The Lost Contract -----
 local LS_Robbery_TLC = menu.list(LS_Robbery, "失落摩托帮合约", {}, "")
 
-menu.action(LS_Robbery_TLC, "实验室地点: 传送到 保险箱", {}, "", function()
+menu.divider(LS_Robbery_TLC, "实验室地点")
+menu.action(LS_Robbery_TLC, "传送到 保险箱", {}, "", function()
     local entity_list = get_entities_by_hash("object", true, 1089807209)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -2071,7 +2200,7 @@ menu.action(LS_Robbery_TLC, "实验室地点: 传送到 保险箱", {}, "", func
         end
     end
 end)
-menu.action(LS_Robbery_TLC, "实验室地点: 炸药 传送到我", {}, "", function()
+menu.action(LS_Robbery_TLC, "炸药 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, -957953964)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -2079,7 +2208,6 @@ menu.action(LS_Robbery_TLC, "实验室地点: 炸药 传送到我", {}, "", func
         end
     end
 end)
-
 menu.divider(LS_Robbery_TLC, "终章")
 menu.textslider_stateful(LS_Robbery_TLC, "传送到实验室", {}, "", {
     "好麦坞", "布罗高地", "塞诺拉大沙漠", "红木轻装赛道"
@@ -2115,7 +2243,8 @@ end)
 ----- 数据合约 The Data Contract -----
 local LS_Robbery_TDC = menu.list(LS_Robbery, "数据合约", {}, "")
 
-menu.action(LS_Robbery_TDC, "藏身处地点: 传送进 直升机", {}, "", function()
+menu.divider(LS_Robbery_TDC, "藏身处地点")
+menu.action(LS_Robbery_TDC, "传送进 直升机", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1044954915)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -2123,7 +2252,7 @@ menu.action(LS_Robbery_TDC, "藏身处地点: 传送进 直升机", {}, "", func
         end
     end
 end)
-menu.click_slider(LS_Robbery_TDC, "藏身处地点: 直升机 传送到目的地", {}, "提前传送进直升机",
+menu.click_slider(LS_Robbery_TDC, "直升机 传送到目的地", {}, "提前传送进直升机",
     1, 3, 1, 1, function(value)
         local entity_list = get_entities_by_hash("vehicle", true, 1044954915)
         if next(entity_list) ~= nil then
@@ -2138,7 +2267,7 @@ menu.click_slider(LS_Robbery_TDC, "藏身处地点: 直升机 传送到目的地
             end
         end
     end)
-menu.action(LS_Robbery_TDC, "藏身处地点: 巴拉杰 传送到我", {}, "", function()
+menu.action(LS_Robbery_TDC, "巴拉杰 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, -212993243)
     if next(entity_list) ~= nil then
         for k, ent in pairs(entity_list) do
@@ -2146,7 +2275,8 @@ menu.action(LS_Robbery_TDC, "藏身处地点: 巴拉杰 传送到我", {}, "", f
         end
     end
 end)
-menu.action(LS_Robbery_TDC, "防御: 武器 传送到我", {}, "一个一个的传送", function()
+menu.divider(LS_Robbery_TDC, "防御")
+menu.action(LS_Robbery_TDC, "武器 传送到我", {}, "会一个一个的传送", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(784)
     if HUD.DOES_BLIP_EXIST(blip) then
         local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
@@ -2155,7 +2285,6 @@ menu.action(LS_Robbery_TDC, "防御: 武器 传送到我", {}, "一个一个的�
         end
     end
 end)
-
 menu.divider(LS_Robbery_TDC, "终章")
 menu.action(LS_Robbery_TDC, "硬盘 传送到我", {}, "四个硬盘会堆在一起", function()
     local entity_list = get_entities_by_hash("object", true, 977288393)
@@ -2464,7 +2593,7 @@ end)
 menu.action(Security_Contract, "机库: 传送到 门锁位置", {}, "", function()
     TELEPORT(-1249.1301, -2979.6404, -48.49219, 269.879)
 end)
-menu.action(Security_Contract, "人道实验室: 传送进 厢形车", {}, "人道实验室 失窃动物",
+menu.action(Security_Contract, "人道实验室: 传送进 厢型车", {}, "人道实验室 失窃动物",
     function()
         local entity_list = get_entities_by_hash("object", true, 485150676)
         if next(entity_list) ~= nil then
@@ -4091,28 +4220,6 @@ menu.divider(Mission_Options, "")
 --#region Player Assistant
 
 local Player_Assistant = menu.list(Mission_Options, "玩家助手", {}, "")
-
-menu.toggle(Player_Assistant, "[TEST] Low Cop Level", {}, "", function(toggle)
-    for _, pid in pairs(players.list()) do
-        PLAYER.SET_POLICE_IGNORE_PLAYER(pid, toggle)
-        PLAYER.SET_EVERYONE_IGNORE_PLAYER(pid, toggle)
-        PLAYER.SET_DISPATCH_COPS_FOR_PLAYER(pid, not toggle)
-        if toggle then
-            PLAYER.SET_WANTED_LEVEL_DIFFICULTY(pid, 0.0)
-        else
-            PLAYER.RESET_WANTED_LEVEL_DIFFICULTY(pid)
-        end
-    end
-end)
-menu.action(Player_Assistant, "[TEST] Force Start Hidden Evasion", {}, "", function()
-    for _, pid in pairs(players.list()) do
-        PLAYER.FORCE_START_HIDDEN_EVASION(pid)
-    end
-end)
-
-
-menu.divider(Player_Assistant, "")
-
 
 local player_assistant = {
     menu_list = {},

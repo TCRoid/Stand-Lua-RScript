@@ -5,7 +5,7 @@
 util.keep_running()
 util.require_natives("2944b", "init")
 
-local SCRIPT_VERSION <const> = "2023/9/18"
+local SCRIPT_VERSION <const> = "2023/9/30"
 
 local SUPPORT_GTAO <const> = 1.67
 
@@ -3591,6 +3591,7 @@ function vehicle_upgrade.upgrade(vehicle)
         VEHICLE.SET_INCREASE_WHEEL_CRUSH_DAMAGE(vehicle, false)
         VEHICLE.SET_DISABLE_DAMAGE_WITH_PICKED_UP_ENTITY(vehicle, 1)
         VEHICLE.SET_VEHICLE_USES_MP_PLAYER_DAMAGE_MULTIPLIER(vehicle, 1)
+        VEHICLE.SET_FORCE_VEHICLE_ENGINE_DAMAGE_BY_BULLET(vehicle, false)
 
         --Explode
         VEHICLE.SET_DISABLE_EXPLODE_FROM_BODY_DAMAGE_ON_COLLISION(vehicle, 1)
@@ -5571,7 +5572,7 @@ end)
 menu.toggle_loop(Protect_options, "移除载具上的黏弹", {}, "", function()
     local vehicle = entities.get_user_vehicle_as_handle()
     if vehicle ~= INVALID_GUID then
-        NETWORK.REMOVE_ALL_STICKY_BOMBS_FROM_ENTITY(vehicle)
+        NETWORK.REMOVE_ALL_STICKY_BOMBS_FROM_ENTITY(vehicle, 0)
     end
 end)
 menu.toggle_loop(Protect_options, "停止所有声音", {}, "", function()

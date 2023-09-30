@@ -60,19 +60,6 @@ menu.action(Dev_options, "FORCE_PED_AI_AND_ANIMATION_UPDATE", {}, "", function()
     PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(players.user_ped())
 end)
 
-menu.action(Dev_options, "关闭电脑界面", { "shut_computer" }, "", function()
-    local script_list = {
-        "appbunkerbusiness", "appsmuggler", "appbusinesshub", "appbikerbusiness",
-        "apparcadebusinesshub", "apphackertruck", "appfixersecurity", "appavengeroperations",
-        "appcovertops"
-    }
-    for key, script in pairs(script_list) do
-        if IS_SCRIPT_RUNNING(script) then
-            SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 0)
-            MISC.TERMINATE_ALL_SCRIPTS_WITH_THIS_NAME(script)
-        end
-    end
-end)
 
 local radius_draw_sphere = 10.0
 local dev_draw_sphere = menu.slider_float(Dev_options, "DRAW_MARKER_SPHERE", { "radius_draw_sphere" }, "",
@@ -85,8 +72,6 @@ menu.on_tick_in_viewport(dev_draw_sphere, function()
         DRAW_MARKER_SPHERE(coords, radius_draw_sphere)
     end
 end)
-
-
 
 
 menu.toggle_loop(Dev_options, "GET_IS_TASK_ACTIVE", { "show_active_task" }, "", function()
@@ -151,8 +136,7 @@ menu.toggle_loop(Dev_options, "Log Content Info", { "log_content_info" }, "", fu
             "\nContent Path: " .. tostring(NETWORK.UGC_GET_CONTENT_PATH(0, 0)) ..
             "\nRoot Content ID: " .. tostring(NETWORK.UGC_GET_ROOT_CONTENT_ID(0)) ..
             "\nUser: " .. tostring(NETWORK.UGC_GET_CONTENT_USER_NAME(0)) ..
-            " (ID: " .. tostring(NETWORK.UGC_GET_CONTENT_USER_ID(0)) .. ")" ..
-            "\nFile Version: " .. tostring(NETWORK.UGC_GET_CONTENT_FILE_VERSION(0, 0))
+            " (ID: " .. tostring(NETWORK.UGC_GET_CONTENT_USER_ID(0)) .. ")"
 
         util.toast(text, TOAST_ALL)
     end
@@ -212,3 +196,35 @@ menu.action(dev_map_blips, "清空", {}, "", function()
     map_blips.menu_list = {}
 end)
 menu.divider(dev_map_blips, "列表")
+
+
+
+menu.divider(Dev_options, "")
+
+menu.action(Dev_options, "关闭电脑界面", { "shut_computer" }, "", function()
+    local script_list = {
+        "appbunkerbusiness", "appsmuggler", "appbusinesshub", "appbikerbusiness",
+        "apparcadebusinesshub", "apphackertruck", "appfixersecurity", "appavengeroperations",
+        "appcovertops"
+    }
+    for key, script in pairs(script_list) do
+        if IS_SCRIPT_RUNNING(script) then
+            SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 0)
+            MISC.TERMINATE_ALL_SCRIPTS_WITH_THIS_NAME(script)
+        end
+    end
+end)
+menu.action(Dev_options, "删除已死亡的任务载具", {}, "", function()
+    for k, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
+        if ENTITY.IS_ENTITY_A_MISSION_ENTITY(vehicle) and ENTITY.IS_ENTITY_DEAD(vehicle) then
+            entities.delete(vehicle)
+        end
+    end
+end)
+menu.action(Dev_options, "删除已死亡的任务NPC", {}, "", function()
+    for k, ped in pairs(entities.get_all_peds_as_handles()) do
+        if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ped) and ENTITY.IS_ENTITY_DEAD(ped) then
+            entities.delete(ped)
+        end
+    end
+end)

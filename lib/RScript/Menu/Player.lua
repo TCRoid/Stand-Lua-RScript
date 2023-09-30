@@ -3,9 +3,9 @@
 --------------------------------
 
 local Player_Options = function(pid)
-    local player_menu_root = menu.list(menu.player_root(pid), "RScript", {}, "")
+    local Player_Root = menu.list(menu.player_root(pid), "RScript", {}, "")
 
-    menu.divider(player_menu_root, "RScript")
+    menu.divider(Player_Root, "RScript")
 
 
 
@@ -16,7 +16,7 @@ local Player_Options = function(pid)
     ---------- 恶搞选项 ---------
     ----------------------------
 
-    local Trolling_options = menu.list(player_menu_root, "恶搞选项", {}, "")
+    local Trolling_options = menu.list(Player_Root, "恶搞选项", {}, "")
 
     menu.action(Trolling_options, "小查攻击", {}, "", function()
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
@@ -112,8 +112,12 @@ local Player_Options = function(pid)
     end)
 
 
+    
+    local Trolling_Kosatka = menu.list(Trolling_options, "虎鲸", {}, "")
 
-    menu.action(Trolling_options, "生成虎鲸", {}, "", function()
+    local spawned_kosatkas = {}
+
+    menu.action(Trolling_Kosatka, "生成虎鲸", {}, "", function()
         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
         local modelHash = util.joaat("kosatka")
         local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
@@ -121,12 +125,14 @@ local Player_Options = function(pid)
 
         local g_veh = create_vehicle(modelHash, coords, heading)
 
-        set_entity_godmode(g_evh, true)
+        set_entity_godmode(g_veh, true)
         entities.set_can_migrate(g_veh, false)
+
+        table.insert(spawned_kosatkas, g_veh)
     end)
 
     local trace_kosatka = 0
-    menu.toggle_loop(Trolling_options, "追踪生成虎鲸", {}, "", function()
+    menu.toggle_loop(Trolling_Kosatka, "追踪生成虎鲸", {}, "", function()
         if players.exists(pid) then
             local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(pid)
             local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(player_ped, 0.0, 0.0, 0.0)
@@ -144,6 +150,16 @@ local Player_Options = function(pid)
         if ENTITY.DOES_ENTITY_EXIST(trace_kosatka) then
             entities.delete(trace_kosatka)
         end
+    end)
+
+    menu.divider(Trolling_Kosatka, "")
+    menu.action(Trolling_Kosatka, "删除生成的虎鲸", {}, "", function()
+        for _, ent in pairs(spawned_kosatkas) do
+            if ENTITY.DOES_ENTITY_EXIST(ent) then
+                entities.delete(ent)
+            end
+        end
+        spawned_kosatkas = {}
     end)
 
 
@@ -427,7 +443,7 @@ local Player_Options = function(pid)
     ---------- 友好选项 ---------
     ----------------------------
 
-    local Friendly_options = menu.list(player_menu_root, "友好选项", {}, "")
+    local Friendly_options = menu.list(Player_Root, "友好选项", {}, "")
 
 
     local Generete_Pickup = menu.list(Friendly_options, "生成拾取物", {}, "仅自己可见")
@@ -500,7 +516,7 @@ local Player_Options = function(pid)
     ---- 自定义Model生成实体 -----
     ----------------------------
 
-    local Custom_Generate_Entity = menu.list(player_menu_root, "自定义Model生成实体", {}, "")
+    local Custom_Generate_Entity = menu.list(Player_Root, "自定义Model生成实体", {}, "")
     local custom_generate_entity_data = {
         hash = 0,
         type = 1,
@@ -641,7 +657,7 @@ local Player_Options = function(pid)
     ------- 以此玩家的名义 -------
     ----------------------------
 
-    local As_This_Player = menu.list(player_menu_root, "以此玩家的名义", {}, "")
+    local As_This_Player = menu.list(Player_Root, "以此玩家的名义", {}, "")
 
     menu.action(As_This_Player, "爆头击杀全部NPC", {}, "", function()
         local weaponHash = util.joaat("WEAPON_APPISTOL")

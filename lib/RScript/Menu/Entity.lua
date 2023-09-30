@@ -26,7 +26,9 @@ local ent_quick_action = {
 }
 
 
------- NPC选项 ------
+----------------
+-- NPC选项
+----------------
 local Entity_Quick_Ped = menu.list(Entity_Quick_Action, "NPC选项", {}, "")
 
 menu.divider(Entity_Quick_Ped, "全部NPC")
@@ -154,7 +156,9 @@ menu.list_action(Entity_Quick_Ped, "给予武器", {}, "", Weapon_Common.ListIte
 end)
 
 
------- 弱化NPC选项 ------
+------------------
+-- 弱化NPC选项
+------------------
 local Entity_Quick_WeakPed = menu.list(Entity_Quick_Action, "弱化NPC选项", {}, "")
 
 menu.list_select(Entity_Quick_WeakPed, "NPC类型", {}, "", {
@@ -246,11 +250,44 @@ menu.readonly(Entity_Quick_WeakPed, "禁止武器掉落时走火", "是")
 menu.readonly(Entity_Quick_WeakPed, "禁止受伤倒地时的行为", "是")
 
 
+------------------
+-- 敌对实体选项
+------------------
+local Entity_Quick_Hostile = menu.list(Entity_Quick_Action, "敌对实体选项", {}, "")
 
------- 摄像头和门 ------
+menu.action(Entity_Quick_Hostile, "爆炸敌对NPC", { "h_ped_explode" }, "", function()
+    explode_hostile_peds()
+end)
+menu.action(Entity_Quick_Hostile, "爆炸敌对载具", { "h_veh_explode" }, "", function()
+    explode_hostile_vehicles()
+end)
+menu.action(Entity_Quick_Hostile, "爆炸敌对物体", { "h_obj_explode" }, "", function()
+    explode_hostile_objects()
+end)
+
+menu.divider(Entity_Quick_Hostile, "")
+menu.action(Entity_Quick_Hostile, "破坏敌对载具引擎", { "h_veh_kill_engine" }, "", function()
+    for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
+        if IS_HOSTILE_ENTITY(vehicle) then
+            VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, -4000.0)
+        end
+    end
+end)
+menu.action(Entity_Quick_Hostile, "杀死敌对物体", { "h_obj_kill" }, "", function()
+    for _, object in pairs(entities.get_all_objects_as_handles()) do
+        if IS_HOSTILE_ENTITY(object) then
+            SET_ENTITY_HEALTH(object, 0)
+        end
+    end
+end)
+
+
+------------------
+-- 摄像头和门
+------------------
 local Entity_Quick_Object = menu.list(Entity_Quick_Action, "摄像头和门", {}, "")
 
-menu.divider(Entity_Quick_Object, "摄像头选项")
+menu.divider(Entity_Quick_Object, "摄像头")
 local Cams = {
     548760764,   --prop_cctv_cam_01a
     -354221800,  --prop_cctv_cam_01b
@@ -357,8 +394,9 @@ menu.action(Entity_Quick_Object, "关闭无碰撞", {}, "", function()
 end)
 
 
-
------- 任务拾取物/收集物 ------
+---------------------
+-- 任务拾取物/收集物
+---------------------
 local Entity_Quick_Pickup = menu.list(Entity_Quick_Action, "任务拾取物/收集物", {}, "")
 
 local ent_quick_pickup = {
@@ -1395,7 +1433,7 @@ end, true)
 
 
 ------------------------
---  附近NPC 恶搞选项
+-- 附近NPC 恶搞选项
 ------------------------
 local Nearby_Ped_Trolling = menu.list(Nearby_Ped_Options, "恶搞选项", {}, "")
 --------------------
@@ -1537,7 +1575,7 @@ end)
 
 
 ------------------------
---  附近NPC 友好选项
+-- 附近NPC 友好选项
 ------------------------
 local Nearby_Ped_Friendly = menu.list(Nearby_Ped_Options, "友好选项", {}, "")
 --------------------
@@ -1570,7 +1608,7 @@ end)
 
 
 ------------------------
---  附近NPC 作战能力
+-- 附近NPC 作战能力
 ------------------------
 local Nearby_Ped_Combat = menu.list(Nearby_Ped_Options, "作战能力", {}, "")
 
@@ -1585,7 +1623,7 @@ Nearby_Ped.Combat = {
     behavior = 1,
 }
 
-menu.toggle_loop(Nearby_Ped_Combat, "开启", {}, "", function()
+menu.toggle_loop(Nearby_Ped_Combat, "修改作战能力", {}, "", function()
     local combat_data = Nearby_Ped.Combat
 
     for k, ped in pairs(Nearby_Ped.get_peds()) do
