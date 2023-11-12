@@ -1,68 +1,52 @@
----------------------------------
------------- 开发者选项 -----------
----------------------------------
+------------------------------------------
+------------    Dev Options    -----------
+------------------------------------------
 
-menu.action(Dev_options, "Copy My Coords & Heading", { "copymypos" }, "", function()
+menu.textslider_stateful(Dev_Options, "Copy My Coords & Heading", { "copymypos" }, "", {
+    "without key", "with key"
+}, function(value)
     local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
     local heading = ENTITY.GET_ENTITY_HEADING(players.user_ped())
-    local text = coords.x .. ", " .. coords.y .. ", " .. coords.z .. "\n" .. heading
+
+    local text = ""
+    if value == 1 then
+        text = string.format("%.10f, %.10f, %.10f, %.10f", coords.x, coords.y, coords.z, heading)
+    elseif value == 2 then
+        text = string.format("x = %.10f, y = %.10f, z = %.10f, heading = %.10f", coords.x, coords.y, coords.z, heading)
+    end
     util.copy_to_clipboard(text, false)
     util.toast("Copied!\n" .. text)
 end)
-menu.action(Dev_options, "Get Network Time", {}, "", function()
+
+menu.action(Dev_Options, "Get Network Time", {}, "", function()
     util.toast("Network Time: " .. NETWORK.GET_NETWORK_TIME() ..
         "\nNetwork Time(String): " .. NETWORK.GET_TIME_AS_STRING(NETWORK.GET_NETWORK_TIME()) ..
         "\nAccurate Network Time: " .. NETWORK.GET_NETWORK_TIME_ACCURATE() ..
         "\nCloud Time: " .. NETWORK.GET_CLOUD_TIME_AS_INT())
 end)
-menu.action(Dev_options, "Clear Player Ped Tasks", { "clstask" }, "", function()
-    local ped = players.user_ped()
-    TASK.CLEAR_PED_TASKS_IMMEDIATELY(ped)
-    TASK.CLEAR_PED_TASKS(ped)
-    TASK.CLEAR_DEFAULT_PRIMARY_TASK(ped)
-    TASK.CLEAR_PED_SECONDARY_TASK(ped)
-    TASK.TASK_CLEAR_LOOK_AT(ped)
-    TASK.TASK_CLEAR_DEFENSIVE_AREA(ped)
-    TASK.CLEAR_DRIVEBY_TASK_UNDERNEATH_DRIVING_TASK(ped)
-end)
-menu.action(Dev_options, "Get Interior ID", { "getinteriorid" }, "", function()
+menu.action(Dev_Options, "Get Interior ID", { "getinteriorid" }, "", function()
     if INTERIOR.IS_INTERIOR_SCENE() then
-        local text = ""
-        local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-        local interior = INTERIOR.GET_INTERIOR_AT_COORDS(coords.x, coords.y, coords.z)
+        local interior = INTERIOR.GET_INTERIOR_FROM_ENTITY(players.user_ped())
         if INTERIOR.IS_VALID_INTERIOR(interior) then
-            text = text .. "Interior ID: " .. interior
-        end
+            local text = "Interior ID: " .. interior
 
-        local interior2 = INTERIOR.GET_INTERIOR_FROM_PRIMARY_VIEW()
-        if INTERIOR.IS_VALID_INTERIOR(interior2) and interior2 ~= interior then
-            text = text .. "\nInterior ID 2: " .. interior2
+            util.copy_to_clipboard(text, false)
+            util.toast("Copied!\n" .. text)
         end
-
-        local interior3 = INTERIOR.GET_INTERIOR_FROM_ENTITY(players.user_ped())
-        if INTERIOR.IS_VALID_INTERIOR(interior3) and interior3 ~= interior then
-            text = text .. "\nInterior ID 3: " .. interior3
-        end
-
-        util.toast(text)
     end
 end)
 
-menu.action(Dev_options, "GET_PICKUP_GENERATION_RANGE_MULTIPLIER", {}, "Default: 1.0", function()
+menu.action(Dev_Options, "GET_PICKUP_GENERATION_RANGE_MULTIPLIER", {}, "Default: 1.0", function()
     util.toast(OBJECT.GET_PICKUP_GENERATION_RANGE_MULTIPLIER())
 end)
-menu.click_slider_float(Dev_options, "SET_PICKUP_GENERATION_RANGE_MULTIPLIER", { "set_pickup_range" }, "",
+menu.click_slider_float(Dev_Options, "SET_PICKUP_GENERATION_RANGE_MULTIPLIER", { "set_pickup_range" }, "",
     0, 100000, 100000, 100, function(value)
         OBJECT.SET_PICKUP_GENERATION_RANGE_MULTIPLIER(value * 0.01)
     end)
 
-menu.action(Dev_options, "FORCE_PED_AI_AND_ANIMATION_UPDATE", {}, "", function()
-    PED.FORCE_PED_AI_AND_ANIMATION_UPDATE(players.user_ped())
-end)
-
 
 local radius_draw_sphere = 10.0
-local dev_draw_sphere = menu.slider_float(Dev_options, "DRAW_MARKER_SPHERE", { "radius_draw_sphere" }, "",
+local dev_draw_sphere = menu.slider_float(Dev_Options, "DRAW_MARKER_SPHERE", { "radius_draw_sphere" }, "",
     0, 100000, 1000, 100, function(value)
         radius_draw_sphere = value * 0.01
     end)
@@ -74,7 +58,7 @@ menu.on_tick_in_viewport(dev_draw_sphere, function()
 end)
 
 
-menu.toggle_loop(Dev_options, "GET_IS_TASK_ACTIVE", { "show_active_task" }, "", function()
+menu.toggle_loop(Dev_Options, "GET_IS_TASK_ACTIVE", { "show_active_task" }, "", function()
     for i = 0, 530, 1 do
         if TASK.GET_IS_TASK_ACTIVE(players.user_ped(), i) then
             util.draw_debug_text("Task Active: " .. tostring(i))
@@ -85,7 +69,7 @@ end)
 
 local eventGroup = 1
 local eventData = memory.alloc(13 * 8)
-menu.toggle_loop(Dev_options, "Event Network Entity Damage", {}, "", function()
+menu.toggle_loop(Dev_Options, "Event Network Entity Damage", {}, "", function()
     for eventIndex = 0, SCRIPT.GET_NUMBER_OF_EVENTS(eventGroup) - 1 do
         local eventType = SCRIPT.GET_EVENT_AT_INDEX(eventGroup, eventIndex)
         if eventType == 186 then                                                     -- CEventNetworkEntityDamage
@@ -128,7 +112,7 @@ menu.toggle_loop(Dev_options, "Event Network Entity Damage", {}, "", function()
 end)
 
 
-menu.toggle_loop(Dev_options, "Log Content Info", { "log_content_info" }, "", function()
+menu.toggle_loop(Dev_Options, "Log Content Info", { "log_content_info" }, "", function()
     local content_id = NETWORK.UGC_GET_CONTENT_ID(0)
     if content_id ~= nil then
         local text = "Content Name: " .. tostring(NETWORK.UGC_GET_CONTENT_NAME(0)) ..
@@ -147,7 +131,7 @@ end)
 --------------------
 -- 地图标记点
 --------------------
-local dev_map_blips = menu.list(Dev_options, "地图标记点", { "dev_map_blips" }, "")
+local dev_map_blips = menu.list(Dev_Options, "地图标记点", { "dev_map_blips" }, "")
 
 local map_blips = {
     menu_list = {},
@@ -175,11 +159,12 @@ menu.action(dev_map_blips, "获取地图所有标记点", {}, "相同的获取�
         end)
 
         for _, blip in pairs(blip_list) do
-            local blip_type = GET_BLIP_TYPE(blip)
+            local blip_type = Blip_T.Type[HUD.GET_BLIP_INFO_ID_TYPE(blip)]
 
             -- menu_list
             local menu_name = HUD.GET_BLIP_SPRITE(blip) .. ". " .. blip_type
-            local menu_list = menu.list(dev_map_blips, menu_name, {}, "")
+            local help_text = "Distance: " .. v3.distance(HUD.GET_BLIP_COORDS(blip), player_pos)
+            local menu_list = menu.list(dev_map_blips, menu_name, {}, help_text)
             table.insert(map_blips.menu_list, menu_list)
 
             -- generate_menu
@@ -199,9 +184,10 @@ menu.divider(dev_map_blips, "列表")
 
 
 
-menu.divider(Dev_options, "")
 
-menu.action(Dev_options, "关闭电脑界面", { "shut_computer" }, "", function()
+
+
+menu.action(Dev_Options, "关闭电脑界面", { "shut_computer" }, "", function()
     local script_list = {
         "appbunkerbusiness", "appsmuggler", "appbusinesshub", "appbikerbusiness",
         "apparcadebusinesshub", "apphackertruck", "appfixersecurity", "appavengeroperations",
@@ -211,20 +197,6 @@ menu.action(Dev_options, "关闭电脑界面", { "shut_computer" }, "", function
         if IS_SCRIPT_RUNNING(script) then
             SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 0)
             MISC.TERMINATE_ALL_SCRIPTS_WITH_THIS_NAME(script)
-        end
-    end
-end)
-menu.action(Dev_options, "删除已死亡的任务载具", {}, "", function()
-    for k, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
-        if ENTITY.IS_ENTITY_A_MISSION_ENTITY(vehicle) and ENTITY.IS_ENTITY_DEAD(vehicle) then
-            entities.delete(vehicle)
-        end
-    end
-end)
-menu.action(Dev_options, "删除已死亡的任务NPC", {}, "", function()
-    for k, ped in pairs(entities.get_all_peds_as_handles()) do
-        if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ped) and ENTITY.IS_ENTITY_DEAD(ped) then
-            entities.delete(ped)
         end
     end
 end)

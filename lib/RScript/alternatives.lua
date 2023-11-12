@@ -1,11 +1,25 @@
---------------------------------------------
+----------------------------------------
 -- Alternative for Native Functions
---------------------------------------------
+----------------------------------------
 
 ---@param entity Entity
 ---@param coords v3
-function SET_ENTITY_COORDS(entity, coords)
+---@param heading? float
+function TP_ENTITY(entity, coords, heading)
+    if heading ~= nil then
+        ENTITY.SET_ENTITY_HEADING(entity, heading)
+    end
     ENTITY.SET_ENTITY_COORDS_NO_OFFSET(entity, coords.x, coords.y, coords.z, true, false, false)
+end
+
+---@param heading? float
+---@return float
+function ENTITY_HEADING(entity, heading)
+    if heading ~= nil then
+        ENTITY.SET_ENTITY_HEADING(entity, heading)
+        return heading
+    end
+    return ENTITY.GET_ENTITY_HEADING(entity)
 end
 
 ---@param vehicle Vehicle
@@ -33,7 +47,8 @@ end
 ---@param colour? Colour
 function DRAW_LINE(start_pos, end_pos, colour)
     colour = colour or { r = 255, g = 0, b = 255, a = 255 }
-    GRAPHICS.DRAW_LINE(start_pos.x, start_pos.y, start_pos.z, end_pos.x, end_pos.y, end_pos.z,
+    GRAPHICS.DRAW_LINE(start_pos.x, start_pos.y, start_pos.z,
+        end_pos.x, end_pos.y, end_pos.z,
         colour.r, colour.g, colour.b, colour.a)
 end
 
@@ -47,9 +62,9 @@ function DRAW_MARKER_SPHERE(coords, radius, colour)
         colour.r, colour.g, colour.b, colour.a)
 end
 
---------------------------------------------
+----------------------------------------
 -- Compact Params Natives
---------------------------------------------
+----------------------------------------
 
 ---Creates an explosion at the co-ordinates.
 ---@param coords v3
@@ -111,13 +126,13 @@ end
 --- - `allowRumble` *boolean* [default = true]
 --- - `speed` *integer* [default = 1000]
 --- - `ignoreEntity` *Entity* [default = 0]
---- - `TargetEntity` *Entity* [default = 0]
+--- - `targetEntity` *Entity* [default = 0]
 --- - - -
 --- `perfectAccuracy` sets the bullets at the exact point otherwise it applys a spread to the bullets.
 ---
 --- `weaponHash` can be projectiles but then the `endCoords` is the direction and not where it will land.
 ---
---- Setting the `TargetEntity` parameter will enable homing code if the weapon is a rocket.
+--- Setting the `targetEntity` parameter will enable homing code if the weapon is a rocket.
 function shoot_single_bullet(startCoords, endCoords, optionalParams)
     local Params = optionalParams or {}
     Params.damage = Params.damage or 1000
@@ -127,14 +142,14 @@ function shoot_single_bullet(startCoords, endCoords, optionalParams)
     Params.allowRumble = Params.allowRumble or true
     Params.speed = Params.speed or 1000
     Params.ignoreEntity = Params.ignoreEntity or 0
-    Params.TargetEntity = Params.TargetEntity or 0
+    Params.targetEntity = Params.targetEntity or 0
 
     MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
         startCoords.x, startCoords.y, startCoords.z,
         endCoords.x, endCoords.y, endCoords.z,
         Params.damage, Params.perfectAccuracy, Params.weaponHash, Params.owner,
         Params.createTraceVfx, Params.allowRumble, Params.speed,
-        Params.ignoreEntity, Params.TargetEntity)
+        Params.ignoreEntity, Params.targetEntity)
 end
 
 ---Trigger a set piece (non looped) particle effect on an entity with an offset position and orientation.
@@ -177,12 +192,23 @@ function start_ptfx_at_coord(fxName, coords, rotation, scale, invertAxis, ignore
         ignoreScopeChecks)
 end
 
---------------------------------------------
--- For Missing Params Natives
---------------------------------------------
+----------------------------------------
+-- Default Params Natives
+----------------------------------------
 
 ---@param entity Entity
 ---@param health integer
 function SET_ENTITY_HEALTH(entity, health)
     ENTITY.SET_ENTITY_HEALTH(entity, health, 0)
+end
+
+---@param vehicle Vehicle
+---@param toggle boolean
+function SET_VEHICLE_ENGINE_ON(vehicle, toggle)
+    VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, toggle, true, false)
+end
+
+---@param vehicle Vehicle
+function SET_VEHICLE_ON_GROUND_PROPERLY(vehicle)
+    VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle, 5.0)
 end

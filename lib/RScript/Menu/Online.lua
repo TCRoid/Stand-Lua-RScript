@@ -1,15 +1,13 @@
---------------------------------
------------- 线上选项 -----------
---------------------------------
+------------------------------------------
+----------    Online Options    ----------
+------------------------------------------
 
-local Online_Options = menu.list(menu.my_root(), "线上选项", {}, "")
+local Online_Options <const> = menu.list(Menu_Root, "线上选项", {}, "")
 
 
+--#region Player Language
 
----------------------
--- 玩家语言
----------------------
-local Player_Language = menu.list(Online_Options, "玩家游戏语言", {}, "")
+local Player_Language <const> = menu.list(Online_Options, "玩家游戏语言", {}, "")
 
 local player_lang = {
     language = {
@@ -102,17 +100,17 @@ end, true)
 
 menu.divider(Player_Language, "列表")
 
+--#endregion
 
 
----------------------
--- 请求服务
----------------------
-local Request_Service = menu.list(Online_Options, "请求服务", {}, "")
+--#region Request Service
 
-local Request_Service_Cooldown = menu.list(Request_Service, "移除冷却时间", {}, "")
+local Request_Service <const> = menu.list(Online_Options, "请求服务", {}, "")
+
+local Request_Service_Cooldown <const> = menu.list(Request_Service, "移除冷却时间", {}, "")
 menu.toggle(Request_Service_Cooldown, "CEO技能", {}, "", function(toggle)
     Globals.RemoveCooldown.CeoAbility(toggle)
-    Transition_Handler.Globals.Cooldown.CeoAbility = toggle
+    Loop_Handler.Tunables.Cooldown.CeoAbility = toggle
 end)
 menu.toggle(Request_Service_Cooldown, "CEO载具请求", {}, "", function(toggle)
     if toggle then
@@ -120,16 +118,24 @@ menu.toggle(Request_Service_Cooldown, "CEO载具请求", {}, "", function(toggle
     else
         SET_INT_GLOBAL(Globals.GB_CALL_VEHICLE_COOLDOWN, 120000)
     end
-    Transition_Handler.Globals.Cooldown.CeoVehicle = toggle
+    Loop_Handler.Tunables.Cooldown.CeoVehicle = toggle
 end)
 menu.toggle(Request_Service_Cooldown, "其它载具请求", {}, "", function(toggle)
     Globals.RemoveCooldown.OtherVehicle(toggle)
-    Transition_Handler.Globals.Cooldown.OtherVehicle = toggle
+    Loop_Handler.Tunables.Cooldown.OtherVehicle = toggle
 end)
+
+local Request_Vehicle_Property <const> = menu.list(Request_Service, "请求载具资产", {}, "")
+for _, item in pairs(Globals.Request.VehicleProperty) do
+    menu.action(Request_Vehicle_Property, "请求 " .. item.name, { "req" .. item.command }, "", function()
+        SET_INT_GLOBAL(item.global, 1)
+        util.toast("已请求载具 " .. item.name)
+    end)
+end
 
 menu.action(Request_Service, "请求重型装甲", { "ammo_drop" }, "请求弹道装甲和火神机枪",
     function()
-        SET_INT_GLOBAL(Globals.Ballistic_Armor, 1)
+        SET_INT_GLOBAL(Globals.BallisticArmor, 1)
     end)
 menu.action(Request_Service, "重型装甲包裹 传送到我", {}, "", function()
     local entity_model_hash = 1688540826
@@ -178,24 +184,23 @@ end, function()
 end)
 
 menu.divider(Request_Service, "倒计时")
-menu.click_slider(Request_Service, "贿赂当局 倒计时时间", {}, "单位: 分钟\n切换战局后会失效，需要重新操作",
+menu.click_slider(Request_Service, "贿赂当局 倒计时时间", {}, "单位: 分钟\n切换战局后会失效,需要重新操作",
     1, 60, 2, 1, function(value)
         SET_INT_GLOBAL(Globals.GB_BRIBE_AUTHORITIES_DURATION, value * 60 * 1000)
         util.toast("完成！")
     end)
-menu.click_slider(Request_Service, "幽灵组织 倒计时时间", {}, "单位: 分钟\n切换战局后会失效，需要重新操作",
+menu.click_slider(Request_Service, "幽灵组织 倒计时时间", {}, "单位: 分钟\n切换战局后会失效,需要重新操作",
     1, 60, 3, 1, function(value)
         SET_INT_GLOBAL(Globals.GB_GHOST_ORG_DURATION, value * 60 * 1000)
         util.toast("完成！")
     end)
 
+--#endregion
 
 
+--#region Business Monitor
 
----------------------
--- 资产监视
----------------------
-local Business_Monitor = menu.list(Online_Options, "资产监视", { "business_monitor" }, "")
+local Business_Monitor <const> = menu.list(Online_Options, "资产监视", { "business_monitor" }, "")
 
 local Business = {
     Caps = {
@@ -446,12 +451,12 @@ for i = 0, 4 do
     Business.Menu.special_cargo[i] = menu.readonly(Business_Monitor_SpecialCargo, "无")
 end
 
+--#endregion
 
 
----------------------
--- 资产统计数据
----------------------
-local Business_Stats = menu.list(Online_Options, "资产统计数据", {}, "")
+--#region Business Stats
+
+local Business_Stats <const> = menu.list(Online_Options, "资产统计数据", {}, "")
 
 local BusinessStats = {
     Bunker = {
@@ -496,12 +501,12 @@ for i = 1, 5 do
     BusinessStats.SpecialCargo[i].menu = menu.readonly(Business_Stats, BusinessStats.SpecialCargo[i].name)
 end
 
+--#endregion
 
 
----------------------
--- 远程电脑
----------------------
-local Remote_Computer = menu.list(Online_Options, "远程电脑", {}, "")
+--#region Remote Computer
+
+local Remote_Computer <const> = menu.list(Online_Options, "远程电脑", {}, "")
 
 local remote_computer_list = {
     { menu_name = "地堡电脑", script = "appbunkerbusiness", command = "bunker" },
@@ -525,15 +530,15 @@ for _, item in pairs(remote_computer_list) do
     end)
 end
 
+--#endregion
 
 
----------------------
--- 快捷传送
----------------------
-local Fast_Teleport = menu.list(Online_Options, "快捷传送", {}, "")
+--#region Fast Teleport
+
+local Fast_Teleport <const> = menu.list(Online_Options, "快捷传送", {}, "")
 
 local FastTP = {
-    property_list = {
+    propertyList = {
         { sprite = 557, name = "地堡", command = "bunker" },
         { sprite = 569, name = "机库", command = "hangar" },
         { sprite = 590, name = "设施", command = "facility" },
@@ -544,7 +549,7 @@ local FastTP = {
         { sprite = 475, name = "办公室", command = "office" },
         { sprite = 492, name = "摩托帮会所", command = "biker" },
     },
-    event_list = {
+    eventList = {
         { sprite = 430, name = "时间挑战赛", command = "timetrial" },
         { sprite = 673, name = "RC匪徒时间挑战赛", command = "rctimetrial" },
         { sprite = 842, name = "杰拉德包裹", command = "gcaches" },
@@ -554,49 +559,49 @@ local FastTP = {
 }
 
 menu.divider(Fast_Teleport, "载具资产")
-menu.action(Fast_Teleport, "传送到 机动作战中心", { "fatp_moc" }, "", function()
+menu.action(Fast_Teleport, "传送到 机动作战中心", { "ftp_moc" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(564)
     if HUD.DOES_BLIP_EXIST(blip) then
         if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
             local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
-            TP_TO_ENTITY(ent, 0.0, -9.0, -1.0)
+            set_entity_heading_to_entity(players.user_ped(), ent)
+            tp_to_entity(ent, 0.0, -9.0, -1.0)
         end
     else
         util.toast("未在地图上找到 机动作战中心")
     end
 end)
-menu.action(Fast_Teleport, "传送到 复仇者", { "fatp_avenger" }, "", function()
+menu.action(Fast_Teleport, "传送到 复仇者", { "ftp_avenger" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(589)
     if HUD.DOES_BLIP_EXIST(blip) then
         if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
             local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
-            TP_TO_ENTITY(ent, 0.0, -8.0, 0.0)
+            set_entity_heading_to_entity(players.user_ped(), ent)
+            tp_to_entity(ent, 0.0, -8.0, 0.0)
         end
     else
         util.toast("未在地图上找到 复仇者")
     end
 end)
-menu.action(Fast_Teleport, "传送到 恐霸", { "fatp_terrorbyte" }, "", function()
+menu.action(Fast_Teleport, "传送到 恐霸", { "ftp_terrorbyte" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(632)
     if HUD.DOES_BLIP_EXIST(blip) then
         if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
             local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent, 90)
-            TP_TO_ENTITY(ent, 2.0, 0.0, 0.0)
+            set_entity_heading_to_entity(players.user_ped(), ent, 90)
+            tp_to_entity(ent, 2.0, 0.0, 0.0)
         end
     else
         util.toast("未在地图上找到 恐霸")
     end
 end)
-menu.action(Fast_Teleport, "传送到 致幻剂实验室", { "fatp_acidlab" }, "", function()
+menu.action(Fast_Teleport, "传送到 致幻剂实验室", { "ftp_acidlab" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(840)
     if HUD.DOES_BLIP_EXIST(blip) then
         if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
             local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-            SET_ENTITY_HEAD_TO_ENTITY(players.user_ped(), ent)
-            TP_TO_ENTITY(ent, 3.0, 0.0, 0.0)
+            set_entity_heading_to_entity(players.user_ped(), ent)
+            tp_to_entity(ent, 3.0, 0.0, 0.0)
         end
     else
         util.toast("未在地图上找到 致幻剂实验室")
@@ -604,13 +609,13 @@ menu.action(Fast_Teleport, "传送到 致幻剂实验室", { "fatp_acidlab" }, "
 end)
 
 menu.divider(Fast_Teleport, "资产")
-for key, item in pairs(FastTP.property_list) do
-    menu.action(Fast_Teleport, "传送到 " .. item.name, { "fatp" .. item.command }, "", function()
+for key, item in pairs(FastTP.propertyList) do
+    menu.action(Fast_Teleport, "传送到 " .. item.name, { "ftp" .. item.command }, "", function()
         local blip = HUD.GET_NEXT_BLIP_INFO_ID(item.sprite)
         if HUD.DOES_BLIP_EXIST(blip) then
             if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
                 local coords = HUD.GET_BLIP_COORDS(blip)
-                TELEPORT2(coords)
+                teleport(coords)
             end
         else
             util.toast("未在地图上找到 " .. item.name)
@@ -619,26 +624,24 @@ for key, item in pairs(FastTP.property_list) do
 end
 
 menu.divider(Fast_Teleport, "活动")
-for key, item in pairs(FastTP.event_list) do
-    menu.action(Fast_Teleport, "传送到 " .. item.name, { "fatp" .. item.command }, "", function()
+for key, item in pairs(FastTP.eventList) do
+    menu.action(Fast_Teleport, "传送到 " .. item.name, { "ftp" .. item.command }, "", function()
         local blip = HUD.GET_NEXT_BLIP_INFO_ID(item.sprite)
         if HUD.DOES_BLIP_EXIST(blip) then
             local coords = HUD.GET_BLIP_COORDS(blip)
-            TELEPORT2(coords)
+            teleport(coords)
         else
             util.toast("未在地图上找到 " .. item.name)
         end
     end)
 end
 
+--#endregion
 
 
 --#region Local Editor
 
----------------------
--- Local Editor
----------------------
-local Local_Editor = menu.list(Online_Options, "Local Editor", { "local_editor" }, "")
+local Local_Editor <const> = menu.list(Online_Options, "Local Editor", { "local_editor" }, "")
 
 local local_editor = {
     script = "fm_mission_controller",
@@ -732,13 +735,9 @@ end)
 --#endregion
 
 
-
 --#region Global Editor
 
----------------------
--- Global Editor
----------------------
-local Global_Editor = menu.list(Online_Options, "Global Editor", { "global_editor" }, "")
+local Global_Editor <const> = menu.list(Online_Options, "Global Editor", { "global_editor" }, "")
 
 local global_editor = {
     address1 = 262145,
@@ -812,21 +811,24 @@ end)
 
 
 
-
-----------
-menu.toggle(Online_Options, "战局雪天", { "turn_snow" }, "切换战局后会失效，需要重新操作",
-    function(toggle)
-        if toggle then
-            SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 1)
-        else
-            SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 0)
-        end
-    end)
-menu.click_slider_float(Online_Options, "AI血量", { "ai_health" }, "切换战局后会失效，需要重新操作",
+menu.list_select(Online_Options, "战局雪天", { "turn_snow" }, "", {
+    { "不更改", { "default" }, "" },
+    { "开启", { "on" }, "" },
+    { "关闭", { "off" }, "" },
+}, 1, function(value)
+    if value == 2 then
+        SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 1)
+    elseif value == 3 then
+        SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 0)
+    end
+    Loop_Handler.Tunables.TurnSnow = value
+end)
+menu.click_slider_float(Online_Options, "AI血量倍数", { "ai_health_multiplier" }, "",
     0, 1000, 100, 10, function(value)
         SET_FLOAT_GLOBAL(Globals.AI_HEALTH, value * 0.01)
+        Loop_Handler.Tunables.AiHealth = value * 0.01
     end)
 menu.toggle(Online_Options, "禁用产业劫货", {}, "", function(toggle)
     Globals.DisableBusinessRaid(toggle)
-    Transition_Handler.Globals.DisableBusinessRaid = toggle
+    Loop_Handler.Tunables.DisableBusinessRaid = toggle
 end)

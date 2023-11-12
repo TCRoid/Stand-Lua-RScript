@@ -1,10 +1,11 @@
-----------------------------
--------- [[ Menu ]] --------
-----------------------------
+------------------------------------------------
+----------------   [[ Menu ]]   ----------------
+------------------------------------------------
 
 rs_menu = {}
 
---- [[ 武器 ]] ---
+-------- [[ 武器 ]] --------
+
 rs_menu.weapon_list = {
     reference = 0,
     menu_name = "",
@@ -137,7 +138,8 @@ function rs_menu.current_weapon_action(weapon_menu_list, action_name, on_click, 
     end
 end
 
---- [[ 载具武器 ]] ---
+-------- [[ 载具武器 ]] --------
+
 rs_menu.vehicle_weapon_list = {
     reference = 0,
     menu_name = "",
@@ -221,14 +223,14 @@ function rs_menu.vehicle_weapons(menu_parent, menu_name, command_names, help_tex
     self.class = self:create_class_list()
     self.vehicle_menu = {}
 
-    for key, item in pairs(VehicleWeapons) do
+    for key, item in pairs(RS_T.VehicleWeapons) do
         self:add_action(item)
     end
 
     return self.reference
 end
 
---- [[ 其它 ]] ---
+-------- [[ 其它 ]] --------
 
 --- 删除 menu list (table)
 --- @param menu_list table<int, CommandRef>
@@ -238,30 +240,4 @@ function rs_menu.delete_menu_list(menu_list)
             menu.delete(command)
         end
     end
-end
-
-------------------------------
--------- [[ Memory ]] --------
-------------------------------
-
-memory_utils = {}
-
---- @param blip Blip
---- @return float, float
-function memory_utils.get_blip_scale_2d(blip)
-    local ptr = util.blip_handle_to_pointer(blip)
-    local m_scale_x = ptr + 0x50
-    local m_scale_y = ptr + 0x54
-    return memory.read_float(m_scale_x), memory.read_float(m_scale_y)
-end
-
---- @param blip Blip
---- @param scale_x float
---- @param scale_y float
-function memory_utils.set_blip_scale_2d(blip, scale_x, scale_y)
-    local ptr = util.blip_handle_to_pointer(blip)
-    local m_scale_x = ptr + 0x50
-    local m_scale_y = ptr + 0x54
-    memory.write_float(m_scale_x, scale_x)
-    memory.write_float(m_scale_y, scale_y)
 end

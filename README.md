@@ -1,8 +1,18 @@
 # Stand Lua RScript
 
-Stand 自用脚本😋
+Stand 自用脚本 😋
 
-Made by Rostal#9913
+
+
+- **RScript.lua**
+
+常用功能
+
+
+
+- **RScript2.lua**
+
+非常用功能
 
 
 

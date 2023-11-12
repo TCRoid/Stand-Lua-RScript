@@ -1,13 +1,16 @@
-----------------------------------
---   GTA Online Version: 1.67   --
-----------------------------------
+-- GTA Online Version: 1.67-3028
+
+----------------------------
+-- Globals
+----------------------------
 
 Globals = {
     IsUsingComputerScreen = 75816,
+    MissionCameraLock = 4718592 + 144676,
 
-    RC_Bandito = 2794162 + 6879,     -- freemode.c, (..., joaat("rcbandito"), 1)
-    RC_Tank = 2794162 + 6880,        -- freemode.c, (..., joaat("minitank"), 1)
-    Ballistic_Armor = 2794162 + 901, -- freemode.c, (!NETWORK::NETWORK_IS_SCRIPT_ACTIVE("AM_AMMO_DROP", PLAYER::PLAYER_ID(), true, 0))
+    RC_Bandito = 2794162 + 6879,
+    RC_Tank = 2794162 + 6880,
+    BallisticArmor = 2794162 + 901,
 
     -- 无视犯罪
     NCOPS = {
@@ -15,6 +18,7 @@ Globals = {
         flag = 2794162 + 4662,
         time = 2794162 + 4664,
     },
+
     GB_GHOST_ORG_DURATION = 262145 + 13322,
     GB_BRIBE_AUTHORITIES_DURATION = 262145 + 13323,
     FIXER_SECURITY_CONTRACT_REFRESH_TIME = 262145 + 31907,
@@ -22,6 +26,7 @@ Globals = {
     TURN_SNOW_ON_OFF = 262145 + 4752,
     AI_HEALTH = 262145 + 165,
     VC_WORK_REQUEST_COOLDOWN = 262145 + 27440,
+
     BUNKER_RESEARCH_REQUEST_COOLDOWN = 262145 + 33076, -- 370341838
     NC_GOODS_REQUEST_COOLDOWN = 262145 + 33077,        -- 236343681
 }
@@ -30,6 +35,7 @@ Globals.SpecialCargo = {
     EXEC_CONTRABAND_TYPE_REFRESH_TIME = 262145 + 15734,
     EXEC_CONTRABAND_SPECIAL_ITEM_THRESHOLD = 262145 + 15735,
     EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE = 262145 + 15736,
+
     Buy_Offsets = {
         15765, -- EXEC_DISABLE_BUY_AFTERMATH
         15771, -- EXEC_DISABLE_BUY_AMBUSHED
@@ -74,6 +80,7 @@ Globals.SpecialCargo = {
         { "Valkyrie Takedown", "干掉女武神" },
         { "Vehicle Collection", "厢型车\n不用踩黄点" },
     },
+
     Sell_Offsets = {
         15855, -- EXEC_DISABLE_SELL_AIRATTACKED
         15861, -- EXEC_DISABLE_SELL_AIRCLEARAREA
@@ -108,9 +115,95 @@ Globals.SpecialCargo = {
     },
 }
 
+function Globals.SpecialCargo.NoWanted(toggle)
+    local tunables = {
+        15712, -- EXEC_BUY_ASSASSINATE_WANTED_CAP
+        15713, -- EXEC_BUY_BOATATTACK_WANTED_CAP
+        15714, -- EXEC_BUY_CRASHSITE_WANTED_CAP
+        15720, -- EXEC_BUY_IMPOUNDED_WANTED_CAP
+        15721, -- EXEC_BUY_POLICESTING_WANTED_CAP
+        15722, -- EXEC_BUY_STEALTRANSPORTER_WANTED_CAP
+        16844, -- EXEC_BUY_LOSE_THE_COPS_WANTED_CAP
+        16848, -- EXEC_BUY_STEALTRANSPORTER_EASY_WANTED_CAP
+        16849, -- EXEC_BUY_STEALTRANSPORTER_MEDIUM_WANTED_CAP
+        16850, -- EXEC_BUY_ASSASSINATE_EASY_WANTED_CAP
+        16851, -- EXEC_BUY_ASSASSINATE_MEDIUM_WANTED_CAP
+        16852, -- EXEC_BUY_CRASHSITE_EASY_WANTED_CAP
+        16853, -- EXEC_BUY_CRASHSITE_MEDIUM_WANTED_CAP
+        16854, -- EXEC_BUY_IMPOUNDED_EASY_WANTED_CAP
+        16855, -- EXEC_BUY_IMPOUNDED_MEDIUM_WANTED_CAP
+        16856, -- EXEC_BUY_POLICESTING_EASY_WANTED_CAP
+        16857, -- EXEC_BUY_POLICESTING_MEDIUM_WANTED_CAP
+        16861, -- EXEC_BUY_MEDIUM_WANTED_RATING_CAP
+        16865, -- EXEC_BUY_EASY_WANTED_RATING_CAP
+        15739, -- EXEC_SELL_AIRFLYLOW_WANTED_CAP
+        15741, -- EXEC_SELL_AIRRESTRICTED_WANTED_CAP
+        15760, -- EXEC_SELL_STING_WANTED_CAP
+        16886, -- EXEC_SELL_HARD_WANTED_CAP
+    }
+    local default_value = {
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        1,
+        1,
+        2,
+        1,
+        2,
+        1,
+        2,
+        1,
+        2,
+        1,
+        2,
+        2,
+        1,
+        2,
+        3,
+        3,
+        3,
+    }
+
+    if toggle then
+        for key, offset in pairs(tunables) do
+            SET_INT_GLOBAL(262145 + offset, 0)
+        end
+    else
+        for key, offset in pairs(tunables) do
+            SET_INT_GLOBAL(262145 + offset, default_value[key])
+        end
+    end
+end
+
+function Globals.SpecialCargo.ClearMissionHistory()
+    local EXEC_BUY_MISSIONS_HISTORY = 262145 + 16264
+    local buy_base = 1895156 + 1 + players.user() * 609 + 10 + 312 + 1
+    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_312[iVar0] = ..., Search EXEC_BUY_MISSIONS_HISTORY
+
+    local i = 0
+    while i < GET_INT_GLOBAL(EXEC_BUY_MISSIONS_HISTORY) do
+        SET_INT_GLOBAL(buy_base + i, -1)
+        i = i + 1
+    end
+
+    local EXEC_SELL_MISSIONS_HISTORY = 262145 + 16265
+    local sell_base = 2794162 + 5231 + 349 + 1
+    -- gb_contraband_sell.c if (Global_2794162.f_5231.f_349[iVar0] == iParam0), Search EXEC_SELL_MISSIONS_HISTORY
+
+    i = 0
+    while i < GET_INT_GLOBAL(EXEC_SELL_MISSIONS_HISTORY) do
+        SET_INT_GLOBAL(sell_base + i, -1)
+        i = i + 1
+    end
+end
+
 Globals.Bunker = {
     GR_RESUPPLY_PACKAGE_VALUE = 262145 + 21703,
     GR_RESUPPLY_VEHICLE_VALUE = 262145 + 21704,
+
     Steal_Offsets = {
         21824, -- GR_STEAL_VAN_STEAL_VAN_WEIGHTING
         21826, -- GR_STEAL_APC_STEAL_APC_WEIGHTING
@@ -141,6 +234,7 @@ Globals.Bunker = {
         { "偷取电磁步枪", "" },
         { "Steal Miniguns", "不可进行" },
     },
+
     Sell_Offsets = {
         21868, -- GR_MOVE_WEAPONS_MOVE_WEAPONS_WEIGHTING
         21870, -- 926342835
@@ -158,6 +252,28 @@ Globals.Bunker = {
         { "(推荐) 尖锥魅影", "两辆" },
     },
 }
+
+function Globals.Bunker.ClearMissionHistory()
+    local GR_RESUPPLY_GENERAL_HISTORY_LIST = 262145 + 21818 -- -405844416
+    local resupply_base = 1895156 + 1 + players.user() * 609 + 10 + 378 + 1
+    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_378[iVar0] = ..., Search GR_RESUPPLY_GENERAL_HISTORY_LIST
+
+    local i = 0
+    while i < GET_INT_GLOBAL(GR_RESUPPLY_GENERAL_HISTORY_LIST) do
+        SET_INT_GLOBAL(resupply_base + i, -1)
+        i = i + 1
+    end
+
+    local GR_GENERAL_HISTORY_LIST = 262145 + 21860 -- 1667999010
+    local sell_base = 1895156 + 1 + players.user() * 609 + 10 + 387 + 1
+    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_387[iVar0] = ..., Search GR_GENERAL_HISTORY_LIST
+
+    i = 0
+    while i < GET_INT_GLOBAL(GR_GENERAL_HISTORY_LIST) do
+        SET_INT_GLOBAL(sell_base + i, -1)
+        i = i + 1
+    end
+end
 
 Globals.AirFreight = {
     Steal_Offsets = {
@@ -192,6 +308,7 @@ Globals.AirFreight = {
         { "护送泰坦", "" },
         { "Roof Bombings", "多人任务" },
     },
+
     Sell_Offsets = {
         22970, -- SMUG_SELL_HEAVY_LIFTING_WEIGHTING
         23007, -- SMUG_SELL_CONTESTED_WEIGHTING
@@ -216,9 +333,32 @@ Globals.AirFreight = {
     },
 }
 
+function Globals.AirFreight.ClearMissionHistory()
+    local SMUG_BUY_HISTORY_LIST = 262145 + 22885 -- -1676961419
+    local buy_base = 1895156 + 1 + players.user() * 609 + 10 + 394 + 1
+    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_394[iVar0] = ..., Search -1676961419
+
+    local i = 0
+    while i < GET_INT_GLOBAL(SMUG_BUY_HISTORY_LIST) do
+        SET_INT_GLOBAL(buy_base + i, -1)
+        i = i + 1
+    end
+
+    local SMUG_SELL_HISTORY_LIST = 262145 + 22975
+    local sell_base = 1895156 + 1 + players.user() * 609 + 10 + 403 + 1
+    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_403[iVar0] = ..., Search SMUG_SELL_HISTORY_LIST
+
+    i = 0
+    while i < GET_INT_GLOBAL(SMUG_SELL_HISTORY_LIST) do
+        SET_INT_GLOBAL(sell_base + i, -1)
+        i = i + 1
+    end
+end
+
 Globals.Biker = {
     BIKER_RESUPPLY_PACKAGE_VALUE = 262145 + 18560,
     BIKER_RESUPPLY_VEHICLE_VALUE = 262145 + 18561,
+
     Steal_Offsets = {
         18570, -- BIKER_RESUPPLY_WEED_FARM_WEIGHTING
         18577, -- BIKER_RESUPPLY_FRAGILE_SUPPLIES_WEIGHTING
@@ -255,6 +395,7 @@ Globals.Biker = {
         { "投掷信号弹", "" },
         { "威胁目标", "" },
     },
+
     Sell_Offsets = {
         18693, -- BIKER_DISABLE_SELL_CONVOY
         18695, -- BIKER_DISABLE_SELL_TRASHMASTER
@@ -285,8 +426,101 @@ Globals.Biker = {
         { "Race", "多人任务" },
         { "Club Run", "多人任务" },
     },
+
     BIKER_DISABLE_SELL_BORDER_PATROL_0 = 262145 + 18707, -- _9 = 18716
 }
+
+function Globals.Biker.ClearMissionHistory()
+    local BIKER_RESUPPLY_HISTORY_LIST = 262145 + 18567 -- 1185530883
+    local resupply_base = 1895156 + 1 + players.user() * 609 + 10 + 196 + 1
+    -- freemode.c if (Global_1895156[iVar0 /*609*/].f_10.f_196[iVar1] == iParam0), Search 1185530883
+
+    local i = 0
+    while i < GET_INT_GLOBAL(BIKER_RESUPPLY_HISTORY_LIST) do
+        SET_INT_GLOBAL(resupply_base + i, -1)
+        i = i + 1
+    end
+
+    local BIKER_SELL_HISTORY_LIST = 262145 + 18687 -- 731581918
+    local sell_base = 2794162 + 5231 + 358 + 1
+    -- gb_biker_contraband_sell.c if (Global_2794162.f_5231.f_358[iVar0] == iParam0), Search 731581918
+
+    i = 0
+    while i < GET_INT_GLOBAL(BIKER_SELL_HISTORY_LIST) do
+        SET_INT_GLOBAL(sell_base + i, -1)
+        i = i + 1
+    end
+end
+
+Globals.VehicleCargo = {}
+
+function Globals.VehicleCargo.NoWanted(toggle)
+    local tunables = {
+        19503, -- IMPEXP_STEAL_HARD_WANTED_CAP
+        19507, -- IMPEXP_STEAL_MEDIUM_WANTED_CAP
+        19513, -- IMPEXP_STEAL_EASY_WANTED_CAP
+        19532, -- IMPEXP_POLICE_CHASE_WANTED_CAP
+        16844, -- EXEC_BUY_LOSE_THE_COPS_WANTED_CAP
+    }
+    local default_value = {
+        3,
+        2,
+        1,
+        3,
+        1,
+    }
+
+    if toggle then
+        for key, offset in pairs(tunables) do
+            SET_INT_GLOBAL(262145 + offset, 0)
+        end
+    else
+        for key, offset in pairs(tunables) do
+            SET_INT_GLOBAL(262145 + offset, default_value[key])
+        end
+    end
+end
+
+function Globals.VehicleCargo.NoDamageReduction(toggle)
+    local tunables = {
+        19838, -- IMPEXP_STEAL_REDUCTION_HARD
+        19839, -- IMPEXP_STEAL_REDUCTION_MEDIUM
+        19840, -- IMPEXP_STEAL_REDUCTION_EASY
+        19583, -- IMPEXP_SELL_REDUCTION_BUYER1_HARD
+        19584, -- IMPEXP_SELL_REDUCTION_BUYER1_MEDIUM
+        19585, -- IMPEXP_SELL_REDUCTION_BUYER1_EASY
+        19586, -- IMPEXP_SELL_REDUCTION_BUYER2_HARD
+        19587, -- IMPEXP_SELL_REDUCTION_BUYER2_MEDIUM
+        19588, -- IMPEXP_SELL_REDUCTION_BUYER2_EASY
+        19589, -- IMPEXP_SELL_REDUCTION_BUYER3_HARD
+        19590, -- IMPEXP_SELL_REDUCTION_BUYER3_MEDIUM
+        19591, -- IMPEXP_SELL_REDUCTION_BUYER3_EASY
+    }
+    local default_value = {
+        49,
+        30,
+        18,
+        28,
+        18,
+        11,
+        45,
+        28,
+        17,
+        62,
+        39,
+        23,
+    }
+
+    if toggle then
+        for key, offset in pairs(tunables) do
+            SET_INT_GLOBAL(262145 + offset, 0)
+        end
+    else
+        for key, offset in pairs(tunables) do
+            SET_INT_GLOBAL(262145 + offset, default_value[key])
+        end
+    end
+end
 
 Globals.AcidLab = {
     ACID_LAB_RESUPPLY_CRATE_VALUE = 262145 + 32918,
@@ -316,94 +550,6 @@ Globals.Payphone = {
         -- "Approach",
     },
 }
-
-function Globals.SpecialCargo.ClearMissionHistory()
-    local EXEC_BUY_MISSIONS_HISTORY = 262145 + 16264
-    local buy_base = 1895156 + 1 + players.user() * 609 + 10 + 312 + 1
-    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_312[iVar0] = ..., Search EXEC_BUY_MISSIONS_HISTORY
-
-    local i = 0
-    while i < GET_INT_GLOBAL(EXEC_BUY_MISSIONS_HISTORY) do
-        SET_INT_GLOBAL(buy_base + i, -1)
-        i = i + 1
-    end
-
-    local EXEC_SELL_MISSIONS_HISTORY = 262145 + 16265
-    local sell_base = 2794162 + 5231 + 349 + 1
-    -- gb_contraband_sell.c if (Global_2794162.f_5231.f_349[iVar0] == iParam0), Search EXEC_SELL_MISSIONS_HISTORY
-
-    local i = 0
-    while i < GET_INT_GLOBAL(EXEC_SELL_MISSIONS_HISTORY) do
-        SET_INT_GLOBAL(sell_base + i, -1)
-        i = i + 1
-    end
-end
-
-function Globals.Bunker.ClearMissionHistory()
-    local GR_RESUPPLY_GENERAL_HISTORY_LIST = 262145 + 21818 -- -405844416
-    local resupply_base = 1895156 + 1 + players.user() * 609 + 10 + 378 + 1
-    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_378[iVar0] = ..., Search GR_RESUPPLY_GENERAL_HISTORY_LIST
-
-    local i = 0
-    while i < GET_INT_GLOBAL(GR_RESUPPLY_GENERAL_HISTORY_LIST) do
-        SET_INT_GLOBAL(resupply_base + i, -1)
-        i = i + 1
-    end
-
-    local GR_GENERAL_HISTORY_LIST = 262145 + 21860 -- 1667999010
-    local sell_base = 1895156 + 1 + players.user() * 609 + 10 + 387 + 1
-    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_387[iVar0] = ..., Search GR_GENERAL_HISTORY_LIST
-
-    local i = 0
-    while i < GET_INT_GLOBAL(GR_GENERAL_HISTORY_LIST) do
-        SET_INT_GLOBAL(sell_base + i, -1)
-        i = i + 1
-    end
-end
-
-function Globals.AirFreight.ClearMissionHistory()
-    local SMUG_BUY_HISTORY_LIST = 262145 + 22885 -- -1676961419
-    local buy_base = 1895156 + 1 + players.user() * 609 + 10 + 394 + 1
-    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_394[iVar0] = ..., Search -1676961419
-
-    local i = 0
-    while i < GET_INT_GLOBAL(SMUG_BUY_HISTORY_LIST) do
-        SET_INT_GLOBAL(buy_base + i, -1)
-        i = i + 1
-    end
-
-    local SMUG_SELL_HISTORY_LIST = 262145 + 22975
-    local sell_base = 1895156 + 1 + players.user() * 609 + 10 + 403 + 1
-    -- freemode.c Global_1895156[PLAYER::PLAYER_ID() /*609*/].f_10.f_403[iVar0] = ..., Search SMUG_SELL_HISTORY_LIST
-
-    local i = 0
-    while i < GET_INT_GLOBAL(SMUG_SELL_HISTORY_LIST) do
-        SET_INT_GLOBAL(sell_base + i, -1)
-        i = i + 1
-    end
-end
-
-function Globals.Biker.ClearMissionHistory()
-    local BIKER_RESUPPLY_HISTORY_LIST = 262145 + 18567 -- 1185530883
-    local resupply_base = 1895156 + 1 + players.user() * 609 + 10 + 196 + 1
-    -- freemode.c if (Global_1895156[iVar0 /*609*/].f_10.f_196[iVar1] == iParam0), Search 1185530883
-
-    local i = 0
-    while i < GET_INT_GLOBAL(BIKER_RESUPPLY_HISTORY_LIST) do
-        SET_INT_GLOBAL(resupply_base + i, -1)
-        i = i + 1
-    end
-
-    local BIKER_SELL_HISTORY_LIST = 262145 + 18687 -- 731581918
-    local sell_base = 2794162 + 5231 + 358 + 1
-    -- gb_biker_contraband_sell.c if (Global_2794162.f_5231.f_358[iVar0] == iParam0), Search 731581918
-
-    local i = 0
-    while i < GET_INT_GLOBAL(BIKER_SELL_HISTORY_LIST) do
-        SET_INT_GLOBAL(sell_base + i, -1)
-        i = i + 1
-    end
-end
 
 Globals.RemoveCooldown = {}
 
@@ -563,10 +709,112 @@ function Globals.DisableBusinessRaid(toggle)
     end
 end
 
-Locals = {
-    -- fm_mission_controller_2020
-    MC_TLIVES_2020 = 51905 + 868 + 1,
-
-    -- fm_mission_controller
-    MC_TLIVES = 26136 + 1325 + 1,
+Globals.Request = {
+    VehicleProperty = {
+        { global = 2794162 + 930, command = "moc", name = "机动作战中心" },
+        { global = 2794162 + 938, command = "avenger", name = "复仇者" },
+        { global = 2794162 + 943, command = "terrorbyte", name = "恐霸" },
+        { global = 2794162 + 960, command = "kosatka", name = "虎鲸" },
+        { global = 2794162 + 972, command = "dinghy", name = "长崎" },
+        { global = 2794162 + 944, command = "acidlab", name = "致幻剂实验室" },
+        { global = 2794162 + 994, command = "bikeacidlab", name = "致幻剂送货摩托车" },
+    },
 }
+
+----------------------------
+-- Locals
+----------------------------
+
+Locals = {
+    fm_mission_controller = {
+        team_lives = 26136 + 1325 + 1,
+    },
+
+    fm_mission_controller_2020 = {
+        team_lives = 51905 + 868 + 1,
+    },
+
+    -- Casino Heist Prep
+    gb_casino_heist = {
+        phone_hack_progress = 2327,
+        camera_hack_position = 4275 + 1654,
+        target_package_number = 4275 + 1724,
+    },
+
+    -- Security Contract
+    fm_content_security_contract = {
+        mission_time = 252 + 1550,
+        mission_type = 6958 + 1338 + 1,
+        realize_assets_destination = 115 + 34,
+    },
+
+    -- Vehicle Cargo Import & Export
+    gb_vehicle_export = {
+        vehicle_net_id = 832 + 29 + 1,
+        mission_start_time = 832 + 457,
+    },
+}
+
+function Locals.SkipHacking()
+    local script = "fm_mission_controller_2020"
+    if IS_SCRIPT_RUNNING(script) then
+        -- Skip The Hacking Process
+        if GET_INT_LOCAL(script, 23669) == 4 then
+            SET_INT_LOCAL(script, 23669, 5)
+        end
+        -- Skip Cutting The Sewer Grill
+        if GET_INT_LOCAL(script, 28446) == 4 then
+            SET_INT_LOCAL(script, 28446, 6)
+        end
+        -- Skip Cutting The Glass
+        SET_FLOAT_LOCAL(script, 29685 + 3, 100)
+
+        SET_INT_LOCAL(script, 975 + 135, 3) -- For ULP Missions
+    end
+
+    script = "fm_mission_controller"
+    if IS_SCRIPT_RUNNING(script) then
+        -- For Fingerprint
+        if GET_INT_LOCAL(script, 52964) ~= 1 then
+            SET_INT_LOCAL(script, 52964, 5)
+        end
+        -- For Keypad
+        if GET_INT_LOCAL(script, 54026) ~= 1 then
+            SET_INT_LOCAL(script, 54026, 5)
+        end
+        -- Skip Drilling The Vault Door
+        local Value = GET_INT_LOCAL(script, 10101 + 37)
+        SET_INT_LOCAL(script, 10101 + 7, Value)
+
+        -- Doomsday Heist
+        SET_INT_LOCAL(script, 1509, 3)       -- For ACT I, Setup: Server Farm (Lester)
+        SET_INT_LOCAL(script, 1540, 2)
+        SET_INT_LOCAL(script, 1266 + 135, 3) -- For ACT III
+
+        -- Fleeca Heist
+        SET_INT_LOCAL(script, 11760 + 24, 7)     -- Skip The Hacking Process
+        SET_FLOAT_LOCAL(script, 10061 + 11, 100) -- Skip Drilling
+
+        -- Pacific Standard Heist
+        SET_LOCAL_BIT(script, 9767, 9) -- Skip The Hacking Process
+    end
+
+    script = "fm_content_island_heist"
+    if IS_SCRIPT_RUNNING(script) then
+        SET_LOCAL_BIT(script, 9875, 9)
+    end
+end
+
+function Locals.VoltageHack()
+    local script = "fm_mission_controller_2020"
+    if IS_SCRIPT_RUNNING(script) then
+        local target_value = GET_INT_LOCAL(script, 1719)
+        SET_INT_LOCAL(script, 1718, target_value)
+    end
+
+    script = "fm_content_island_heist"
+    if IS_SCRIPT_RUNNING(script) then
+        local target_value = GET_INT_LOCAL(script, 760)
+        SET_INT_LOCAL(script, 759, target_value)
+    end
+end

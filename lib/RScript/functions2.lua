@@ -196,6 +196,10 @@ function CLEAR_BIT(bits, place)
     return (bits & ~(1 << place))
 end
 
+function BIT_TEST(bits, place)
+    return (bits & (1 << place)) ~= 0
+end
+
 function SET_LOCAL_BIT(script, script_local, bit)
     if memory.script_local(script, script_local) ~= 0 then
         local Addr = memory.script_local(script, script_local)
