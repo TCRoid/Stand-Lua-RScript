@@ -832,3 +832,6 @@ menu.toggle(Online_Options, "禁用产业劫货", {}, "", function(toggle)
     Globals.DisableBusinessRaid(toggle)
     Loop_Handler.Tunables.DisableBusinessRaid = toggle
 end)
+menu.action(Online_Options, "设置藏匿屋密码为000000", {}, "输入密码时执行本选项", function()
+    Locals.StashHouseCode()
+end)

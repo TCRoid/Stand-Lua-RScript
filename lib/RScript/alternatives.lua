@@ -212,3 +212,9 @@ end
 function SET_VEHICLE_ON_GROUND_PROPERLY(vehicle)
     VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle, 5.0)
 end
+
+---@param entity Entity
+---@return string|nil
+function GET_ENTITY_SCRIPT(entity)
+    return ENTITY.GET_ENTITY_SCRIPT(entity, 0)
+end

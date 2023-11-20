@@ -372,15 +372,15 @@ function Entity_Control:Movement()
 
     menu.click_slider_float(movement_options, "前/后 移动", { "ctrl_ent" .. index .. "_move_y" }, "",
         -10000, 10000, 0, 50, function(value)
-            SET_ENTITY_MOVE(entity, 0.0, value * 0.01, 0.0)
+            set_entity_move(entity, 0.0, value * 0.01, 0.0)
         end)
     menu.click_slider_float(movement_options, "左/右 移动", { "ctrl_ent" .. index .. "_move_x" }, "",
         -10000, 10000, 0, 50, function(value)
-            SET_ENTITY_MOVE(entity, value * 0.01, 0.0, 0.0)
+            set_entity_move(entity, value * 0.01, 0.0, 0.0)
         end)
     menu.click_slider_float(movement_options, "上/下 移动", { "ctrl_ent" .. index .. "_move_z" }, "",
         -10000, 10000, 0, 50, function(value)
-            SET_ENTITY_MOVE(entity, 0.0, 0.0, value * 0.01)
+            set_entity_move(entity, 0.0, 0.0, value * 0.01)
         end)
     menu.click_slider_float(movement_options, "朝向(加减)", { "ctrl_ent" .. index .. "_heading" }, "",
         -36000, 36000, 0, 500,
@@ -563,7 +563,7 @@ function Entity_Control:Vehicle()
             if value == 1 then
                 local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
                 if ped ~= 0 then
-                    SET_ENTITY_MOVE(ped, 0.0, 0.0, 3.0)
+                    set_entity_move(ped, 0.0, 0.0, 3.0)
                 end
                 PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, -1)
             elseif value == 2 then
@@ -585,7 +585,7 @@ function Entity_Control:Vehicle()
                 else
                     local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1)
                     if ped ~= 0 then
-                        SET_ENTITY_MOVE(ped, 0.0, 0.0, 3.0)
+                        set_entity_move(ped, 0.0, 0.0, 3.0)
                         PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, -1)
                     end
                 end
@@ -596,7 +596,7 @@ function Entity_Control:Vehicle()
                     else
                         local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, 0)
                         if ped ~= 0 then
-                            SET_ENTITY_MOVE(ped, 0.0, 0.0, 3.0)
+                            set_entity_move(ped, 0.0, 0.0, 3.0)
                             PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, 0)
                         end
                     end
@@ -610,7 +610,7 @@ function Entity_Control:Vehicle()
         local num, peds = get_vehicle_peds(vehicle)
         if num > 0 then
             for k, ped in pairs(peds) do
-                SET_ENTITY_MOVE(ped, 0.0, 0.0, 3.0)
+                set_entity_move(ped, 0.0, 0.0, 3.0)
             end
         end
     end)
@@ -1000,7 +1000,7 @@ function Entity_Control:EntitiesMovement()
             value = value * 0.01
             for _, entity in pairs(entity_list) do
                 if ENTITY.DOES_ENTITY_EXIST(entity) then
-                    SET_ENTITY_MOVE(entity, 0.0, value, 0.0)
+                    set_entity_move(entity, 0.0, value, 0.0)
                 end
             end
             util.toast("完成！")
@@ -1010,7 +1010,7 @@ function Entity_Control:EntitiesMovement()
             value = value * 0.01
             for _, entity in pairs(entity_list) do
                 if ENTITY.DOES_ENTITY_EXIST(entity) then
-                    SET_ENTITY_MOVE(entity, value, 0.0, 0.0)
+                    set_entity_move(entity, value, 0.0, 0.0)
                 end
             end
             util.toast("完成！")
@@ -1020,7 +1020,7 @@ function Entity_Control:EntitiesMovement()
             value = value * 0.01
             for _, entity in pairs(entity_list) do
                 if ENTITY.DOES_ENTITY_EXIST(entity) then
-                    SET_ENTITY_MOVE(entity, 0.0, 0.0, value)
+                    set_entity_move(entity, 0.0, 0.0, value)
                 end
             end
             util.toast("完成！")

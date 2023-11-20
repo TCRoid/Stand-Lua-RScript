@@ -818,3 +818,15 @@ function Locals.VoltageHack()
         SET_INT_LOCAL(script, 759, target_value)
     end
 end
+
+function Locals.StashHouseCode()
+    local script = "fm_content_stash_house"
+    if not IS_SCRIPT_RUNNING(script) then
+        return
+    end
+
+    for i = 0, 2 do
+        SET_FLOAT_LOCAL(script, 115 + 22 + 1 + i * 2, 0)
+        SET_INT_LOCAL(script, 115 + 22 + 1 + i * 2 + 1, 0)
+    end
+end

@@ -369,7 +369,7 @@ menu.click_slider(Entity_Object_Options, "上下移动", { "move_cam" }, "易导
             local EntityModel = ENTITY.GET_ENTITY_MODEL(ent)
             for i = 1, #Cams do
                 if EntityModel == Cams[i] then
-                    SET_ENTITY_MOVE(ent, 0.0, 0.0, value)
+                    set_entity_move(ent, 0.0, 0.0, value)
                 end
             end
         end

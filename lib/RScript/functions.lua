@@ -1181,6 +1181,18 @@ function request_control(entity, timeout)
     return true
 end
 
+---请求控制实体，如果失败则通知
+---@param entity Entity
+---@param timeout integer?
+---@return boolean
+function request_control2(entity, timeout)
+    if request_control(entity, timeout) then
+        return true
+    end
+    util.toast("未能成功控制实体，请重试")
+    return false
+end
+
 ---是否已控制实体
 ---@param entity Entity
 ---@return boolean

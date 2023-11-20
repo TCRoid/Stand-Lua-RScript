@@ -6,7 +6,7 @@ local SCRIPT_START_TIME <const> = util.current_time_millis()
 
 util.require_natives("2944b", "init")
 
-local SCRIPT_VERSION <const> = "2023/11/12"
+local SCRIPT_VERSION <const> = "2023/11/20"
 
 local SUPPORT_GTAO <const> = 1.67
 
@@ -155,6 +155,18 @@ Loop_Handler = {
 }
 
 
+-- Transition Finished
+Transition_Handler = {
+    Self = {},
+}
+
+util.on_transition_finished(function()
+    if Transition_Handler.Self.refill_armour then
+        menu.trigger_commands("refillarmour")
+    end
+end)
+
+
 
 ---------------------------------------------
 ----------    Script Menu Start    ----------
@@ -214,14 +226,15 @@ menu.toggle_loop(Self_HealthArmour, "信息显示 生命和护甲", {}, "信息�
     local text = string.format("生命: %d/%d\n护甲: %d/%d", current_health, max_health, current_armour, max_armour)
     util.draw_debug_text(text)
 end)
+menu.toggle(Self_HealthArmour, "切换战局自动补满护甲", {}, "", function(toggle)
+    Transition_Handler.Self.refill_armour = toggle
+end)
 
---menu.divider(Self_HealthArmour, "生命")
+menu.divider(Self_HealthArmour, "")
 menu.slider(Self_HealthArmour, "设置当前生命值", { "set_health" }, "",
     0, 100000, tSelf.HealthArmour.defaultHealth, 50, function(value)
         SET_ENTITY_HEALTH(players.user_ped(), value)
     end)
-
---menu.divider(Self_HealthArmour, "护甲")
 menu.slider(Self_HealthArmour, "设置当前护甲值", { "set_armour" }, "",
     0, 100000, tSelf.HealthArmour.defaultArmour, 50, function(value)
         PED.SET_PED_ARMOUR(players.user_ped(), value)
@@ -767,6 +780,10 @@ function WeaponAttribute.GenerateMenu(CWeaponInfo, weaponHash)
                 end, default_value)
         end
     end
+
+
+    -- Index
+    WeaponAttribute.Index = WeaponAttribute.Index + 1
 end
 
 function WeaponAttribute.Persets.Apply(CWeaponInfo, dataList)
@@ -1230,8 +1247,10 @@ menu.toggle_loop(Weapon_Options, "锁定最大弹药", { "lock_ammo" }, "射击�
     function()
         if PED.IS_PED_SHOOTING(players.user_ped()) then
             local weaponHash = WEAPON.GET_SELECTED_PED_WEAPON(players.user_ped())
-            -- WEAPON.SET_PED_AMMO(players.user_ped(), weaponHash, 9999)
-            WEAPON.ADD_AMMO_TO_PED(players.user_ped(), weaponHash, 9999)
+            if weaponHash ~= 0 then
+                -- WEAPON.SET_PED_AMMO(players.user_ped(), weaponHash, 9999)
+                WEAPON.ADD_AMMO_TO_PED(players.user_ped(), weaponHash, 9999)
+            end
         end
     end)
 menu.toggle_loop(Weapon_Options, "无限载具武器弹药", { "inf_veh_ammo" }, "", function()

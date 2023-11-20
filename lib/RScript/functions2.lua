@@ -30,6 +30,11 @@ function START_SCRIPT(str, arg_count)
     return true
 end
 
+function IS_MISSION_SCRIPT(script)
+    script = string.lower(script)
+    return script == "fm_mission_controller" or script == "fm_mission_controller_2020"
+end
+
 --------------------------
 -- Stat Functions
 --------------------------

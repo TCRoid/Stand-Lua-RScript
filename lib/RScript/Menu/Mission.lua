@@ -1471,7 +1471,6 @@ menu.action(Diamond_Casino, "保安 传送到我", {}, "骇入手机会直接完
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
             tp_entity_to_me(ent, 0.0, 2.0, 0.0)
-            SET_ENTITY_HEALTH(ent, 0)
         end
 
         SET_INT_LOCAL("gb_casino_heist", Locals.gb_casino_heist.phone_hack_progress, 100000)
@@ -1773,7 +1772,10 @@ menu.toggle_loop(Diamond_Casino, "设置目标包裹数量为1", {}, "右下角�
     if not IS_SCRIPT_RUNNING(script) then
         return
     end
-    SET_INT_LOCAL(script, Locals.gb_casino_heist.target_package_number, 1)
+    local value = GET_INT_LOCAL(script, Locals.gb_casino_heist.target_package_number)
+    if value == 2 then
+        SET_INT_LOCAL(script, Locals.gb_casino_heist.target_package_number, 1)
+    end
 end)
 
 ----------------
@@ -3301,8 +3303,14 @@ local Multiple_Heist_Mission <const> = menu.list(Mission_Options, "多人抢劫�
 
 menu.divider(Multiple_Heist_Mission, "公寓抢劫")
 
---- 全福银行 The Fleeca Job ---
---- 越狱 The Prison Break ---
+--------------------------------
+-- 全福银行 The Fleeca Job
+--------------------------------
+
+--------------------------------
+-- 越狱 The Prison Break
+--------------------------------
+
 local Heist_Prison <const> = menu.list(Multiple_Heist_Mission, "越狱", {}, "")
 
 menu.action(Heist_Prison, "飞机: 目的地 生成坦克", {}, "", function()
@@ -3332,18 +3340,16 @@ menu.action(Heist_Prison, "巴士: 传送到目的地", {}, "", function()
                     SET_ENTITY_HEALTH(ped, 0)
                 end
 
-                request_control(ent)
-                TP_ENTITY(ent, coords, heading)
+                if request_control2(ent) then
+                    TP_ENTITY(ent, coords, heading)
 
-                VEHICLE.SET_VEHICLE_IS_WANTED(ent, false)
-                VEHICLE.SET_VEHICLE_INFLUENCES_WANTED_LEVEL(ent, false)
-                VEHICLE.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER(ent, true)
-                VEHICLE.SET_VEHICLE_IS_STOLEN(ent, false)
+                    VEHICLE.SET_VEHICLE_IS_WANTED(ent, false)
+                    VEHICLE.SET_VEHICLE_INFLUENCES_WANTED_LEVEL(ent, false)
+                    VEHICLE.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER(ent, true)
+                    VEHICLE.SET_VEHICLE_IS_STOLEN(ent, false)
+                    VEHICLE.SET_POLICE_FOCUS_WILL_TRACK_VEHICLE(ent, false)
 
-                if has_control_entity(ent) then
                     util.toast("完成！")
-                else
-                    util.toast("未能成功控制实体")
                 end
             end
         end
@@ -3365,13 +3371,10 @@ menu.action(Heist_Prison, "(破坏)巴士 传送到目的地", {}, "", function(
                     SET_ENTITY_HEALTH(ped, 0)
                 end
 
-                request_control(ent)
-                TP_ENTITY(ent, coords, heading)
+                if request_control2(ent) then
+                    TP_ENTITY(ent, coords, heading)
 
-                if has_control_entity(ent) then
                     util.toast("完成！")
-                else
-                    util.toast("未能成功控制实体")
                 end
             end
         end
@@ -3390,18 +3393,17 @@ menu.action(Heist_Prison, "监狱内 生成骷髅马", {}, "", function()
         util.toast("完成！")
     end
 end)
-menu.action(Heist_Prison, "美杜莎 无敌", {}, "", function()
+menu.action(Heist_Prison, "美杜莎飞机 无敌", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1077420264)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            set_entity_godmode(ent, true)
-            strong_vehicle(ent)
+            if IS_MISSION_SCRIPT(GET_ENTITY_SCRIPT(ent)) then
+                if request_control2(ent) then
+                    set_entity_godmode(ent, true)
+                    strong_vehicle(ent)
 
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
+                    util.toast("完成！")
+                end
             end
         end
     end
@@ -3410,111 +3412,95 @@ menu.action(Heist_Prison, "秃鹰直升机 无敌", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 788747387)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            set_entity_godmode(ent, true)
-            strong_vehicle(ent)
+            if IS_MISSION_SCRIPT(GET_ENTITY_SCRIPT(ent)) then
+                if request_control2(ent) then
+                    set_entity_godmode(ent, true)
+                    strong_vehicle(ent)
 
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
+                    util.toast("完成！")
+                end
             end
         end
     end
 end)
-menu.action(Heist_Prison, "敌对天煞 传送到海洋", {}, "", function()
-    local coords = { x = 4912, y = -4910, z = 20 }
+menu.list_action(Heist_Prison, "敌对天煞", {}, "", {
+    { "传送到海洋" },
+    { "冻结" },
+    { "禁用导弹" }
+}, function(value)
     local entity_list = get_entities_by_hash("vehicle", true, -1281684762)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            TP_ENTITY(ent, coords)
-
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
-            end
-        end
-    end
-end)
-menu.action(Heist_Prison, "敌对天煞 冻结", {}, "", function()
-    local entity_list = get_entities_by_hash("vehicle", true, -1281684762)
-    if next(entity_list) ~= nil then
-        for _, ent in pairs(entity_list) do
-            request_control(ent)
-            ENTITY.FREEZE_ENTITY_POSITION(ent, true)
-
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
-            end
-        end
-    end
-end)
-menu.action(Heist_Prison, "敌对天煞 禁用导弹", {}, "", function()
-    local entity_list = get_entities_by_hash("vehicle", true, -1281684762)
-    if next(entity_list) ~= nil then
-        for _, ent in pairs(entity_list) do
-            request_control(ent)
-            local ped = GET_PED_IN_VEHICLE_SEAT(ent, -1)
-            if ped ~= 0 then
-                request_control(ped)
-                VEHICLE.DISABLE_VEHICLE_WEAPON(true, 3313697558, ent, ped) --VEHICLE_WEAPON_PLANE_ROCKET
-            end
-
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
+            if IS_MISSION_SCRIPT(GET_ENTITY_SCRIPT(ent)) then
+                if request_control2(ent) then
+                    if value == 1 then
+                        TP_ENTITY(ent, { x = 4912, y = -4910, z = 20 })
+                    elseif value == 2 then
+                        ENTITY.FREEZE_ENTITY_POSITION(ent, true)
+                    elseif value == 3 then
+                        local ped = GET_PED_IN_VEHICLE_SEAT(ent, -1)
+                        if ped ~= 0 and not is_player_ped(ped) then
+                            if request_control2(ped) then
+                                VEHICLE.DISABLE_VEHICLE_WEAPON(true, 3313697558, ent, ped) -- VEHICLE_WEAPON_PLANE_ROCKET
+                            end
+                        end
+                    end
+                    util.toast("完成！")
+                end
             end
         end
     end
 end)
 
--- Model Name: ig_rashcosvki, Hash: 940330470
 local Heist_Prison_rashcosvki = menu.list(Heist_Prison, "光头", {}, "")
+-- Model Name: ig_rashcosvki, Model Hash: 940330470
 
-menu.action(Heist_Prison_rashcosvki, "清除正在执行的任务", {}, "", function()
-    local entity_list = get_entities_by_hash("ped", true, 940330470)
-    if next(entity_list) ~= nil then
-        for _, ent in pairs(entity_list) do
-            request_control(ent)
-            TASK.CLEAR_PED_TASKS_IMMEDIATELY(ent)
-
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
-            end
-        end
-    end
-end)
 menu.action(Heist_Prison_rashcosvki, "无敌强化", {}, "", function()
     local weaponHash = util.joaat("WEAPON_APPISTOL")
-
     local entity_list = get_entities_by_hash("ped", true, 940330470)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            WEAPON.GIVE_WEAPON_TO_PED(ent, weaponHash, -1, false, true)
-            WEAPON.SET_CURRENT_PED_WEAPON(ent, weaponHash, false)
+            if request_control2(ent) then
+                WEAPON.GIVE_WEAPON_TO_PED(ent, weaponHash, -1, false, true)
+                WEAPON.SET_CURRENT_PED_WEAPON(ent, weaponHash, false)
 
-            increase_ped_combat_ability(ped, true)
-            PED.SET_PED_COMBAT_ATTRIBUTES(ped, 5, true)  --AlwaysFight
-            PED.SET_PED_COMBAT_ATTRIBUTES(ped, 27, true) --PerfectAccuracy
+                increase_ped_combat_ability(ped, true)
 
-            if has_control_entity(ent) then
                 util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
             end
         end
     end
 end)
+menu.action(Heist_Prison_rashcosvki, "传送进 美杜莎", {}, "", function()
+    local velum2 = 0
+
+    local entity_list = get_entities_by_hash("vehicle", true, 1077420264)
+    if next(entity_list) ~= nil then
+        for _, ent in pairs(entity_list) do
+            if IS_MISSION_SCRIPT(GET_ENTITY_SCRIPT(ent)) then
+                velum2 = ent
+            end
+        end
+    end
+
+    if not ENTITY.DOES_ENTITY_EXIST(velum2) then
+        return
+    end
+
+    entity_list = get_entities_by_hash("ped", true, 940330470)
+    if next(entity_list) ~= nil then
+        for _, ent in pairs(entity_list) do
+            if request_control2(ent) then
+                PED.SET_PED_INTO_VEHICLE(ent, velum2, 0)
+
+                util.toast("完成！")
+            end
+        end
+    end
+end)
+
 local Heist_Prison_vehicle = 0
-menu.action(Heist_Prison_rashcosvki, "跑去监狱外围的警车", {},
+menu.action(Heist_Prison_rashcosvki, "[TEST]跑去监狱外围的警车", {},
     "会在监狱外围生成一辆警车", function()
         local hash = util.joaat("police3")
         local coords = { x = 1571.585, y = 2605.450, z = 45.880 }
@@ -3523,24 +3509,20 @@ menu.action(Heist_Prison_rashcosvki, "跑去监狱外围的警车", {},
         local entity_list = get_entities_by_hash("ped", true, 940330470)
         if next(entity_list) ~= nil then
             for _, ent in pairs(entity_list) do
-                request_control(ent)
+                if request_control2(ent) then
+                    if not ENTITY.DOES_ENTITY_EXIST(Heist_Prison_vehicle) then
+                        local vehicle = create_vehicle(hash, coords, heading)
+                        upgrade_vehicle(vehicle)
+                        set_entity_godmode(vehicle, true)
+                        strong_vehicle(vehicle)
+                        SET_VEHICLE_ON_GROUND_PROPERLY(vehicle)
 
-                if not ENTITY.DOES_ENTITY_EXIST(Heist_Prison_vehicle) then
-                    local vehicle = create_vehicle(hash, coords, heading)
-                    upgrade_vehicle(vehicle)
-                    set_entity_godmode(vehicle, true)
-                    strong_vehicle(vehicle)
-                    SET_VEHICLE_ON_GROUND_PROPERLY(vehicle)
+                        Heist_Prison_vehicle = vehicle
+                    end
 
-                    Heist_Prison_vehicle = vehicle
-                end
+                    TASK.TASK_GO_TO_ENTITY(ent, Heist_Prison_vehicle, -1, 5.0, 100, 0.0, 0)
 
-                TASK.TASK_GO_TO_ENTITY(ent, Heist_Prison_vehicle, -1, 5.0, 100, 0.0, 0)
-
-                if has_control_entity(ent) then
                     util.toast("完成！")
-                else
-                    util.toast("未能成功控制实体")
                 end
             end
         end
@@ -3549,7 +3531,6 @@ menu.action(Heist_Prison_rashcosvki, "跑去监狱外围的警车", {},
 menu.divider(Heist_Prison_rashcosvki, "玩家")
 
 local heist_prison = {
-    select_menu,
     select_player = -1,
     player_list = {},
     team_list = {
@@ -3573,7 +3554,7 @@ heist_prison.select_menu = menu.list_select(Heist_Prison_rashcosvki, "选择玩�
                 local name = players.get_name(pid)
                 local rank = players.get_rank(pid)
                 local team = PLAYER.GET_PLAYER_TEAM(pid)
-                local menu_name = heist_prison.team_list[team] .. ": " .. name .. " (" .. rank .. "级)"
+                local menu_name = "[" .. heist_prison.team_list[team] .. "] " .. name .. " (" .. rank .. "级)"
 
                 t[1] = menu_name
 
@@ -3594,77 +3575,19 @@ heist_prison.select_menu = menu.list_select(Heist_Prison_rashcosvki, "选择玩�
     end)
 menu.action(Heist_Prison_rashcosvki, "传送到玩家/玩家载具", {}, "", function()
     if players.exists(heist_prison.select_player) then
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(heist_prison.select_player)
-        local veh = GET_VEHICLE_PED_IS_IN(player_ped)
-        if veh ~= 0 then
-            -- 传送到玩家载具
-            local entity_list = get_entities_by_hash("ped", true, 940330470)
-            if next(entity_list) ~= nil then
-                for _, ent in pairs(entity_list) do
-                    request_control(ent)
-                    PED.SET_PED_INTO_VEHICLE(ent, veh, -2)
-
-                    if has_control_entity(ent) then
-                        util.toast("完成！")
-                    else
-                        util.toast("未能成功控制实体")
-                    end
-                end
-            end
-        else
-            -- 传送到玩家
-            local entity_list = get_entities_by_hash("ped", true, 940330470)
-            if next(entity_list) ~= nil then
-                for _, ent in pairs(entity_list) do
-                    request_control(ent)
-                    tp_entity_to_entity(ent, player_ped)
-
-                    if has_control_entity(ent) then
-                        util.toast("完成！")
-                    else
-                        util.toast("未能成功控制实体")
-                    end
-                end
-            end
-        end
-    end
-end)
-menu.action(Heist_Prison_rashcosvki, "进入到玩家载具", {}, "TASK_ENTER_VEHICLE", function()
-    if players.exists(heist_prison.select_player) then
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(heist_prison.select_player)
-        local veh = GET_VEHICLE_PED_IS_IN(player_ped)
-        if veh ~= 0 then
-            local entity_list = get_entities_by_hash("ped", true, 940330470)
-            if next(entity_list) ~= nil then
-                for _, ent in pairs(entity_list) do
-                    request_control(ent)
-                    TASK.TASK_ENTER_VEHICLE(ent, veh, -1, -2, 2.0, 1, 0)
-
-                    if has_control_entity(ent) then
-                        util.toast("完成！")
-                    else
-                        util.toast("未能成功控制实体")
-                    end
-                end
-            end
-        else
-            util.toast("玩家没有在载具内")
-        end
-    end
-end)
-menu.action(Heist_Prison_rashcosvki, "跟随玩家", {}, "TASK_FOLLOW_TO_OFFSET_OF_ENTITY", function()
-    if players.exists(heist_prison.select_player) then
-        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(heist_prison.select_player)
         local entity_list = get_entities_by_hash("ped", true, 940330470)
         if next(entity_list) ~= nil then
             for _, ent in pairs(entity_list) do
-                request_control(ent)
-                TASK.TASK_FOLLOW_TO_OFFSET_OF_ENTITY(ent, player_ped, 0.0, -1.0, 0.0, 20.0, -1, 100.0, true)
+                if request_control2(ent) then
+                    local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(heist_prison.select_player)
+                    local veh = GET_VEHICLE_PED_IS_IN(player_ped)
+                    if veh ~= 0 then
+                        PED.SET_PED_INTO_VEHICLE(ent, veh, -2)
+                    else
+                        tp_entity_to_entity(ent, player_ped)
+                    end
 
-                if has_control_entity(ent) then
                     util.toast("完成！")
-                else
-                    util.toast("未能成功控制实体")
                 end
             end
         end
@@ -3672,7 +3595,10 @@ menu.action(Heist_Prison_rashcosvki, "跟随玩家", {}, "TASK_FOLLOW_TO_OFFSET_
 end)
 
 
---- 突袭人道实验室 The Humane Labs Raid ---
+----------------------------------------
+-- 突袭人道实验室 The Humane Labs Raid
+----------------------------------------
+
 local Heist_Huamane <const> = menu.list(Multiple_Heist_Mission, "突袭人道实验室", {}, "")
 
 menu.action(Heist_Huamane, "关键密码: 目的地 生成坦克", {}, "", function()
@@ -3691,14 +3617,13 @@ menu.action(Heist_Huamane, "电磁装置: 九头蛇 无敌", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 970385471)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            set_entity_godmode(ent, true)
-            strong_vehicle(ent)
+            if IS_MISSION_SCRIPT(GET_ENTITY_SCRIPT(ent)) then
+                if request_control2(ent) then
+                    set_entity_godmode(ent, true)
+                    strong_vehicle(ent)
 
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
+                    util.toast("完成！")
+                end
             end
         end
     end
@@ -3730,13 +3655,10 @@ menu.action(Heist_Huamane, "运送电磁装置: 叛乱分子 传送到目的地"
         for _, ent in pairs(entity_list) do
             local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
             if HUD.DOES_BLIP_EXIST(blip) then
-                request_control(ent)
-                TP_ENTITY(ent, coords, heading)
+                if request_control2(ent) then
+                    TP_ENTITY(ent, coords, heading)
 
-                if has_control_entity(ent) then
                     util.toast("完成！")
-                else
-                    util.toast("未能成功控制实体")
                 end
             end
         end
@@ -3746,35 +3668,36 @@ menu.action(Heist_Huamane, "终章: 女武神 无敌", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, -1600252419)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            set_entity_godmode(ent, true)
-            strong_vehicle(ent)
+            if IS_MISSION_SCRIPT(GET_ENTITY_SCRIPT(ent)) then
+                if request_control2(ent) then
+                    set_entity_godmode(ent, true)
+                    strong_vehicle(ent)
 
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
+                    util.toast("完成！")
+                end
             end
         end
     end
 end)
 
 
---- 首轮募资 Series A Funding ---
+--------------------------------
+-- 首轮募资 Series A Funding
+--------------------------------
+
 local Heist_Series <const> = menu.list(Multiple_Heist_Mission, "首轮募资", {}, "")
 
 menu.action(Heist_Series, "可卡因: 直升机 无敌", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 744705981)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            set_entity_godmode(ent, true)
-            strong_vehicle(ent)
+            if IS_MISSION_SCRIPT(GET_ENTITY_SCRIPT(ent)) then
+                if request_control2(ent) then
+                    set_entity_godmode(ent, true)
+                    strong_vehicle(ent)
 
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
+                    util.toast("完成！")
+                end
             end
         end
     end
@@ -3783,14 +3706,13 @@ menu.action(Heist_Series, "窃取冰毒: 油罐车 无敌", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1956216962)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            set_entity_godmode(ent, true)
-            strong_vehicle(ent)
+            if IS_MISSION_SCRIPT(GET_ENTITY_SCRIPT(ent)) then
+                if request_control2(ent) then
+                    set_entity_godmode(ent, true)
+                    strong_vehicle(ent)
 
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
+                    util.toast("完成！")
+                end
             end
         end
     end
@@ -3810,7 +3732,10 @@ menu.action(Heist_Series, "窃取冰毒: 油罐车位置 生成尖锥魅影", {}
 end)
 
 
---- 太平洋标准银行 The Pacific Standard ---
+----------------------------------------
+-- 太平洋标准银行 The Pacific Standard
+----------------------------------------
+
 local Heist_Pacific <const> = menu.list(Multiple_Heist_Mission, "太平洋标准银行", {}, "")
 
 menu.action(Heist_Pacific, "厢型车: 添加地图标记点", {}, "给车添加地图标记点ABCD",
@@ -3860,9 +3785,9 @@ menu.action(Heist_Pacific, "厢型车: 司机 传送到天上并冻结", {}, "",
         util.toast("完成！\n数量: " .. i)
     end
 end)
-menu.action(Heist_Pacific, "厢型车: 传送到目的地", {}, "传送司机到天上，车传送到莱斯特工厂",
+menu.action(Heist_Pacific, "厢型车: 传送到目的地", {}, "",
     function()
-        local coords = { x = 760, y = -983, z = 30 }
+        local coords = { x = 760, y = -983, z = 31 }
         local heading = 93.6973
         local entity_list = get_entities_by_hash("vehicle", true, 444171386)
         if next(entity_list) ~= nil then
@@ -3921,14 +3846,13 @@ menu.action(Heist_Pacific, "车队: 卡车 无敌", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 630371791)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            set_entity_godmode(ent, true)
-            strong_vehicle(ent)
+            if IS_MISSION_SCRIPT(GET_ENTITY_SCRIPT(ent)) then
+                if request_control2(ent) then
+                    set_entity_godmode(ent, true)
+                    strong_vehicle(ent)
 
-            if has_control_entity(ent) then
-                util.toast("完成！")
-            else
-                util.toast("未能成功控制实体")
+                    util.toast("完成！")
+                end
             end
         end
     end
@@ -3939,6 +3863,7 @@ menu.action(Heist_Pacific, "摩托车: 雷克卓 升级无敌", {}, "", function
         local i = 0
         for _, ent in pairs(entity_list) do
             request_control(ent, 500)
+
             set_entity_godmode(ent, true)
             upgrade_vehicle(ent)
             strong_vehicle(ent)
@@ -3950,7 +3875,8 @@ menu.action(Heist_Pacific, "摩托车: 雷克卓 升级无敌", {}, "", function
         util.toast("完成！\n数量: " .. i)
     end
 end)
-menu.action(Heist_Pacific, "终章: 摩托车位置 生成骷髅马", {}, "", function()
+menu.divider(Heist_Pacific, "终章")
+menu.action(Heist_Pacific, "摩托车位置 生成骷髅马", {}, "", function()
     local coords = { x = 36.002, y = 94.153, z = 78.751 }
     local heading = 249.426
     local hash = util.joaat("kuruma2")
@@ -3963,7 +3889,7 @@ menu.action(Heist_Pacific, "终章: 摩托车位置 生成骷髅马", {}, "", fu
         util.toast("完成！")
     end
 end)
-menu.action(Heist_Pacific, "终章: 摩托车位置 生成直升机", {}, "", function()
+menu.action(Heist_Pacific, "摩托车位置 生成直升机", {}, "", function()
     local coords = { x = 52.549, y = 88.787, z = 78.683 }
     local heading = 15.508
     local hash = util.joaat("polmav")
@@ -3990,11 +3916,8 @@ menu.action(Doomsday_Preps, "医疗装备: 救护车 传送到我", {}, "", func
     local entity_list = get_entities_by_hash("vehicle", true, 1171614426)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            tp_vehicle_to_me(ent)
-
-            if not has_control_entity(ent) then
-                util.toast("未能成功控制实体，请重试")
+            if request_control2(ent) then
+                tp_vehicle_to_me(ent)
             end
         end
     end
@@ -4022,11 +3945,8 @@ doomsday_preps_deluxo_menu = menu.list_action(Doomsday_Preps, "德罗索: 载具
         else
             local ent = doomsday_preps_deluxo_ent[value - 1]
             if ENTITY.DOES_ENTITY_EXIST(ent) then
-                request_control(ent)
-                tp_vehicle_to_me(ent)
-
-                if not has_control_entity(ent) then
-                    util.toast("未能成功控制实体，请重试")
+                if request_control2(ent) then
+                    tp_vehicle_to_me(ent)
                 end
             end
         end
@@ -4045,27 +3965,22 @@ menu.action(Doomsday_Preps, "阿库拉: 载具 传送到我", {},
         local entity_list = get_entities_by_hash("vehicle", true, 1181327175)
         if next(entity_list) ~= nil then
             for _, ent in pairs(entity_list) do
-                request_control(ent)
-                tp_vehicle_to_me(ent, "", "delete")
-                set_entity_godmode(ent, true)
-
-                if not has_control_entity(ent) then
-                    util.toast("未能成功控制实体，请重试")
+                if request_control2(ent) then
+                    tp_vehicle_to_me(ent, "", "delete")
+                    set_entity_godmode(ent, true)
                 end
             end
         end
     end)
+
 
 menu.divider(Doomsday_Preps, "末日二: 博格丹危机")
 menu.action(Doomsday_Preps, "钥匙卡: 防暴车 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, -1205689942)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            tp_vehicle_to_me(ent)
-
-            if not has_control_entity(ent) then
-                util.toast("未能成功控制实体，请重试")
+            if request_control2(ent) then
+                tp_vehicle_to_me(ent)
             end
         end
     end
@@ -4075,11 +3990,8 @@ menu.action(Doomsday_Preps, "ULP情报: 包裹 传送到我", {},
         local entity_list = get_entities_by_hash("pickup", true, -1851147549)
         if next(entity_list) ~= nil then
             for _, ent in pairs(entity_list) do
-                request_control(ent)
-                tp_entity_to_me(ent)
-
-                if not has_control_entity(ent) then
-                    util.toast("未能成功控制实体，请重试")
+                if request_control2(ent) then
+                    tp_entity_to_me(ent)
                 end
             end
         end
@@ -4110,11 +4022,9 @@ doomsday_preps_stromberg_menu = menu.list_action(Doomsday_Preps, "斯特龙伯�
         else
             local ent = doomsday_preps_stromberg_ent[value - 1]
             if ENTITY.DOES_ENTITY_EXIST(ent) then
-                request_control(ent)
-                tp_vehicle_to_me(ent, "", "delete")
-
-                if not has_control_entity(ent) then
-                    util.toast("未能成功控制实体，请重试")
+                if request_control2(ent) then
+                    tp_vehicle_to_me(ent, "", "delete")
+                    set_entity_godmode(ent, true)
                 end
             end
         end
@@ -4123,26 +4033,21 @@ menu.action(Doomsday_Preps, "鱼雷电控单元: 包裹 传送到我", {}, "", f
     local entity_list = get_entities_by_hash("pickup", true, 2096599423)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            tp_entity_to_me(ent)
-
-            if not has_control_entity(ent) then
-                util.toast("未能成功控制实体，请重试")
+            if request_control2(ent) then
+                tp_entity_to_me(ent)
             end
         end
     end
 end)
+
 
 menu.divider(Doomsday_Preps, "末日三: 末日将至")
 menu.action(Doomsday_Preps, "标记资金: 包裹 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("pickup", true, -549235179)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            tp_entity_to_me(ent)
-
-            if not has_control_entity(ent) then
-                util.toast("未能成功控制实体，请重试")
+            if request_control2(ent) then
+                tp_entity_to_me(ent)
             end
         end
     end
@@ -4151,11 +4056,8 @@ menu.action(Doomsday_Preps, "切尔诺伯格: 载具 传送到我", {}, "", func
     local entity_list = get_entities_by_hash("vehicle", true, -692292317)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
-            request_control(ent)
-            tp_vehicle_to_me(ent)
-
-            if not has_control_entity(ent) then
-                util.toast("未能成功控制实体，请重试")
+            if request_control2(ent) then
+                tp_vehicle_to_me(ent)
             end
         end
     end
@@ -4167,12 +4069,9 @@ menu.action(Doomsday_Preps, "机载电脑: 飞机 传送到我", {},
             for _, ent in pairs(entity_list) do
                 if ENTITY.IS_ENTITY_ATTACHED(ent) then
                     local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
-                    request_control(attached_ent)
-                    tp_entity_to_me(attached_ent, 0.0, 10.0, 2.0)
-                    set_entity_heading_to_entity(attached_ent, players.user_ped(), 180.0)
-
-                    if not has_control_entity(attached_ent) then
-                        util.toast("未能成功控制实体，请重试")
+                    if request_control2(attached_ent) then
+                        tp_entity_to_me(attached_ent, 0.0, 10.0, 2.0)
+                        set_entity_heading_to_entity(attached_ent, players.user_ped(), 180.0)
                     end
                 end
             end
