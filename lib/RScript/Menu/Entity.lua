@@ -651,6 +651,7 @@ menu.toggle(Nearby_Area_Setting, "排除 任务实体", {}, "", function(toggle)
     NearbyArea.except.mission = toggle
 end)
 
+menu.divider(Nearby_Area_Options, "")
 
 --#region Nearby Area Shoot
 
@@ -915,7 +916,7 @@ end)
 --#endregion Nearby Area Explosion
 
 
-menu.action(Nearby_Area_Options, "Kill", { "kill_nearby_area" }, "", function()
+menu.action(Nearby_Area_Options, "击杀区域", { "kill_nearby_area" }, "", function()
     for _, ent in pairs(NearbyArea.GetEntities()) do
         SET_ENTITY_HEALTH(ent, 0)
         if ENTITY.IS_ENTITY_A_VEHICLE(ent) then
@@ -1625,7 +1626,7 @@ function Entity_Info.GetBaseInfoText(entity)
     local text = ""
 
     for key, item in pairs(ent_info.entity) do
-        local line = item[1] .. ": " .. item[2]
+        local line = item[1] .. ": " .. tostring(item[2])
         text = text .. line .. "\n"
     end
 
@@ -1633,7 +1634,7 @@ function Entity_Info.GetBaseInfoText(entity)
         text = text .. "\n--------   Ped   --------\n"
 
         for key, item in pairs(ent_info.ped) do
-            local line = item[1] .. ": " .. item[2]
+            local line = item[1] .. ": " .. tostring(item[2])
             text = text .. line .. "\n"
         end
     end
@@ -1642,7 +1643,7 @@ function Entity_Info.GetBaseInfoText(entity)
         text = text .. "\n--------   Vehicle   --------\n"
 
         for key, item in pairs(ent_info.vehicle) do
-            local line = item[1] .. ": " .. item[2]
+            local line = item[1] .. ": " .. tostring(item[2])
             text = text .. line .. "\n"
         end
     end

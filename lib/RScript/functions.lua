@@ -1737,6 +1737,9 @@ end
 function explode_hostile_vehicles()
     for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
         if is_hostile_entity(vehicle) then
+            SET_ENTITY_HEALTH(vehicle, 0)
+            VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, -4000.0)
+
             local coords = ENTITY.GET_ENTITY_COORDS(vehicle)
             add_owned_explosion(players.user_ped(), coords, 4, { isAudible = false })
         end
@@ -1747,6 +1750,8 @@ end
 function explode_hostile_objects()
     for _, object in pairs(entities.get_all_objects_as_handles()) do
         if is_hostile_entity(object) then
+            SET_ENTITY_HEALTH(object, 0)
+
             local coords = ENTITY.GET_ENTITY_COORDS(object)
             add_owned_explosion(players.user_ped(), coords, 4, { isAudible = false })
         end

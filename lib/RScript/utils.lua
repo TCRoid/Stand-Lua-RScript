@@ -241,3 +241,21 @@ function rs_menu.delete_menu_list(menu_list)
         end
     end
 end
+
+--------------------------------------------------
+----------------   [[ Memory ]]   ----------------
+--------------------------------------------------
+
+rs_memory = {}
+
+--- @param addr pointer
+--- @return boolean
+function rs_memory.is_entity_froze(addr)
+    return memory.read_byte(addr + 0x2E) == 3
+end
+
+--- @param addr pointer
+--- @return boolean
+function rs_memory.is_mission_entity(addr)
+    return memory.read_byte(addr + 0x19) == 4
+end

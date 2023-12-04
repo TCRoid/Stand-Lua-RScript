@@ -6,7 +6,7 @@ local SCRIPT_START_TIME <const> = util.current_time_millis()
 
 util.require_natives("2944b", "init")
 
-local SCRIPT_VERSION <const> = "2023/11/20"
+local SCRIPT_VERSION <const> = "2023/12/3"
 
 local SUPPORT_GTAO <const> = 1.67
 

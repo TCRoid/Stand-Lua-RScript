@@ -1,4 +1,33 @@
 ----------------------------------------
+-- Tunables Functions
+----------------------------------------
+tunables = {}
+
+---@param offset integer
+---@return integer
+function tunables.get_int(offset)
+    return GET_INT_GLOBAL(262145 + offset)
+end
+
+---@param offset integer
+---@return float
+function tunables.get_float(offset)
+    return GET_FLOAT_GLOBAL(262145 + offset)
+end
+
+---@param offset integer
+---@param value integer
+function tunables.set_int(offset, value)
+    SET_INT_GLOBAL(262145 + offset, value)
+end
+
+---@param offset integer
+---@param value float
+function tunables.set_float(offset, value)
+    SET_FLOAT_GLOBAL(262145 + offset, value)
+end
+
+----------------------------------------
 -- Misc Functions
 ----------------------------------------
 

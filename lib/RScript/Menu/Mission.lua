@@ -687,25 +687,30 @@ menu.action(Air_Freight, "传送到 货物", { "tp_air_product" }, "", function(
         teleport2(coords.x, coords.y, coords.z + 1.0)
     end
 end)
-menu.action(Air_Freight, "货物 传送到我", { "tpme_air_product" }, "", function()
-    local entity_list = get_entities_by_hash("pickup", true, -1270906188, -204239524, 2085196638, 886033073, 1419829219,
-        1248987568, -2037094101, -49487954)
-    if next(entity_list) ~= nil then
-        for _, ent in pairs(entity_list) do
-            tp_pickup_to_me(ent)
-        end
-    else
-        local blip = HUD.GET_NEXT_BLIP_INFO_ID(568)
-        if HUD.DOES_BLIP_EXIST(blip) then
-            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-            if ENTITY.DOES_ENTITY_EXIST(ent) then
-                tp_entity_to_me(ent)
-            else
-                util.toast("目标不是实体，无法传送到我")
+menu.action(Air_Freight, "货物 传送到我", { "tpme_air_product" },
+    "提示已取得货物后就可以直接去机库送达货物", function()
+        -- Pickup Hash: -1270906188, -204239524, 2085196638, 886033073, 1419829219, 1248987568, -2037094101, -49487954
+        for _, ent in pairs(entities.get_all_pickups_as_handles()) do
+            if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
+                local entity_script = string.lower(GET_ENTITY_SCRIPT(ent))
+                if entity_script == "gb_smuggler" or entity_script == "fm_content_smuggler_resupply" then
+                    tp_pickup_to_me(ent)
+                end
             end
         end
-    end
-end)
+    end)
+menu.action(Air_Freight, "结束任务", {},
+    "进入机库提示货物已送达后就可以直接结束任务", function()
+        local script_locals = {
+            { script = "gb_smuggler",                  addr = Locals.gb_smuggler.mission_start_time },
+            { script = "fm_content_smuggler_resupply", addr = Locals.fm_content_smuggler_resupply.mission_start_time },
+        }
+        for _, item in pairs(script_locals) do
+            if IS_SCRIPT_RUNNING(item.script) then
+                SET_INT_LOCAL(item.script, item.addr, 0)
+            end
+        end
+    end)
 
 menu.divider(Air_Freight, "")
 menu.action(Air_Freight, "陆地: 炸掉发电机", {}, "", function()
@@ -735,26 +740,6 @@ menu.action(Air_Freight, "陆地: 传送进 阿维萨", {}, "然后再传送到�
         end
     end
 end)
-menu.action(Air_Freight, "陆地: 阻挡卡车生成点", {}, "任务开始前使用\n通过阻挡任务刷新点来避免触发该任务",
-    function()
-        local point_list = {
-            -- x, y, z, heading
-            { 1222.287109375,  3653.935546875,   32.6698837,      218.56228637695 },
-            { 1138.6461181641, -3345.8781738281, 6.1329517364502, 269.39321899414 },
-            { 932.59674072266, 6618.7387695312,  3.6754860877991, 204.03558349609 },
-        }
-        block_mission_generate_point(point_list)
-    end)
-menu.action(Air_Freight, "航空: 毁掉泰坦号", {}, "直接任务失败", function()
-    local entity_list = get_entities_by_hash("vehicle", true, 1981688531)
-    if next(entity_list) ~= nil then
-        for _, ent in pairs(entity_list) do
-            tp_entity_to_me(ent, 0.0, 20.0, 100.0)
-            util.yield(2000)
-            entities.delete(ent)
-        end
-    end
-end)
 
 menu.action(Air_Freight, "爆炸 所有敌对载具", {}, "", function()
     explode_hostile_vehicles()
@@ -766,6 +751,7 @@ menu.action(Air_Freight, "爆炸 所有敌对物体", {}, "", function()
     explode_hostile_objects()
 end)
 
+menu.divider(Air_Freight, "")
 menu.action(Air_Freight, "传送到 鲁斯特", {}, "让他去拉货", function()
     local entity_list = get_entities_by_hash("ped", true, 2086307585)
     if next(entity_list) ~= nil then
@@ -775,6 +761,7 @@ menu.action(Air_Freight, "传送到 鲁斯特", {}, "让他去拉货", function(
         end
     end
 end)
+
 
 --#endregion
 
@@ -1181,7 +1168,7 @@ menu.action(Cayo_Perico, "传送到虎鲸 外面甲板", { "tpout_kosatka" },
     end)
 
 menu.divider(Cayo_Perico, "侦查")
-menu.action(Cayo_Perico, "传送进 美杜莎", {}, "", function()
+menu.action(Cayo_Perico, "传送进 梅杜莎", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1077420264)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
@@ -1270,6 +1257,24 @@ menu.action(Cayo_Perico, "武器 炸掉女武神", {}, "不再等它慢慢的飞
 end)
 
 menu.divider(Cayo_Perico, "")
+
+menu.textslider(Cayo_Perico, "前置任务助手", {},
+    "前置任务: 爆破弹,等离子切割枪,指纹复制器,武器(梅利威瑟)\n传送到我后重新进入虎鲸,会提示已送达前置装备\n然后结束任务,会提示任务已完成",
+    { "传送到我", "结束任务" }, function(value)
+        local script = "fm_content_island_heist"
+        if not IS_SCRIPT_RUNNING(script) then
+            return
+        end
+        if value == 1 then
+            for _, ent in pairs(entities.get_all_pickups_as_handles()) do
+                if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) and string.lower(GET_ENTITY_SCRIPT(ent)) == script then
+                    tp_entity_to_me(ent)
+                end
+            end
+        elseif value == 2 then
+            SET_INT_LOCAL(script, Locals.fm_content_island_heist.mission_start_time, 0)
+        end
+    end)
 
 local Cayo_Perico_Preps <const> = menu.list(Cayo_Perico, "其它前置", {}, "")
 menu.divider(Cayo_Perico_Preps, "载具: 虎鲸")
@@ -3393,7 +3398,7 @@ menu.action(Heist_Prison, "监狱内 生成骷髅马", {}, "", function()
         util.toast("完成！")
     end
 end)
-menu.action(Heist_Prison, "美杜莎飞机 无敌", {}, "", function()
+menu.action(Heist_Prison, "梅杜莎飞机 无敌", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, 1077420264)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
@@ -3464,14 +3469,14 @@ menu.action(Heist_Prison_rashcosvki, "无敌强化", {}, "", function()
                 WEAPON.GIVE_WEAPON_TO_PED(ent, weaponHash, -1, false, true)
                 WEAPON.SET_CURRENT_PED_WEAPON(ent, weaponHash, false)
 
-                increase_ped_combat_ability(ped, true)
+                increase_ped_combat_ability(ent, true)
 
                 util.toast("完成！")
             end
         end
     end
 end)
-menu.action(Heist_Prison_rashcosvki, "传送进 美杜莎", {}, "", function()
+menu.action(Heist_Prison_rashcosvki, "传送进 梅杜莎", {}, "", function()
     local velum2 = 0
 
     local entity_list = get_entities_by_hash("vehicle", true, 1077420264)

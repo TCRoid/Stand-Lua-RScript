@@ -734,7 +734,7 @@ Locals = {
         team_lives = 51905 + 868 + 1,
     },
 
-    -- Casino Heist Prep
+    -- Diamond Casino Heist Prep
     gb_casino_heist = {
         phone_hack_progress = 2327,
         camera_hack_position = 4275 + 1654,
@@ -752,6 +752,19 @@ Locals = {
     gb_vehicle_export = {
         vehicle_net_id = 832 + 29 + 1,
         mission_start_time = 832 + 457,
+    },
+
+    -- Cayo Perico Heist Prep
+    fm_content_island_heist = {
+        mission_start_time = 13062 + 1459,
+    },
+
+    -- Air Freight
+    gb_smuggler = {
+        mission_start_time = 1929 + 768,
+    },
+    fm_content_smuggler_resupply = {
+        mission_start_time = 5883 + 1318,
     },
 }
 

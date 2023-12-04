@@ -209,7 +209,7 @@ function Entity_Control:Entity()
 
     menu.toggle(entity_options, "冻结", {}, "", function(toggle)
         ENTITY.FREEZE_ENTITY_POSITION(entity, toggle)
-    end)
+    end,rs_memory.is_entity_froze(entities.handle_to_pointer(entity)))
 
     local explosion_type = 4
     menu.list_select(entity_options, "选择爆炸类型", {}, "", Misc_T.ExplosionType, 6, function(value)

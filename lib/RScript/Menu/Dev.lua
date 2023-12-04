@@ -200,3 +200,21 @@ menu.action(Dev_Options, "关闭电脑界面", { "shut_computer" }, "", function
         end
     end
 end)
+
+menu.action(Dev_Options, "结束自由模式任务", { "shut_task" }, "", function()
+    -- "SMHUD_TIMEREM" /* GXT: TIME REMAINING */
+
+    local data = {
+        { script = "gb_casino_heist",              addr = 4275 + 1521 },
+        { script = "fm_content_island_heist",      addr = 13062 + 1459 },
+        { script = "fm_content_payphone_hit",      addr = 5511 + 723 },
+        { script = "fm_content_security_contract", addr = 6958 + 1319 },
+    }
+
+    for key, item in pairs(data) do
+        if IS_SCRIPT_RUNNING(item.script) then
+            SET_INT_LOCAL(item.script, item.addr, 0)
+            util.toast(item.script)
+        end
+    end
+end)

@@ -4,7 +4,7 @@
 
 util.require_natives("2944b", "init")
 
-local SCRIPT_VERSION <const> = "2023/11/12"
+local SCRIPT_VERSION <const> = "2023/12/2"
 
 local SUPPORT_GTAO <const> = 1.67
 
@@ -58,6 +58,31 @@ local Tunables <const> = {
     CONTACT_MISSION_RP_TIME_PERIOD_1_PERCENTAGE = 8574,
     CONTACT_MISSION_RP_DIFFICULTY_MULTIPLIER_EASY = 8585,
     CONTACT_MISSION_FAIL_RP_TIME_PERIOD_2_DIVIDER = 8564,
+
+    -- Health & Armour
+    MAX_HEALTH_MULTIPLIER = 107,
+    HEALTH_REGEN_RATE_MULTIPLIER = 109,
+    HEALTH_REGEN_MAX_MULTIPLIER = 110,
+    MAX_ARMOR_MULTIPLIER = 112,
+
+    CasinoHeist = {
+        TargetWeighting = {
+            29016, -- CH_VAULT_WEIGHTING_CASH
+            29017, -- CH_VAULT_WEIGHTING_ART
+            29018, -- CH_VAULT_WEIGHTING_GOLD
+            29019, -- CH_VAULT_WEIGHTING_DIAMONDS
+        },
+    },
+
+    PericoHeist = {
+        TargetWeighting = {
+            30118, -- H4_TARGET_WEIGHTING_TEQUILA
+            30119, -- H4_TARGET_WEIGHTING_PEARL_NECKLACE
+            30120, -- H4_TARGET_WEIGHTING_BEARER_BONDS
+            30121, -- H4_TARGET_WEIGHTING_PINK_DIAMOND
+            30122, -- H4_TARGET_WEIGHTING_SAPPHIRE_PANTHER_STATUE
+        },
+    },
 }
 
 local Globals <const> = {
@@ -1742,7 +1767,12 @@ end
 
 local Tunable_Options <const> = menu.list(Menu_Root, "可调整项", {}, "")
 
-local tTunable = {}
+local tTunable = {
+    MaxHealthMulti = 1.0,
+    MaxArmourMulti = 1.0,
+    HealthRegenRateMulti = 1.0,
+    HealthRegenMaxMulti = 1.0,
+}
 
 --#region Gun Van
 
@@ -1793,7 +1823,10 @@ end)
 menu.action(Gun_Van, "传送到厢型车", {}, "", function()
     local Addr = memory.script_global(Globals.GunVanSpawnPoint)
     if Addr ~= 0 then
-        local coords = memory.read_vector3(Addr, spawn_point)
+        local coords = memory.read_vector3(Addr)
+        if v3.toString(coords) == "0, 0, 0" then
+            return
+        end
         teleport2(coords.x, coords.y, coords.z + 2.0)
     end
 end)
@@ -1809,7 +1842,7 @@ menu.toggle(Contact_Mission, "最大化任务时间", {}, "获取最大化收益
     Loop_Handler.Tunables.ContactMission.MaxMissionTime = toggle
     Loop_Handler.Tunables.ContactMission.MaxMissionTime_Callback = function()
         for i = 0, 8 do
-            SET_INT_GLOBAL(262145 + Tunables.CONTACT_MISSION_TIME_PERIOD_1 + i, 0)
+            tunables.set_int(Tunables.CONTACT_MISSION_TIME_PERIOD_1 + i, 0)
         end
     end
     Loop_Handler.Tunables.ContactMission.MaxMissionTime_Callback()
@@ -1818,16 +1851,16 @@ menu.toggle(Contact_Mission, "最大化现金收益", {}, "游戏默认的最高
     Loop_Handler.Tunables.ContactMission.MaxCashEarning = toggle
     Loop_Handler.Tunables.ContactMission.MaxCashEarning_Callback = function()
         for i = 0, 9 do
-            SET_FLOAT_GLOBAL(262145 + Tunables.CONTACT_MISSION_CASH_TIME_PERIOD_1_PERCENTAGE + i, 2.0)
+            tunables.set_float(Tunables.CONTACT_MISSION_CASH_TIME_PERIOD_1_PERCENTAGE + i, 2.0)
         end
         for i = 0, 3 do
-            SET_FLOAT_GLOBAL(262145 + Tunables.CONTACT_MISSION_CASH_PLAYER_MULTIPLIER_1 + i, 1.3)
+            tunables.set_float(Tunables.CONTACT_MISSION_CASH_PLAYER_MULTIPLIER_1 + i, 1.3)
         end
         for i = 0, 2 do
-            SET_FLOAT_GLOBAL(262145 + Tunables.CONTACT_MISSION_CASH_DIFFICULTY_MULTIPLIER_EASY + i, 1.5)
+            tunables.set_float(Tunables.CONTACT_MISSION_CASH_DIFFICULTY_MULTIPLIER_EASY + i, 1.5)
         end
         for i = 0, 8 do
-            SET_FLOAT_GLOBAL(262145 + Tunables.CONTACT_MISSION_FAIL_CASH_TIME_PERIOD_2_DIVIDER + i, 3.5)
+            tunables.set_float(Tunables.CONTACT_MISSION_FAIL_CASH_TIME_PERIOD_2_DIVIDER + i, 3.5)
         end
     end
     Loop_Handler.Tunables.ContactMission.MaxCashEarning_Callback()
@@ -1836,19 +1869,91 @@ menu.toggle(Contact_Mission, "最大化经验收益", {}, "游戏默认的最高
     Loop_Handler.Tunables.ContactMission.MaxRpEarning = toggle
     Loop_Handler.Tunables.ContactMission.MaxRpEarning_Callback = function()
         for i = 0, 9 do
-            SET_FLOAT_GLOBAL(262145 + Tunables.CONTACT_MISSION_RP_TIME_PERIOD_1_PERCENTAGE + i, 2.0)
+            tunables.set_float(Tunables.CONTACT_MISSION_RP_TIME_PERIOD_1_PERCENTAGE + i, 2.0)
         end
         for i = 0, 2 do
-            SET_FLOAT_GLOBAL(262145 + Tunables.CONTACT_MISSION_RP_DIFFICULTY_MULTIPLIER_EASY + i, 1.5)
+            tunables.set_float(Tunables.CONTACT_MISSION_RP_DIFFICULTY_MULTIPLIER_EASY + i, 1.5)
         end
         for i = 0, 8 do
-            SET_FLOAT_GLOBAL(262145 + Tunables.CONTACT_MISSION_FAIL_RP_TIME_PERIOD_2_DIVIDER + i, 2.5)
+            tunables.set_float(Tunables.CONTACT_MISSION_FAIL_RP_TIME_PERIOD_2_DIVIDER + i, 2.5)
         end
     end
     Loop_Handler.Tunables.ContactMission.MaxRpEarning_Callback()
 end)
 
 --#endregion Contact Mission
+
+
+--#region Health Armour
+
+local Health_Armour <const> = menu.list(Tunable_Options, "生命和护甲倍率", {}, "")
+
+menu.slider_float(Health_Armour, "最大生命值倍率", { "t_MaxHealthMulti" }, "",
+    100, 2000, 100, 100, function(value)
+        tTunable.MaxHealthMulti = value * 0.01
+        tunables.set_float(Tunables.MAX_HEALTH_MULTIPLIER, tTunable.MaxHealthMulti)
+    end)
+menu.slider_float(Health_Armour, "最大护甲值倍率", { "t_MaxArmourMulti" }, "",
+    100, 2000, 100, 100, function(value)
+        tTunable.MaxArmourMulti = value * 0.01
+        tunables.set_float(Tunables.MAX_ARMOR_MULTIPLIER, tTunable.MaxArmourMulti)
+    end)
+menu.slider_float(Health_Armour, "生命恢复速度倍率", { "t_HealthRegenRateMulti" }, "",
+    100, 2000, 100, 100, function(value)
+        tTunable.HealthRegenRateMulti = value * 0.01
+        tunables.set_float(Tunables.HEALTH_REGEN_RATE_MULTIPLIER, tTunable.HealthRegenRateMulti)
+    end)
+menu.slider_float(Health_Armour, "生命恢复程度倍率", { "t_HealthRegenMaxMulti" }, "",
+    100, 2000, 100, 100, function(value)
+        tTunable.HealthRegenMaxMulti = value * 0.01
+        tunables.set_float(Tunables.HEALTH_REGEN_MAX_MULTIPLIER, tTunable.HealthRegenMaxMulti)
+    end)
+
+--#endregion Health Armour
+
+
+--#region Heist Target Weighting
+
+local Heist_Target_Weight <const> = menu.list(Tunable_Options, "抢劫主要目标概率", {}, "侦查任务开启前设置")
+
+menu.divider(Heist_Target_Weight, "佩里科岛抢劫")
+
+local PericoHeistTargets = {
+    { "西西米托龙舌兰", "tequila" },
+    { "红宝石项链", "necklace" },
+    { "不记名债券", "bonds" },
+    { "粉钻", "diamond" },
+    { "猎豹雕像", "statue" },
+}
+for key, item in pairs(PericoHeistTargets) do
+    local offset = Tunables.PericoHeist.TargetWeighting[key]
+    local default_value = math.ceil(tunables.get_float(offset) * 100)
+
+    menu.slider_float(Heist_Target_Weight, item[1], { "t_h4_target_weight" .. item[2] }, "",
+        0, 100, default_value, 10, function(value)
+            tunables.set_float(offset, value * 0.01)
+        end)
+end
+
+menu.divider(Heist_Target_Weight, "赌场抢劫")
+
+local CasinoHeistTargets = {
+    { "现金", "cash" },
+    { "艺术品", "art" },
+    { "黄金", "gold" },
+    { "钻石", "diamond" },
+}
+for key, item in pairs(CasinoHeistTargets) do
+    local offset = Tunables.CasinoHeist.TargetWeighting[key]
+    local default_value = math.ceil(tunables.get_float(offset) * 100)
+
+    menu.slider_float(Heist_Target_Weight, item[1], { "t_ch_target_weight" .. item[2] }, "",
+        0, 100, default_value, 10, function(value)
+            tunables.set_float(offset, value * 0.01)
+        end)
+end
+
+--#endregion Heist Target Weighting
 
 
 
@@ -2083,6 +2188,22 @@ util.create_tick_handler(function()
         end
         if tunables.ContactMission.MaxRpEarning then
             Loop_Handler.Tunables.ContactMission.MaxRpEarning_Callback()
+        end
+
+
+        --------    Health Armour    --------
+
+        if tTunable.MaxHealthMulti ~= 1.0 then
+            tunables.set_float(Tunables.MAX_HEALTH_MULTIPLIER, tTunable.MaxHealthMulti)
+        end
+        if tTunable.MaxArmourMulti ~= 1.0 then
+            tunables.set_float(Tunables.MAX_ARMOR_MULTIPLIER, tTunable.MaxArmourMulti)
+        end
+        if tTunable.HealthRegenRateMulti ~= 1.0 then
+            tunables.set_float(Tunables.HEALTH_REGEN_RATE_MULTIPLIER, tTunable.HealthRegenRateMulti)
+        end
+        if tTunable.HealthRegenMaxMulti ~= 1.0 then
+            tunables.set_float(Tunables.HEALTH_REGEN_MAX_MULTIPLIER, tTunable.HealthRegenMaxMulti)
         end
     end
 end)
