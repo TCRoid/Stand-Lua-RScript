@@ -117,7 +117,7 @@ players.add_command_hook(function(pid, player_root)
     }
 
     menu.list_select(TP_Entities, "实体类型", {}, "", {
-        "NPC", "载具", "物体", "拾取物"
+        { 1, "NPC" }, { 2, "载具" }, { 3, "物体" }, { 4, "拾取物" }
     }, 1, function(value)
         tp_entities_data.type_select = value
     end)

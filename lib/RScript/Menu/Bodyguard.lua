@@ -13,11 +13,11 @@ Bodyguard.Setting = {
         godmode = false,
         health = 5000,
         no_ragdoll = false,
-        weapon_main = "WEAPON_SPECIALCARBINE",
-        weapon_secondary = "WEAPON_MICROSMG",
+        weapon_main = util.joaat("WEAPON_SPECIALCARBINE"),
+        weapon_secondary = util.joaat("WEAPON_MICROSMG"),
         weapon_damamge_modifier = 1.0,
         formation = 0,
-        relationship = 1,
+        relationship = util.joaat("PLAYER"),
     },
     heli = {
         godmode = false,
@@ -32,35 +32,20 @@ Bodyguard.Setting = {
 
 Bodyguard.Group = {
     Formation = {
-        ListItem = {
-            { "自由" },
-            { "围绕" },
-            { "直线" },
-            { "Arrow" },
-        },
-        ValueList = { 0, 1, 3, 4, }
+        { 0, "自由" },
+        { 1, "围绕" },
+        { 3, "直线" },
+        { 4, "Arrow" },
     },
     Relationship = {
-        ListItem = {
-            { "Player" },
-            { "Like Players" },
-            { "Dislike Players, Like Gangs" },
-            { "Hate Players, Like Gangs" },
-            { "Like Players, Hate Player Haters" },
-            { "Dislike Players, Like Cops" },
-            { "Hate Players, Like Cops" },
-            { "Hate Everyone" },
-        },
-        ValueList = {
-            "PLAYER",
-            "rgFM_AiLike",
-            "rgFM_AiDislike",
-            "rgFM_AiHate",
-            "rgFM_AiLike_HateAiHate",
-            "rgFM_AiDislikePlyrLikeCops",
-            "rgFM_AiHatePlyrLikeCops",
-            "rgFM_HateEveryOne",
-        },
+        { util.joaat("PLAYER"),                     "Player" },
+        { util.joaat("rgFM_AiLike"),                "Like Players" },
+        { util.joaat("rgFM_AiDislike"),             "Dislike Players, Like Gangs" },
+        { util.joaat("rgFM_AiHate"),                "Hate Players, Like Gangs" },
+        { util.joaat("rgFM_AiLike_HateAiHate"),     "Like Players, Hate Player Haters" },
+        { util.joaat("rgFM_AiDislikePlyrLikeCops"), "Dislike Players, Like Cops" },
+        { util.joaat("rgFM_AiHatePlyrLikeCops"),    "Hate Players, Like Cops" },
+        { util.joaat("rgFM_HateEveryOne"),          "Hate Everyone" },
     },
 }
 
@@ -86,9 +71,8 @@ function Bodyguard.Group.AddMember(ped)
 end
 
 function Bodyguard.Group.SetPedRelationship(ped)
-    local rel = Bodyguard.Group.Relationship.ValueList[Bodyguard.Setting.ped.relationship]
-    local group_hash = util.joaat(rel)
-    if rel == "PLAYER" then
+    local group_hash = Bodyguard.Setting.ped.relationship
+    if group_hash == util.joaat("PLAYER") then
         group_hash = PED.GET_PED_RELATIONSHIP_GROUP_HASH(players.user_ped())
     end
     PED.SET_RELATIONSHIP_BETWEEN_GROUPS(0, group_hash, group_hash) -- Respect
@@ -119,14 +103,11 @@ function Bodyguard.SetPedAttribute(ped)
     PED.SET_PED_CAN_PLAY_AMBIENT_ANIMS(ped, false)
     PED.SET_PED_CAN_PLAY_AMBIENT_BASE_ANIMS(ped, false)
     -- WEAPON
-    local weapon_smoke = util.joaat("WEAPON_SMOKEGRENADE")
-    WEAPON.GIVE_WEAPON_TO_PED(ped, weapon_smoke, -1, false, false)
+    WEAPON.GIVE_WEAPON_TO_PED(ped, util.joaat("WEAPON_SMOKEGRENADE"), -1, false, false)
 
-    local weaponHash = util.joaat(Bodyguard.Setting.ped.weapon_main)
-    WEAPON.GIVE_WEAPON_TO_PED(ped, weaponHash, -1, false, true)
-    WEAPON.SET_CURRENT_PED_WEAPON(ped, weaponHash, false)
-    weaponHash = util.joaat(Bodyguard.Setting.ped.weapon_secondary)
-    WEAPON.GIVE_WEAPON_TO_PED(ped, weaponHash, -1, false, false)
+    WEAPON.GIVE_WEAPON_TO_PED(ped, Bodyguard.Setting.ped.weapon_main, -1, false, true)
+    WEAPON.SET_CURRENT_PED_WEAPON(ped, Bodyguard.Setting.ped.weapon_main, false)
+    WEAPON.GIVE_WEAPON_TO_PED(ped, Bodyguard.Setting.ped.weapon_secondary, -1, false, false)
 
     WEAPON.SET_PED_DROPS_WEAPONS_WHEN_DEAD(ped, false)
     PED.SET_PED_CAN_SWITCH_WEAPON(ped, true)
@@ -259,39 +240,22 @@ end
 local Bodyguard_NPC <const> = menu.list(Bodyguard_Options, "保镖NPC", {}, "")
 
 Bodyguard.NPC = {
-    model_select = 1,
     members = {}, -- 保镖 ped list
 
     ped_models = {
-        list_item = {
-            { "莱斯特", {}, "" },
-            { "德瑞", {}, "" },
-            { "拉玛", {}, "" },
-            { "埃万保安", {}, "" },
-            { "埃万重甲兵", {}, "" },
-            { "越狱光头", {}, "" },
-            { "吉米", {}, "麦克儿子" },
-            { "崔西", {}, "麦克女儿" },
-            { "阿曼达", {}, "麦克妻子" },
-            { "富兰克林", {}, "可能会被其他Stand用户阻止生成" },
-            { "麦克", {}, "可能会被其他Stand用户阻止生成" },
-            { "崔佛", {}, "" },
-        },
-        model_list = {
-            "ig_LesterCrest",
-            "IG_ARY_02",
-            "ig_LamarDavis",
-            "mp_m_Avongoon",
-            "u_m_y_Juggernaut_01",
-            "ig_rashcosvki",
-            "ig_JimmyDisanto",
-            "ig_TracyDisanto",
-            "ig_AmandaTownley",
-            "player_one",
-            "player_zero",
-            "player_two",
-        }
-    }
+        { util.joaat("ig_LesterCrest"), "莱斯特", {}, "" },
+        { util.joaat("IG_ARY_02"), "德瑞", {}, "" },
+        { util.joaat("ig_LamarDavis"), "拉玛", {}, "" },
+        { util.joaat("mp_m_Avongoon"), "埃万保安", {}, "" },
+        { util.joaat("u_m_y_Juggernaut_01"), "埃万重甲兵", {}, "" },
+        { util.joaat("ig_rashcosvki"), "越狱光头", {}, "" },
+        { util.joaat("ig_JimmyDisanto"), "吉米", {}, "麦克儿子" },
+        { util.joaat("ig_TracyDisanto"), "崔西", {}, "麦克女儿" },
+        { util.joaat("ig_AmandaTownley"), "阿曼达", {}, "麦克妻子" },
+        { util.joaat("player_one"), "富兰克林", {}, "可能会被其他Stand用户阻止生成" },
+        { util.joaat("player_zero"), "麦克", {}, "可能会被其他Stand用户阻止生成" },
+        { util.joaat("player_two"), "崔佛", {}, "" },
+    },
 }
 
 function Bodyguard.NPC.ClearDeletedPeds()
@@ -310,9 +274,12 @@ function Bodyguard.NPC.AllMembers(callback)
     end
 end
 
+-- 保镖 ped hash
+Bodyguard.NPC.model_hash = Bodyguard.NPC.ped_models[1][1]
+
 menu.list_select(Bodyguard_NPC, "保镖模型", {}, "",
-    Bodyguard.NPC.ped_models.list_item, 1, function(value)
-        Bodyguard.NPC.model_select = value
+    Bodyguard.NPC.ped_models, Bodyguard.NPC.model_hash, function(value)
+        Bodyguard.NPC.model_hash = value
     end)
 menu.action(Bodyguard_NPC, "生成保镖", {}, "", function()
     if Bodyguard.Group.GetSize() >= 7 then
@@ -320,7 +287,7 @@ menu.action(Bodyguard_NPC, "生成保镖", {}, "", function()
         return
     end
 
-    local model_hash = util.joaat(Bodyguard.NPC.ped_models.model_list[Bodyguard.NPC.model_select])
+    local model_hash = Bodyguard.NPC.model_hash
     local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(players.user_ped(), 0.0, 2.0, 0.0)
     local heading = user_heading() + 180.0
     local ped = create_ped(26, model_hash, coords, heading)
@@ -338,8 +305,8 @@ end)
 
 menu.divider(Bodyguard_NPC, "管理保镖")
 
-menu.list_select(Bodyguard_NPC, "保镖队形", {}, "", Bodyguard.Group.Formation.ListItem, 1, function(value)
-    Bodyguard.Setting.ped.formation = Bodyguard.Group.Formation.ValueList[value]
+menu.list_select(Bodyguard_NPC, "保镖队形", {}, "", Bodyguard.Group.Formation, 0, function(value)
+    Bodyguard.Setting.ped.formation = value
 
     local group_id = PLAYER.GET_PLAYER_GROUP(players.user())
     PED.SET_GROUP_FORMATION(group_id, Bodyguard.Setting.ped.formation)
@@ -370,8 +337,8 @@ menu.action(Bodyguard_NPC_All, "恢复", {}, "恢复生命值,清理NPC血迹", 
         clear_ped_body(ped)
     end)
 end)
-menu.list_action(Bodyguard_NPC_All, "给予武器", {}, "", RS_T.CommonWeapons.ListItem, function(value)
-    local weaponHash = util.joaat(RS_T.CommonWeapons.ModelList[value])
+menu.list_action(Bodyguard_NPC_All, "给予武器", {}, "", RS_T.CommonWeapons, function(value)
+    local weaponHash = value
     Bodyguard.NPC.AllMembers(function(ped)
         WEAPON.GIVE_WEAPON_TO_PED(ped, weaponHash, -1, false, true)
         WEAPON.SET_CURRENT_PED_WEAPON(ped, weaponHash, false)
@@ -409,23 +376,14 @@ end)
 local Bodyguard_Heli <const> = menu.list(Bodyguard_Options, "保镖直升机", {}, "")
 
 Bodyguard.Heli = {
-    model_select = 1,
     heli_list = {}, -- 保镖 heli list
     ped_list = {},  -- 保镖 ped list
 
     heli_models = {
-        list_item = {
-            { "女武神" },
-            { "秃鹰" },
-            { "猎杀者" },
-            { "警用小蛮牛" },
-        },
-        model_list = {
-            "valkyrie",
-            "buzzard",
-            "hunter",
-            "polmav",
-        }
+        { util.joaat("valkyrie"), "女武神" },
+        { util.joaat("buzzard"), "秃鹰" },
+        { util.joaat("hunter"), "猎杀者" },
+        { util.joaat("polmav"), "警用小蛮牛" },
     },
 }
 
@@ -497,12 +455,15 @@ function Bodyguard.Heli.AllHelis(callback)
     end
 end
 
+-- 保镖 heli hash
+Bodyguard.Heli.heli_hash = Bodyguard.Heli.heli_models[1][1]
+
 menu.list_select(Bodyguard_Heli, "直升机模型", {}, "",
-    Bodyguard.Heli.heli_models.list_item, 1, function(value)
-        Bodyguard.Heli.model_select = value
+    Bodyguard.Heli.heli_models, Bodyguard.Heli.heli_hash, function(value)
+        Bodyguard.Heli.heli_hash = value
     end)
 menu.action(Bodyguard_Heli, "生成保镖直升机", {}, "", function()
-    local heli_hash = util.joaat(Bodyguard.Heli.heli_models.model_list[Bodyguard.Heli.model_select])
+    local heli_hash = Bodyguard.Heli.heli_hash
     local ped_hash = util.joaat("s_m_y_blackops_01")
     local heading = user_heading()
     local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
@@ -644,18 +605,20 @@ menu.slider(Bodyguard_NPC_Setting, "生命", { "bodyguard_npc_health" }, "",
 menu.toggle(Bodyguard_NPC_Setting, "不会摔倒", {}, "", function(toggle)
     Bodyguard.Setting.ped.no_ragdoll = toggle
 end)
-menu.list_select(Bodyguard_NPC_Setting, "主武器", {}, "", RS_T.CommonWeapons.ListItem, 5, function(value)
-    Bodyguard.Setting.ped.weapon_main = RS_T.CommonWeapons.ModelList[value]
-end)
-menu.list_select(Bodyguard_NPC_Setting, "副武器", {}, "", RS_T.CommonWeapons.ListItem, 4, function(value)
-    Bodyguard.Setting.ped.weapon_secondary = RS_T.CommonWeapons.ModelList[value]
-end)
+menu.list_select(Bodyguard_NPC_Setting, "主武器", {}, "", RS_T.CommonWeapons,
+    util.joaat("WEAPON_SPECIALCARBINE"), function(value)
+        Bodyguard.Setting.ped.weapon_main = value
+    end)
+menu.list_select(Bodyguard_NPC_Setting, "副武器", {}, "", RS_T.CommonWeapons,
+    util.joaat("WEAPON_MICROSMG"), function(value)
+        Bodyguard.Setting.ped.weapon_secondary = value
+    end)
 menu.slider_float(Bodyguard_NPC_Setting, "武器伤害倍数", { "bodyguard_npc_weapon_damamge_modifier" }, "",
     0, 1000, 100, 50, function(value)
         Bodyguard.Setting.ped.weapon_damamge_modifier = value * 0.01
     end)
-menu.list_select(Bodyguard_NPC_Setting, "行为", {}, "", Bodyguard.Group.Relationship.ListItem, 1, function(value)
-    Bodyguard.Setting.ped.relationship = Bodyguard.Group.Relationship.ValueList[value]
+menu.list_select(Bodyguard_NPC_Setting, "行为", {}, "", Bodyguard.Group.Relationship, util.joaat("PLAYER"), function(value)
+    Bodyguard.Setting.ped.relationship = value
 end)
 
 
@@ -688,6 +651,6 @@ menu.slider(Bodyguard_Heli_Setting, "地面上的最小高度", { "bodyguard_hel
     0, 10000, 20, 1, function(value)
         Bodyguard.Setting.heli.minHeightAboveTerrain = value
     end)
-menu.list_select(Bodyguard_Heli_Setting, "直升机模式", {}, "", Vehicle_T.HeliMode.ListItem, 1, function(value)
-    Bodyguard.Setting.heli.heliMode = Vehicle_T.HeliMode.ValueList[value]
+menu.list_select(Bodyguard_Heli_Setting, "直升机模式", {}, "", Vehicle_T.HeliMode, 0, function(value)
+    Bodyguard.Setting.heli.heliMode = value
 end)

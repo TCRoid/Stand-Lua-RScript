@@ -138,6 +138,7 @@ function tp_pickup_to_me(pickup, attachToSelf)
         ENTITY.DETACH_ENTITY(pickup, true, true)
         ENTITY.SET_ENTITY_VISIBLE(pickup, true, false)
     end
+    OBJECT.SET_PICKUP_OBJECT_COLLECTABLE_IN_VEHICLE(pickup)
 
     if attachToSelf then
         OBJECT.ATTACH_PORTABLE_PICKUP_TO_PED(pickup, players.user_ped())

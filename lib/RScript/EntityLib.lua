@@ -66,9 +66,9 @@ function Entity_Control.GetMenuInfo(entity, index)
     help_text = help_text .. "Hash: " .. modelHash .. "\nOwner: " .. owner
 
     if ENTITY.IS_ENTITY_A_MISSION_ENTITY(entity) then
-        local entity_script = ENTITY.GET_ENTITY_SCRIPT(entity, 0)
+        local entity_script = GET_ENTITY_SCRIPT(entity)
         if entity_script ~= nil then
-            help_text = help_text .. "\nScript: " .. string.lower(entity_script)
+            help_text = help_text .. "\nScript: " .. entity_script
         end
     end
 
@@ -209,11 +209,11 @@ function Entity_Control:Entity()
 
     menu.toggle(entity_options, "冻结", {}, "", function(toggle)
         ENTITY.FREEZE_ENTITY_POSITION(entity, toggle)
-    end,rs_memory.is_entity_froze(entities.handle_to_pointer(entity)))
+    end, rs_memory.is_entity_froze(entities.handle_to_pointer(entity)))
 
     local explosion_type = 4
-    menu.list_select(entity_options, "选择爆炸类型", {}, "", Misc_T.ExplosionType, 6, function(value)
-        explosion_type = value - 2
+    menu.list_select(entity_options, "选择爆炸类型", {}, "", Misc_T.ExplosionType, explosion_type, function(value)
+        explosion_type = value
     end)
     menu.toggle_loop(entity_options, "爆炸", {}, "", function()
         local pos = ENTITY.GET_ENTITY_COORDS(entity)
@@ -338,7 +338,7 @@ function Entity_Control:Teleport()
     menu.divider(teleport_options, "锁定传送")
     local lock_tp = 1
     menu.list_select(teleport_options, "方式", {}, "", {
-        { "实体传送到我" }, { "我传送到实体" }
+        { 1, "实体传送到我" }, { 2, "我传送到实体" }
     }, 1, function(value)
         lock_tp = value
     end)
@@ -406,11 +406,11 @@ function Entity_Control:Movement()
         menu.set_value(coord_menu.z, math.ceil(pos.z))
     end)
 
-    local coords = ENTITY.GET_ENTITY_COORDS(entity)
+    local ent_coords = ENTITY.GET_ENTITY_COORDS(entity)
     local pos = {}
-    pos.x = round(coords.x, 2) * 100
-    pos.y = round(coords.y, 2) * 100
-    pos.z = round(coords.z, 2) * 100
+    pos.x = round(ent_coords.x, 2) * 100
+    pos.y = round(ent_coords.y, 2) * 100
+    pos.z = round(ent_coords.z, 2) * 100
     coord_menu.x = menu.slider_float(movement_options, "X:", { "ctrl_ent" .. index .. "_x" }, "",
         -1000000, 1000000, math.ceil(pos.x), 50, function(value, prev_value, click_type)
             if click_type ~= CLICK_SCRIPTED then
@@ -473,8 +473,8 @@ function Entity_Control:Blip()
     end, HUD.IS_BLIP_SHORT_RANGE(blip))
 
     menu.list_select(blip_options, "Blip Display", {}, "", Blip_T.DisplayId,
-        HUD.GET_BLIP_INFO_ID_DISPLAY(blip) + 1, function(value)
-            HUD.SET_BLIP_DISPLAY(blip, value - 1)
+        HUD.GET_BLIP_INFO_ID_DISPLAY(blip), function(value)
+            HUD.SET_BLIP_DISPLAY(blip, value)
         end)
 end
 
@@ -504,8 +504,8 @@ function Entity_Control:Ped()
             end
         end
     end)
-    menu.list_action(ped_options, "给予武器", {}, "", RS_T.CommonWeapons.ListItem, function(value)
-        local weaponHash = util.joaat(RS_T.CommonWeapons.ModelList[value])
+    menu.list_action(ped_options, "给予武器", {}, "", RS_T.CommonWeapons, function(value)
+        local weaponHash = value
         WEAPON.GIVE_WEAPON_TO_PED(ped, weaponHash, -1, false, true)
         WEAPON.SET_CURRENT_PED_WEAPON(ped, weaponHash, false)
     end)
@@ -635,11 +635,11 @@ function Entity_Control:Vehicle()
     end)
 
     menu.list_action(vehicle_options, "车窗", {}, "", {
-        { "删除车窗" },
-        { "摇下车窗" },
-        { "摇上车窗" },
-        { "粉碎车窗" },
-        { "修复车窗" },
+        { 1, "删除车窗" },
+        { 2, "摇下车窗" },
+        { 3, "摇上车窗" },
+        { 4, "粉碎车窗" },
+        { 6, "修复车窗" },
     }, function(value)
         if value == 1 then
             for i = 0, 7 do
@@ -664,10 +664,10 @@ function Entity_Control:Vehicle()
         end
     end)
     menu.list_action(vehicle_options, "车门", {}, "", {
-        { "打开车门" },
-        { "关闭车门" },
-        { "拆下车门" },
-        { "删除车门" },
+        { 1, "打开车门" },
+        { 2, "关闭车门" },
+        { 3, "拆下车门" },
+        { 4, "删除车门" },
     }, function(value)
         if value == 1 then
             for i = 0, 3 do
@@ -820,7 +820,10 @@ function Entity_Control:Pickup()
         OBJECT.SET_PICKUP_OBJECT_COLLECTABLE_IN_VEHICLE(pickup)
     end)
     menu.list_action(pickup_options, "阻止收集", {}, "", {
-        "阻止", "阻止(仅本地)", "不阻止", "不阻止(仅本地)"
+        { 1, "阻止" },
+        { 2, "阻止(仅本地)" },
+        { 3, "不阻止" },
+        { 4, "不阻止(仅本地)" }
     }, function(value)
         local bPrevent, bLocalOnly = true, false
         if value == 2 then
@@ -899,8 +902,8 @@ function Entity_Control.Entities(menu_parent, entity_list)
     end)
 
     local explosion_type = 4
-    menu.list_select(menu_parent, "选择爆炸类型", {}, "", Misc_T.ExplosionType, 6, function(value)
-        explosion_type = value - 2
+    menu.list_select(menu_parent, "选择爆炸类型", {}, "", Misc_T.ExplosionType, explosion_type, function(value)
+        explosion_type = value
     end)
     menu.toggle_loop(menu_parent, "爆炸", {}, "", function()
         for k, entity in pairs(entity_list) do

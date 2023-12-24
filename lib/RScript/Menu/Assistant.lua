@@ -68,9 +68,9 @@ end)
 
 menu.divider(Draw_Ped_Box, "设置")
 menu.list_select(Draw_Ped_Box, "NPC类型", {}, "", {
-    { "全部NPC(排除友好)", {}, "" },
-    { "敌对NPC", {}, "" },
-    { "全部NPC", {}, "" },
+    { 1, "全部NPC(排除友好)", {}, "" },
+    { 2, "敌对NPC", {}, "" },
+    { 3, "全部NPC", {}, "" },
 }, 1, function(value)
     draw_ped_box.ped_select = value
 end)
@@ -111,7 +111,7 @@ local nearby_road = {
 }
 
 menu.list_select(Nearby_Road, "生成地点", {}, "", {
-    { "主要道路" }, { "任意地面" }, { "水 (船)" }, { "随机" },
+    { 1, "主要道路" }, { 2, "任意地面" }, { 3, "水 (船)" }, { 4, "随机" },
 }, 1, function(value)
     nearby_road.nodeType = value - 1
 end)

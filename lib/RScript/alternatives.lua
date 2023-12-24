@@ -199,7 +199,7 @@ end
 ---@param entity Entity
 ---@param health integer
 function SET_ENTITY_HEALTH(entity, health)
-    ENTITY.SET_ENTITY_HEALTH(entity, health, 0)
+    ENTITY.SET_ENTITY_HEALTH(entity, health, 0, 0)
 end
 
 ---@param vehicle Vehicle
@@ -216,5 +216,7 @@ end
 ---@param entity Entity
 ---@return string|nil
 function GET_ENTITY_SCRIPT(entity)
-    return ENTITY.GET_ENTITY_SCRIPT(entity, 0)
+    local entity_script = ENTITY.GET_ENTITY_SCRIPT(entity, 0)
+    if entity_script == nil then return nil end
+    return string.lower(entity_script)
 end

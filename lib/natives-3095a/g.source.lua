@@ -1,4 +1,4 @@
--- To require this file, use util.require_natives("2944b.g")
+-- To require this file, use util.require_natives("3095a.g")
 -- Note that any given version of the natives library may not be compatible with any given script.
 
 -- SYSTEM
@@ -105,6 +105,7 @@
 	STOP_PED_RINGTONE=--[[void]] function(--[[Ped (int)]] ped)return native_invoker.unified_void(ped, 0x6C5AE23EFA885092, "i")end
 	IS_MOBILE_PHONE_CALL_ONGOING=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x7497D2CE2C30D24C, "")end
 	IS_MOBILE_INTERFERENCE_ACTIVE=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xC8B1B2425604CDD0, "")end
+	GET_CURRENT_TV_SHOW_PLAY_TIME=--[[int]] function()return native_invoker.unified_int(0xDD3AA743AB7D4D75, "")end
 	CREATE_NEW_SCRIPTED_CONVERSATION=--[[void]] function()return native_invoker.unified_void(0xD2C91A0B572AAE56, "")end
 	-- NOTE: ones that are -1, 0 - 35 are determined by a function where it gets a TextLabel from a global then runs,
 	-- GET_CHARACTER_FROM_AUDIO_CONVERSATION_FILENAME and depending on what the result is it goes in check order of 0 - 9 then A - Z then z (lowercase). So it will then return 0 - 35 or -1 if it's 'z'. The func to handle that ^^ is func_67 in dialog_handler.c atleast in TU27 Xbox360 scripts.
@@ -644,6 +645,7 @@
 	PLAY_VEHICLE_DOOR_CLOSE_SOUND=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[int]] doorId)return native_invoker.unified_void(vehicle, doorId, 0x62A456AA4769EF34, "ii")end
 	-- Works for planes only.
 	ENABLE_STALL_WARNING_SOUNDS=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(vehicle, toggle, 0xC15907D667F7CFB2, "ib")end
+	_ENABLE_DRAG_RACE_STATIONARY_WARNING_SOUNDS=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] enable)return native_invoker.unified_void(vehicle, enable, 0xBEFB80290414FD4F, "ib")end
 	-- Hardcoded to return 1
 	IS_GAME_IN_CONTROL_OF_MUSIC=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x6D28DC1671E334FD, "")end
 	SET_GPS_ACTIVE=--[[void]] function(--[[BOOL (bool)]] active)return native_invoker.unified_void(active, 0x3BD3F52BA9B1E4E8, "b")end
@@ -1346,6 +1348,8 @@
 	-- 
 	-- CAM::SET_THIRD_PERSON_CAM_ORBIT_DISTANCE_LIMITS_THIS_UPDATE(1f, 1f);
 	SET_THIRD_PERSON_CAM_ORBIT_DISTANCE_LIMITS_THIS_UPDATE=--[[void]] function(--[[float]] p0,--[[float]] distance)return native_invoker.unified_void(p0, distance, 0xDF2E1F7742402E81, "ff")end
+	_GET_THIRD_PERSON_CAM_MIN_ORBIT_DISTANCE_SPRING=--[[float]] function()return native_invoker.unified_float(0xBC456FB703431785, "")end
+	_GET_THIRD_PERSON_CAM_MAX_ORBIT_DISTANCE_SPRING=--[[float]] function()return native_invoker.unified_float(0xD4592A16D36673ED, "")end
 	-- Forces gameplay cam to specified vehicle as if you were in it
 	SET_IN_VEHICLE_CAM_STATE_THIS_UPDATE=--[[void]] function(--[[Vehicle (int)]] p0,--[[int]] p1)return native_invoker.unified_void(p0, p1, 0xE9EA16D6E54CDCA4, "ii")end
 	-- Disables first person camera for the current frame.
@@ -2244,7 +2248,7 @@
 	-- health >= 0
 	-- male ped ~= 100 - 200
 	-- female ped ~= 0 - 100
-	SET_ENTITY_HEALTH=--[[void]] function(--[[Entity (int)]] entity,--[[int]] health,--[[int]] p2)return native_invoker.unified_void(entity, health, p2, 0x6B76DC1F3AE6E6A3, "iii")end
+	SET_ENTITY_HEALTH=--[[void]] function(--[[Entity (int)]] entity,--[[int]] health,--[[Entity (int)]] instigator,--[[Hash (int)]] weaponType)return native_invoker.unified_void(entity, health, instigator, weaponType, 0x6B76DC1F3AE6E6A3, "iiii")end
 	-- Sets a ped or an object totally invincible. It doesn't take any kind of damage. Peds will not ragdoll on explosions and the tazer animation won't apply either.
 	-- 
 	-- If you use this for a ped and you want Ragdoll to stay enabled, then do:
@@ -3384,6 +3388,7 @@
 	SET_PARTICLE_FX_LOOPED_ALPHA=--[[void]] function(--[[int]] ptfxHandle,--[[float]] alpha)return native_invoker.unified_void(ptfxHandle, alpha, 0x726845132380142E, "if")end
 	SET_PARTICLE_FX_LOOPED_SCALE=--[[void]] function(--[[int]] ptfxHandle,--[[float]] scale)return native_invoker.unified_void(ptfxHandle, scale, 0xB44250AAA456492D, "if")end
 	SET_PARTICLE_FX_LOOPED_FAR_CLIP_DIST=--[[void]] function(--[[int]] ptfxHandle,--[[float]] range)return native_invoker.unified_void(ptfxHandle, range, 0xDCB194B85EF7B541, "if")end
+	_SET_PARTICLE_FX_LOOPED_CAMERA_BIAS=--[[void]] function(--[[int]] ptfxHandle,--[[float]] p1)return native_invoker.unified_void(ptfxHandle, p1, 0x4100BF0346A8D2C3, "if")end
 	SET_PARTICLE_FX_CAM_INSIDE_VEHICLE=--[[void]] function(--[[BOOL (bool)]] p0)return native_invoker.unified_void(p0, 0xEEC4047028426510, "b")end
 	SET_PARTICLE_FX_CAM_INSIDE_NONPLAYER_VEHICLE=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] p1)return native_invoker.unified_void(vehicle, p1, 0xACEE6F360FC1F6B6, "ib")end
 	SET_PARTICLE_FX_SHOOTOUT_BOAT=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0x96EF97DAEB89BEF5, "i")end
@@ -3425,6 +3430,9 @@
 	-- 
 	-- Full list of particle effect dictionaries and effects by DurtyFree: https://github.com/DurtyFree/gta-v-data-dumps/blob/master/particleEffectsCompact.json
 	RESET_PARTICLE_FX_OVERRIDE=--[[void]] function(--[[string]] name)return native_invoker.unified_void(name, 0x89C8553DD3274AAE, "s")end
+	-- Returns ptfxHandle
+	-- effectName: scr_sv_drag_burnout
+	_START_VEHICLE_PARTICLE_FX_LOOPED=--[[int]] function(--[[Vehicle (int)]] vehicle,--[[string]] effectName,--[[BOOL (bool)]] frontBack,--[[BOOL (bool)]] leftRight,--[[BOOL (bool)]] localOnly)return native_invoker.unified_int(vehicle, effectName, frontBack, leftRight, localOnly, 0xDF269BE2909E181A, "isbbb")end
 	SET_WEATHER_PTFX_USE_OVERRIDE_SETTINGS=--[[void]] function(--[[BOOL (bool)]] p0)return native_invoker.unified_void(p0, 0xA46B73FAA3460AE1, "b")end
 	SET_WEATHER_PTFX_OVERRIDE_CURR_LEVEL=--[[void]] function(--[[float]] p0)return native_invoker.unified_void(p0, 0xF78B803082D4386F, "f")end
 	WASH_DECALS_IN_RANGE=--[[void]] function(--[[float]] x,--[[float]] y,--[[float]] z,--[[float]] range,--[[float]] p4)return native_invoker.unified_void(x, y, z, range, p4, 0x9C30613D50A6ADEF, "fffff")end
@@ -3528,9 +3536,11 @@
 	REQUEST_EARLY_LIGHT_CHECK=--[[void]] function()return native_invoker.unified_void(0x98EDF76A7271E4F2, "")end
 	-- Forces footstep tracks on all surfaces.
 	USE_SNOW_FOOT_VFX_WHEN_UNSHELTERED=--[[void]] function(--[[BOOL (bool)]] toggle)return native_invoker.unified_void(toggle, 0xAEEDAD1420C65CC0, "b")end
+	_FORCE_ALLOW_SNOW_FOOT_VFX_ON_ICE=--[[void]] function(--[[BOOL (bool)]] toggle)return native_invoker.unified_void(toggle, 0xA342A3763B3AFB6C, "b")end
 	-- Forces vehicle trails on all surfaces.
 	USE_SNOW_WHEEL_VFX_WHEN_UNSHELTERED=--[[void]] function(--[[BOOL (bool)]] toggle)return native_invoker.unified_void(toggle, 0x4CC7F0FEA5283FE0, "b")end
 	DISABLE_REGION_VFX=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0xEFD97FF47B745B8D, "i")end
+	_FORCE_GROUND_SNOW_PASS=--[[void]] function(--[[BOOL (bool)]] toggle)return native_invoker.unified_void(toggle, 0x6E9EF3A33C8899F8, "b")end
 	-- Only one match in the scripts:
 	-- 
 	-- GRAPHICS::PRESET_INTERIOR_AMBIENT_CACHE("int_carrier_hanger");
@@ -3770,6 +3780,7 @@
 	-- https://pastebin.com/zUzGB6h7
 	SET_TV_CHANNEL_PLAYLIST=--[[void]] function(--[[int]] tvChannel,--[[string]] playlistName,--[[BOOL (bool)]] restart)return native_invoker.unified_void(tvChannel, playlistName, restart, 0xF7B38B8305F1FE8B, "isb")end
 	SET_TV_CHANNEL_PLAYLIST_AT_HOUR=--[[void]] function(--[[int]] tvChannel,--[[string]] playlistName,--[[int]] hour)return native_invoker.unified_void(tvChannel, playlistName, hour, 0x2201C576FACAEBE8, "isi")end
+	_SET_TV_CHANNEL_PLAYLIST_DIRTY=--[[void]] function(--[[int]] tvChannel,--[[BOOL (bool)]] p1)return native_invoker.unified_void(tvChannel, p1, 0xEE831F15A8D0D94A, "ib")end
 	CLEAR_TV_CHANNEL_PLAYLIST=--[[void]] function(--[[int]] tvChannel)return native_invoker.unified_void(tvChannel, 0xBEB3D46BB7F043C0, "i")end
 	IS_PLAYLIST_ON_CHANNEL=--[[BOOL (bool)]] function(--[[int]] tvChannel,--[[Any (int)]] p1)return native_invoker.unified_bool(tvChannel, p1, 0x1F710BFF7DAE6261, "ii")end
 	IS_TVSHOW_CURRENTLY_PLAYING=--[[BOOL (bool)]] function(--[[Hash (int)]] videoCliphash)return native_invoker.unified_bool(videoCliphash, 0x0AD973CA1E077B60, "i")end
@@ -4284,6 +4295,7 @@
 	IS_RADAR_HIDDEN=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x157F93B036700462, "")end
 	IS_MINIMAP_RENDERING=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xAF754F20EB5CD51A, "")end
 	USE_VEHICLE_TARGETING_RETICULE=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0x0C698D8F099174C7, "i")end
+	_USE_VEHICLE_TARGETING_RETICULE_ON_VEHICLES=--[[void]] function(--[[BOOL (bool)]] enable)return native_invoker.unified_void(enable, 0x1BC0EA2912708625, "b")end
 	ADD_VALID_VEHICLE_HIT_HASH=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0xE4C3B169876D33D7, "i")end
 	CLEAR_VALID_VEHICLE_HIT_HASHES=--[[void]] function()return native_invoker.unified_void(0xEB81A3DADD503187, "")end
 	-- Enable / disable showing route for the Blip-object.
@@ -4335,6 +4347,7 @@
 	-- 
 	-- Right-Justify requires SET_TEXT_WRAP, otherwise it will draw to the far right of the screen
 	SET_TEXT_JUSTIFICATION=--[[void]] function(--[[int]] justifyType)return native_invoker.unified_void(justifyType, 0x4E096588B13FFECA, "i")end
+	SET_TEXT_LINE_HEIGHT_MULT=--[[void]] function(--[[float]] lineHeightMult)return native_invoker.unified_void(lineHeightMult, 0x9F4624F76E6953D1, "f")end
 	-- It sets the text in a specified box and wraps the text if it exceeds the boundries. Both values are for X axis. Useful when positioning text set to center or aligned to the right.
 	-- 
 	-- start - left boundry on screen position (0.0 - 1.0)
@@ -4597,6 +4610,8 @@
 	SETUP_FAKE_CONE_DATA=--[[void]] function(--[[Blip (int)]] blip,--[[float]] p1,--[[float]] p2,--[[float]] p3,--[[float]] p4,--[[float]] p5,--[[float]] p6,--[[Any (int)]] p7,--[[int]] p8)return native_invoker.unified_void(blip, p1, p2, p3, p4, p5, p6, p7, p8, 0xF83D0FEBE75E62C9, "iffffffii")end
 	REMOVE_FAKE_CONE_DATA=--[[void]] function(--[[Blip (int)]] blip)return native_invoker.unified_void(blip, 0x35A3CD97B2C0A6D2, "i")end
 	CLEAR_FAKE_CONE_ARRAY=--[[void]] function()return native_invoker.unified_void(0x8410C5E0CD847B9D, "")end
+	-- Applies to new eBlipParams _BLIP_CHANGE_46* and _BLIP_CHANGE_47*
+	_SET_BLIP_GPS_ROUTE_DISPLAY_DISTANCE=--[[void]] function(--[[Blip (int)]] blip,--[[int]] blipChangeParam46,--[[BOOL (bool)]] blipChangeParam47)return native_invoker.unified_void(blip, blipChangeParam46, blipChangeParam47, 0x25D984CFB64ED6DE, "iib")end
 	-- This native is used to colorize certain map components like the army base at the top of the map.
 	-- p2 appears to be always -1. If p2 is -1 then native wouldn't change the color. See https://gfycat.com/SkinnyPinkChupacabra
 	SET_MINIMAP_COMPONENT=--[[BOOL (bool)]] function(--[[int]] componentId,--[[BOOL (bool)]] toggle,--[[int]] overrideColor)return native_invoker.unified_bool(componentId, toggle, overrideColor, 0x75A9A10948D1DEA6, "ibi")end
@@ -6220,6 +6235,9 @@
 	USE_ACTIVE_CAMERA_FOR_TIMESLICING_CENTRE=--[[void]] function()return native_invoker.unified_void(0x693478ACBD7F18E7, "")end
 	SET_CONTENT_ID_INDEX=--[[void]] function(--[[Hash (int)]] contentId,--[[int]] index)return native_invoker.unified_void(contentId, index, 0x4B82FA6F2D624634, "ii")end
 	GET_CONTENT_ID_INDEX=--[[int]] function(--[[Hash (int)]] contentId)return native_invoker.unified_int(contentId, 0xECF041186C5A94DC, "i")end
+	_SET_CONTENT_PROP_TYPE=--[[void]] function(--[[Hash (int)]] model,--[[int]] type)return native_invoker.unified_void(model, type, 0xBA4583AF4C678A9B, "ii")end
+	-- Returns prop type for given model hash
+	_GET_CONTENT_PROP_TYPE=--[[int]] function(--[[Hash (int)]] model)return native_invoker.unified_int(model, 0x8BAF8AD59F47AAFC, "i")end
 -- MOBILE
 	-- Creates a mobile phone of the specified type.
 	-- 
@@ -6691,6 +6709,10 @@
 	_NETWORK_SPENT_STEALTH_MODULE=--[[void]] function(--[[int]] amount,--[[BOOL (bool)]] fromBank,--[[BOOL (bool)]] fromBankAndWallet,--[[Hash (int)]] p3)return native_invoker.unified_void(amount, fromBank, fromBankAndWallet, p3, 0x95CE79A6939C537A, "ibbi")end
 	-- Hash p3 = MISSILE_JAMMER
 	_NETWORK_SPENT_MISSILE_JAMMER=--[[void]] function(--[[int]] amount,--[[BOOL (bool)]] fromBank,--[[BOOL (bool)]] fromBankAndWallet,--[[Hash (int)]] p3)return native_invoker.unified_void(amount, fromBank, fromBankAndWallet, p3, 0xD687100F616163F4, "ibbi")end
+	_NETWORK_SPENT_GENERIC=--[[void]] function(--[[int]] price,--[[BOOL (bool)]] p1,--[[BOOL (bool)]] p2,--[[Hash (int)]] stat,--[[Hash (int)]] spent,--[[string]] p5,--[[string]] p6,--[[Any* (pointer)]] data)return native_invoker.unified_void(price, p1, p2, stat, spent, p5, p6, data, 0x2803B027479FB640, "ibbiissp")end
+	-- _NETWORK_EARN_G*
+	_NETWORK_EARN_GENERIC=--[[void]] function(--[[int]] amount,--[[Hash (int)]] earn,--[[string]] p2,--[[string]] p3,--[[Any* (pointer)]] data)return native_invoker.unified_void(amount, earn, p2, p3, data, 0xBF7B5BB7ED890380, "iissp")end
+	_NETWORK_CLEAR_TRANSACTION_TELEMETRY_NONCE=--[[void]] function()return native_invoker.unified_void(0xE03B9F95556E48E9, "")end
 	NETWORK_GET_VC_BANK_BALANCE=--[[int]] function()return native_invoker.unified_int(0x76EF28DA05EA395A, "")end
 	NETWORK_GET_VC_WALLET_BALANCE=--[[int]] function(--[[int]] characterSlot)return native_invoker.unified_int(characterSlot, 0xA40F9C2623F6A8B5, "i")end
 	NETWORK_GET_VC_BALANCE=--[[int]] function()return native_invoker.unified_int(0x5CBAD97E059E1B94, "")end
@@ -6819,6 +6841,8 @@
 	NETWORK_HAS_AGE_RESTRICTIONS=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x1353F87E89946207, "")end
 	NETWORK_HAVE_USER_CONTENT_PRIVILEGES=--[[BOOL (bool)]] function(--[[int]] p0)return native_invoker.unified_bool(p0, 0x72D918C99BCACC54, "i")end
 	NETWORK_HAVE_COMMUNICATION_PRIVILEGES=--[[BOOL (bool)]] function(--[[int]] p0,--[[Player (int)]] player)return native_invoker.unified_bool(p0, player, 0xAEEF48CDF5B6CE7C, "ii")end
+	-- Appears to be PlayStation-specific. Always returns true on other platforms if signed in with the primary user profile
+	_NETWORK_HAVE_PLATFORM_COMMUNICATION_PRIVILEGES=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xE1E02509169C124E, "")end
 	NETWORK_CHECK_ONLINE_PRIVILEGES=--[[BOOL (bool)]] function(--[[Any (int)]] p0,--[[BOOL (bool)]] p1)return native_invoker.unified_bool(p0, p1, 0x78321BEA235FD8CD, "ib")end
 	NETWORK_CHECK_USER_CONTENT_PRIVILEGES=--[[BOOL (bool)]] function(--[[int]] p0,--[[int]] p1,--[[BOOL (bool)]] p2)return native_invoker.unified_bool(p0, p1, p2, 0x595F028698072DD9, "iib")end
 	NETWORK_CHECK_COMMUNICATION_PRIVILEGES=--[[BOOL (bool)]] function(--[[int]] p0,--[[int]] p1,--[[BOOL (bool)]] p2)return native_invoker.unified_bool(p0, p1, p2, 0x83F28CE49FBBFFBA, "iib")end
@@ -6865,6 +6889,7 @@
 	NETWORK_SESSION_IS_CLOSED_CREW=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x74732C6CA90DA2B4, "")end
 	NETWORK_SESSION_IS_SOLO=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xF3929C2379B60CCE, "")end
 	NETWORK_SESSION_IS_PRIVATE=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xCEF70AA5B3F89BA1, "")end
+	_NETWORK_SESSION_LEAVE_INCLUDING_REASON=--[[BOOL (bool)]] function(--[[int]] leaveFlags,--[[int]] leaveReason)return native_invoker.unified_bool(leaveFlags, leaveReason, 0xE0128328CF1FD9F4, "ii")end
 	-- p0 is always false and p1 varies.
 	-- NETWORK_SESSION_END(0, 1)
 	-- NETWORK_SESSION_END(0, 0)
@@ -6886,6 +6911,7 @@
 	-- groupId range: [0, 4]
 	NETWORK_SESSION_ADD_ACTIVE_MATCHMAKING_GROUP=--[[void]] function(--[[int]] groupId)return native_invoker.unified_void(groupId, 0xCAE55F48D3D7875C, "i")end
 	NETWORK_SESSION_SET_UNIQUE_CREW_LIMIT=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0xF49ABC20D8552257, "i")end
+	NETWORK_SESSION_GET_UNIQUE_CREW_LIMIT=--[[int]] function()return native_invoker.unified_int(0xCDC936BF35EDCB73, "")end
 	NETWORK_SESSION_SET_UNIQUE_CREW_LIMIT_TRANSITION=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0x4811BBAC21C5FCD5, "i")end
 	NETWORK_SESSION_SET_UNIQUE_CREW_ONLY_CREWS_TRANSITION=--[[void]] function(--[[BOOL (bool)]] p0)return native_invoker.unified_void(p0, 0x5539C3EBF104A53A, "b")end
 	NETWORK_SESSION_SET_CREW_LIMIT_MAX_MEMBERS_TRANSITION=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0x702BC4D605522539, "i")end
@@ -6958,6 +6984,8 @@
 	NETWORK_IS_GAME_IN_PROGRESS=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x10FAB35428CCC9D7, "")end
 	NETWORK_IS_SESSION_ACTIVE=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xD83C2B94E7508980, "")end
 	NETWORK_IS_IN_SESSION=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xCA97246103B63917, "")end
+	-- Hardcoded to return 0.
+	_NETWORK_IS_AMERICAS_VERSION=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x0292BD7F3766CEBC, "")end
 	-- This checks if player is playing on gta online or not.
 	-- Please add an if and block your mod if this is "true".
 	NETWORK_IS_SESSION_STARTED=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x9DE624D2FC4B603F, "")end
@@ -7329,6 +7357,26 @@
 	NETWORK_GET_PLAYER_OWNS_WAYPOINT=--[[BOOL (bool)]] function(--[[Player (int)]] player)return native_invoker.unified_bool(player, 0x82377B65E943F72D, "i")end
 	NETWORK_CAN_SET_WAYPOINT=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xC927EC229934AF60, "")end
 	NETWORK_IGNORE_REMOTE_WAYPOINTS=--[[void]] function()return native_invoker.unified_void(0x4C2A9FDC22377075, "")end
+	-- communicationType: 0 = VOICE; 1 = TEXT_CHAT; 2 = TEXT_MESSAGE; 3 = EMAIL; 4 = USER_CONTENT;  5 = USER_TEXT
+	_NETWORK_DOES_COMMUNICATION_GROUP_EXIST=--[[BOOL (bool)]] function(--[[int]] communicationType)return native_invoker.unified_bool(communicationType, 0xDBDF80673BBA3D65, "i")end
+	-- Returns communicationGroupFlag
+	-- communicationType: see 0xDBDF80673BBA3D65
+	-- 
+	-- enum eCommunicationGroupFlag
+	-- {
+	-- 	COMMUNICATION_GROUP_LOCAL_PLAYER = 1 << 0,
+	-- 	COMMUNICATION_GROUP_FRIENDS = 1 << 1,
+	-- 	COMMUNICATION_GROUP_SMALL_CREW = 1 << 2,
+	-- 	COMMUNICATION_GROUP_LARGE_CREW = 1 << 3,
+	-- 	COMMUNICATION_GROUP_RECENT_PLAYER = 1 << 4,
+	-- 	COMMUNICATION_GROUP_SAME_SESSION = 1 << 5,
+	-- 	COMMUNICATION_GROUP_SAME_TEAM = 1 << 6,
+	-- 	COMMUNICATION_GROUP_INVALID = 1 << 7,
+	-- };
+	_NETWORK_GET_COMMUNICATION_GROUP_FLAGS=--[[int]] function(--[[int]] communicationType)return native_invoker.unified_int(communicationType, 0x40DF02F371F40883, "i")end
+	-- communicationType: see 0xDBDF80673BBA3D65
+	-- communicationGroupFlag: see 0x40DF02F371F40883
+	_NETWORK_SET_COMMUNICATION_GROUP_FLAGS=--[[void]] function(--[[int]] communicationType,--[[int]] communicationGroupFlag)return native_invoker.unified_void(communicationType, communicationGroupFlag, 0xE549F846DE7D32D5, "ii")end
 	NETWORK_IS_PLAYER_ON_BLOCKLIST=--[[BOOL (bool)]] function(--[[Any* (pointer)]] gamerHandle)return native_invoker.unified_bool(gamerHandle, 0xAD4326FCA30D62F8, "p")end
 	NETWORK_SET_SCRIPT_AUTOMUTED=--[[BOOL (bool)]] function(--[[Any (int)]] p0)return native_invoker.unified_bool(p0, 0xB309EBEA797E001F, "i")end
 	NETWORK_HAS_AUTOMUTE_OVERRIDE=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x26F07DD83A5F7F98, "")end
@@ -7476,7 +7524,7 @@
 	NETWORK_SET_ENTITY_ONLY_EXISTS_FOR_PARTICIPANTS=--[[void]] function(--[[Entity (int)]] entity,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(entity, toggle, 0xF1CA12B18AEF5298, "ib")end
 	SET_NETWORK_ID_VISIBLE_IN_CUTSCENE=--[[void]] function(--[[int]] netId,--[[BOOL (bool)]] p1,--[[BOOL (bool)]] p2)return native_invoker.unified_void(netId, p1, p2, 0xA6928482543022B4, "ibb")end
 	SET_NETWORK_ID_VISIBLE_IN_CUTSCENE_HACK=--[[void]] function(--[[int]] netId,--[[BOOL (bool)]] p1,--[[BOOL (bool)]] p2)return native_invoker.unified_void(netId, p1, p2, 0x32EBD154CB6B8B99, "ibb")end
-	SET_NETWORK_ID_VISIBLE_IN_CUTSCENE_REMAIN_HACK=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1)return native_invoker.unified_void(p0, p1, 0x76B3F29D3F967692, "ii")end
+	SET_NETWORK_ID_VISIBLE_IN_CUTSCENE_REMAIN_HACK=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2)return native_invoker.unified_void(p0, p1, p2, 0x76B3F29D3F967692, "iii")end
 	SET_NETWORK_CUTSCENE_ENTITIES=--[[void]] function(--[[BOOL (bool)]] toggle)return native_invoker.unified_void(toggle, 0xAAA553E7DD28A457, "b")end
 	-- Getter for SET_NETWORK_CUTSCENE_ENTITIES.
 	ARE_CUTSCENE_ENTITIES_NETWORKED=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x66D6A5E9C511214A, "")end
@@ -7855,6 +7903,7 @@
 	UGC_GET_CACHED_DESCRIPTION=--[[string]] function(--[[Any (int)]] p0,--[[Any (int)]] p1)return native_invoker.unified_string(p0, p1, 0x40F7E66472DF3E5C, "ii")end
 	UGC_RELEASE_CACHED_DESCRIPTION=--[[BOOL (bool)]] function(--[[Any (int)]] p0)return native_invoker.unified_bool(p0, 0x5A34CD9C3C5BEC44, "i")end
 	UGC_RELEASE_ALL_CACHED_DESCRIPTIONS=--[[void]] function()return native_invoker.unified_void(0x68103E2247887242, "")end
+	UGC_HAS_PERMISSION_TO_WRITE=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xC33E7CBC06EC1A8D, "")end
 	UGC_PUBLISH=--[[BOOL (bool)]] function(--[[string]] contentId,--[[string]] baseContentId,--[[string]] contentTypeName)return native_invoker.unified_bool(contentId, baseContentId, contentTypeName, 0x1DE0F5F50D723CAA, "sss")end
 	UGC_SET_BOOKMARKED=--[[BOOL (bool)]] function(--[[string]] contentId,--[[BOOL (bool)]] bookmarked,--[[string]] contentTypeName)return native_invoker.unified_bool(contentId, bookmarked, contentTypeName, 0x274A1519DFC1094F, "sbs")end
 	UGC_SET_DELETED=--[[BOOL (bool)]] function(--[[Any* (pointer)]] p0,--[[BOOL (bool)]] p1,--[[string]] p2)return native_invoker.unified_bool(p0, p1, p2, 0xD05D1A6C74DA3498, "pbs")end
@@ -7904,6 +7953,10 @@
 	NETWORK_HAS_ROS_PRIVILEGE_END_DATE=--[[BOOL (bool)]] function(--[[int]] privilege,--[[int* (pointer)]] banType,--[[Any* (pointer)]] timeData)return native_invoker.unified_bool(privilege, banType, timeData, 0xC22912B1D85F26B1, "ipp")end
 	NETWORK_HAS_ROS_PRIVILEGE_PLAYED_LAST_GEN=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x593570C289A77688, "")end
 	NETWORK_HAS_ROS_PRIVILEGE_SPECIAL_EDITION_CONTENT=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x91B87C55093DE351, "")end
+	-- Checks for privilege 29
+	_NETWORK_HAS_ROS_PRIVILEGE_MP_TEXT_COMMUNICATION=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xD9719341663C385F, "")end
+	-- Checks for privilege 30
+	_NETWORK_HAS_ROS_PRIVILEGE_MP_VOICE_COMMUNICATION=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0x8956A309BE90057C, "")end
 	NETWORK_START_COMMUNICATION_PERMISSIONS_CHECK=--[[int]] function(--[[Any (int)]] p0)return native_invoker.unified_int(p0, 0x36391F397731595D, "i")end
 	-- Always returns -1. Seems to be XB1 specific.
 	NETWORK_START_USER_CONTENT_PERMISSIONS_CHECK=--[[int]] function(--[[Any* (pointer)]] netHandle)return native_invoker.unified_int(netHandle, 0xDEB2B99A1AF1A2A6, "p")end
@@ -7964,7 +8017,7 @@
 	-- See also: https://gtagmodding.com/opcode-database/opcode/034E/
 	-- Has to be looped until it returns true.
 	SLIDE_OBJECT=--[[BOOL (bool)]] function(--[[Object (int)]] object,--[[float]] toX,--[[float]] toY,--[[float]] toZ,--[[float]] speedX,--[[float]] speedY,--[[float]] speedZ,--[[BOOL (bool)]] collision)return native_invoker.unified_bool(object, toX, toY, toZ, speedX, speedY, speedZ, collision, 0x2FDFF4107B8C1147, "iffffffb")end
-	SET_OBJECT_TARGETTABLE=--[[void]] function(--[[Object (int)]] object,--[[BOOL (bool)]] targettable)return native_invoker.unified_void(object, targettable, 0x8A7391690F5AFD81, "ib")end
+	SET_OBJECT_TARGETTABLE=--[[void]] function(--[[Object (int)]] object,--[[BOOL (bool)]] targettable,--[[Any (int)]] p2)return native_invoker.unified_void(object, targettable, p2, 0x8A7391690F5AFD81, "ibi")end
 	-- Overrides a flag on the object which determines if the object should be avoided by a vehicle in task CTaskVehicleGoToPointWithAvoidanceAutomobile.
 	SET_OBJECT_FORCE_VEHICLES_TO_AVOID=--[[void]] function(--[[Object (int)]] object,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(object, toggle, 0x77F33F2CCF64B3AA, "ib")end
 	-- Has 8 params in the latest patches.
@@ -8940,6 +8993,7 @@
 	IS_PED_GOING_INTO_COVER=--[[BOOL (bool)]] function(--[[Ped (int)]] ped)return native_invoker.unified_bool(ped, 0x9F65DBC537E59AD5, "i")end
 	-- i could be time. Only example in the decompiled scripts uses it as -1.
 	SET_PED_PINNED_DOWN=--[[BOOL (bool)]] function(--[[Ped (int)]] ped,--[[BOOL (bool)]] pinned,--[[int]] i)return native_invoker.unified_bool(ped, pinned, i, 0xAAD6D1ACF08F4612, "ibi")end
+	_HAS_PED_CLEAR_LOS_TO_ENTITY=--[[BOOL (bool)]] function(--[[Ped (int)]] ped,--[[Entity (int)]] entity,--[[float]] x,--[[float]] y,--[[float]] z,--[[int]] p5,--[[BOOL (bool)]] p6,--[[BOOL (bool)]] p7)return native_invoker.unified_bool(ped, entity, x, y, z, p5, p6, p7, 0xA32ABFEB2A03B306, "iifffibb")end
 	GET_SEAT_PED_IS_TRYING_TO_ENTER=--[[int]] function(--[[Ped (int)]] ped)return native_invoker.unified_int(ped, 0x6F4C85ACD641BCD2, "i")end
 	GET_VEHICLE_PED_IS_TRYING_TO_ENTER=--[[Vehicle (int)]] function(--[[Ped (int)]] ped)return native_invoker.unified_int(ped, 0x814FA8BE5449445D, "i")end
 	-- Returns the Entity (Ped, Vehicle, or ?Object?) that killed the 'ped'
@@ -9106,7 +9160,7 @@
 	-- PED::SET_PED_GRAVITY(Local_289[iVar0 /*20*/], 0x00000001);
 	SET_PED_GRAVITY=--[[void]] function(--[[Ped (int)]] ped,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(ped, toggle, 0x9FF447B6B6AD960A, "ib")end
 	-- damages a ped with the given amount
-	APPLY_DAMAGE_TO_PED=--[[void]] function(--[[Ped (int)]] ped,--[[int]] damageAmount,--[[BOOL (bool)]] p2,--[[Any (int)]] p3)return native_invoker.unified_void(ped, damageAmount, p2, p3, 0x697157CED63F18D4, "iibi")end
+	APPLY_DAMAGE_TO_PED=--[[void]] function(--[[Ped (int)]] ped,--[[int]] damageAmount,--[[BOOL (bool)]] p2,--[[Any (int)]] p3,--[[Hash (int)]] weaponType)return native_invoker.unified_void(ped, damageAmount, p2, p3, weaponType, 0x697157CED63F18D4, "iibii")end
 	GET_TIME_PED_DAMAGED_BY_WEAPON=--[[int]] function(--[[Ped (int)]] ped,--[[Hash (int)]] weaponHash)return native_invoker.unified_int(ped, weaponHash, 0x36B77BB84687C318, "ii")end
 	SET_PED_ALLOWED_TO_DUCK=--[[void]] function(--[[Ped (int)]] ped,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(ped, toggle, 0xDA1F1B7BE1A8766F, "ib")end
 	SET_PED_NEVER_LEAVES_GROUP=--[[void]] function(--[[Ped (int)]] ped,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(ped, toggle, 0x3DBFC55D5C9BB447, "ib")end
@@ -9993,7 +10047,7 @@
 	-- CREATE_NM_MESSAGE(true, 372); // armsWindmill - Swing arms around.
 	-- GIVE_PED_NM_MESSAGE(ped); // Dispatch message to Ped.
 	GIVE_PED_NM_MESSAGE=--[[void]] function(--[[Ped (int)]] ped)return native_invoker.unified_void(ped, 0xB158DFCCC56E5C5B, "i")end
-	ADD_SCENARIO_BLOCKING_AREA=--[[int]] function(--[[float]] x1,--[[float]] y1,--[[float]] z1,--[[float]] x2,--[[float]] y2,--[[float]] z2,--[[BOOL (bool)]] p6,--[[BOOL (bool)]] p7,--[[BOOL (bool)]] p8,--[[BOOL (bool)]] p9)return native_invoker.unified_int(x1, y1, z1, x2, y2, z2, p6, p7, p8, p9, 0x1B5C85C612E5256E, "ffffffbbbb")end
+	ADD_SCENARIO_BLOCKING_AREA=--[[int]] function(--[[float]] x1,--[[float]] y1,--[[float]] z1,--[[float]] x2,--[[float]] y2,--[[float]] z2,--[[BOOL (bool)]] p6,--[[BOOL (bool)]] p7,--[[BOOL (bool)]] p8,--[[BOOL (bool)]] p9,--[[Any (int)]] p10)return native_invoker.unified_int(x1, y1, z1, x2, y2, z2, p6, p7, p8, p9, p10, 0x1B5C85C612E5256E, "ffffffbbbbi")end
 	REMOVE_SCENARIO_BLOCKING_AREAS=--[[void]] function()return native_invoker.unified_void(0xD37401D78A929A49, "")end
 	REMOVE_SCENARIO_BLOCKING_AREA=--[[void]] function(--[[Any (int)]] p0,--[[BOOL (bool)]] p1)return native_invoker.unified_void(p0, p1, 0x31D16B74C6E29D66, "ib")end
 	SET_SCENARIO_PEDS_SPAWN_IN_SPHERE_AREA=--[[void]] function(--[[float]] x,--[[float]] y,--[[float]] z,--[[float]] range,--[[int]] p4)return native_invoker.unified_void(x, y, z, range, p4, 0x28157D43CF600981, "ffffi")end
@@ -11596,6 +11650,8 @@
 	-- 2 = Free Aim - Assisted
 	-- 3 = Free Aim
 	SET_PLAYER_TARGETING_MODE=--[[void]] function(--[[int]] targetMode)return native_invoker.unified_void(targetMode, 0xB1906895227793F3, "i")end
+	-- Returns targeting mode. See SET_PLAYER_TARGETING_MODE
+	GET_PLAYER_TARGETING_MODE=--[[int]] function()return native_invoker.unified_int(0x875BDD898B99C8CE, "")end
 	SET_PLAYER_TARGET_LEVEL=--[[void]] function(--[[int]] targetLevel)return native_invoker.unified_void(targetLevel, 0x5702B917B99DB1CD, "i")end
 	-- Returns profile setting 237.
 	GET_IS_USING_FPS_THIRD_PERSON_COVER=--[[BOOL (bool)]] function()return native_invoker.unified_bool(0xB9CF1F793A9F1BF1, "")end
@@ -12024,8 +12080,9 @@
 	BG_DOES_LAUNCH_PARAM_EXIST=--[[BOOL (bool)]] function(--[[int]] scriptIndex,--[[string]] p1)return native_invoker.unified_bool(scriptIndex, p1, 0x0F6F1EBBC4E1D5E6, "is")end
 	BG_GET_LAUNCH_PARAM_VALUE=--[[int]] function(--[[int]] scriptIndex,--[[string]] p1)return native_invoker.unified_int(scriptIndex, p1, 0x22E21FBCFC88C149, "is")end
 	BG_GET_SCRIPT_ID_FROM_NAME_HASH=--[[int]] function(--[[Hash (int)]] p0)return native_invoker.unified_int(p0, 0x829CD22E043A2577, "i")end
-	-- See TRIGGER_SCRIPT_EVENT
-	SEND_TU_SCRIPT_EVENT=--[[void]] function(--[[int]] eventGroup,--[[Any* (pointer)]] eventData,--[[int]] eventDataSize,--[[int]] playerBits)return native_invoker.unified_void(eventGroup, eventData, eventDataSize, playerBits, 0xA40CC53DF8E50837, "ipii")end
+	-- New variant of SEND_TU_SCRIPT_EVENT that automatically initializes the event data header.
+	-- See TRIGGER_SCRIPT_EVENT for more info.
+	_SEND_TU_SCRIPT_EVENT_NEW=--[[void]] function(--[[int]] eventGroup,--[[Any* (pointer)]] eventData,--[[int]] eventDataSize,--[[int]] playerBits,--[[Hash (int)]] eventType)return native_invoker.unified_void(eventGroup, eventData, eventDataSize, playerBits, eventType, 0x71A6F836422FDD2B, "ipiii")end
 -- SECURITY
 	-- Registers a protected variable that will be checked for modifications by the anticheat
 	REGISTER_SCRIPT_VARIABLE=--[[void]] function(--[[Any* (pointer)]] variable)return native_invoker.unified_void(variable, 0x40EB1EFD921822BC, "p")end
@@ -12085,7 +12142,6 @@
 	SC_INBOX_MESSAGE_PUSH_GAMER_T0_RECIP_LIST=--[[void]] function(--[[Any* (pointer)]] gamerHandle)return native_invoker.unified_void(gamerHandle, 0xDA024BDBD600F44A, "p")end
 	SC_INBOX_SEND_UGCSTATUPDATE_TO_RECIP_LIST=--[[void]] function(--[[Any* (pointer)]] data)return native_invoker.unified_void(data, 0xA68D3D229F4F3B06, "p")end
 	SC_INBOX_MESSAGE_GET_UGCDATA=--[[BOOL (bool)]] function(--[[int]] p0,--[[Any* (pointer)]] p1)return native_invoker.unified_bool(p0, p1, 0x69D82604A1A5A254, "ip")end
-	SC_INBOX_SEND_BOUNTY_TO_RECIP_LIST=--[[BOOL (bool)]] function(--[[Any* (pointer)]] data)return native_invoker.unified_bool(data, 0x6AFD2CD753FEEF83, "p")end
 	SC_INBOX_GET_BOUNTY_DATA_AT_INDEX=--[[BOOL (bool)]] function(--[[int]] index,--[[Any* (pointer)]] outData)return native_invoker.unified_bool(index, outData, 0x87E0052F08BD64E6, "ip")end
 	SC_EMAIL_RETRIEVE_EMAILS=--[[void]] function(--[[int]] offset,--[[int]] limit)return native_invoker.unified_void(offset, limit, 0x040ADDCBAFA1018A, "ii")end
 	SC_EMAIL_GET_RETRIEVAL_STATUS=--[[int]] function()return native_invoker.unified_int(0x16DA8172459434AA, "")end
@@ -12350,11 +12406,13 @@
 	-- p3: VehicleConversion, SCAdminCashGift
 	-- p4: 0
 	_PLAYSTATS_FLOW_LOW=--[[void]] function(--[[float]] posX,--[[float]] posY,--[[float]] posZ,--[[string]] p3,--[[Any (int)]] p4,--[[int]] amount)return native_invoker.unified_void(posX, posY, posZ, p3, p4, amount, 0xE6A27CDA42887F93, "fffsii")end
+	-- interiorAction: can either be InteriorEntry or InteriorExit
+	_PLAYSTATS_FLOW_MEDIUM=--[[void]] function(--[[float]] x,--[[float]] y,--[[float]] z,--[[string]] interiorAction,--[[int]] p4,--[[Hash (int)]] p5)return native_invoker.unified_void(x, y, z, interiorAction, p4, p5, 0xC4493521BAA12CCE, "fffsii")end
 	PLAYSTATS_NPC_INVITE=--[[void]] function(--[[string]] p0)return native_invoker.unified_void(p0, 0x93054C88E6AA7C44, "s")end
 	PLAYSTATS_AWARD_XP=--[[void]] function(--[[int]] amount,--[[Hash (int)]] type,--[[Hash (int)]] category)return native_invoker.unified_void(amount, type, category, 0x46F917F6B4128FE4, "iii")end
 	PLAYSTATS_RANK_UP=--[[void]] function(--[[int]] rank)return native_invoker.unified_void(rank, 0xC7F2DE41D102BFB4, "i")end
 	PLAYSTATS_STARTED_SESSION_IN_OFFLINEMODE=--[[void]] function()return native_invoker.unified_void(0x098760C7461724CD, "")end
-	PLAYSTATS_ACTIVITY_DONE=--[[void]] function(--[[int]] p0,--[[int]] activityId)return native_invoker.unified_void(p0, activityId, 0xA071E0ED98F91286, "ii")end
+	PLAYSTATS_ACTIVITY_DONE=--[[void]] function(--[[int]] p0,--[[int]] activityId,--[[Any (int)]] p2)return native_invoker.unified_void(p0, activityId, p2, 0xA071E0ED98F91286, "iii")end
 	PLAYSTATS_LEAVE_JOB_CHAIN=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2,--[[Any (int)]] p3,--[[Any (int)]] p4)return native_invoker.unified_void(p0, p1, p2, p3, p4, 0xC5BE134EC7BA96A0, "iiiii")end
 	PLAYSTATS_MISSION_STARTED=--[[void]] function(--[[string]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2,--[[BOOL (bool)]] p3)return native_invoker.unified_void(p0, p1, p2, p3, 0xC19A2925C34D2231, "siib")end
 	PLAYSTATS_MISSION_OVER=--[[void]] function(--[[string]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2,--[[BOOL (bool)]] p3,--[[BOOL (bool)]] p4,--[[BOOL (bool)]] p5)return native_invoker.unified_void(p0, p1, p2, p3, p4, p5, 0x7C4BB33A8CED7324, "siibbb")end
@@ -12391,7 +12449,7 @@
 	PLAYSTATS_APPEND_DIRECTOR_METRIC=--[[void]] function(--[[Any* (pointer)]] p0)return native_invoker.unified_void(p0, 0x46326E13DA4E0546, "p")end
 	PLAYSTATS_AWARD_BAD_SPORT=--[[void]] function(--[[int]] id)return native_invoker.unified_void(id, 0x47B32F5611E6E483, "i")end
 	PLAYSTATS_PEGASUS_AS_PERSONAL_AIRCRAFT=--[[void]] function(--[[Hash (int)]] modelHash)return native_invoker.unified_void(modelHash, 0x9572BD4DD6B72122, "i")end
-	_PLAYSTATS_SHOPMENU_NAV=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2)return native_invoker.unified_void(p0, p1, p2, 0xF96E9EA876D9DC92, "iii")end
+	_PLAYSTATS_SHOPMENU_NAV=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2,--[[Any (int)]] p3)return native_invoker.unified_void(p0, p1, p2, p3, 0xF96E9EA876D9DC92, "iiii")end
 	PLAYSTATS_FM_EVENT_CHALLENGES=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0x6A60E43998228229, "i")end
 	PLAYSTATS_FM_EVENT_VEHICLETARGET=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0xBFAFDB5FAAA5C5AB, "i")end
 	PLAYSTATS_FM_EVENT_URBANWARFARE=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0x8C9D11605E59D955, "i")end
@@ -12416,7 +12474,6 @@
 	LEADERBOARDS_READ_SUCCESSFUL=--[[BOOL (bool)]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2)return native_invoker.unified_bool(p0, p1, p2, 0x2FB19228983E832C, "iii")end
 	LEADERBOARDS2_READ_FRIENDS_BY_ROW=--[[BOOL (bool)]] function(--[[Any* (pointer)]] p0,--[[Any* (pointer)]] p1,--[[Any (int)]] p2,--[[BOOL (bool)]] p3,--[[Any (int)]] p4,--[[Any (int)]] p5)return native_invoker.unified_bool(p0, p1, p2, p3, p4, p5, 0x918B101666F9CB83, "ppibii")end
 	LEADERBOARDS2_READ_BY_HANDLE=--[[BOOL (bool)]] function(--[[Any* (pointer)]] p0,--[[Any* (pointer)]] p1)return native_invoker.unified_bool(p0, p1, 0xC30713A383BFBF0E, "pp")end
-	LEADERBOARDS2_READ_BY_ROW=--[[BOOL (bool)]] function(--[[Any* (pointer)]] p0,--[[Any* (pointer)]] p1,--[[Any (int)]] p2,--[[Any* (pointer)]] p3,--[[Any (int)]] p4,--[[Any* (pointer)]] p5,--[[Any (int)]] p6)return native_invoker.unified_bool(p0, p1, p2, p3, p4, p5, p6, 0xA9CDB1E3F0A49883, "ppipipi")end
 	LEADERBOARDS2_READ_BY_RANK=--[[BOOL (bool)]] function(--[[Any* (pointer)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2)return native_invoker.unified_bool(p0, p1, p2, 0xBA2C7DB0C129449A, "pii")end
 	LEADERBOARDS2_READ_BY_RADIUS=--[[BOOL (bool)]] function(--[[Any* (pointer)]] p0,--[[Any (int)]] p1,--[[Any* (pointer)]] p2)return native_invoker.unified_bool(p0, p1, p2, 0x5CE587FB5A42C8C4, "pip")end
 	LEADERBOARDS2_READ_BY_SCORE_INT=--[[BOOL (bool)]] function(--[[Any* (pointer)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2)return native_invoker.unified_bool(p0, p1, p2, 0x7EEC7E4F6984A16A, "pii")end
@@ -12575,7 +12632,7 @@
 	PLAYSTATS_DEFEND_CONTRABAND_MISSION=--[[void]] function(--[[Any* (pointer)]] data)return native_invoker.unified_void(data, 0x2605663BD4F23B5D, "p")end
 	PLAYSTATS_RECOVER_CONTRABAND_MISSION=--[[void]] function(--[[Any* (pointer)]] data)return native_invoker.unified_void(data, 0x04D90BA8207ADA2D, "p")end
 	PLAYSTATS_HIT_CONTRABAND_DESTROY_LIMIT=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0x60EEDC12AF66E846, "i")end
-	START_BEING_BOSS=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1)return native_invoker.unified_void(p0, p1, 0x3EBEAC6C3F81F6BD, "ii")end
+	START_BEING_BOSS=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2)return native_invoker.unified_void(p0, p1, p2, 0x3EBEAC6C3F81F6BD, "iii")end
 	START_BEING_GOON=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2)return native_invoker.unified_void(p0, p1, p2, 0x96E6D5150DBF1C09, "iii")end
 	END_BEING_BOSS=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2)return native_invoker.unified_void(p0, p1, p2, 0xA3C53804BDB68ED2, "iii")end
 	END_BEING_GOON=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2,--[[Any (int)]] p3,--[[Any (int)]] p4)return native_invoker.unified_void(p0, p1, p2, p3, p4, 0x6BCCF9948492FD85, "iiiii")end
@@ -12651,7 +12708,7 @@
 	PLAYSTATS_MISSION_VOTE=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0xC03FAB2C2F92289B, "i")end
 	PLAYSTATS_NJVS_VOTE=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0x5CDAED54B34B0ED0, "i")end
 	PLAYSTATS_KILL_YOURSELF=--[[void]] function()return native_invoker.unified_void(0x4AFF7E02E485E92B, "")end
-	PLAYSTATS_FM_MISSION_END=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2)return native_invoker.unified_void(p0, p1, p2, 0x46A70777BE6CEAB9, "iii")end
+	PLAYSTATS_FM_MISSION_END=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2,--[[Any (int)]] p3)return native_invoker.unified_void(p0, p1, p2, p3, 0x46A70777BE6CEAB9, "iiii")end
 	PLAYSTATS_HEIST4_PREP=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0xDFCDB14317A9B361, "i")end
 	PLAYSTATS_HEIST4_FINALE=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0xC1E963C58664B556, "i")end
 	PLAYSTATS_HEIST4_HACK=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2,--[[Any (int)]] p3,--[[Any (int)]] p4)return native_invoker.unified_void(p0, p1, p2, p3, p4, 0x2FA3173480008493, "iiiii")end
@@ -12675,6 +12732,7 @@
 	_PLAYSTATS_IDLE=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2)return native_invoker.unified_void(p0, p1, p2, 0xEC9553A178E8F1D1, "iii")end
 	_PLAYSTATS_PLAYER_STYLE=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0x48FAC5DC7AC6EA99, "i")end
 	_PLAYSTATS_RANDOM_EVENT=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0x7EA06F970F999394, "i")end
+	_PLAYSTATS_ALERT=--[[void]] function(--[[Any* (pointer)]] data)return native_invoker.unified_void(data, 0x5649CA22AF74E019, "p")end
 	_PLAYSTATS_ATTRITION_STAGE_END=--[[void]] function(--[[Any (int)]] p0)return native_invoker.unified_void(p0, 0xBD642335A732F1A8, "i")end
 	_PLAYSTATS_SHOWROOM_NAV=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Hash (int)]] entity)return native_invoker.unified_void(p0, p1, entity, 0x961D4157B9B428DB, "iii")end
 	-- Data struct contains various tunables related to test drives at Simeons Showroom or Luxury Showcase.
@@ -12991,7 +13049,7 @@
 	-- 2 = right back seat
 	-- 3 = outside left
 	-- 4 = outside right
-	TASK_ENTER_VEHICLE=--[[void]] function(--[[Ped (int)]] ped,--[[Vehicle (int)]] vehicle,--[[int]] timeout,--[[int]] seat,--[[float]] speed,--[[int]] flag,--[[string]] overrideEntryClipsetName)return native_invoker.unified_void(ped, vehicle, timeout, seat, speed, flag, overrideEntryClipsetName, 0xC20E50AA46D09CA8, "iiiifis")end
+	TASK_ENTER_VEHICLE=--[[void]] function(--[[Ped (int)]] ped,--[[Vehicle (int)]] vehicle,--[[int]] timeout,--[[int]] seat,--[[float]] speed,--[[int]] flag,--[[string]] overrideEntryClipsetName,--[[Any (int)]] p7)return native_invoker.unified_void(ped, vehicle, timeout, seat, speed, flag, overrideEntryClipsetName, p7, 0xC20E50AA46D09CA8, "iiiifisi")end
 	-- Flags from decompiled scripts:
 	-- 0 = normal exit and closes door.
 	-- 1 = normal exit and closes door.
@@ -13617,7 +13675,7 @@
 	TASK_CLIMB_LADDER=--[[void]] function(--[[Ped (int)]] ped,--[[BOOL (bool)]] fast)return native_invoker.unified_void(ped, fast, 0xB6C987F9285A3814, "ib")end
 	-- Attaches a ped to a rope and allows player control to rappel down a wall. Disables all collisions while on the rope.
 	-- p10: Usually 1 in the scripts, clipSet: Clipset to use for the task, minZ: Minimum Z that the player can descend to, ropeHandle: Rope to attach this task to created with ADD_ROPE
-	TASK_RAPPEL_DOWN_WALL_USING_CLIPSET_OVERRIDE=--[[void]] function(--[[Ped (int)]] ped,--[[float]] x1,--[[float]] y1,--[[float]] z1,--[[float]] x2,--[[float]] y2,--[[float]] z2,--[[float]] minZ,--[[int]] ropeHandle,--[[string]] clipSet,--[[Any (int)]] p10)return native_invoker.unified_void(ped, x1, y1, z1, x2, y2, z2, minZ, ropeHandle, clipSet, p10, 0xEAF66ACDDC794793, "ifffffffisi")end
+	TASK_RAPPEL_DOWN_WALL_USING_CLIPSET_OVERRIDE=--[[void]] function(--[[Ped (int)]] ped,--[[float]] x1,--[[float]] y1,--[[float]] z1,--[[float]] x2,--[[float]] y2,--[[float]] z2,--[[float]] minZ,--[[int]] ropeHandle,--[[string]] clipSet,--[[Any (int)]] p10,--[[Any (int)]] p11)return native_invoker.unified_void(ped, x1, y1, z1, x2, y2, z2, minZ, ropeHandle, clipSet, p10, p11, 0xEAF66ACDDC794793, "ifffffffisii")end
 	GET_TASK_RAPPEL_DOWN_WALL_STATE=--[[int]] function(--[[Ped (int)]] ped)return native_invoker.unified_int(ped, 0x9D252648778160DF, "i")end
 	-- Immediately stops the pedestrian from whatever it's doing. They stop fighting, animations, etc. they forget what they were doing.
 	CLEAR_PED_TASKS_IMMEDIATELY=--[[void]] function(--[[Ped (int)]] ped)return native_invoker.unified_void(ped, 0xAAA34F8A7CB32098, "i")end
@@ -14231,6 +14289,7 @@
 	GET_TASK_MOVE_NETWORK_EVENT=--[[BOOL (bool)]] function(--[[Ped (int)]] ped,--[[string]] eventName)return native_invoker.unified_bool(ped, eventName, 0xB4F47213DF45A64C, "is")end
 	-- Doesn't actually return anything.
 	SET_TASK_MOVE_NETWORK_ENABLE_COLLISION_ON_NETWORK_CLONE_WHEN_FIXED=--[[BOOL (bool)]] function(--[[Ped (int)]] ped,--[[BOOL (bool)]] enable)return native_invoker.unified_bool(ped, enable, 0x0FFB3C758E8C07B9, "ib")end
+	_SET_SCRIPT_TASK_ENABLE_COLLISION_ON_NETWORK_CLONE_WHEN_FIXED=--[[void]] function(--[[Ped (int)]] ped,--[[BOOL (bool)]] enable)return native_invoker.unified_void(ped, enable, 0x32F6EEF031F943DC, "ib")end
 	IS_MOVE_BLEND_RATIO_STILL=--[[BOOL (bool)]] function(--[[Ped (int)]] ped)return native_invoker.unified_bool(ped, 0x349CE7B56DAFD95C, "i")end
 	IS_MOVE_BLEND_RATIO_WALKING=--[[BOOL (bool)]] function(--[[Ped (int)]] ped)return native_invoker.unified_bool(ped, 0xF133BBBE91E1691F, "i")end
 	IS_MOVE_BLEND_RATIO_RUNNING=--[[BOOL (bool)]] function(--[[Ped (int)]] ped)return native_invoker.unified_bool(ped, 0xD4D8636C0199A939, "i")end
@@ -14397,6 +14456,10 @@
 	SET_VEHICLE_DOORS_LOCKED_FOR_TEAM=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[int]] team,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(vehicle, team, toggle, 0xB81F6D4A8F5EEBA8, "iib")end
 	SET_VEHICLE_DOORS_LOCKED_FOR_ALL_TEAMS=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(vehicle, toggle, 0x203B527D1B77904C, "ib")end
 	SET_VEHICLE_DONT_TERMINATE_TASK_WHEN_ACHIEVED=--[[void]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_void(vehicle, 0x76D26A22750E849E, "i")end
+	-- 0.0f = engine rev minimum
+	-- 1.0f = engine rev limit
+	_SET_VEHICLE_MAX_LAUNCH_ENGINE_REVS=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[float]] modifier)return native_invoker.unified_void(vehicle, modifier, 0x5AE614ECA5FDD423, "if")end
+	_GET_VEHICLE_THROTTLE=--[[float]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_float(vehicle, 0x92D96892FC06AF22, "i")end
 	-- Explodes a selected vehicle.
 	-- 
 	-- Vehicle vehicle = Vehicle you want to explode.
@@ -15288,6 +15351,10 @@
 	GET_LANDING_GEAR_STATE=--[[int]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_int(vehicle, 0x9B0F3DCA3DB0F4CD, "i")end
 	IS_ANY_VEHICLE_NEAR_POINT=--[[BOOL (bool)]] function(--[[float]] x,--[[float]] y,--[[float]] z,--[[float]] radius)return native_invoker.unified_bool(x, y, z, radius, 0x61E1DD6125A3EEE6, "ffff")end
 	REQUEST_VEHICLE_HIGH_DETAIL_MODEL=--[[void]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_void(vehicle, 0xA6E9FDCB2C76785E, "i")end
+	_GET_VEHICLE_MODEL_NUM_DRIVE_GEARS=--[[int]] function(--[[Hash (int)]] vehicleModel)return native_invoker.unified_int(vehicleModel, 0x61F02E4E9A7A61EA, "i")end
+	_GET_VEHICLE_MAX_DRIVE_GEAR_COUNT=--[[int]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_int(vehicle, 0x24910C3D66BA770D, "i")end
+	_GET_VEHICLE_CURRENT_DRIVE_GEAR=--[[int]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_int(vehicle, 0x56185A25D45A0DCD, "i")end
+	_GET_VEHICLE_CURRENT_REV_RATIO=--[[float]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_float(vehicle, 0xF9DDA40BC293A61E, "i")end
 	REMOVE_VEHICLE_HIGH_DETAIL_MODEL=--[[void]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_void(vehicle, 0x00689CDE5F7C6787, "i")end
 	IS_VEHICLE_HIGH_DETAIL=--[[BOOL (bool)]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_bool(vehicle, 0x1F25887F3C104278, "i")end
 	-- REQUEST_VEHICLE_ASSET(GET_HASH_KEY(cargobob3), 3);
@@ -15301,6 +15368,7 @@
 	REMOVE_VEHICLE_ASSET=--[[void]] function(--[[int]] vehicleAsset)return native_invoker.unified_void(vehicleAsset, 0xACE699C71AB9DEB5, "i")end
 	-- Sets how much the crane on the tow truck is raised, where 0.0 is fully lowered and 1.0 is fully raised.
 	SET_VEHICLE_TOW_TRUCK_ARM_POSITION=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[float]] position)return native_invoker.unified_void(vehicle, position, 0xFE54B92A344583CA, "if")end
+	_SET_ATTACHED_VEHICLE_TO_TOW_TRUCK_ARM=--[[void]] function(--[[Vehicle (int)]] towTruck,--[[Vehicle (int)]] vehicle)return native_invoker.unified_void(towTruck, vehicle, 0x48BD57D0DD17786A, "ii")end
 	-- HookOffset defines where the hook is attached. leave at 0 for default attachment.
 	ATTACH_VEHICLE_TO_TOW_TRUCK=--[[void]] function(--[[Vehicle (int)]] towTruck,--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] rear,--[[float]] hookOffsetX,--[[float]] hookOffsetY,--[[float]] hookOffsetZ)return native_invoker.unified_void(towTruck, vehicle, rear, hookOffsetX, hookOffsetY, hookOffsetZ, 0x29A16F8D621C4508, "iibfff")end
 	-- First two parameters swapped. Scripts verify that towTruck is the first parameter, not the second.
@@ -15637,6 +15705,8 @@
 	GET_VEHICLE_CAUSE_OF_DESTRUCTION=--[[Hash (int)]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_int(vehicle, 0xE495D1EF4C91FD20, "i")end
 	-- Used for helis.
 	OVERRIDE_PLANE_DAMAGE_THREHSOLD=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[float]] health)return native_invoker.unified_void(vehicle, health, 0x5EE5632F47AE9695, "if")end
+	_SET_TRANSMISSION_REDUCED_GEAR_RATIO=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(vehicle, toggle, 0x337EF33DA3DDB990, "ib")end
+	_GET_VEHICLE_DESIRED_DRIVE_GEAR=--[[int]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_int(vehicle, 0xFD8CE53356B5D745, "i")end
 	-- From the driver's perspective, is the left headlight broken.
 	GET_IS_LEFT_VEHICLE_HEADLIGHT_DAMAGED=--[[BOOL (bool)]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_bool(vehicle, 0x5EF77C9ADD3B11A3, "i")end
 	-- From the driver's perspective, is the right headlight broken.
@@ -15767,7 +15837,7 @@
 	-- Returns attached vehicle (Vehicle in parameter must be cargobob)
 	GET_VEHICLE_ATTACHED_TO_CARGOBOB=--[[Vehicle (int)]] function(--[[Vehicle (int)]] cargobob)return native_invoker.unified_int(cargobob, 0x873B82D42AC2B9E5, "i")end
 	GET_ENTITY_ATTACHED_TO_CARGOBOB=--[[Entity (int)]] function(--[[Any (int)]] p0)return native_invoker.unified_int(p0, 0x99093F60746708CA, "i")end
-	ATTACH_VEHICLE_TO_CARGOBOB=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[Vehicle (int)]] cargobob,--[[int]] p2,--[[float]] x,--[[float]] y,--[[float]] z)return native_invoker.unified_void(vehicle, cargobob, p2, x, y, z, 0x4127F1D84E347769, "iiifff")end
+	ATTACH_VEHICLE_TO_CARGOBOB=--[[void]] function(--[[Vehicle (int)]] cargobob,--[[Vehicle (int)]] vehicle,--[[int]] p2,--[[float]] x,--[[float]] y,--[[float]] z)return native_invoker.unified_void(cargobob, vehicle, p2, x, y, z, 0x4127F1D84E347769, "iiifff")end
 	ATTACH_ENTITY_TO_CARGOBOB=--[[void]] function(--[[Any (int)]] p0,--[[Any (int)]] p1,--[[Any (int)]] p2,--[[Any (int)]] p3,--[[Any (int)]] p4,--[[Any (int)]] p5)return native_invoker.unified_void(p0, p1, p2, p3, p4, p5, 0xA1DD82F3CCF9A01E, "iiiiii")end
 	-- Stops cargobob from being able to detach the attached vehicle.
 	SET_CARGOBOB_FORCE_DONT_DETACH_VEHICLE=--[[void]] function(--[[Vehicle (int)]] cargobob,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(cargobob, toggle, 0x571FEB383F629926, "ib")end
@@ -16046,6 +16116,7 @@
 	SET_VEHICLE_WEAPON_CAN_TARGET_OBJECTS=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(vehicle, toggle, 0x86B4B6212CB8B627, "ib")end
 	-- Used for blazer5. Changes the quadbike-jetski transformation input from raise/lower convertible roof (hold H by default) to horn (press E by default.)
 	SET_VEHICLE_USE_BOOST_BUTTON_FOR_WHEEL_RETRACT=--[[void]] function(--[[BOOL (bool)]] toggle)return native_invoker.unified_void(toggle, 0x41290B40FA63E6DA, "b")end
+	_SET_VEHICLE_USE_HORN_BUTTON_FOR_NITROUS=--[[void]] function(--[[BOOL (bool)]] toggle)return native_invoker.unified_void(toggle, 0x1980F68872CC2C3D, "b")end
 	-- Parachute models:
 	-- - sr_prop_specraces_para_s_01
 	-- - imp_prop_impexp_para_s (SecuroServ; Default)
@@ -16171,6 +16242,15 @@
 	GET_LAST_SHUNT_VEHICLE=--[[Vehicle (int)]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_int(vehicle, 0x04F2FA6E234162F7, "i")end
 	SET_DISABLE_VEHICLE_EXPLOSIONS_DAMAGE=--[[void]] function(--[[BOOL (bool)]] toggle)return native_invoker.unified_void(toggle, 0x143921E45EC44D62, "b")end
 	SET_OVERRIDE_NITROUS_LEVEL=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] toggle,--[[float]] level,--[[float]] power,--[[float]] rechargeTime,--[[BOOL (bool)]] disableSound)return native_invoker.unified_void(vehicle, toggle, level, power, rechargeTime, disableSound, 0xC8E9B6B71B8E660D, "ibfffb")end
+	SET_NITROUS_IS_ACTIVE=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] enabled)return native_invoker.unified_void(vehicle, enabled, 0x465EEA70AF251045, "ib")end
+	_SET_OVERRIDE_TRACTION_LOSS_MULTIPLIER=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[float]] modifier)return native_invoker.unified_void(vehicle, modifier, 0xAFD262ACCA64479A, "if")end
+	-- First two floats relate to rumble, the last is a threshold
+	_SET_DRIFT_SLIP_ANGLE_LIMITS=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[float]] durationScalar,--[[float]] amplitudeScalar,--[[float]] slipAngleLimit)return native_invoker.unified_void(vehicle, durationScalar, amplitudeScalar, slipAngleLimit, 0xDAF4C98C18AC6F06, "ifff")end
+	_SET_MINIMUM_TIME_BETWEEN_GEAR_SHIFTS=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[int]] time)return native_invoker.unified_void(vehicle, time, 0x16CFBC5E7EB32861, "ii")end
+	FULLY_CHARGE_NITROUS=--[[void]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_void(vehicle, 0x1A2BCC8C636F9226, "i")end
+	_GET_REMAINING_NITROUS_DURATION=--[[float]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_float(vehicle, 0xBEC4B8653462450E, "i")end
+	IS_NITROUS_ACTIVE=--[[BOOL (bool)]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_bool(vehicle, 0x491E822B2C464FE4, "i")end
+	CLEAR_NITROUS=--[[void]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_void(vehicle, 0xC889AE921400E1ED, "i")end
 	SET_INCREASE_WHEEL_CRUSH_DAMAGE=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(vehicle, toggle, 0x2970EAA18FD5E42F, "ib")end
 	-- Sets some global vehicle related bool
 	SET_DISABLE_WEAPON_BLADE_FORCES=--[[void]] function(--[[BOOL (bool)]] toggle)return native_invoker.unified_void(toggle, 0x211E95CE9903940C, "b")end
@@ -16180,6 +16260,7 @@
 	GET_DOES_VEHICLE_HAVE_TOMBSTONE=--[[BOOL (bool)]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_bool(vehicle, 0x71AFB258CCED3A27, "i")end
 	-- Disables detachable bumber from domnator4, dominator5, dominator6, see https://gfycat.com/SecondUnluckyGosling
 	HIDE_TOMBSTONE=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(vehicle, toggle, 0xAE71FB656C600587, "ib")end
+	APPLY_EMP_EFFECT=--[[void]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_void(vehicle, 0x249249D74F813EB2, "i")end
 	-- Returns whether this vehicle is currently disabled by an EMP mine.
 	GET_IS_VEHICLE_DISABLED_BY_EMP=--[[BOOL (bool)]] function(--[[Vehicle (int)]] vehicle)return native_invoker.unified_bool(vehicle, 0x0506ED94363AD905, "i")end
 	SET_DISABLE_RETRACTING_WEAPON_BLADES=--[[void]] function(--[[BOOL (bool)]] toggle)return native_invoker.unified_void(toggle, 0x8F0D5BA1C2CC91D7, "b")end
@@ -16261,6 +16342,11 @@
 	NETWORK_USE_HIGH_PRECISION_TRAIN_BLENDING=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(vehicle, toggle, 0xEC0C1D4922AF9754, "ib")end
 	-- Only used in R* Script fm_content_cargo
 	SET_CHECK_FOR_ENOUGH_ROOM_FOR_PED=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] p1)return native_invoker.unified_void(vehicle, p1, 0xEF9D388F8D377F44, "ib")end
+	-- _SET_ALLOW_R* - _SET_ALLOW_V*
+	_SET_ALLOW_COLLISION_WHEN_IN_VEHICLE=--[[void]] function(--[[Vehicle (int)]] vehicle,--[[BOOL (bool)]] toggle)return native_invoker.unified_void(vehicle, toggle, 0x27D27223E8EF22ED, "ib")end
+	_IS_VEHICLE_GEN9_EXCLUSIVE_MODEL=--[[BOOL (bool)]] function(--[[Hash (int)]] vehicleModel)return native_invoker.unified_bool(vehicleModel, 0x6638C0F19DE692FE, "i")end
+	_GET_VEHICLE_MAX_EXHAUST_BONE_COUNT=--[[int]] function()return native_invoker.unified_int(0x3EE18B00CD86C54F, "")end
+	_GET_VEHICLE_EXHAUST_BONE=--[[BOOL (bool)]] function(--[[Vehicle (int)]] vehicle,--[[int]] index,--[[int* (pointer)]] boneIndex,--[[BOOL* (pointer)]] axisX)return native_invoker.unified_bool(vehicle, index, boneIndex, axisX, 0xE728F090D538CB18, "iipp")end
 -- WATER
 	-- This function set height to the value of z-axis of the water surface.
 	-- 
@@ -16677,6 +16763,7 @@
 	-- Returns handle of the projectile.
 	SET_PED_SHOOT_ORDNANCE_WEAPON=--[[Object (int)]] function(--[[Ped (int)]] ped,--[[float]] p1)return native_invoker.unified_int(ped, p1, 0xB4C8D77C80C0421E, "if")end
 	REQUEST_WEAPON_HIGH_DETAIL_MODEL=--[[void]] function(--[[Entity (int)]] weaponObject)return native_invoker.unified_void(weaponObject, 0x48164DBB970AC3F0, "i")end
+	_SET_WEAPON_PED_DAMAGE_MODIFIER=--[[void]] function(--[[Hash (int)]] weapon,--[[float]] damageModifier)return native_invoker.unified_void(weapon, damageModifier, 0x1091922715B68DF0, "if")end
 	-- Changes the weapon damage output by the given multiplier value. Must be run every frame.
 	-- Full list of weapons by DurtyFree: https://github.com/DurtyFree/gta-v-data-dumps/blob/master/weapons.json
 	SET_WEAPON_DAMAGE_MODIFIER=--[[void]] function(--[[Hash (int)]] weaponHash,--[[float]] damageMultiplier)return native_invoker.unified_void(weaponHash, damageMultiplier, 0x4757F00BC6323CFE, "if")end

@@ -138,6 +138,52 @@ function rs_menu.current_weapon_action(weapon_menu_list, action_name, on_click, 
     end
 end
 
+-- local all_weapons <const> = {}
+-- local all_weapons_without_melee <const> = {}
+-- for key, item in pairs(util.get_weapons()) do
+--     local menu_name = util.get_label_text(item.label_key)
+--     local command_names = string.gsub(util.reverse_joaat(item.hash), "weapon_", "")
+
+--     local list_item = { item.hash, menu_name, { command_names }, "", item.category }
+
+--     table.insert(all_weapons, list_item)
+
+--     if item.category_id ~= 0 then
+--         table.insert(all_weapons_without_melee, list_item)
+--     end
+-- end
+
+-- function rs_menu.all_weapons2(menu_parent, menu_name, command_names, help_text, on_click, change_menu_name)
+--     local reference
+--     reference = menu.list_action(menu_parent, menu_name, command_names, help_text,
+--         all_weapons, function(weapon_hash, weapon_name, click_type)
+--             if change_menu_name then
+--                 local new_menu_name = string.format("%s: %s", menu_name, weapon_name)
+--                 menu.set_menu_name(reference, new_menu_name)
+--             end
+
+--             if on_click then on_click(weapon_hash, weapon_name) end
+--         end)
+
+--     return reference
+-- end
+
+-- function rs_menu.all_weapons_without_melee2(menu_parent, menu_name, command_names, help_text, on_click, change_menu_name)
+--     local reference
+--     reference = menu.list_action(menu_parent, menu_name, command_names, help_text,
+--         all_weapons_without_melee, function(weapon_hash, weapon_name, click_type)
+--             if change_menu_name then
+--                 local new_menu_name = string.format("%s: %s", menu_name, weapon_name)
+--                 menu.set_menu_name(reference, new_menu_name)
+--             end
+
+--             if on_click then on_click(weapon_hash, weapon_name) end
+--         end)
+
+--     return reference
+-- end
+
+
 -------- [[ 载具武器 ]] --------
 
 rs_menu.vehicle_weapon_list = {
@@ -258,4 +304,16 @@ end
 --- @return boolean
 function rs_memory.is_mission_entity(addr)
     return memory.read_byte(addr + 0x19) == 4
+end
+
+--- @param addr pointer
+--- @return float
+function rs_memory.get_entity_health(addr)
+    return memory.read_float(addr + 0x280)
+end
+
+--- @param addr pointer
+--- @param value float
+function rs_memory.set_entity_health(addr, value)
+    memory.write_float(addr + 0x280, value)
 end

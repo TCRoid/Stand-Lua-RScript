@@ -51,9 +51,9 @@ menu.action(Special_Cargo_Tool, "购买货物 任务助手", {},
             Globals.SpecialCargo.ClearMissionHistory()
             for key, offset in pairs(Globals.SpecialCargo.Buy_Offsets) do
                 if key == 1 then -- EXEC_DISABLE_BUY_AFTERMATH
-                    SET_INT_GLOBAL(262145 + offset, 0)
+                    GLOBAL_SET_INT(262145 + offset, 0)
                 else
-                    SET_INT_GLOBAL(262145 + offset, 1)
+                    GLOBAL_SET_INT(262145 + offset, 1)
                 end
             end
             menu.trigger_commands("appterrorbyte")
@@ -67,9 +67,9 @@ menu.action(Special_Cargo_Tool, "出售货物 任务助手", {}, "清空任务�
         Globals.SpecialCargo.ClearMissionHistory()
         for key, offset in pairs(Globals.SpecialCargo.Sell_Offsets) do
             if key == 10 then -- EXEC_DISABLE_SELL_NODAMAGE
-                SET_INT_GLOBAL(262145 + offset, 0)
+                GLOBAL_SET_INT(262145 + offset, 0)
             else
-                SET_INT_GLOBAL(262145 + offset, 1)
+                GLOBAL_SET_INT(262145 + offset, 1)
             end
         end
     end)
@@ -100,9 +100,9 @@ special_cargo_missions.menu_buy = menu.list(Special_Cargo_Tool, "禁用购买货
             special_cargo_missions.buy.toggle_menus[global] = menu.toggle(special_cargo_missions.menu_buy, name, {}, help,
                 function(toggle)
                     if toggle then
-                        SET_INT_GLOBAL(global, 1)
+                        GLOBAL_SET_INT(global, 1)
                     else
-                        SET_INT_GLOBAL(global, 0)
+                        GLOBAL_SET_INT(global, 0)
                     end
                     Loop_Handler.Tunables.SpecialCargo.Buy[global] = toggle
                 end)
@@ -132,9 +132,9 @@ special_cargo_missions.menu_sell = menu.list(Special_Cargo_Tool, "禁用出售�
                 help,
                 function(toggle)
                     if toggle then
-                        SET_INT_GLOBAL(global, 1)
+                        GLOBAL_SET_INT(global, 1)
                     else
-                        SET_INT_GLOBAL(global, 0)
+                        GLOBAL_SET_INT(global, 0)
                     end
                     Loop_Handler.Tunables.SpecialCargo.Sell[global] = toggle
                 end)
@@ -150,13 +150,13 @@ menu.toggle_loop(Special_Cargo_Tool, "清空任务记录", {}, "就可以重复�
 end)
 menu.slider(Special_Cargo_Tool, "货物类型刷新时间", { "cargo_type_refresh_time" }, "",
     0, 2880, 2880, 100, function(value)
-        SET_FLOAT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_TYPE_REFRESH_TIME, value)
+        TUNABLE_SET_INT(Tunables.EXEC_CONTRABAND_TYPE_REFRESH_TIME, value)
         Loop_Handler.Tunables.SpecialCargo.Type_Refresh_Time = value
     end)
-menu.slider_float(Special_Cargo_Tool, "特殊物品概率", { "special_item_chance" }, "",
+menu.slider_float(Special_Cargo_Tool, "特殊物品概率", { "cargo_special_item_chance" }, "",
     0, 100, 10, 10, function(value)
         value = value * 0.01
-        SET_FLOAT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE, value)
+        TUNABLE_SET_FLOAT(Tunables.EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE, value)
         Loop_Handler.Tunables.SpecialCargo.Special_Item_Chance = value
     end)
 
@@ -216,24 +216,20 @@ menu.action(Special_Cargo, "传送到 仓库助理", { "tp_cargo_assistant" }, "
     end
 end)
 local special_cargo_lupe_menu
-local special_cargo_lupe_ent -- 实体列表
 special_cargo_lupe_menu = menu.list_action(Special_Cargo, "卢佩: 传送到 水下货箱", {}, "",
-    { "刷新货箱列表" }, function(value)
+    { { -1, "刷新货箱列表" } }, function(value)
         -- Hash: -1235210928(object) 水下要炸的货箱
-        if value == 1 then
+        if value == -1 then
             --货箱里面 要拾取的包裹
             local water_cargo_hash_list = { 388143302, -36934887, 319657375, 924741338, -1249748547 }
-
-            special_cargo_lupe_ent = {}
-            local list_item_data = { "刷新货箱列表" }
+            local list_item_data = { { -1, "刷新货箱列表" } }
             local i = 1
 
             for k, ent in pairs(entities.get_all_objects_as_handles()) do
                 if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
                     local EntityHash = ENTITY.GET_ENTITY_MODEL(ent)
                     if is_in_table(water_cargo_hash_list, EntityHash) then
-                        table.insert(special_cargo_lupe_ent, ent)
-                        table.insert(list_item_data, "货箱 " .. i)
+                        table.insert(list_item_data, { ent, "货箱 " .. i })
                         i = i + 1
                     end
                 end
@@ -242,7 +238,7 @@ special_cargo_lupe_menu = menu.list_action(Special_Cargo, "卢佩: 传送到 水
             menu.set_list_action_options(special_cargo_lupe_menu, list_item_data)
             util.toast("已刷新，请重新打开该列表")
         else
-            local ent = special_cargo_lupe_ent[value - 1]
+            local ent = value
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 if ENTITY.IS_ENTITY_ATTACHED(ent) then
                     local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
@@ -285,7 +281,7 @@ menu.action(Vehicle_Cargo, "载具货物 传送到我", { "tpme_vehcargo" }, "",
         return
     end
     util.spoof_script(script, function()
-        local net_id = GET_INT_LOCAL(script, Locals.gb_vehicle_export.vehicle_net_id)
+        local net_id = LOCAL_GET_INT(script, Locals.gb_vehicle_export.vehicle_net_id)
         if net_id then
             local vehicle = NETWORK.NET_TO_VEH(net_id)
             if ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
@@ -301,29 +297,26 @@ menu.action(Vehicle_Cargo, "结束任务", {}, "载具送到仓库即算成功�
     if not IS_SCRIPT_RUNNING(script) then
         return
     end
-    SET_INT_LOCAL(script, Locals.gb_vehicle_export.mission_start_time, 0)
+    LOCAL_SET_INT(script, Locals.gb_vehicle_export.mission_start_time, 0)
 end)
 
 menu.divider(Vehicle_Cargo, "")
 local vehicle_cargo_menu
-local vehicle_cargo_ent -- 实体列表
 vehicle_cargo_menu = menu.list_action(Vehicle_Cargo, "任务载具列表", {}, "点击目标载具即可传送到我",
-    { "刷新载具列表" }, function(value)
-        if value == 1 then
-            vehicle_cargo_ent = {}
-            local list_item_data = { "刷新载具列表" }
+    { { -1, "刷新载具列表" } }, function(value)
+        if value == -1 then
+            local list_item_data = { { -1, "刷新载具列表" } }
 
             for k, veh in pairs(entities.get_all_vehicles_as_handles()) do
                 if ENTITY.IS_ENTITY_A_MISSION_ENTITY(veh) then
-                    table.insert(vehicle_cargo_ent, veh)
-                    table.insert(list_item_data, get_vehicle_display_name(veh))
+                    table.insert(list_item_data, { veh, get_vehicle_display_name(veh) })
                 end
             end
 
             menu.set_list_action_options(vehicle_cargo_menu, list_item_data)
             util.toast("已刷新，请重新打开该列表")
         else
-            local ent = vehicle_cargo_ent[value - 1]
+            local ent = value
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 tp_vehicle_to_me(ent, "", "delete")
                 VEHICLE.SET_VEHICLE_FORWARD_SPEED(ent, 0.0)
@@ -344,11 +337,11 @@ local Bunker_Tool <const> = menu.list(Bunker, "工具", {}, "")
 
 menu.divider(Bunker_Tool, "补充原材料")
 menu.slider(Bunker_Tool, "包裹原材料 补充进度", { "bk_resupply_package" }, "", 0, 100, 20, 5, function(value)
-    SET_INT_GLOBAL(Globals.Bunker.GR_RESUPPLY_PACKAGE_VALUE, value)
+    TUNABLE_SET_INT(Tunables.GR_RESUPPLY_PACKAGE_VALUE, value)
     Loop_Handler.Tunables.Bunker.Resupply_Package_Value = value
 end)
 menu.slider(Bunker_Tool, "载具原材料 补充进度", { "bk_resupply_vehicle" }, "", 0, 100, 40, 5, function(value)
-    SET_INT_GLOBAL(Globals.Bunker.GR_RESUPPLY_VEHICLE_VALUE, value)
+    TUNABLE_SET_INT(Tunables.GR_RESUPPLY_VEHICLE_VALUE, value)
     Loop_Handler.Tunables.Bunker.Resupply_Vehicle_Value = value
 end)
 
@@ -374,9 +367,9 @@ menu.action(Bunker_Tool, "偷取原材料 任务助手", {},
             Globals.Bunker.ClearMissionHistory()
             for key, offset in pairs(Globals.Bunker.Steal_Offsets) do
                 if key == 1 then -- GR_STEAL_VAN_STEAL_VAN_WEIGHTING
-                    SET_FLOAT_GLOBAL(262145 + offset, 1)
+                    GLOBAL_SET_FLOAT(262145 + offset, 1)
                 else
-                    SET_FLOAT_GLOBAL(262145 + offset, 0)
+                    GLOBAL_SET_FLOAT(262145 + offset, 0)
                 end
             end
             menu.trigger_commands("appterrorbyte")
@@ -390,9 +383,9 @@ menu.action(Bunker_Tool, "出售货物 任务助手", {}, "清空任务记录,�
         Globals.Bunker.ClearMissionHistory()
         for key, offset in pairs(Globals.Bunker.Sell_Offsets) do
             if key == 6 then -- GR_PHANTOM_PHANTOM_WEIGHTING
-                SET_FLOAT_GLOBAL(262145 + offset, 1)
+                GLOBAL_SET_FLOAT(262145 + offset, 1)
             else
-                SET_FLOAT_GLOBAL(262145 + offset, 0)
+                GLOBAL_SET_FLOAT(262145 + offset, 0)
             end
         end
     end)
@@ -423,9 +416,9 @@ bunker_missions.menu_steal = menu.list(Bunker_Tool, "禁用偷取原材料任务
             bunker_missions.steal.toggle_menus[global] = menu.toggle(bunker_missions.menu_steal, name, {}, help,
                 function(toggle)
                     if toggle then
-                        SET_FLOAT_GLOBAL(global, 0)
+                        GLOBAL_SET_FLOAT(global, 0)
                     else
-                        SET_FLOAT_GLOBAL(global, 1)
+                        GLOBAL_SET_FLOAT(global, 1)
                     end
                     Loop_Handler.Tunables.Bunker.Steal[global] = toggle
                 end)
@@ -454,9 +447,9 @@ bunker_missions.menu_sell = menu.list(Bunker_Tool, "禁用出售货物任务", {
             bunker_missions.sell.toggle_menus[global] = menu.toggle(bunker_missions.menu_sell, name, {}, help,
                 function(toggle)
                     if toggle then
-                        SET_FLOAT_GLOBAL(global, 0)
+                        GLOBAL_SET_FLOAT(global, 0)
                     else
-                        SET_FLOAT_GLOBAL(global, 1)
+                        GLOBAL_SET_FLOAT(global, 1)
                     end
                     Loop_Handler.Tunables.Bunker.Sell[global] = toggle
                 end)
@@ -592,9 +585,9 @@ menu.action(Air_Freight_Tool, "偷取货物 航空任务助手", {},
             Globals.AirFreight.ClearMissionHistory()
             for key, offset in pairs(Globals.AirFreight.Steal_Offsets) do
                 if key == 8 then -- SMUG_STEAL_BLACKBOX_WEIGHTING
-                    SET_FLOAT_GLOBAL(262145 + offset, 1)
+                    GLOBAL_SET_FLOAT(262145 + offset, 1)
                 else
-                    SET_FLOAT_GLOBAL(262145 + offset, 0)
+                    GLOBAL_SET_FLOAT(262145 + offset, 0)
                 end
             end
             menu.trigger_commands("apphangar")
@@ -630,9 +623,9 @@ air_freight_missions.menu_steal = menu.list(Air_Freight_Tool, "禁用航空偷�
             air_freight_missions.steal.toggle_menus[global] = menu.toggle(air_freight_missions.menu_steal, name, {}, help,
                 function(toggle)
                     if toggle then
-                        SET_FLOAT_GLOBAL(global, 0)
+                        GLOBAL_SET_FLOAT(global, 0)
                     else
-                        SET_FLOAT_GLOBAL(global, 1)
+                        GLOBAL_SET_FLOAT(global, 1)
                     end
                     Loop_Handler.Tunables.AirFreight.Steal[global] = toggle
                 end)
@@ -661,9 +654,9 @@ air_freight_missions.menu_sell = menu.list(Air_Freight_Tool, "禁用航空出售
             air_freight_missions.sell.toggle_menus[global] = menu.toggle(air_freight_missions.menu_sell, name, {}, help,
                 function(toggle)
                     if toggle then
-                        SET_FLOAT_GLOBAL(global, 0)
+                        GLOBAL_SET_FLOAT(global, 0)
                     else
-                        SET_FLOAT_GLOBAL(global, 1)
+                        GLOBAL_SET_FLOAT(global, 1)
                     end
                     Loop_Handler.Tunables.AirFreight.Sell[global] = toggle
                 end)
@@ -692,7 +685,7 @@ menu.action(Air_Freight, "货物 传送到我", { "tpme_air_product" },
         -- Pickup Hash: -1270906188, -204239524, 2085196638, 886033073, 1419829219, 1248987568, -2037094101, -49487954
         for _, ent in pairs(entities.get_all_pickups_as_handles()) do
             if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
-                local entity_script = string.lower(GET_ENTITY_SCRIPT(ent))
+                local entity_script = GET_ENTITY_SCRIPT(ent)
                 if entity_script == "gb_smuggler" or entity_script == "fm_content_smuggler_resupply" then
                     tp_pickup_to_me(ent)
                 end
@@ -707,7 +700,7 @@ menu.action(Air_Freight, "结束任务", {},
         }
         for _, item in pairs(script_locals) do
             if IS_SCRIPT_RUNNING(item.script) then
-                SET_INT_LOCAL(item.script, item.addr, 0)
+                LOCAL_SET_INT(item.script, item.addr, 0)
             end
         end
     end)
@@ -777,12 +770,12 @@ local MC_Factory_Tool <const> = menu.list(MC_Factory, "工具", {}, "")
 menu.divider(MC_Factory_Tool, "补充原材料")
 menu.slider(MC_Factory_Tool, "包裹原材料 补充进度", { "mc_resupply_package" }, "", 0, 100, 20, 5,
     function(value)
-        SET_INT_GLOBAL(Globals.Biker.BIKER_RESUPPLY_PACKAGE_VALUE, value)
+        TUNABLE_SET_INT(Tunables.BIKER_RESUPPLY_PACKAGE_VALUE, value)
         Loop_Handler.Tunables.Biker.Resupply_Package_Value = value
     end)
 menu.slider(MC_Factory_Tool, "载具原材料 补充进度", { "mc_resupply_vehicle" }, "", 0, 100, 40, 5,
     function(value)
-        SET_INT_GLOBAL(Globals.Biker.BIKER_RESUPPLY_VEHICLE_VALUE, value)
+        TUNABLE_SET_INT(Tunables.BIKER_RESUPPLY_VEHICLE_VALUE, value)
         Loop_Handler.Tunables.Biker.Resupply_Vehicle_Value = value
     end)
 
@@ -809,9 +802,9 @@ menu.action(MC_Factory_Tool, "偷取原材料 任务助手", {},
             Globals.Biker.ClearMissionHistory()
             for key, offset in pairs(Globals.Biker.Steal_Offsets) do
                 if key == 12 then -- BIKER_RESUPPLY_STEAL_VEHICLE_WEIGHTING
-                    SET_FLOAT_GLOBAL(262145 + offset, 1)
+                    GLOBAL_SET_FLOAT(262145 + offset, 1)
                 else
-                    SET_FLOAT_GLOBAL(262145 + offset, 0)
+                    GLOBAL_SET_FLOAT(262145 + offset, 0)
                 end
             end
             menu.trigger_commands("appterrorbyte")
@@ -825,13 +818,13 @@ menu.action(MC_Factory_Tool, "出售货物 任务助手", {}, "清空任务记�
         Globals.Biker.ClearMissionHistory()
         for key, offset in pairs(Globals.Biker.Sell_Offsets) do
             if key == 1 then -- BIKER_DISABLE_SELL_CONVOY
-                SET_INT_GLOBAL(262145 + offset, 0)
+                GLOBAL_SET_INT(262145 + offset, 0)
             else
-                SET_INT_GLOBAL(262145 + offset, 1)
+                GLOBAL_SET_INT(262145 + offset, 1)
             end
         end
         for i = 0, 9 do
-            SET_INT_GLOBAL(Globals.Biker.BIKER_DISABLE_SELL_BORDER_PATROL_0 + i, 1)
+            GLOBAL_SET_INT(Globals.Biker.BIKER_DISABLE_SELL_BORDER_PATROL_0 + i, 1)
         end
     end)
 
@@ -861,9 +854,9 @@ biker_missions.menu_steal = menu.list(MC_Factory_Tool, "禁用偷取原材料任
             biker_missions.steal.toggle_menus[global] = menu.toggle(biker_missions.menu_steal, name, {}, help,
                 function(toggle)
                     if toggle then
-                        SET_FLOAT_GLOBAL(global, 0)
+                        GLOBAL_SET_FLOAT(global, 0)
                     else
-                        SET_FLOAT_GLOBAL(global, 1)
+                        GLOBAL_SET_FLOAT(global, 1)
                     end
                     Loop_Handler.Tunables.Biker.Steal[global] = toggle
                 end)
@@ -892,9 +885,9 @@ biker_missions.menu_sell = menu.list(MC_Factory_Tool, "禁用出售货物任务"
             biker_missions.sell.toggle_menus[global] = menu.toggle(biker_missions.menu_sell, name, {}, help,
                 function(toggle)
                     if toggle then
-                        SET_INT_GLOBAL(global, 1)
+                        GLOBAL_SET_INT(global, 1)
                     else
-                        SET_INT_GLOBAL(global, 0)
+                        GLOBAL_SET_INT(global, 0)
                     end
                     Loop_Handler.Tunables.Biker.Sell[global] = toggle
                 end)
@@ -971,7 +964,7 @@ local Acid_Lab <const> = menu.list(Property_Mission, "致幻剂实验室", {}, "
 local Acid_Lab_Tool <const> = menu.list(Acid_Lab, "工具", {}, "")
 
 menu.slider(Acid_Lab_Tool, "原材料 补充进度", { "acid_resupply_crate" }, "", 0, 100, 25, 5, function(value)
-    SET_INT_GLOBAL(Globals.AcidLab.ACID_LAB_RESUPPLY_CRATE_VALUE, value)
+    TUNABLE_SET_INT(Tunables.ACID_LAB_RESUPPLY_CRATE_VALUE, value)
     Loop_Handler.Tunables.AcidLab.Resupply_Crate_Value = value
 end)
 
@@ -1267,12 +1260,12 @@ menu.textslider(Cayo_Perico, "前置任务助手", {},
         end
         if value == 1 then
             for _, ent in pairs(entities.get_all_pickups_as_handles()) do
-                if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) and string.lower(GET_ENTITY_SCRIPT(ent)) == script then
+                if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) and GET_ENTITY_SCRIPT(ent) == script then
                     tp_entity_to_me(ent)
                 end
             end
         elseif value == 2 then
-            SET_INT_LOCAL(script, Locals.fm_content_island_heist.mission_start_time, 0)
+            LOCAL_SET_INT(script, Locals.fm_content_island_heist.mission_start_time, 0)
         end
     end)
 
@@ -1392,20 +1385,17 @@ end)
 menu.divider(Cayo_Perico_Final, "豪宅内")
 
 local perico_gold_vault_menu
-local perico_gold_vault_ent --实体列表
 perico_gold_vault_menu = menu.list_action(Cayo_Perico_Final, "传送到 黄金", {}, "",
-    { "刷新黄金列表" }, function(value)
-        if value == 1 then
-            perico_gold_vault_ent = {}
-            local list_item_data = { "刷新黄金列表" }
+    { { -1, "刷新黄金列表" } }, function(value)
+        if value == -1 then
+            local list_item_data = { { -1, "刷新黄金列表" } }
             local i = 1
 
             for k, ent in pairs(entities.get_all_objects_as_handles()) do
                 if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
                     local Hash = ENTITY.GET_ENTITY_MODEL(ent)
                     if Hash == -180074230 then
-                        table.insert(perico_gold_vault_ent, ent)
-                        table.insert(list_item_data, "黄金 " .. i)
+                        table.insert(list_item_data, { ent, "黄金 " .. i })
                         i = i + 1
                     end
                 end
@@ -1414,7 +1404,7 @@ perico_gold_vault_menu = menu.list_action(Cayo_Perico_Final, "传送到 黄金",
             menu.set_list_action_options(perico_gold_vault_menu, list_item_data)
             util.toast("已刷新，请重新打开该列表")
         else
-            local ent = perico_gold_vault_ent[value - 1]
+            local ent = value
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 tp_to_entity(ent, 0.0, -1.0, 0.0)
                 set_entity_heading_to_entity(players.user_ped(), ent)
@@ -1478,7 +1468,7 @@ menu.action(Diamond_Casino, "保安 传送到我", {}, "骇入手机会直接完
             tp_entity_to_me(ent, 0.0, 2.0, 0.0)
         end
 
-        SET_INT_LOCAL("gb_casino_heist", Locals.gb_casino_heist.phone_hack_progress, 100000)
+        LOCAL_SET_INT("gb_casino_heist", Locals.gb_casino_heist.phone_hack_progress, 100000)
     end
 end)
 menu.textslider(Diamond_Casino, "赌场 传送到骇入位置", {}, "进入赌场后再传送", {
@@ -1501,7 +1491,7 @@ menu.textslider(Diamond_Casino, "赌场 传送到骇入位置", {}, "进入赌�
     }
 
     if value == 1 then
-        value = GET_INT_LOCAL(script, Locals.gb_casino_heist.camera_hack_position)
+        value = LOCAL_GET_INT(script, Locals.gb_casino_heist.camera_hack_position)
         if value then
             local pos = data[value]
             if pos then
@@ -1777,9 +1767,9 @@ menu.toggle_loop(Diamond_Casino, "设置目标包裹数量为1", {}, "右下角�
     if not IS_SCRIPT_RUNNING(script) then
         return
     end
-    local value = GET_INT_LOCAL(script, Locals.gb_casino_heist.target_package_number)
+    local value = LOCAL_GET_INT(script, Locals.gb_casino_heist.target_package_number)
     if value == 2 then
-        SET_INT_LOCAL(script, Locals.gb_casino_heist.target_package_number, 1)
+        LOCAL_SET_INT(script, Locals.gb_casino_heist.target_package_number, 1)
     end
 end)
 
@@ -1798,20 +1788,17 @@ menu.action(Diamond_Casino_Final, "传送到 小金库", {}, "", function()
 end)
 
 local casino_vault_trolley_menu
-local casino_vault_trolley_ent --实体列表
 casino_vault_trolley_menu = menu.list_action(Diamond_Casino_Final, "金库内传送到 推车", {}, "",
-    { "刷新推车列表" }, function(value)
-        if value == 1 then
-            casino_vault_trolley_ent = {}
-            local list_item_data = { "刷新推车列表" }
+    { { -1, "刷新推车列表" } }, function(value)
+        if value == -1 then
+            local list_item_data = { { -1, "刷新推车列表" } }
             local i = 1
 
             for k, ent in pairs(entities.get_all_objects_as_handles()) do
                 if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
                     local Hash = ENTITY.GET_ENTITY_MODEL(ent)
                     if Hash == 412463629 or Hash == 1171655821 or Hash == 1401432049 then
-                        table.insert(casino_vault_trolley_ent, ent)
-                        table.insert(list_item_data, "推车 " .. i)
+                        table.insert(list_item_data, { ent, "推车 " .. i })
                         i = i + 1
                     end
                 end
@@ -1820,7 +1807,7 @@ casino_vault_trolley_menu = menu.list_action(Diamond_Casino_Final, "金库内传
             menu.set_list_action_options(casino_vault_trolley_menu, list_item_data)
             util.toast("已刷新，请重新打开该列表")
         else
-            local ent = casino_vault_trolley_ent[value - 1]
+            local ent = value
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 tp_to_entity(ent, 0.0, 0.0, 0.5)
             end
@@ -1881,7 +1868,7 @@ menu.action(Contract_Dre, "乡村俱乐部: 门禁 传送到我", {}, "会先炸
             end
         end
         util.yield(500)
-        local entity_list = get_entities_by_hash("ped", true, -912318012)
+        entity_list = get_entities_by_hash("ped", true, -912318012)
         if next(entity_list) ~= nil then
             for _, ent in pairs(entity_list) do
                 tp_entity_to_me(ent, 0.0, 2.0, 0.0)
@@ -2113,7 +2100,7 @@ end)
 menu.divider(LS_Robbery_TBC, "终章")
 local LS_Robbery_TBC_bank = 1
 menu.list_select(LS_Robbery_TBC, "选择银行", {}, "先传送银行踩点后再传送到金库", {
-    "A", "B", "C", "D", "E", "F"
+    { 1, "A" }, { 2, "B" }, { 3, "C" }, { 4, "D" }, { 5, "E" }, { 6, "F" }
 }, 1, function(value)
     LS_Robbery_TBC_bank = value
 end)
@@ -2390,7 +2377,7 @@ menu.toggle(Franklin_Payphone_Tool, "电话暗杀和安保合约", { "nocd_agc" 
     end)
 menu.click_slider(Franklin_Payphone_Tool, "安保合约刷新间隔时间", { "agcreftime" },
     "单位: 秒\n事务所电脑安保合约刷新间隔时间\n切换战局会失效", 0, 3600, 5, 1, function(value)
-        SET_INT_GLOBAL(Globals.FIXER_SECURITY_CONTRACT_REFRESH_TIME, value * 1000)
+        TUNABLE_SET_INT(Tunables.FIXER_SECURITY_CONTRACT_REFRESH_TIME, value * 1000)
     end)
 menu.action(Franklin_Payphone_Tool, "移除电话暗杀冷却时间", {}, "STAT", function()
     STAT_SET_INT("PAYPHONE_HIT_CDTIMER", 0)
@@ -2420,9 +2407,9 @@ franklin_payphone_missions.menu_hit = menu.list(Franklin_Payphone_Tool, "禁用�
             franklin_payphone_missions.hit.toggle_menus[global] = menu.toggle(franklin_payphone_missions.menu_hit,
                 name, {}, "", function(toggle)
                     if toggle then
-                        SET_FLOAT_GLOBAL(global, 0)
+                        GLOBAL_SET_FLOAT(global, 0)
                     else
-                        SET_FLOAT_GLOBAL(global, 1)
+                        GLOBAL_SET_FLOAT(global, 1)
                     end
                     Loop_Handler.Tunables.Payphone.Hit[global] = toggle
                 end)
@@ -2480,10 +2467,8 @@ end)
 menu.action(Payphone_Hit, "任务要求载具 传送到我", {}, "", function()
     local entity_list = get_entities_by_hash("vehicle", true, -1013450936, 569305213, -2137348917, 1912215274)
     if next(entity_list) ~= nil then
-        for _, ent in pairs(entity_list) do
-            local ent = entity_list[1]
-            tp_vehicle_to_me(ent)
-        end
+        local ent = entity_list[1]
+        tp_vehicle_to_me(ent)
     end
 end)
 
@@ -2736,8 +2721,8 @@ menu.action(Security_Contract, "目标载具 传送到目的地", {}, "玩家自
         }
     }
 
-    local mission_type = GET_INT_LOCAL(script, Locals.fm_content_security_contract.mission_type)
-    local destination = GET_INT_LOCAL(script, Locals.fm_content_security_contract.realize_assets_destination)
+    local mission_type = LOCAL_GET_INT(script, Locals.fm_content_security_contract.mission_type)
+    local destination = LOCAL_GET_INT(script, Locals.fm_content_security_contract.realize_assets_destination)
     if not (mission_type >= 20 and mission_type <= 24) then
         return
     end
@@ -2801,7 +2786,7 @@ menu.action(Security_Contract, "跳过倒计时", {}, "不再等待漫长的10�
         if not IS_SCRIPT_RUNNING(script) then
             return
         end
-        SET_INT_LOCAL(script, Locals.fm_content_security_contract.mission_time, 0)
+        LOCAL_SET_INT(script, Locals.fm_content_security_contract.mission_time, 0)
     end)
 
 --#endregion
@@ -3161,23 +3146,23 @@ local Contact_Work <const> = menu.list(Freemode_Mission, "联系人请求工作"
 local Contact_Work_Cooldown <const> = menu.list(Contact_Work, "移除冷却时间", {}, "切换战局后会失效，需要重新操作")
 menu.toggle(Contact_Work_Cooldown, "贝克女士 请求工作", {}, "", function(toggle)
     if toggle then
-        SET_INT_GLOBAL(Globals.VC_WORK_REQUEST_COOLDOWN, 0)
+        TUNABLE_SET_INT(Tunables.VC_WORK_REQUEST_COOLDOWN, 0)
     else
-        SET_INT_GLOBAL(Globals.VC_WORK_REQUEST_COOLDOWN, 180000)
+        TUNABLE_SET_INT(Tunables.VC_WORK_REQUEST_COOLDOWN, 180000)
     end
 end)
 menu.toggle(Contact_Work_Cooldown, "尤汗 请求夜总会货物", {}, "", function(toggle)
     if toggle then
-        SET_INT_GLOBAL(Globals.NC_GOODS_REQUEST_COOLDOWN, 0)
+        TUNABLE_SET_INT(Tunables.NC_GOODS_REQUEST_COOLDOWN, 0)
     else
-        SET_INT_GLOBAL(Globals.NC_GOODS_REQUEST_COOLDOWN, 1200)
+        TUNABLE_SET_INT(Tunables.NC_GOODS_REQUEST_COOLDOWN, 1200)
     end
 end)
 menu.toggle(Contact_Work_Cooldown, "14号探员 请求地堡研究", {}, "", function(toggle)
     if toggle then
-        SET_INT_GLOBAL(Globals.BUNKER_RESEARCH_REQUEST_COOLDOWN, 0)
+        TUNABLE_SET_INT(Tunables.BUNKER_RESEARCH_REQUEST_COOLDOWN, 0)
     else
-        SET_INT_GLOBAL(Globals.BUNKER_RESEARCH_REQUEST_COOLDOWN, 1200)
+        TUNABLE_SET_INT(Tunables.BUNKER_RESEARCH_REQUEST_COOLDOWN, 1200)
     end
 end)
 menu.divider(Contact_Work_Cooldown, "Stat")
@@ -3211,7 +3196,7 @@ menu.action(Freemode_Mission, "传送到 电脑", { "tp_desk" }, "", function()
 end)
 menu.action(Freemode_Mission, "打开 恐霸屏幕", { "open_terrorbyte" }, "", function()
     if IS_IN_SESSION() then
-        SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 1)
+        GLOBAL_SET_INT(Globals.IsUsingComputerScreen, 1)
         START_SCRIPT("appHackerTruck", 4592) -- arg count needed to properly start the script, possibly outdated
     end
 end)
@@ -3259,33 +3244,6 @@ menu.action(Freemode_Mission, "传送到 杰拉德包裹", { "ftp_drug_pack" }, 
         end
     end
 end)
-menu.action(Freemode_Mission, "通知 藏匿屋密码", { "stash_house_code" }, "", function()
-    if user_interior() == 289793 then
-        local code_list = {
-            -- hash, code
-            { -73329357,   "01-23-45" }, -- xm3_prop_xm3_code_01_23_45
-            { 1433270535,  "02-12-87" },
-            { 944906360,   "05-02-91" },
-            { -1248906748, "24-10-81" },
-            { 1626709912,  "28-03-98" },
-            { 921471402,   "28-11-97" },
-            { -646417257,  "44-23-37" },
-            { -158146725,  "72-68-83" },
-            { 1083248297,  "73-27-38" },
-            { 2104921722,  "77-79-73" },
-        }
-        for k, obj in pairs(entities.get_all_objects_as_handles()) do
-            if ENTITY.IS_ENTITY_A_MISSION_ENTITY(obj) then
-                local hash = ENTITY.GET_ENTITY_MODEL(obj)
-                for _, data in pairs(code_list) do
-                    if hash == data[1] then
-                        THEFEED_POST.TEXT("藏匿屋密码: " .. data[2])
-                    end
-                end
-            end
-        end
-    end
-end)
 menu.action(Freemode_Mission, "会所酒吧补给品 传送到我", { "tpme_biker_bar" }, "", function()
     -- Hash: 528555233 (pickup)
     local ent = get_entity_from_blip(HUD.GET_NEXT_BLIP_INFO_ID(827))
@@ -3293,6 +3251,39 @@ menu.action(Freemode_Mission, "会所酒吧补给品 传送到我", { "tpme_bike
         tp_pickup_to_me(ent, true)
     end
 end)
+
+menu.action(Freemode_Mission, "跳过 藏匿屋输入密码", { "stash_house_code" }, "输入密码时执行本选项", function()
+    Locals.StashHouseCode()
+end)
+
+-- menu.action(Freemode_Mission, "通知 藏匿屋密码", { "stash_house_code" }, "", function()
+--     if user_interior() == 289793 then
+--         local code_list = {
+--             -- hash, code
+--             { -73329357,   "01-23-45" }, -- xm3_prop_xm3_code_01_23_45
+--             { 1433270535,  "02-12-87" },
+--             { 944906360,   "05-02-91" },
+--             { -1248906748, "24-10-81" },
+--             { 1626709912,  "28-03-98" },
+--             { 921471402,   "28-11-97" },
+--             { -646417257,  "44-23-37" },
+--             { -158146725,  "72-68-83" },
+--             { 1083248297,  "73-27-38" },
+--             { 2104921722,  "77-79-73" },
+--         }
+--         for k, obj in pairs(entities.get_all_objects_as_handles()) do
+--             if ENTITY.IS_ENTITY_A_MISSION_ENTITY(obj) then
+--                 local hash = ENTITY.GET_ENTITY_MODEL(obj)
+--                 for _, data in pairs(code_list) do
+--                     if hash == data[1] then
+--                         THEFEED_POST.TEXT("藏匿屋密码: " .. data[2])
+--                     end
+--                 end
+--             end
+--         end
+--     end
+-- end)
+
 
 --#endregion
 
@@ -3429,9 +3420,9 @@ menu.action(Heist_Prison, "秃鹰直升机 无敌", {}, "", function()
     end
 end)
 menu.list_action(Heist_Prison, "敌对天煞", {}, "", {
-    { "传送到海洋" },
-    { "冻结" },
-    { "禁用导弹" }
+    { 1, "传送到海洋" },
+    { 2, "冻结" },
+    { 3, "禁用导弹" }
 }, function(value)
     local entity_list = get_entities_by_hash("vehicle", true, -1281684762)
     if next(entity_list) ~= nil then
@@ -3537,7 +3528,6 @@ menu.divider(Heist_Prison_rashcosvki, "玩家")
 
 local heist_prison = {
     select_player = -1,
-    player_list = {},
     team_list = {
         [-1] = "无",
         [0] = "囚犯",
@@ -3547,30 +3537,24 @@ local heist_prison = {
     },
 }
 heist_prison.select_menu = menu.list_select(Heist_Prison_rashcosvki, "选择玩家", {}, "",
-    { { "刷新列表", {}, "" } }, 1, function(value)
-        if value == 1 then
+    { { -1, "刷新列表", {}, "" } }, -1, function(value)
+        if value == -1 then
             heist_prison.select_player = -1
-            heist_prison.player_list = {}
 
-            local list_item_data = { { "刷新列表", {}, "" } }
+            local list_item_data = { { -1, "刷新列表", {}, "" } }
             for k, pid in pairs(players.list()) do
-                local t = { "", {}, "" }
-
                 local name = players.get_name(pid)
                 local rank = players.get_rank(pid)
                 local team = PLAYER.GET_PLAYER_TEAM(pid)
                 local menu_name = "[" .. heist_prison.team_list[team] .. "] " .. name .. " (" .. rank .. "级)"
 
-                t[1] = menu_name
-
-                table.insert(list_item_data, t)
-                table.insert(heist_prison.player_list, pid)
+                table.insert(list_item_data, { pid, menu_name, {}, "" })
             end
 
             menu.set_list_action_options(heist_prison.select_menu, list_item_data)
             util.toast("已刷新，请重新打开该列表")
         else
-            local pid = heist_prison.player_list[value - 1]
+            local pid = value
             if players.exists(pid) then
                 heist_prison.select_player = pid
             else
@@ -3928,19 +3912,16 @@ menu.action(Doomsday_Preps, "医疗装备: 救护车 传送到我", {}, "", func
     end
 end)
 local doomsday_preps_deluxo_menu
-local doomsday_preps_deluxo_ent = {} -- 实体列表
-doomsday_preps_deluxo_menu = menu.list_action(Doomsday_Preps, "德罗索: 载具 传送到我",
-    {}, "", { "刷新载具列表" }, function(value)
-        if value == 1 then
+doomsday_preps_deluxo_menu = menu.list_action(Doomsday_Preps, "德罗索: 载具 传送到我", {}, "",
+    { { -1, "刷新载具列表" } }, function(value)
+        if value == -1 then
             local entity_list = get_entities_by_hash("vehicle", true, 1483171323)
             if next(entity_list) ~= nil then
-                doomsday_preps_deluxo_ent = {}
-                local list_item_data = { "刷新载具列表" }
+                local list_item_data = { { -1, "刷新载具列表" } }
                 local i = 1
 
                 for _, ent in pairs(entity_list) do
-                    table.insert(doomsday_preps_deluxo_ent, ent)
-                    table.insert(list_item_data, "德罗索 " .. i)
+                    table.insert(list_item_data, { ent, "德罗索 " .. i })
                     i = i + 1
                 end
 
@@ -3948,7 +3929,7 @@ doomsday_preps_deluxo_menu = menu.list_action(Doomsday_Preps, "德罗索: 载具
                 util.toast("已刷新，请重新打开该列表")
             end
         else
-            local ent = doomsday_preps_deluxo_ent[value - 1]
+            local ent = value
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 if request_control2(ent) then
                     tp_vehicle_to_me(ent)
@@ -4002,21 +3983,18 @@ menu.action(Doomsday_Preps, "ULP情报: 包裹 传送到我", {},
         end
     end)
 local doomsday_preps_stromberg_menu
-local doomsday_preps_stromberg_ent = {} -- 实体列表
-doomsday_preps_stromberg_menu = menu.list_action(Doomsday_Preps, "斯特龙伯格: 卡车 传送到我",
-    {}, "", { "刷新载具列表" }, function(value)
-        if value == 1 then
+doomsday_preps_stromberg_menu = menu.list_action(Doomsday_Preps, "斯特龙伯格: 卡车 传送到我", {}, "",
+    { { -1, "刷新载具列表" } }, function(value)
+        if value == -1 then
             local entity_list = get_entities_by_hash("object", true, -6020377, -1690938994)
             if next(entity_list) ~= nil then
-                doomsday_preps_stromberg_ent = {}
-                local list_item_data = { "刷新载具列表" }
+                local list_item_data = { { -1, "刷新载具列表" } }
                 local i = 1
 
                 for _, ent in pairs(entity_list) do
                     if ENTITY.IS_ENTITY_ATTACHED(ent) then
                         local attached_ent = ENTITY.GET_ENTITY_ATTACHED_TO(ent)
-                        table.insert(doomsday_preps_stromberg_ent, attached_ent)
-                        table.insert(list_item_data, "卡车 " .. i)
+                        table.insert(list_item_data, { attached_ent, "卡车 " .. i })
                         i = i + 1
                     end
                 end
@@ -4025,7 +4003,7 @@ doomsday_preps_stromberg_menu = menu.list_action(Doomsday_Preps, "斯特龙伯�
                 util.toast("已刷新，请重新打开该列表")
             end
         else
-            local ent = doomsday_preps_stromberg_ent[value - 1]
+            local ent = value
             if ENTITY.DOES_ENTITY_EXIST(ent) then
                 if request_control2(ent) then
                     tp_vehicle_to_me(ent, "", "delete")
@@ -4096,9 +4074,9 @@ menu.divider(Mission_Options, "")
 menu.click_slider(Mission_Options, "增加任务生命数", { "team_lives" }, "只有是战局主机时才会生效(?)",
     -1, 30000, 0, 1, function(value)
         if IS_SCRIPT_RUNNING("fm_mission_controller") then
-            SET_INT_LOCAL("fm_mission_controller", Locals.fm_mission_controller.team_lives, value)
+            LOCAL_SET_INT("fm_mission_controller", Locals.fm_mission_controller.team_lives, value)
         elseif IS_SCRIPT_RUNNING("fm_mission_controller_2020") then
-            SET_INT_LOCAL("fm_mission_controller_2020", Locals.fm_mission_controller_2020.team_lives, value)
+            LOCAL_SET_INT("fm_mission_controller_2020", Locals.fm_mission_controller_2020.team_lives, value)
         else
             util.toast("未进行任务")
         end
@@ -4159,7 +4137,7 @@ menu.click_slider(Mission_Options, "[TEST]增加任务生命数", {}, "会请求
         end
 
         util.request_script_host(script)
-        SET_INT_LOCAL(script, addr, value)
+        LOCAL_SET_INT(script, addr, value)
         -- local host1 = NETWORK.NETWORK_GET_HOST_OF_SCRIPT(script, -1, 0)
         -- local host2 = NETWORK.NETWORK_GET_HOST_OF_SCRIPT(script, 0, 0)
     end)
@@ -4180,9 +4158,9 @@ menu.textslider_stateful(Mission_Options, "交通人口密度", {}, "", { "清�
     end)
 
 menu.list_action(Mission_Options, "镜头锁定", { "cam_lock" }, "", {
-    { "无", { "none" } },
-    { "第一人称", { "first" } },
-    { "第三人称", { "third" } },
+    { 0, "无", { "none" } },
+    { 1, "第一人称", { "first" } },
+    { 2, "第三人称", { "third" } },
 }, function(value)
-    SET_INT_GLOBAL(Globals.MissionCameraLock, value - 1)
+    GLOBAL_SET_INT(Globals.MissionCameraLock, value)
 end)

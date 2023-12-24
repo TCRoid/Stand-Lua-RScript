@@ -114,9 +114,9 @@ menu.toggle(Request_Service_Cooldown, "CEO技能", {}, "", function(toggle)
 end)
 menu.toggle(Request_Service_Cooldown, "CEO载具请求", {}, "", function(toggle)
     if toggle then
-        SET_INT_GLOBAL(Globals.GB_CALL_VEHICLE_COOLDOWN, 0)
+        TUNABLE_SET_INT(Tunables.GB_CALL_VEHICLE_COOLDOWN, 0)
     else
-        SET_INT_GLOBAL(Globals.GB_CALL_VEHICLE_COOLDOWN, 120000)
+        TUNABLE_SET_INT(Tunables.GB_CALL_VEHICLE_COOLDOWN, 120000)
     end
     Loop_Handler.Tunables.Cooldown.CeoVehicle = toggle
 end)
@@ -128,14 +128,14 @@ end)
 local Request_Vehicle_Property <const> = menu.list(Request_Service, "请求载具资产", {}, "")
 for _, item in pairs(Globals.Request.VehicleProperty) do
     menu.action(Request_Vehicle_Property, "请求 " .. item.name, { "req" .. item.command }, "", function()
-        SET_INT_GLOBAL(item.global, 1)
+        GLOBAL_SET_INT(item.global, 1)
         util.toast("已请求载具 " .. item.name)
     end)
 end
 
 menu.action(Request_Service, "请求重型装甲", { "ammo_drop" }, "请求弹道装甲和火神机枪",
     function()
-        SET_INT_GLOBAL(Globals.BallisticArmor, 1)
+        GLOBAL_SET_INT(Globals.BallisticArmor, 1)
     end)
 menu.action(Request_Service, "重型装甲包裹 传送到我", {}, "", function()
     local entity_model_hash = 1688540826
@@ -148,50 +148,50 @@ menu.action(Request_Service, "重型装甲包裹 传送到我", {}, "", function
 end)
 menu.toggle(Request_Service, "请求RC坦克", {}, "", function(toggle)
     if toggle then
-        SET_INT_GLOBAL(Globals.RC_Tank, 1)
+        GLOBAL_SET_INT(Globals.RC_Tank, 1)
     else
-        SET_INT_GLOBAL(Globals.RC_Tank, 0)
+        GLOBAL_SET_INT(Globals.RC_Tank, 0)
     end
 end)
 menu.toggle(Request_Service, "请求RC匪徒", {}, "", function(toggle)
     if toggle then
-        SET_INT_GLOBAL(Globals.RC_Bandito, 1)
+        GLOBAL_SET_INT(Globals.RC_Bandito, 1)
     else
-        SET_INT_GLOBAL(Globals.RC_Bandito, 0)
+        GLOBAL_SET_INT(Globals.RC_Bandito, 0)
     end
 end)
 
 menu.divider(Request_Service, "无视犯罪")
 menu.toggle_loop(Request_Service, "锁定倒计时", {}, "无视犯罪的倒计时", function()
-    SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
+    GLOBAL_SET_INT(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
     util.yield(5000)
 end)
 menu.action(Request_Service, "清空倒计时", {}, "", function()
-    SET_INT_GLOBAL(Globals.NCOPS.time, 0)
+    GLOBAL_SET_INT(Globals.NCOPS.time, 0)
 end)
 menu.action(Request_Service, "警察无视犯罪", { "no_cops" }, "莱斯特电话请求", function()
-    SET_INT_GLOBAL(Globals.NCOPS.type, 5)
-    SET_INT_GLOBAL(Globals.NCOPS.flag, 1)
-    SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
+    GLOBAL_SET_INT(Globals.NCOPS.type, 5)
+    GLOBAL_SET_INT(Globals.NCOPS.flag, 1)
+    GLOBAL_SET_INT(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
 end)
 menu.toggle_loop(Request_Service, "贿赂当局", {}, "CEO技能", function()
-    SET_INT_GLOBAL(Globals.NCOPS.type, 81)
-    SET_INT_GLOBAL(Globals.NCOPS.flag, 1)
-    SET_INT_GLOBAL(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
+    GLOBAL_SET_INT(Globals.NCOPS.type, 81)
+    GLOBAL_SET_INT(Globals.NCOPS.flag, 1)
+    GLOBAL_SET_INT(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
     util.yield(5000)
 end, function()
-    SET_INT_GLOBAL(Globals.NCOPS.time, 0)
+    GLOBAL_SET_INT(Globals.NCOPS.time, 0)
 end)
 
 menu.divider(Request_Service, "倒计时")
 menu.click_slider(Request_Service, "贿赂当局 倒计时时间", {}, "单位: 分钟\n切换战局后会失效,需要重新操作",
     1, 60, 2, 1, function(value)
-        SET_INT_GLOBAL(Globals.GB_BRIBE_AUTHORITIES_DURATION, value * 60 * 1000)
+        TUNABLE_SET_INT(Tunables.GB_BRIBE_AUTHORITIES_DURATION, value * 60 * 1000)
         util.toast("完成！")
     end)
 menu.click_slider(Request_Service, "幽灵组织 倒计时时间", {}, "单位: 分钟\n切换战局后会失效,需要重新操作",
     1, 60, 3, 1, function(value)
-        SET_INT_GLOBAL(Globals.GB_GHOST_ORG_DURATION, value * 60 * 1000)
+        TUNABLE_SET_INT(Tunables.GB_GHOST_ORG_DURATION, value * 60 * 1000)
         util.toast("完成！")
     end)
 
@@ -524,7 +524,7 @@ local remote_computer_list = {
 for _, item in pairs(remote_computer_list) do
     menu.action(Remote_Computer, item.menu_name, { "app" .. item.command }, "", function()
         if IS_IN_SESSION() then
-            -- SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 1)
+            -- GLOBAL_SET_INT(Globals.IsUsingComputerScreen, 1)
             START_SCRIPT(item.script, 5000)
         end
     end)
@@ -651,26 +651,18 @@ local local_editor = {
 }
 
 menu.list_select(Local_Editor, "选择脚本", {}, "", {
-    { "fm_mission_controller" },
-    { "fm_mission_controller_2020" },
-}, 1, function(index)
-    if index == 1 then
-        local_editor.script = "fm_mission_controller"
-    elseif index == 2 then
-        local_editor.script = "fm_mission_controller_2020"
-    end
+    { 1, "fm_mission_controller" },
+    { 2, "fm_mission_controller_2020" },
+}, 1, function(value, name)
+    local_editor.script = name
 end)
 
 menu.slider(Local_Editor, "地址", { "local_address" }, "输入计算总和",
     0, 16777216, 0, 1, function(value)
         local_editor.address = value
     end)
-menu.list_select(Local_Editor, "数值类型", {}, "", { { "INT" }, { "FLOAT" } }, 1, function(value)
-    if value == 1 then
-        local_editor.type = "int"
-    elseif value == 2 then
-        local_editor.type = "float"
-    end
+menu.list_select(Local_Editor, "数值类型", {}, "", { { 1, "INT" }, { 2, "FLOAT" } }, 1, function(value, name)
+    local_editor.type = string.lower(name)
 end)
 
 menu.divider(Local_Editor, "读")
@@ -680,9 +672,9 @@ menu.action(Local_Editor, "读取", {}, "", function()
     if SCRIPT.HAS_SCRIPT_LOADED(script) then
         local value
         if local_editor.type == "int" then
-            value = GET_INT_LOCAL(script, address)
+            value = LOCAL_GET_INT(script, address)
         elseif local_editor.type == "float" then
-            value = GET_FLOAT_LOCAL(script, address)
+            value = LOCAL_GET_FLOAT(script, address)
         end
 
         if value ~= nil then
@@ -708,9 +700,9 @@ menu.action(Local_Editor, "写入", {}, "", function()
     if value ~= nil then
         if SCRIPT.HAS_SCRIPT_LOADED(script) then
             if local_editor.type == "int" then
-                SET_INT_LOCAL(script, address, value)
+                LOCAL_SET_INT(script, address, value)
             elseif local_editor.type == "float" then
-                SET_FLOAT_LOCAL(script, address, value)
+                LOCAL_SET_FLOAT(script, address, value)
             end
         else
             util.toast("This Script Has Not Loaded")
@@ -724,9 +716,9 @@ menu.toggle_loop(Local_Editor, "锁定写入", {}, "更改地址类型，锁定�
     if value ~= nil then
         if SCRIPT.HAS_SCRIPT_LOADED(script) then
             if local_editor.type == "int" then
-                SET_INT_LOCAL(script, address, value)
+                LOCAL_SET_INT(script, address, value)
             elseif local_editor.type == "float" then
-                SET_FLOAT_LOCAL(script, address, value)
+                LOCAL_SET_FLOAT(script, address, value)
             end
         end
     end
@@ -752,12 +744,8 @@ end)
 menu.slider(Global_Editor, "地址2", { "global_address2" }, "", 0, 16777216, 0, 1, function(value)
     global_editor.address2 = value
 end)
-menu.list_select(Global_Editor, "数值类型", {}, "", { { "INT" }, { "FLOAT" } }, 1, function(value)
-    if value == 1 then
-        global_editor.type = "int"
-    elseif value == 2 then
-        global_editor.type = "float"
-    end
+menu.list_select(Global_Editor, "数值类型", {}, "", { { 1, "INT" }, { 2, "FLOAT" } }, 1, function(value, name)
+    global_editor.type = string.lower(name)
 end)
 
 menu.divider(Global_Editor, "读")
@@ -765,9 +753,9 @@ menu.action(Global_Editor, "读取", {}, "", function()
     local address = global_editor.address1 + global_editor.address2
     local value
     if global_editor.type == "int" then
-        value = GET_INT_GLOBAL(address)
+        value = GLOBAL_GET_INT(address)
     elseif global_editor.type == "float" then
-        value = GET_FLOAT_GLOBAL(address)
+        value = GLOBAL_GET_FLOAT(address)
     end
 
     if value ~= nil then
@@ -788,9 +776,9 @@ menu.action(Global_Editor, "写入", {}, "", function()
     local value = tonumber(global_editor.write)
     if value ~= nil then
         if global_editor.type == "int" then
-            SET_INT_GLOBAL(address, value)
+            GLOBAL_SET_INT(address, value)
         elseif global_editor.type == "float" then
-            SET_FLOAT_GLOBAL(address, value)
+            GLOBAL_SET_FLOAT(address, value)
         end
     end
 end)
@@ -799,9 +787,9 @@ menu.toggle_loop(Global_Editor, "锁定写入", {}, "更改地址类型，锁定
     local value = tonumber(global_editor.write)
     if value ~= nil then
         if global_editor.type == "int" then
-            SET_INT_GLOBAL(address, value)
+            GLOBAL_SET_INT(address, value)
         elseif global_editor.type == "float" then
-            SET_FLOAT_GLOBAL(address, value)
+            GLOBAL_SET_FLOAT(address, value)
         end
     end
 end)
@@ -812,26 +800,21 @@ end)
 
 
 menu.list_select(Online_Options, "战局雪天", { "turn_snow" }, "", {
-    { "不更改", { "default" }, "" },
-    { "开启", { "on" }, "" },
-    { "关闭", { "off" }, "" },
-}, 1, function(value)
-    if value == 2 then
-        SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 1)
-    elseif value == 3 then
-        SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 0)
-    end
+    { -1, "不更改", { "default" }, "" },
+    { 1, "开启", { "on" }, "" },
+    { 0, "关闭", { "off" }, "" },
+}, -1, function(value)
     Loop_Handler.Tunables.TurnSnow = value
+    if value ~= -1 then
+        TUNABLE_SET_INT(Tunables.TURN_SNOW_ON_OFF, value)
+    end
 end)
 menu.click_slider_float(Online_Options, "AI血量倍数", { "ai_health_multiplier" }, "",
     0, 1000, 100, 10, function(value)
-        SET_FLOAT_GLOBAL(Globals.AI_HEALTH, value * 0.01)
+        TUNABLE_SET_FLOAT(Tunables.AI_HEALTH, value * 0.01)
         Loop_Handler.Tunables.AiHealth = value * 0.01
     end)
 menu.toggle(Online_Options, "禁用产业劫货", {}, "", function(toggle)
     Globals.DisableBusinessRaid(toggle)
     Loop_Handler.Tunables.DisableBusinessRaid = toggle
-end)
-menu.action(Online_Options, "设置藏匿屋密码为000000", {}, "输入密码时执行本选项", function()
-    Locals.StashHouseCode()
 end)

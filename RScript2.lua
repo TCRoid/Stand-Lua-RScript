@@ -2,11 +2,11 @@
 -- Author: Rostal
 --------------------------------
 
-util.require_natives("2944b", "init")
+util.require_natives("3095a", "init")
 
-local SCRIPT_VERSION <const> = "2023/12/2"
+local SCRIPT_VERSION <const> = "2023/12/23"
 
-local SUPPORT_GTAO <const> = 1.67
+local SUPPORT_GTAO <const> = 1.68
 
 
 
@@ -47,17 +47,17 @@ require "RScript.utils"
 
 
 local Tunables <const> = {
-    XM22_GUN_VAN_SLOT_WEAPON_TYPE_0 = 34094,
+    XM22_GUN_VAN_SLOT_WEAPON_TYPE_0 = 34328,
 
     -- Contact Mission
-    CONTACT_MISSION_TIME_PERIOD_1 = 8523,
-    CONTACT_MISSION_CASH_TIME_PERIOD_1_PERCENTAGE = 8532,
-    CONTACT_MISSION_CASH_PLAYER_MULTIPLIER_1 = 8542,
-    CONTACT_MISSION_CASH_DIFFICULTY_MULTIPLIER_EASY = 8550,
-    CONTACT_MISSION_FAIL_CASH_TIME_PERIOD_2_DIVIDER = 8554,
-    CONTACT_MISSION_RP_TIME_PERIOD_1_PERCENTAGE = 8574,
-    CONTACT_MISSION_RP_DIFFICULTY_MULTIPLIER_EASY = 8585,
-    CONTACT_MISSION_FAIL_RP_TIME_PERIOD_2_DIVIDER = 8564,
+    CONTACT_MISSION_TIME_PERIOD_1 = 8529,
+    CONTACT_MISSION_CASH_TIME_PERIOD_1_PERCENTAGE = 8538,
+    CONTACT_MISSION_CASH_PLAYER_MULTIPLIER_1 = 8545,
+    CONTACT_MISSION_CASH_DIFFICULTY_MULTIPLIER_EASY = 8556,
+    CONTACT_MISSION_FAIL_CASH_TIME_PERIOD_2_DIVIDER = 8560,
+    CONTACT_MISSION_RP_TIME_PERIOD_1_PERCENTAGE = 8580,
+    CONTACT_MISSION_RP_DIFFICULTY_MULTIPLIER_EASY = 8591,
+    CONTACT_MISSION_FAIL_RP_TIME_PERIOD_2_DIVIDER = 8570,
 
     -- Health & Armour
     MAX_HEALTH_MULTIPLIER = 107,
@@ -67,26 +67,27 @@ local Tunables <const> = {
 
     CasinoHeist = {
         TargetWeighting = {
-            29016, -- CH_VAULT_WEIGHTING_CASH
-            29017, -- CH_VAULT_WEIGHTING_ART
-            29018, -- CH_VAULT_WEIGHTING_GOLD
-            29019, -- CH_VAULT_WEIGHTING_DIAMONDS
+            29086, -- CH_VAULT_WEIGHTING_CASH
+            29087, -- CH_VAULT_WEIGHTING_ART
+            29088, -- CH_VAULT_WEIGHTING_GOLD
+            29089, -- CH_VAULT_WEIGHTING_DIAMONDS
         },
     },
 
     PericoHeist = {
         TargetWeighting = {
-            30118, -- H4_TARGET_WEIGHTING_TEQUILA
-            30119, -- H4_TARGET_WEIGHTING_PEARL_NECKLACE
-            30120, -- H4_TARGET_WEIGHTING_BEARER_BONDS
-            30121, -- H4_TARGET_WEIGHTING_PINK_DIAMOND
-            30122, -- H4_TARGET_WEIGHTING_SAPPHIRE_PANTHER_STATUE
+            30188, -- H4_TARGET_WEIGHTING_TEQUILA
+            30189, -- H4_TARGET_WEIGHTING_PEARL_NECKLACE
+            30190, -- H4_TARGET_WEIGHTING_BEARER_BONDS
+            30191, -- H4_TARGET_WEIGHTING_PINK_DIAMOND
+            30192, -- H4_TARGET_WEIGHTING_SAPPHIRE_PANTHER_STATUE
         },
     },
 }
 
+
 local Globals <const> = {
-    GunVanSpawnPoint = 1956855,
+    GunVanSpawnPoint = 1948900,
 }
 
 
@@ -468,8 +469,8 @@ menu.toggle(Nearby_Ped_Friendly, "设置掉落现金", {}, "", function(toggle)
         PED.SET_AMBIENT_PEDS_DROP_MONEY(true)
     end
 end)
-menu.list_select(Nearby_Ped_Friendly, "武器", {}, "", RS_T.CommonWeapons.ListItem, 1, function(value)
-    NearbyPed.data.weapon_hash = util.joaat(Weapon_Common.ModelList[value])
+menu.list_select(Nearby_Ped_Friendly, "武器", {}, "", RS_T.CommonWeapons, RS_T.CommonWeapons[1][1], function(value)
+    NearbyPed.data.weapon_hash = value
 end)
 menu.toggle(Nearby_Ped_Friendly, "给予武器", {}, "", function(toggle)
     NearbyPed.ToggleChanged("give_weapon", toggle)
@@ -1453,38 +1454,33 @@ local Heist_Cut_Editor <const> = menu.list(Mission_Options, "抢劫分红编辑"
 
 local HeistCut = {
     ListItem = {
-        { "佩里科岛" },
-        { "赌场抢劫" },
-        { "末日豪劫" },
+        { 1970744 + 831 + 56, "佩里科岛" },
+        { 1963945 + 1497 + 736 + 92, "赌场抢劫" },
+        { 1959865 + 812 + 50, "末日豪劫" },
     },
-    ValueList = {
-        1978495 + 825 + 56,
-        1971696 + 2325,
-        1967630 + 812 + 50,
-    },
-    NonHost = 2684820 + 6606,
+    NonHost = 2685249 + 6615,
 }
 
-local cut_global_base = HeistCut.ValueList[1]
-menu.list_select(Heist_Cut_Editor, "当前抢劫", {}, "", HeistCut.ListItem, 1, function(value)
-    cut_global_base = HeistCut.ValueList[value]
+local cut_global_base = HeistCut.ListItem[1][1]
+menu.list_select(Heist_Cut_Editor, "当前抢劫", {}, "", HeistCut.ListItem, cut_global_base, function(value)
+    cut_global_base = value
 end)
 
 menu.click_slider(Heist_Cut_Editor, "玩家1 (房主)", { "cut1edit" }, "", 0, 300, 85, 5, function(value)
-    SET_INT_GLOBAL(cut_global_base + 1, value)
+    GLOBAL_SET_INT(cut_global_base + 1, value)
 end)
 menu.click_slider(Heist_Cut_Editor, "玩家2", { "cut2edit" }, "", 0, 300, 85, 5, function(value)
-    SET_INT_GLOBAL(cut_global_base + 2, value)
+    GLOBAL_SET_INT(cut_global_base + 2, value)
 end)
 menu.click_slider(Heist_Cut_Editor, "玩家3", { "cut3edit" }, "", 0, 300, 85, 5, function(value)
-    SET_INT_GLOBAL(cut_global_base + 3, value)
+    GLOBAL_SET_INT(cut_global_base + 3, value)
 end)
 menu.click_slider(Heist_Cut_Editor, "玩家4", { "cut4edit" }, "", 0, 300, 85, 5, function(value)
-    SET_INT_GLOBAL(cut_global_base + 4, value)
+    GLOBAL_SET_INT(cut_global_base + 4, value)
 end)
 menu.divider(Heist_Cut_Editor, "")
 menu.click_slider(Heist_Cut_Editor, "自己 (非主机)", { "cutmyselfedit" }, "", 0, 300, 85, 5, function(value)
-    SET_INT_GLOBAL(HeistCut.NonHost, value)
+    GLOBAL_SET_INT(HeistCut.NonHost, value)
 end)
 
 --#endregion Heist Cut Editor
@@ -1779,12 +1775,12 @@ local tTunable = {
 local Gun_Van <const> = menu.list(Tunable_Options, "厢型车武器", {}, "")
 
 for i = 1, 10 do
-    local global_addr = 262145 + Tunables.XM22_GUN_VAN_SLOT_WEAPON_TYPE_0 + i
-    local default = GET_INT_GLOBAL(global_addr)
+    local offset = Tunables.XM22_GUN_VAN_SLOT_WEAPON_TYPE_0 + i
+    local default = TUNABLE_GET_INT(offset)
     menu.text_input(Gun_Van, "Weapon Slot " .. i, { "slot_" .. i .. "gun_van_weapon" }, "", function(value)
         value = tonumber(value)
         if value ~= nil and WEAPON.IS_WEAPON_VALID(value) then
-            SET_INT_GLOBAL(global_addr, value)
+            TUNABLE_SET_INT(offset, value)
             util.toast("完成")
         end
     end, default)
@@ -1842,7 +1838,7 @@ menu.toggle(Contact_Mission, "最大化任务时间", {}, "获取最大化收益
     Loop_Handler.Tunables.ContactMission.MaxMissionTime = toggle
     Loop_Handler.Tunables.ContactMission.MaxMissionTime_Callback = function()
         for i = 0, 8 do
-            tunables.set_int(Tunables.CONTACT_MISSION_TIME_PERIOD_1 + i, 0)
+            TUNABLE_SET_INT(Tunables.CONTACT_MISSION_TIME_PERIOD_1 + i, 0)
         end
     end
     Loop_Handler.Tunables.ContactMission.MaxMissionTime_Callback()
@@ -1851,16 +1847,16 @@ menu.toggle(Contact_Mission, "最大化现金收益", {}, "游戏默认的最高
     Loop_Handler.Tunables.ContactMission.MaxCashEarning = toggle
     Loop_Handler.Tunables.ContactMission.MaxCashEarning_Callback = function()
         for i = 0, 9 do
-            tunables.set_float(Tunables.CONTACT_MISSION_CASH_TIME_PERIOD_1_PERCENTAGE + i, 2.0)
+            TUNABLE_SET_FLOAT(Tunables.CONTACT_MISSION_CASH_TIME_PERIOD_1_PERCENTAGE + i, 2.0)
         end
         for i = 0, 3 do
-            tunables.set_float(Tunables.CONTACT_MISSION_CASH_PLAYER_MULTIPLIER_1 + i, 1.3)
+            TUNABLE_SET_FLOAT(Tunables.CONTACT_MISSION_CASH_PLAYER_MULTIPLIER_1 + i, 1.3)
         end
         for i = 0, 2 do
-            tunables.set_float(Tunables.CONTACT_MISSION_CASH_DIFFICULTY_MULTIPLIER_EASY + i, 1.5)
+            TUNABLE_SET_FLOAT(Tunables.CONTACT_MISSION_CASH_DIFFICULTY_MULTIPLIER_EASY + i, 1.5)
         end
         for i = 0, 8 do
-            tunables.set_float(Tunables.CONTACT_MISSION_FAIL_CASH_TIME_PERIOD_2_DIVIDER + i, 3.5)
+            TUNABLE_SET_FLOAT(Tunables.CONTACT_MISSION_FAIL_CASH_TIME_PERIOD_2_DIVIDER + i, 3.5)
         end
     end
     Loop_Handler.Tunables.ContactMission.MaxCashEarning_Callback()
@@ -1869,13 +1865,13 @@ menu.toggle(Contact_Mission, "最大化经验收益", {}, "游戏默认的最高
     Loop_Handler.Tunables.ContactMission.MaxRpEarning = toggle
     Loop_Handler.Tunables.ContactMission.MaxRpEarning_Callback = function()
         for i = 0, 9 do
-            tunables.set_float(Tunables.CONTACT_MISSION_RP_TIME_PERIOD_1_PERCENTAGE + i, 2.0)
+            TUNABLE_SET_FLOAT(Tunables.CONTACT_MISSION_RP_TIME_PERIOD_1_PERCENTAGE + i, 2.0)
         end
         for i = 0, 2 do
-            tunables.set_float(Tunables.CONTACT_MISSION_RP_DIFFICULTY_MULTIPLIER_EASY + i, 1.5)
+            TUNABLE_SET_FLOAT(Tunables.CONTACT_MISSION_RP_DIFFICULTY_MULTIPLIER_EASY + i, 1.5)
         end
         for i = 0, 8 do
-            tunables.set_float(Tunables.CONTACT_MISSION_FAIL_RP_TIME_PERIOD_2_DIVIDER + i, 2.5)
+            TUNABLE_SET_FLOAT(Tunables.CONTACT_MISSION_FAIL_RP_TIME_PERIOD_2_DIVIDER + i, 2.5)
         end
     end
     Loop_Handler.Tunables.ContactMission.MaxRpEarning_Callback()
@@ -1891,22 +1887,22 @@ local Health_Armour <const> = menu.list(Tunable_Options, "生命和护甲倍率"
 menu.slider_float(Health_Armour, "最大生命值倍率", { "t_MaxHealthMulti" }, "",
     100, 2000, 100, 100, function(value)
         tTunable.MaxHealthMulti = value * 0.01
-        tunables.set_float(Tunables.MAX_HEALTH_MULTIPLIER, tTunable.MaxHealthMulti)
+        TUNABLE_SET_FLOAT(Tunables.MAX_HEALTH_MULTIPLIER, tTunable.MaxHealthMulti)
     end)
 menu.slider_float(Health_Armour, "最大护甲值倍率", { "t_MaxArmourMulti" }, "",
     100, 2000, 100, 100, function(value)
         tTunable.MaxArmourMulti = value * 0.01
-        tunables.set_float(Tunables.MAX_ARMOR_MULTIPLIER, tTunable.MaxArmourMulti)
+        TUNABLE_SET_FLOAT(Tunables.MAX_ARMOR_MULTIPLIER, tTunable.MaxArmourMulti)
     end)
 menu.slider_float(Health_Armour, "生命恢复速度倍率", { "t_HealthRegenRateMulti" }, "",
     100, 2000, 100, 100, function(value)
         tTunable.HealthRegenRateMulti = value * 0.01
-        tunables.set_float(Tunables.HEALTH_REGEN_RATE_MULTIPLIER, tTunable.HealthRegenRateMulti)
+        TUNABLE_SET_FLOAT(Tunables.HEALTH_REGEN_RATE_MULTIPLIER, tTunable.HealthRegenRateMulti)
     end)
 menu.slider_float(Health_Armour, "生命恢复程度倍率", { "t_HealthRegenMaxMulti" }, "",
     100, 2000, 100, 100, function(value)
         tTunable.HealthRegenMaxMulti = value * 0.01
-        tunables.set_float(Tunables.HEALTH_REGEN_MAX_MULTIPLIER, tTunable.HealthRegenMaxMulti)
+        TUNABLE_SET_FLOAT(Tunables.HEALTH_REGEN_MAX_MULTIPLIER, tTunable.HealthRegenMaxMulti)
     end)
 
 --#endregion Health Armour
@@ -1927,11 +1923,11 @@ local PericoHeistTargets = {
 }
 for key, item in pairs(PericoHeistTargets) do
     local offset = Tunables.PericoHeist.TargetWeighting[key]
-    local default_value = math.ceil(tunables.get_float(offset) * 100)
+    local default_value = math.ceil(TUNABLE_GET_FLOAT(offset) * 100)
 
     menu.slider_float(Heist_Target_Weight, item[1], { "t_h4_target_weight" .. item[2] }, "",
         0, 100, default_value, 10, function(value)
-            tunables.set_float(offset, value * 0.01)
+            TUNABLE_SET_FLOAT(offset, value * 0.01)
         end)
 end
 
@@ -1945,11 +1941,11 @@ local CasinoHeistTargets = {
 }
 for key, item in pairs(CasinoHeistTargets) do
     local offset = Tunables.CasinoHeist.TargetWeighting[key]
-    local default_value = math.ceil(tunables.get_float(offset) * 100)
+    local default_value = math.ceil(TUNABLE_GET_FLOAT(offset) * 100)
 
     menu.slider_float(Heist_Target_Weight, item[1], { "t_ch_target_weight" .. item[2] }, "",
         0, 100, default_value, 10, function(value)
-            tunables.set_float(offset, value * 0.01)
+            TUNABLE_SET_FLOAT(offset, value * 0.01)
         end)
 end
 
@@ -2194,16 +2190,16 @@ util.create_tick_handler(function()
         --------    Health Armour    --------
 
         if tTunable.MaxHealthMulti ~= 1.0 then
-            tunables.set_float(Tunables.MAX_HEALTH_MULTIPLIER, tTunable.MaxHealthMulti)
+            TUNABLE_SET_FLOAT(Tunables.MAX_HEALTH_MULTIPLIER, tTunable.MaxHealthMulti)
         end
         if tTunable.MaxArmourMulti ~= 1.0 then
-            tunables.set_float(Tunables.MAX_ARMOR_MULTIPLIER, tTunable.MaxArmourMulti)
+            TUNABLE_SET_FLOAT(Tunables.MAX_ARMOR_MULTIPLIER, tTunable.MaxArmourMulti)
         end
         if tTunable.HealthRegenRateMulti ~= 1.0 then
-            tunables.set_float(Tunables.HEALTH_REGEN_RATE_MULTIPLIER, tTunable.HealthRegenRateMulti)
+            TUNABLE_SET_FLOAT(Tunables.HEALTH_REGEN_RATE_MULTIPLIER, tTunable.HealthRegenRateMulti)
         end
         if tTunable.HealthRegenMaxMulti ~= 1.0 then
-            tunables.set_float(Tunables.HEALTH_REGEN_MAX_MULTIPLIER, tTunable.HealthRegenMaxMulti)
+            TUNABLE_SET_FLOAT(Tunables.HEALTH_REGEN_MAX_MULTIPLIER, tTunable.HealthRegenMaxMulti)
         end
     end
 end)

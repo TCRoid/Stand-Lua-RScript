@@ -195,7 +195,7 @@ menu.action(Dev_Options, "关闭电脑界面", { "shut_computer" }, "", function
     }
     for key, script in pairs(script_list) do
         if IS_SCRIPT_RUNNING(script) then
-            SET_INT_GLOBAL(Globals.IsUsingComputerScreen, 0)
+            GLOBAL_SET_INT(Globals.IsUsingComputerScreen, 0)
             MISC.TERMINATE_ALL_SCRIPTS_WITH_THIS_NAME(script)
         end
     end
@@ -205,15 +205,16 @@ menu.action(Dev_Options, "结束自由模式任务", { "shut_task" }, "", functi
     -- "SMHUD_TIMEREM" /* GXT: TIME REMAINING */
 
     local data = {
-        { script = "gb_casino_heist",              addr = 4275 + 1521 },
-        { script = "fm_content_island_heist",      addr = 13062 + 1459 },
-        { script = "fm_content_payphone_hit",      addr = 5511 + 723 },
-        { script = "fm_content_security_contract", addr = 6958 + 1319 },
+        { script = "gb_casino_heist",              addr = 4280 + 1521 },
+        { script = "fm_content_island_heist",      addr = 13262 + 1460 },
+        { script = "fm_content_payphone_hit",      addr = 5639 + 724 },
+        { script = "fm_content_security_contract", addr = 7095 + 1320 },
+        { script = "gb_contraband_buy",            addr = 601 + 189 },
     }
 
     for key, item in pairs(data) do
         if IS_SCRIPT_RUNNING(item.script) then
-            SET_INT_LOCAL(item.script, item.addr, 0)
+            LOCAL_SET_INT(item.script, item.addr, 0)
             util.toast(item.script)
         end
     end

@@ -34,11 +34,7 @@ function tNPC.checkPed(ped, pedTypeSelect)
 end
 
 menu.divider(Entity_NPC_Options, "全部NPC")
-menu.list_select(Entity_NPC_Options, "NPC类型", {}, "", {
-    { "全部NPC(排除友好)", {}, "" },
-    { "敌对NPC", {}, "" },
-    { "全部NPC", {}, "" },
-}, 1, function(value)
+menu.list_select(Entity_NPC_Options, "NPC类型", {}, "", Misc_T.PedType, 1, function(value)
     tNPC.ped_select = value
 end)
 
@@ -78,7 +74,7 @@ menu.toggle_loop(Entity_NPC_Options, "死亡", { "dead_cop" }, "", function()
     for _, ped_ptr in pairs(entities.get_all_peds_as_pointers()) do
         local hash = entities.get_model_hash(ped_ptr)
         if hash == 1581098148 or hash == -1320879687 or hash == -1920001264 then
-            memory.write_float(ped_ptr + 0x280, 0)
+            rs_memory.set_entity_health(ped_ptr, 0)
         end
     end
 end)
@@ -95,8 +91,8 @@ menu.action(Entity_NPC_Options, "无敌强化", { "strong_friendly_ped" }, "", f
         end
     end
 end)
-menu.list_action(Entity_NPC_Options, "给予武器", {}, "", RS_T.CommonWeapons.ListItem, function(value)
-    local weaponHash = util.joaat(RS_T.CommonWeapons.ModelList[value])
+menu.list_action(Entity_NPC_Options, "给予武器", {}, "", RS_T.CommonWeapons, function(value)
+    local weaponHash = value
 
     for _, ent in pairs(entities.get_all_peds_as_handles()) do
         if not ENTITY.IS_ENTITY_DEAD(ent) and not is_player_ped(ent) then
@@ -126,11 +122,7 @@ tNPC.Weak = {
     },
 }
 
-menu.list_select(NPC_Weak_Options, "NPC类型", {}, "", {
-    { "全部NPC(排除友好)", {}, "" },
-    { "敌对NPC", {}, "" },
-    { "全部NPC", {}, "" },
-}, 1, function(value)
+menu.list_select(NPC_Weak_Options, "NPC类型", {}, "", Misc_T.PedType, 1, function(value)
     tNPC.Weak.ped_select = value
 end)
 
@@ -616,29 +608,29 @@ local Nearby_Area_Setting <const> = menu.list(Nearby_Area_Options, "设置", {},
 
 menu.divider(Nearby_Area_Setting, "目标")
 menu.list_select(Nearby_Area_Setting, "NPC", {}, "", {
-    { "关闭", },
-    { "全部NPC (排除友好)", },
-    { "敌对NPC", },
-    { "步行NPC", },
-    { "载具内NPC", },
-    { "全部NPC", },
+    { 1, "关闭", },
+    { 2, "全部NPC (排除友好)", },
+    { 3, "敌对NPC", },
+    { 4, "步行NPC", },
+    { 5, "载具内NPC", },
+    { 6, "全部NPC", },
 }, 2, function(value)
     NearbyArea.target.ped = value
 end)
 menu.list_select(Nearby_Area_Setting, "载具", {}, "默认排除玩家载具", {
-    { "关闭", },
-    { "全部载具", {}, "" },
-    { "敌对载具", {}, "敌对NPC驾驶或者有敌对地图标识的载具" },
-    { "NPC载具", {}, "有NPC作为司机驾驶的载具" },
-    { "空载具", {}, "没有任何NPC驾驶的载具" },
+    { 1, "关闭", },
+    { 2, "全部载具", {}, "" },
+    { 3, "敌对载具", {}, "敌对NPC驾驶或者有敌对地图标识的载具" },
+    { 4, "NPC载具", {}, "有NPC作为司机驾驶的载具" },
+    { 5, "空载具", {}, "没有任何NPC驾驶的载具" },
 }, 1, function(value)
     NearbyArea.target.vehicle = value
 end)
 menu.list_select(Nearby_Area_Setting, "物体", {}, "", {
-    { "关闭" },
-    { "敌对物体", {}, "有敌对地图标记点的物体" },
-    { "标记点物体", {}, "有地图标记点的物体" },
-    { "任务物体", {}, "" },
+    { 1, "关闭" },
+    { 2, "敌对物体", {}, "有敌对地图标记点的物体" },
+    { 3, "标记点物体", {}, "有地图标记点的物体" },
+    { 4, "任务物体", {}, "" },
 }, 1, function(value)
     NearbyArea.target.object = value
 end)
@@ -861,8 +853,8 @@ end
 
 local Nearby_Area_ExplosionSetting <const> = menu.list(Nearby_Area_Explosion, "设置", {}, "")
 
-menu.list_select(Nearby_Area_ExplosionSetting, "爆炸类型", {}, "", Misc_T.ExplosionType, 4, function(index)
-    NearbyAreaExplosion.explosionType = index - 2
+menu.list_select(Nearby_Area_ExplosionSetting, "爆炸类型", {}, "", Misc_T.ExplosionType, 4, function(value)
+    NearbyAreaExplosion.explosionType = value
 end)
 menu.toggle(Nearby_Area_ExplosionSetting, "署名爆炸", {}, "以玩家名义", function(toggle)
     NearbyAreaExplosion.isOwned = toggle
@@ -1051,9 +1043,9 @@ function Entity_Info.EntityInfo(entity)
     table.insert(entity_info.main, info)
 
     -- Script
-    local entity_script = ENTITY.GET_ENTITY_SCRIPT(entity, 0)
+    local entity_script = GET_ENTITY_SCRIPT(entity)
     if entity_script ~= nil then
-        info = { "Script", string.lower(entity_script) }
+        info = { "Script", entity_script }
         table.insert(entity_info.main, info)
     end
 
@@ -1245,8 +1237,8 @@ function Entity_Info.PedInfo(ped)
     table.insert(ped_info.rel_group, info)
 
     -- Group Relationship
-    local rel = PED.GET_RELATIONSHIP_BETWEEN_GROUPS(rel_group_hash, my_rel_group_hash)
-    info = { "Group Relationship", Ped_T.RelationshipType[rel] }
+    local group_rel = PED.GET_RELATIONSHIP_BETWEEN_GROUPS(rel_group_hash, my_rel_group_hash)
+    info = { "Group Relationship", Ped_T.RelationshipType[group_rel] }
     table.insert(ped_info.rel_group, info)
 
     -- Group
@@ -1491,9 +1483,9 @@ function Entity_Info.GetBaseInfo(entity)
     table.insert(base_info.entity, info)
 
     -- Script
-    local entity_script = ENTITY.GET_ENTITY_SCRIPT(entity, 0)
+    local entity_script = GET_ENTITY_SCRIPT(entity)
     if entity_script ~= nil then
-        info = { "Script", string.lower(entity_script) }
+        info = { "Script", entity_script }
         table.insert(base_info.entity, info)
     end
 
@@ -1900,13 +1892,7 @@ end, function()
     tEntityInfo.targetEntity = 0
 end)
 
-menu.list_select(Entity_Info_Options, "实体类型", {}, "", {
-    { "All", {}, "全部类型实体" },
-    { "Ped", {}, "NPC" },
-    { "Vehicle", {}, "载具" },
-    { "Object", {}, "物体" },
-    { "Pickup", {}, "拾取物" }
-}, 1, function(index, name)
+menu.list_select(Entity_Info_Options, "实体类型", {}, "", Misc_T.EntityTypeAll, 1, function(index, name)
     tEntityInfo.entityType = name
 end)
 
@@ -2059,13 +2045,7 @@ end, function()
     Loop_Handler.draw_centred_point(false)
 end)
 
-menu.list_select(Entity_Control_Options, "实体类型", {}, "", {
-    { "All", {}, "全部类型实体" },
-    { "Ped", {}, "NPC" },
-    { "Vehicle", {}, "载具" },
-    { "Object", {}, "物体" },
-    { "Pickup", {}, "拾取物" }
-}, 1, function(index, name)
+menu.list_select(Entity_Control_Options, "实体类型", {}, "", Misc_T.EntityTypeAll, 1, function(index, name)
     tEntityControl.entityType = name
 end)
 
@@ -2115,8 +2095,8 @@ local All_Entity = {
     sortMethod = 1,
 }
 
-menu.list_select(Manage_All_Entity, "实体类型", {}, "", Misc_T.EntityType, 1, function(value)
-    All_Entity.entityType = Misc_T.EntityType[value][1]
+menu.list_select(Manage_All_Entity, "实体类型", {}, "", Misc_T.EntityType, 1, function(value, name)
+    All_Entity.entityType = name
 end)
 
 
@@ -2126,7 +2106,7 @@ end)
 local Manage_All_Entity_Filter <const> = menu.list(Manage_All_Entity, "筛选设置", {}, "")
 
 menu.list_select(Manage_All_Entity_Filter, "任务实体", {}, "",
-    { { "关闭" }, { "是" }, { "否" } }, 2, function(value)
+    { { 1, "关闭" }, { 2, "是" }, { 3, "否" } }, 2, function(value)
         All_Entity.filter.mission = value
     end)
 menu.slider_float(Manage_All_Entity_Filter, "范围", { "all_entity_distance" }, "和玩家之间的距离是否在范围之内\n0表示全部范围",
@@ -2134,15 +2114,15 @@ menu.slider_float(Manage_All_Entity_Filter, "范围", { "all_entity_distance" },
         All_Entity.filter.distance = value * 0.01
     end)
 menu.list_select(Manage_All_Entity_Filter, "地图标记点", {}, "",
-    { { "关闭" }, { "有" }, { "没有" } }, 1, function(value)
+    { { 1, "关闭" }, { 2, "有" }, { 3, "没有" } }, 1, function(value)
         All_Entity.filter.blip = value
     end)
 menu.list_select(Manage_All_Entity_Filter, "移动状态", {}, "",
-    { { "关闭" }, { "静止" }, { "正在移动" } }, 1, function(value)
+    { { 1, "关闭" }, { 2, "静止" }, { 3, "正在移动" } }, 1, function(value)
         All_Entity.filter.move = value
     end)
 menu.list_select(Manage_All_Entity_Filter, "Attached", {}, "",
-    { { "关闭" }, { "是" }, { "否" } }, 1, function(value)
+    { { 1, "关闭" }, { 2, "是" }, { 3, "否" } }, 1, function(value)
         All_Entity.filter.attached = value
     end)
 
@@ -2151,30 +2131,31 @@ menu.toggle(Manage_All_Entity_Filter, "排除玩家", {}, "", function(toggle)
     All_Entity.filter.ped.except_player = toggle
 end, true)
 menu.list_select(Manage_All_Entity_Filter, "与玩家敌对", {}, "",
-    { { "关闭" }, { "是" }, { "否" } }, 1, function(value)
+    { { 1, "关闭" }, { 2, "是" }, { 3, "否" } }, 1, function(value)
         All_Entity.filter.ped.combat = value
     end)
 menu.list_select(Manage_All_Entity_Filter, "关系", {}, "",
-    { { "关闭" }, { "尊重/喜欢" }, { "忽略" }, { "不喜欢/讨厌" }, { "通缉" }, { "无" } }, 1,
+    { { 1, "关闭" }, { 2, "尊重/喜欢" }, { 3, "忽略" }, { 4, "不喜欢/讨厌" }, { 5, "通缉" }, { 6, "无" } }, 1,
     function(value)
         All_Entity.filter.ped.relationship = value
     end)
 menu.list_select(Manage_All_Entity_Filter, "状态", {}, "",
-    { { "关闭" }, { "步行" }, { "载具内" }, { "已死亡" }, { "正在射击" } }, 1, function(value)
+    { { 1, "关闭" }, { 2, "步行" }, { 3, "载具内" }, { 4, "已死亡" }, { 5, "正在射击" } }, 1, function(value)
         All_Entity.filter.ped.state = value
     end)
 menu.list_select(Manage_All_Entity_Filter, "装备武器", {}, "",
-    { { "关闭" }, { "是" }, { "否" } }, 1, function(value)
+    { { 1, "关闭" }, { 2, "是" }, { 3, "否" } }, 1, function(value)
         All_Entity.filter.ped.armed = value
     end)
 
 menu.divider(Manage_All_Entity_Filter, "Vehicle")
 menu.list_select(Manage_All_Entity_Filter, "司机", {}, "",
-    { { "关闭" }, { "没有" }, { "NPC" }, { "玩家" } }, 1, function(value)
+    { { 1, "关闭" }, { 2, "没有" }, { 3, "NPC" }, { 4, "玩家" } }, 1, function(value)
         All_Entity.filter.vehicle.driver = value
     end)
 menu.list_select(Manage_All_Entity_Filter, "类型", {}, "",
-    { { "关闭" }, { "Car" }, { "Bike" }, { "Bicycle" }, { "Heli" }, { "Plane" }, { "Boat" } }, 1, function(value)
+    { { 1, "关闭" }, { 2, "Car" }, { 3, "Bike" }, { 4, "Bicycle" }, { 5, "Heli" }, { 6, "Plane" }, { 7, "Boat" } },
+    1, function(value)
         All_Entity.filter.vehicle.type = value
     end)
 
@@ -2192,7 +2173,7 @@ menu.text_input(Manage_All_Entity_Filter, "Hash", { "all_entity_hash" }, "Input 
 -- 排序方式
 ----------------
 menu.list_select(Manage_All_Entity, "排序方式", {}, "", {
-    { "无" }, { "距离 (近 -> 远)" }, { "速度 (快 -> 慢)" }
+    { 1, "无" }, { 2, "距离 (近 -> 远)" }, { 3, "速度 (快 -> 慢)" }
 }, 1, function(value)
     All_Entity.sortMethod = value
 end)

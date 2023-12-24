@@ -4,11 +4,11 @@
 
 local SCRIPT_START_TIME <const> = util.current_time_millis()
 
-util.require_natives("2944b", "init")
+util.require_natives("3095a", "init")
 
-local SCRIPT_VERSION <const> = "2023/12/3"
+local SCRIPT_VERSION <const> = "2023/12/23"
 
-local SUPPORT_GTAO <const> = 1.67
+local SUPPORT_GTAO <const> = 1.68
 
 
 
@@ -898,9 +898,9 @@ end, function()
 end)
 
 menu.list_select(Weapon_CamGun, "选择操作", { "cam_gun_select" }, "", {
-    { "射击", { "shoot" }, "" },
-    { "爆炸", { "explosion" }, "" },
-    { "燃烧", { "fire" }, "" },
+    { 1, "射击", { "shoot" }, "" },
+    { 2, "爆炸", { "explosion" }, "" },
+    { 3, "燃烧", { "fire" }, "" },
 }, 1, function(value)
     CamGun.select = value
 end)
@@ -1024,8 +1024,8 @@ end, function()
 end)
 
 menu.list_select(CamGun_ShootSetting, "射击方式", {}, "", {
-    { "方式1", {}, "射击的坐标更加准确，只能向实体或地面射击" },
-    { "方式2", {}, "射击的坐标不是很准确，但可以向空中射击" }
+    { 1, "方式1", {}, "射击的坐标更加准确，只能向实体或地面射击" },
+    { 2, "方式2", {}, "射击的坐标不是很准确，但可以向空中射击" }
 }, 1, function(value)
     CamGun.ShootSetting.shootMethod = value
 end)
@@ -1037,7 +1037,7 @@ menu.slider(CamGun_ShootSetting, "循环延迟", { "cam_gun_shoot_delay" }, "单
 local CamGun_ShootSetting_Weapon <const> = menu.list(CamGun_ShootSetting, "武器", {}, "")
 
 menu.list_select(CamGun_ShootSetting_Weapon, "武器类型", {}, "",
-    { { "手持武器" }, { "载具武器" } }, 1, function(value)
+    { { 1, "手持武器" }, { 2, "载具武器" } }, 1, function(value)
         CamGun.ShootSetting.weaponSelect = value
     end)
 local CamGun_ShootSetting_PlayerWeapon = rs_menu.all_weapons_without_melee(CamGun_ShootSetting_Weapon, "手持武器",
@@ -1137,8 +1137,8 @@ menu.slider(CamGun_ExplosionSetting, "循环延迟", { "cam_gun_explosion_delay"
     function(value)
         CamGun.ExplosionSetting.delay = value
     end)
-menu.list_select(CamGun_ExplosionSetting, "爆炸类型", {}, "", Misc_T.ExplosionType, 4, function(index)
-    CamGun.ExplosionSetting.explosionType = index - 2
+menu.list_select(CamGun_ExplosionSetting, "爆炸类型", {}, "", Misc_T.ExplosionType, 4, function(value)
+    CamGun.ExplosionSetting.explosionType = value
 end)
 menu.toggle(CamGun_ExplosionSetting, "署名爆炸", {}, "以玩家名义", function(toggle)
     CamGun.ExplosionSetting.isOwned = toggle
@@ -1206,13 +1206,13 @@ end)
 
 tWeapon.SpecialAmmo = {
     specialTypeList = {
-        { "无", { "none" }, "No Special Ammo" }, -- 0
-        { "穿甲子弹", { "ap" }, "Armor Piercing Ammo" }, -- 1
-        { "爆炸子弹", { "explosive" }, "Explosive Ammo" }, -- 2
-        { "全金属外壳子弹", { "fmj" }, "Full Metal Jacket Ammo" }, -- 3
-        { "中空子弹", { "hp" }, "Hollow Point Ammo" }, -- 4
-        { "燃烧子弹", { "fire" }, "Incendiary Ammo" }, -- 5
-        { "曳光子弹", { "tracer" }, "Tracer Ammo" } -- 6
+        { 0, "无", { "none" }, "No Special Ammo" },
+        { 1, "穿甲子弹", { "ap" }, "Armor Piercing Ammo" },
+        { 2, "爆炸子弹", { "explosive" }, "Explosive Ammo" },
+        { 3, "全金属外壳子弹", { "fmj" }, "Full Metal Jacket Ammo" },
+        { 4, "中空子弹", { "hp" }, "Hollow Point Ammo" },
+        { 5, "燃烧子弹", { "fire" }, "Incendiary Ammo" },
+        { 6, "曳光子弹", { "tracer" }, "Tracer Ammo" }
     }
 }
 menu.list_action(Weapon_Options, "武器特殊弹药类型", { "special_ammo" }, "对已经配备特殊弹药的武器无效",
@@ -1229,7 +1229,7 @@ menu.list_action(Weapon_Options, "武器特殊弹药类型", { "special_ammo" },
             local CAmmoInfo = memory.read_long(CWeaponInfo + 0x60)
             if CAmmoInfo ~= 0 then
                 local m_ammo_special_type = CAmmoInfo + 0x3c
-                memory.write_int(m_ammo_special_type, value - 1)
+                memory.write_int(m_ammo_special_type, value)
 
                 local weaponHash = get_ped_weapon(players.user_ped())
                 local weaponName = get_weapon_name_by_hash(weaponHash)
@@ -2048,16 +2048,16 @@ menu.divider(Vehicle_Door, "锁门")
 
 tVehicle.DoorLock = {
     ListItem = {
-        { "解锁", {}, "" }, -- VEHICLELOCK_UNLOCKED == 1
-        { "上锁", {}, "" }, -- VEHICLELOCK_LOCKED
-        { "Lock Out Player Only", {}, "" }, -- VEHICLELOCK_LOCKOUT_PLAYER_ONLY
-        { "玩家锁定在里面", {}, "" }, -- VEHICLELOCK_LOCKED_PLAYER_INSIDE
-        { "Locked Initially", {}, "" }, -- VEHICLELOCK_LOCKED_INITIALLY
-        { "强制关闭车门", {}, "" }, -- VEHICLELOCK_FORCE_SHUT_DOORS
-        { "上锁但可被破坏", {}, "可以破开车窗开门" }, -- VEHICLELOCK_LOCKED_BUT_CAN_BE_DAMAGED
-        { "上锁但后备箱解锁", {}, "" }, -- VEHICLELOCK_LOCKED_BUT_BOOT_UNLOCKED
-        { "Locked No Passagers", {}, "" }, -- VEHICLELOCK_LOCKED_NO_PASSENGERS
-        { "不能进入", {}, "按F无上车动作" } -- VEHICLELOCK_CANNOT_ENTER
+        { 1, "解锁", {}, "" }, -- VEHICLELOCK_UNLOCKED
+        { 2, "上锁", {}, "" }, -- VEHICLELOCK_LOCKED
+        { 3, "Lock Out Player Only", {}, "" }, -- VEHICLELOCK_LOCKOUT_PLAYER_ONLY
+        { 4, "玩家锁定在里面", {}, "" }, -- VEHICLELOCK_LOCKED_PLAYER_INSIDE
+        { 5, "Locked Initially", {}, "" }, -- VEHICLELOCK_LOCKED_INITIALLY
+        { 6, "强制关闭车门", {}, "" }, -- VEHICLELOCK_FORCE_SHUT_DOORS
+        { 7, "上锁但可被破坏", {}, "可以破开车窗开门" }, -- VEHICLELOCK_LOCKED_BUT_CAN_BE_DAMAGED
+        { 8, "上锁但后备箱解锁", {}, "" }, -- VEHICLELOCK_LOCKED_BUT_BOOT_UNLOCKED
+        { 9, "Locked No Passagers", {}, "" }, -- VEHICLELOCK_LOCKED_NO_PASSENGERS
+        { 10, "不能进入", {}, "按F无上车动作" } -- VEHICLELOCK_CANNOT_ENTER
     }
 }
 menu.list_action(Vehicle_Door, "设置锁门类型", {}, "", tVehicle.DoorLock.ListItem, function(value)
@@ -2280,8 +2280,8 @@ menu.toggle_loop(Vehicle_Options, "无限动能回收加速", {}, "", function()
     if vehicle ~= INVALID_GUID then
         if VEHICLE.GET_VEHICLE_HAS_KERS(vehicle) then
             local vehicle_ptr = entities.handle_to_pointer(vehicle)
-            local kers_boost_max = memory.read_float(vehicle_ptr + 0x904)
-            memory.write_float(vehicle_ptr + 0x908, kers_boost_max) -- m_kers_boost
+            local kers_boost_max = memory.read_float(vehicle_ptr + 0x92c)
+            memory.write_float(vehicle_ptr + 0x930, kers_boost_max) -- m_kers_boost
         end
     end
 end)
@@ -2290,7 +2290,7 @@ menu.toggle_loop(Vehicle_Options, "无限载具跳跃", {}, "然而落地后才�
     if vehicle ~= INVALID_GUID then
         if VEHICLE.GET_CAR_HAS_JUMP(vehicle) then
             local vehicle_ptr = entities.handle_to_pointer(vehicle)
-            memory.write_float(vehicle_ptr + 0x390, 5.0) -- m_jump_boost_charge
+            memory.write_float(vehicle_ptr + 0x3a0, 5.0) -- m_jump_boost_charge
         end
     end
 end)
@@ -2585,7 +2585,7 @@ menu.toggle_loop(Other_Options, "自动收集财物", { "auto_collect" }, "模�
         util.yield(30)
     end
 end)
-menu.toggle_loop(Other_Options, "步行时第一/三人称快捷切换", {}, "步行时第一人称视角和第三人称近距离视角快捷切换", function()
+menu.toggle_loop(Other_Options, "步行时第一/三人称快捷切换", { "foot_cam_view" }, "步行时第一人称视角和第三人称近距离视角快捷切换", function()
     if CAM.IS_FOLLOW_PED_CAM_ACTIVE() then
         if CAM.GET_FOLLOW_PED_CAM_VIEW_MODE() == 1 or CAM.GET_FOLLOW_PED_CAM_VIEW_MODE() == 2 then
             CAM.SET_FOLLOW_PED_CAM_VIEW_MODE(4)
@@ -2703,7 +2703,7 @@ util.create_tick_handler(function()
             Globals.RemoveCooldown.CeoAbility(true)
         end
         if tunables.Cooldown.CeoVehicle then
-            SET_INT_GLOBAL(Globals.GB_CALL_VEHICLE_COOLDOWN, 0)
+            TUNABLE_SET_INT(Tunables.GB_CALL_VEHICLE_COOLDOWN, 0)
         end
         if tunables.Cooldown.OtherVehicle then
             Globals.RemoveCooldown.OtherVehicle(true)
@@ -2713,24 +2713,22 @@ util.create_tick_handler(function()
         if tunables.SpecialCargo.Buy then
             for global, value in pairs(tunables.SpecialCargo.Buy) do
                 if value then
-                    SET_INT_GLOBAL(global, 1)
+                    GLOBAL_SET_INT(global, 1)
                 end
             end
         end
         if tunables.SpecialCargo.Sell then
             for global, value in pairs(tunables.SpecialCargo.Sell) do
                 if value then
-                    SET_INT_GLOBAL(global, 1)
+                    GLOBAL_SET_INT(global, 1)
                 end
             end
         end
         if tunables.SpecialCargo.Type_Refresh_Time and tunables.SpecialCargo.Type_Refresh_Time ~= 2880 then
-            SET_INT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_TYPE_REFRESH_TIME,
-                tunables.SpecialCargo.Type_Refresh_Time)
+            TUNABLE_SET_INT(Tunables.EXEC_CONTRABAND_TYPE_REFRESH_TIME, tunables.SpecialCargo.Type_Refresh_Time)
         end
         if tunables.SpecialCargo.Special_Item_Chance and tunables.SpecialCargo.Special_Item_Chance ~= 0.1 then
-            SET_INT_GLOBAL(Globals.SpecialCargo.EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE,
-                tunables.SpecialCargo.Special_Item_Chance)
+            TUNABLE_SET_FLOAT(Tunables.EXEC_CONTRABAND_SPECIAL_ITEM_CHANCE, tunables.SpecialCargo.Special_Item_Chance)
         end
         if tunables.SpecialCargo.NoWanted then
             Globals.SpecialCargo.NoWanted(true)
@@ -2746,22 +2744,22 @@ util.create_tick_handler(function()
 
         -------- Bunker --------
         if tunables.Bunker.Resupply_Package_Value and tunables.Bunker.Resupply_Package_Value ~= 20 then
-            SET_INT_GLOBAL(Globals.Bunker.GR_RESUPPLY_PACKAGE_VALUE, tunables.Bunker.Resupply_Package_Value)
+            TUNABLE_SET_INT(Tunables.GR_RESUPPLY_PACKAGE_VALUE, tunables.Bunker.Resupply_Package_Value)
         end
         if tunables.Bunker.Resupply_Vehicle_Value and tunables.Bunker.Resupply_Vehicle_Value ~= 40 then
-            SET_INT_GLOBAL(Globals.Bunker.GR_RESUPPLY_VEHICLE_VALUE, tunables.Bunker.Resupply_Vehicle_Value)
+            TUNABLE_SET_INT(Tunables.GR_RESUPPLY_VEHICLE_VALUE, tunables.Bunker.Resupply_Vehicle_Value)
         end
         if tunables.Bunker.Steal then
             for global, value in pairs(tunables.Bunker.Steal) do
                 if value then
-                    SET_FLOAT_GLOBAL(global, 0)
+                    GLOBAL_SET_FLOAT(global, 0)
                 end
             end
         end
         if tunables.Bunker.Sell then
             for global, value in pairs(tunables.Bunker.Sell) do
                 if value then
-                    SET_FLOAT_GLOBAL(global, 0)
+                    GLOBAL_SET_FLOAT(global, 0)
                 end
             end
         end
@@ -2770,36 +2768,36 @@ util.create_tick_handler(function()
         if tunables.AirFreight.Steal then
             for global, value in pairs(tunables.AirFreight.Steal) do
                 if value then
-                    SET_FLOAT_GLOBAL(global, 0)
+                    GLOBAL_SET_FLOAT(global, 0)
                 end
             end
         end
         if tunables.AirFreight.Sell then
             for global, value in pairs(tunables.AirFreight.Sell) do
                 if value then
-                    SET_FLOAT_GLOBAL(global, 0)
+                    GLOBAL_SET_FLOAT(global, 0)
                 end
             end
         end
 
         -------- MC Factory --------
         if tunables.Biker.Resupply_Package_Value and tunables.Biker.Resupply_Package_Value ~= 20 then
-            SET_INT_GLOBAL(Globals.Biker.BIKER_RESUPPLY_PACKAGE_VALUE, tunables.Biker.Resupply_Package_Value)
+            TUNABLE_SET_INT(Tunables.BIKER_RESUPPLY_PACKAGE_VALUE, tunables.Biker.Resupply_Package_Value)
         end
         if tunables.Biker.Resupply_Vehicle_Value and tunables.Biker.Resupply_Vehicle_Value ~= 40 then
-            SET_INT_GLOBAL(Globals.Biker.BIKER_RESUPPLY_VEHICLE_VALUE, tunables.Biker.Resupply_Vehicle_Value)
+            TUNABLE_SET_INT(Tunables.BIKER_RESUPPLY_VEHICLE_VALUE, tunables.Biker.Resupply_Vehicle_Value)
         end
         if tunables.Biker.Steal then
             for global, value in pairs(tunables.Biker.Steal) do
                 if value then
-                    SET_FLOAT_GLOBAL(global, 0)
+                    GLOBAL_SET_FLOAT(global, 0)
                 end
             end
         end
         if tunables.Biker.Sell then
             for global, value in pairs(tunables.Biker.Sell) do
                 if value then
-                    SET_INT_GLOBAL(global, 1)
+                    GLOBAL_SET_INT(global, 1)
                 end
             end
         end
@@ -2809,14 +2807,14 @@ util.create_tick_handler(function()
 
         -------- Acid Lab --------
         if tunables.AcidLab.Resupply_Crate_Value and tunables.AcidLab.Resupply_Crate_Value ~= 25 then
-            SET_INT_GLOBAL(Globals.AcidLab.ACID_LAB_RESUPPLY_CRATE_VALUE, tunables.AcidLab.Resupply_Crate_Value)
+            TUNABLE_SET_INT(Tunables.ACID_LAB_RESUPPLY_CRATE_VALUE, tunables.AcidLab.Resupply_Crate_Value)
         end
 
         -------- Payphone --------
         if tunables.Payphone.Hit then
             for global, value in pairs(tunables.Payphone.Hit) do
                 if value then
-                    SET_FLOAT_GLOBAL(global, 0)
+                    GLOBAL_SET_FLOAT(global, 0)
                 end
             end
         end
@@ -2825,15 +2823,11 @@ util.create_tick_handler(function()
         if tunables.DisableBusinessRaid then
             Globals.DisableBusinessRaid(true)
         end
-        if tunables.TurnSnow and tunables.TurnSnow ~= 1 then
-            if tunables.TurnSnow == 2 then
-                SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 1)
-            elseif tunables.TurnSnow == 3 then
-                SET_INT_GLOBAL(Globals.TURN_SNOW_ON_OFF, 0)
-            end
+        if tunables.TurnSnow and tunables.TurnSnow ~= -1 then
+            TUNABLE_SET_INT(Tunables.TURN_SNOW_ON_OFF, tunables.TurnSnow)
         end
         if tunables.AiHealth and tunables.AiHealth ~= 1.0 then
-            SET_FLOAT_GLOBAL(Globals.AI_HEALTH, tunables.AiHealth)
+            TUNABLE_SET_FLOAT(Tunables.AI_HEALTH, tunables.AiHealth)
         end
 
 

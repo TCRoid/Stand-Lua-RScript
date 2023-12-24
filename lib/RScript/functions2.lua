@@ -2,6 +2,7 @@
 -- Online Functions
 --------------------------
 
+--- @return boolean
 function IS_IN_SESSION()
     return util.is_session_started() and not util.is_session_transition_active()
 end
@@ -10,28 +11,34 @@ end
 -- Script Functions
 --------------------------
 
-function IS_SCRIPT_RUNNING(str)
-    return SCRIPT.GET_NUMBER_OF_THREADS_RUNNING_THE_SCRIPT_WITH_THIS_HASH(util.joaat(str)) > 0
+--- @param script string
+--- @return boolean
+function IS_SCRIPT_RUNNING(script)
+    return SCRIPT.GET_NUMBER_OF_THREADS_RUNNING_THE_SCRIPT_WITH_THIS_HASH(util.joaat(script)) > 0
 end
 
-function START_SCRIPT(str, arg_count)
-    if not SCRIPT.DOES_SCRIPT_EXIST(str) then
+--- @param script string
+--- @param arg_count integer
+--- @return boolean
+function START_SCRIPT(script, arg_count)
+    if not SCRIPT.DOES_SCRIPT_EXIST(script) then
         return false
     end
-    if IS_SCRIPT_RUNNING(str) then
+    if IS_SCRIPT_RUNNING(script) then
         return true
     end
-    SCRIPT.REQUEST_SCRIPT(str)
-    while not SCRIPT.HAS_SCRIPT_LOADED(str) do
+    SCRIPT.REQUEST_SCRIPT(script)
+    while not SCRIPT.HAS_SCRIPT_LOADED(script) do
         util.yield()
     end
-    SYSTEM.START_NEW_SCRIPT(str, arg_count or 0)
-    SCRIPT.SET_SCRIPT_AS_NO_LONGER_NEEDED(str)
+    SYSTEM.START_NEW_SCRIPT(script, arg_count or 0)
+    SCRIPT.SET_SCRIPT_AS_NO_LONGER_NEEDED(script)
     return true
 end
 
+--- @param script string
+--- @return boolean
 function IS_MISSION_SCRIPT(script)
-    script = string.lower(script)
     return script == "fm_mission_controller" or script == "fm_mission_controller_2020"
 end
 
@@ -139,53 +146,111 @@ end
 -- Global Functions
 ----------------------------
 
-function SET_INT_GLOBAL(Global, Value)
-    memory.write_int(memory.script_global(Global), Value)
+--- @param global integer
+--- @param value integer
+function GLOBAL_SET_INT(global, value)
+    memory.write_int(memory.script_global(global), value)
 end
 
-function SET_FLOAT_GLOBAL(Global, Value)
-    memory.write_float(memory.script_global(Global), Value)
+--- @param global integer
+--- @param value float
+function GLOBAL_SET_FLOAT(global, value)
+    memory.write_float(memory.script_global(global), value)
 end
 
-function GET_INT_GLOBAL(Global)
-    return memory.read_int(memory.script_global(Global))
+--- @param global integer
+--- @return integer
+function GLOBAL_GET_INT(global)
+    return memory.read_int(memory.script_global(global))
 end
 
-function GET_FLOAT_GLOBAL(Global)
-    return memory.read_float(memory.script_global(Global))
+--- @param global integer
+--- @return float
+function GLOBAL_GET_FLOAT(global)
+    return memory.read_float(memory.script_global(global))
+end
+
+---------------------------
+-- Tunable Functions
+---------------------------
+
+--- @param offset integer
+--- @param value integer
+function TUNABLE_SET_INT(offset, value)
+    GLOBAL_SET_INT(262145 + offset, value)
+end
+
+--- @param offset integer
+--- @param value float
+function TUNABLE_SET_FLOAT(offset, value)
+    GLOBAL_SET_FLOAT(262145 + offset, value)
+end
+
+--- @param offset integer
+--- @return integer
+function TUNABLE_GET_INT(offset)
+    return GLOBAL_GET_INT(262145 + offset)
+end
+
+--- @param offset integer
+--- @return float
+function TUNABLE_GET_FLOAT(offset)
+    return GLOBAL_GET_FLOAT(262145 + offset)
 end
 
 ---------------------------
 -- Local Functions
 ---------------------------
 
-function SET_INT_LOCAL(Script, Local, Value)
-    if memory.script_local(Script, Local) ~= 0 then
-        memory.write_int(memory.script_local(Script, Local), Value)
+--- @param script string
+--- @param script_local integer
+--- @param value integer
+function LOCAL_SET_INT(script, script_local, value)
+    if memory.script_local(script, script_local) ~= 0 then
+        memory.write_int(memory.script_local(script, script_local), value)
     end
 end
 
-function SET_FLOAT_LOCAL(Script, Local, Value)
-    if memory.script_local(Script, Local) ~= 0 then
-        memory.write_float(memory.script_local(Script, Local), Value)
+--- @param script string
+--- @param script_local integer
+--- @param value float
+function LOCAL_SET_FLOAT(script, script_local, value)
+    if memory.script_local(script, script_local) ~= 0 then
+        memory.write_float(memory.script_local(script, script_local), value)
     end
 end
 
-function GET_INT_LOCAL(Script, Local)
-    if memory.script_local(Script, Local) ~= 0 then
-        local Value = memory.read_int(memory.script_local(Script, Local))
-        if Value ~= nil then
-            return Value
+--- @param script string
+--- @param script_local integer
+---@return integer
+function LOCAL_GET_INT(script, script_local)
+    if memory.script_local(script, script_local) ~= 0 then
+        local value = memory.read_int(memory.script_local(script, script_local))
+        if value ~= nil then
+            return value
         end
     end
 end
 
-function GET_FLOAT_LOCAL(Script, Local)
-    if memory.script_local(Script, Local) ~= 0 then
-        local Value = memory.read_float(memory.script_local(Script, Local))
-        if Value ~= nil then
-            return Value
+--- @param script string
+--- @param script_local integer
+---@return float
+function LOCAL_GET_FLOAT(script, script_local)
+    if memory.script_local(script, script_local) ~= 0 then
+        local value = memory.read_float(memory.script_local(script, script_local))
+        if value ~= nil then
+            return value
         end
+    end
+end
+
+--- @param script string
+--- @param script_local integer
+--- @param bit integer
+function LOCAL_SET_BIT(script, script_local, bit)
+    local addr = memory.script_local(script, script_local)
+    if addr ~= 0 then
+        memory.write_int(addr, SET_BIT(memory.read_int(addr), bit))
     end
 end
 
@@ -193,21 +258,23 @@ end
 -- Bit Functions
 ---------------------------
 
+--- @param bits integer
+--- @param place integer
+--- @return integer
 function SET_BIT(bits, place)
     return (bits | (1 << place))
 end
 
+--- @param bits integer
+--- @param place integer
+--- @return integer
 function CLEAR_BIT(bits, place)
     return (bits & ~(1 << place))
 end
 
+--- @param bits integer
+--- @param place integer
+--- @return integer
 function BIT_TEST(bits, place)
     return (bits & (1 << place)) ~= 0
-end
-
-function SET_LOCAL_BIT(script, script_local, bit)
-    if memory.script_local(script, script_local) ~= 0 then
-        local Addr = memory.script_local(script, script_local)
-        memory.write_int(Addr, SET_BIT(memory.read_int(Addr), bit))
-    end
 end

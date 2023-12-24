@@ -12,33 +12,20 @@ Colors = {
 
 
 RS_T = {
-    -- 常用武器
+    -- `ListItem` 常用武器
     CommonWeapons = {
-        ListItem = {
-            { "小刀" },
-            { "穿甲手枪" },
-            { "电击枪" },
-            { "微型冲锋枪" },
-            { "特质卡宾步枪" },
-            { "突击霰弹枪" },
-            { "火神机枪" },
-            { "火箭筒" },
-            { "电磁步枪" },
-        },
-        ModelList = {
-            "WEAPON_KNIFE",
-            "WEAPON_APPISTOL",
-            "WEAPON_STUNGUN",
-            "WEAPON_MICROSMG",
-            "WEAPON_SPECIALCARBINE",
-            "WEAPON_ASSAULTSHOTGUN",
-            "WEAPON_MINIGUN",
-            "WEAPON_RPG",
-            "WEAPON_RAILGUN",
-        }
+        { util.joaat("WEAPON_KNIFE"), "小刀" },
+        { util.joaat("WEAPON_APPISTOL"), "穿甲手枪" },
+        { util.joaat("WEAPON_STUNGUN"), "电击枪" },
+        { util.joaat("WEAPON_MICROSMG"), "微型冲锋枪" },
+        { util.joaat("WEAPON_SPECIALCARBINE"), "特质卡宾步枪" },
+        { util.joaat("WEAPON_ASSAULTSHOTGUN"), "突击霰弹枪" },
+        { util.joaat("WEAPON_MINIGUN"), "火神机枪" },
+        { util.joaat("WEAPON_RPG"), "火箭筒" },
+        { util.joaat("WEAPON_RAILGUN"), "电磁步枪" },
     },
 
-    -- 常用载具
+    -- `List` 常用载具
     CommonVehicles = {
         { model = "police3", name = "警车", help_text = "" },
         { model = "khanjali", name = "坦克", help_text = "" },
@@ -50,7 +37,7 @@ RS_T = {
         { model = "buzzard", name = "秃鹰攻击直升机", help_text = "" },
     },
 
-    -- 载具武器
+    -- `List` 载具武器
     --
     -- weapon_model, weapon_label, display_name_label, class_id, vehicle_model
     VehicleWeapons = {
@@ -1868,14 +1855,14 @@ Ped_T = {
     -- `ListItem` NPC 驾驶载具风格
     DrivingStyle = {
         ListItem = {
-            { "正常" },
-            { "半冲刺" },
-            { "反向" },
-            { "无视红绿灯" },
-            { "避开交通" },
-            { "极度避开交通" },
-            { "有时超车" },
-            { "受到惊吓" },
+            { 1, "正常" },
+            { 2, "半冲刺" },
+            { 3, "反向" },
+            { 4, "无视红绿灯" },
+            { 5, "避开交通" },
+            { 6, "极度避开交通" },
+            { 7, "有时超车" },
+            { 8, "受到惊吓" },
         },
         ValueList = {
             786603,
@@ -1895,22 +1882,22 @@ Ped_T = {
     -- `ListItem` NPC 射击模式
     FirePattern = {
         ListItem = {
-            { "Burst Fire" },
-            { "Burst Fire In Cover" },
-            { "Burst Fire Driveby" },
-            { "From Ground" },
-            { "Delay Fire By One Sec" },
-            { "Full Auto" },
-            { "Single Shot" },
-            { "Burst Fire Pistol" },
-            { "Burst Fire Smg" },
-            { "Burst Fire Rifle" },
-            { "Burst Fire Mg" },
-            { "Burst Fire Pumpshotgun" },
-            { "Burst Fire Heli" },
-            { "Burst Fire Micro" },
-            { "Short Bursts" },
-            { "Slow Fire Tank" },
+            { 1,  "Burst Fire" },
+            { 2,  "Burst Fire In Cover" },
+            { 3,  "Burst Fire Driveby" },
+            { 4,  "From Ground" },
+            { 5,  "Delay Fire By One Sec" },
+            { 6,  "Full Auto" },
+            { 7,  "Single Shot" },
+            { 8,  "Burst Fire Pistol" },
+            { 9,  "Burst Fire Smg" },
+            { 10, "Burst Fire Rifle" },
+            { 11, "Burst Fire Mg" },
+            { 12, "Burst Fire Pumpshotgun" },
+            { 13, "Burst Fire Heli" },
+            { 14, "Burst Fire Micro" },
+            { 15, "Short Bursts" },
+            { 16, "Slow Fire Tank" },
         },
         ValueList = {
             1073727030,
@@ -1932,7 +1919,7 @@ Ped_T = {
         }
     },
 
-    -- `ListItem` NPC 作战属性
+    -- `List` NPC 作战属性
     CombatAttributes = {
         -- { name, comment }
         List = {
@@ -2061,7 +2048,7 @@ Ped_T = {
         },
     },
 
-    -- `ListItem` NPC 作战数值
+    -- `List` NPC 作战数值
     CombatFloat = {
         -- { name, comment }
         List = {
@@ -2424,34 +2411,34 @@ Vehicle_T = {
     -- `ListItem` 载具电台
     RadioStation = {
         ListItem = {
-            { "关闭", {}, "" },
-            { "布莱恩郡之声", {}, "" },
-            { "蓝色方舟", {}, "" },
-            { "全球电台", {}, "" },
-            { "飞莲电台", {}, "" },
-            { "真相 91.1", {}, "" },
-            { "实验室", {}, "" },
-            { "明镜公园之音", {}, "" },
-            { "103.2 空间", {}, "" },
-            { "好麦坞大道电台", {}, "" },
-            { "金发洛圣都 97.8 电台", {}, "" },
-            { "洛圣都地下电台", {}, "" },
-            { "iFruit 电台", {}, "" },
-            { "自电台", {}, "" },
-            { "洛圣都摇滚台", {}, "" },
-            { "无止境流行乐电台", {}, "" },
-            { "洛圣都广播电台", {}, "" },
-            { "X 频道", {}, "" },
-            { "叛逆电台", {}, "" },
-            { "灵魂之蜡电台", {}, "" },
-            { "东洛电台", {}, "" },
-            { "西海岸经典", {}, "" },
-            { "MOTOMAMI 洛圣都", {}, "" },
-            { "西海岸谈话电台", {}, "" },
-            { "媒体播放器", {}, "" },
-            { "音乐柜", {}, "" },
-            { "库尔特 FM", {}, "" },
-            { "放松依旧洛圣都", {}, "" },
+            { 0, "关闭", {}, "" },
+            { 1, "布莱恩郡之声", {}, "" },
+            { 2, "蓝色方舟", {}, "" },
+            { 3, "全球电台", {}, "" },
+            { 4, "飞莲电台", {}, "" },
+            { 5, "真相 91.1", {}, "" },
+            { 6, "实验室", {}, "" },
+            { 7, "明镜公园之音", {}, "" },
+            { 8, "103.2 空间", {}, "" },
+            { 9, "好麦坞大道电台", {}, "" },
+            { 10, "金发洛圣都 97.8 电台", {}, "" },
+            { 11, "洛圣都地下电台", {}, "" },
+            { 12, "iFruit 电台", {}, "" },
+            { 13, "自电台", {}, "" },
+            { 14, "洛圣都摇滚台", {}, "" },
+            { 15, "无止境流行乐电台", {}, "" },
+            { 16, "洛圣都广播电台", {}, "" },
+            { 17, "X 频道", {}, "" },
+            { 18, "叛逆电台", {}, "" },
+            { 19, "灵魂之蜡电台", {}, "" },
+            { 20, "东洛电台", {}, "" },
+            { 21, "西海岸经典", {}, "" },
+            { 22, "MOTOMAMI 洛圣都", {}, "" },
+            { 23, "西海岸谈话电台", {}, "" },
+            { 24, "媒体播放器", {}, "" },
+            { 25, "音乐柜", {}, "" },
+            { 26, "库尔特 FM", {}, "" },
+            { 27, "放松依旧洛圣都", {}, "" }
         },
         LabelList = {
             "OFF",
@@ -2487,76 +2474,50 @@ Vehicle_T = {
 
     -- `ListItem` 直升机模式
     HeliMode = {
-        ListItem = {
-            { "None",                              {}, "" },
-            { "Attain Requested Orientation",      {}, "" },
-            { "Dont Modify Orientation",           {}, "" },
-            { "Dont Modify Pitch",                 {}, "" },
-            { "Dont Modify Throttle",              {}, "" },
-            { "Dont Modify Roll",                  {}, "" },
-            { "Land On Arrival",                   {}, "" },
-            { "Dont Do Avoidance",                 {}, "" },
-            { "Start Engine Immediately",          {}, "" },
-            { "Force Height Map Avoidance",        {}, "" },
-            { "Dont Clamp Probes To Destination",  {}, "" },
-            { "Enable Timeslicing When Possible",  {}, "" },
-            { "Circle Opposite Direction",         {}, "" },
-            { "Maintain Height Above Terrain",     {}, "" },
-            { "Ignore Hidden Entities DuringLand", {}, "" },
-            { "Disable AllHeight Map Avoidance",   {}, "" },
-            { "Height Map Only Avoidance",         {}, "" },
-        },
-        ValueList = {
-            0,
-            1,
-            2,
-            4,
-            8,
-            16,
-            32,
-            64,
-            128,
-            256,
-            512,
-            1024,
-            2048,
-            4096,
-            8192,
-            16384,
-            320,
-        }
+        { 0,     "None",                              {}, "" },
+        { 1,     "Attain Requested Orientation",      {}, "" },
+        { 2,     "Dont Modify Orientation",           {}, "" },
+        { 4,     "Dont Modify Pitch",                 {}, "" },
+        { 8,     "Dont Modify Throttle",              {}, "" },
+        { 16,    "Dont Modify Roll",                  {}, "" },
+        { 32,    "Land On Arrival",                   {}, "" },
+        { 64,    "Dont Do Avoidance",                 {}, "" },
+        { 128,   "Start Engine Immediately",          {}, "" },
+        { 256,   "Force Height Map Avoidance",        {}, "" },
+        { 512,   "Dont Clamp Probes To Destination",  {}, "" },
+        { 1024,  "Enable Timeslicing When Possible",  {}, "" },
+        { 2048,  "Circle Opposite Direction",         {}, "" },
+        { 4096,  "Maintain Height Above Terrain",     {}, "" },
+        { 8192,  "Ignore Hidden Entities DuringLand", {}, "" },
+        { 16384, "Disable AllHeight Map Avoidance",   {}, "" },
+        { 320,   "Height Map Only Avoidance",         {}, "" }
     },
 
     -- `ListItem` 载具任务类型
     MissionType = {
-        ListItem = {
-            { "Cruise", {}, "巡航" },
-            { "Ram", {}, "猛撞" },
-            { "Block", {}, "阻挡" },
-            { "Go To", {}, "前往" },
-            { "Stop", {}, "停止" },
-            { "Attack", {}, "攻击" },
-            { "Follow", {}, "跟随" },
-            { "Flee", {}, "逃跑" },
-            { "Circle", {}, "围绕" },
-            { "Escort Left", {}, "左边护送" },
-            { "Escort Right", {}, "右边护送" },
-            { "Escort Rear", {}, "后面护送" },
-            { "Escort Front", {}, "前面护送" },
-            { "Go To Racing", {}, "参加比赛？" },
-            { "Follow Recording", {}, "跟踪录制" },
-            { "Police Behaviour", {}, "警察行为" },
-            { "Park Perpendicular", {}, "垂直停车？" },
-            { "Park Parallel", {}, "并行停车" },
-            { "Land", {}, "降落" },
-            { "Land and Wait", {}, "降落并等待" },
-            { "Crash", {}, "碰撞" },
-            { "Pull Over", {}, "靠边停车" },
-            { "Protect", {}, "保护" },
-        },
-        ValueList = {
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-        }
+        { 1, "Cruise", {}, "巡航" },
+        { 2, "Ram", {}, "猛撞" },
+        { 3, "Block", {}, "阻挡" },
+        { 4, "Go To", {}, "前往" },
+        { 5, "Stop", {}, "停止" },
+        { 6, "Attack", {}, "攻击" },
+        { 7, "Follow", {}, "跟随" },
+        { 8, "Flee", {}, "逃跑" },
+        { 9, "Circle", {}, "围绕" },
+        { 10, "Escort Left", {}, "左边护送" },
+        { 11, "Escort Right", {}, "右边护送" },
+        { 12, "Escort Rear", {}, "后面护送" },
+        { 13, "Escort Front", {}, "前面护送" },
+        { 14, "Go To Racing", {}, "参加比赛？" },
+        { 15, "Follow Recording", {}, "跟踪录制" },
+        { 16, "Police Behaviour", {}, "警察行为" },
+        { 17, "Park Perpendicular", {}, "垂直停车？" },
+        { 18, "Park Parallel", {}, "并行停车" },
+        { 19, "Land", {}, "降落" },
+        { 20, "Land and Wait", {}, "降落并等待" },
+        { 21, "Crash", {}, "碰撞" },
+        { 22, "Pull Over", {}, "靠边停车" },
+        { 23, "Protect", {}, "保护" }
     },
 }
 
@@ -2578,19 +2539,19 @@ Blip_T = {
         [11] = "Area",
     },
 
-    -- `ListItem` *DisplayId = index - 1*
+    -- `ListItem` 标记点显示类型
     DisplayId = {
-        { "Doesn't show up, ever, anywhere." },                                 -- 0
-        { "Doesn't show up, ever, anywhere." },                                 -- 1
-        { "Shows on both main map and minimap.", {}, "Selectable on map" },     -- 2
-        { "Shows on main map only.",             {}, "Selectable on map" },     -- 3
-        { "Shows on main map only.",             {}, "Selectable on map" },     -- 4
-        { "Shows on minimap only." },                                           -- 5
-        { "Shows on both main map and minimap.", {}, "Selectable on map" },     -- 6
-        { "Doesn't show up, ever, anywhere." },                                 -- 7
-        { "Shows on both main map and minimap.", {}, "Not selectable on map" }, -- 8
-        { "Shows on minimap only." },                                           -- 9
-        { "Shows on both main map and minimap.", {}, "Not selectable on map" }, -- 9
+        { 0,  "Doesn't show up, ever, anywhere." },
+        { 1,  "Doesn't show up, ever, anywhere." },
+        { 2,  "Shows on both main map and minimap.", {}, "Selectable on map" },
+        { 3,  "Shows on main map only.",             {}, "Selectable on map" },
+        { 4,  "Shows on main map only.",             {}, "Selectable on map" },
+        { 5,  "Shows on minimap only." },
+        { 6,  "Shows on both main map and minimap.", {}, "Selectable on map" },
+        { 7,  "Doesn't show up, ever, anywhere." },
+        { 8,  "Shows on both main map and minimap.", {}, "Not selectable on map" },
+        { 9,  "Shows on minimap only." },
+        { 10, "Shows on both main map and minimap.", {}, "Not selectable on map" },
     },
 }
 
@@ -2598,100 +2559,116 @@ Blip_T = {
 Misc_T = {
     -- `ListItem` 实体类型
     EntityType = {
-        { "Ped", {}, "NPC" },
-        { "Vehicle", {}, "载具" },
-        { "Object", {}, "物体" },
-        { "Pickup", {}, "拾取物" }
+        { 1, "Ped", {}, "NPC" },
+        { 2, "Vehicle", {}, "载具" },
+        { 3, "Object", {}, "物体" },
+        { 4, "Pickup", {}, "拾取物" }
     },
 
-    -- `ListItem` 爆炸类型 *explosionType = index - 2*
+    -- `ListItem` 实体类型(All)
+    EntityTypeAll = {
+        { 1, "All", {}, "全部类型实体" },
+        { 2, "Ped", {}, "NPC" },
+        { 3, "Vehicle", {}, "载具" },
+        { 4, "Object", {}, "物体" },
+        { 5, "Pickup", {}, "拾取物" }
+    },
+
+    -- `ListItem` NPC 类型
+    PedType = {
+        { 1, "全部NPC(排除友好)", {}, "" },
+        { 2, "敌对NPC", {}, "" },
+        { 3, "全部NPC", {}, "" }
+    },
+
+    -- `ListItem` 爆炸类型
     ExplosionType = {
-        { "Dont Care" },                -- -1
-        { "Grenade" },                  -- 0
-        { "Grenade Launcher" },         -- 1
-        { "Sticky Bomb" },              -- 2
-        { "Molotov" },                  -- 3
-        { "Rocket" },                   -- 4
-        { "Tank Shell" },               -- 5
-        { "Hi Octane" },                -- 6
-        { "Car" },                      -- 7
-        { "Plane" },                    -- 8
-        { "Petrol Pump" },              -- 9
-        { "Bike" },                     -- 10
-        { "Steam" },                    -- 11
-        { "Flame" },                    -- 12
-        { "Water Hydrant" },            -- 13
-        { "Gas Canister Flame" },       -- 14
-        { "Boat" },                     -- 15
-        { "Ship" },                     -- 16
-        { "Truck" },                    -- 17
-        { "Bullet" },                   -- 18
-        { "Smoke Grenade Launcher" },   -- 19
-        { "Smoke Grenade" },            -- 20
-        { "BZ Gas" },                   -- 21
-        { "Flare" },                    -- 22
-        { "Gas Canister" },             -- 23
-        { "Extinguisher" },             -- 24
-        { "Programmable AR" },          -- 25
-        { "Train" },                    -- 26
-        { "Barrel (Blue)" },            -- 27
-        { "Propane" },                  -- 28
-        { "Blimp" },                    -- 29
-        { "Flame Explode" },            -- 30
-        { "Tanker" },                   -- 31
-        { "Plane Rocket" },             -- 32
-        { "Vehicle Bullet" },           -- 33
-        { "Gas Tank" },                 -- 34
-        { "Bird Crap" },                -- 35
-        { "Railgun" },                  -- 36
-        { "Blimp (Red & Cyan)" },       -- 37
-        { "Firework" },                 -- 38
-        { "Snowball" },                 -- 39
-        { "Proximity Mine" },           -- 40
-        { "Valkyrie Cannon" },          -- 41
-        { "Air Defence" },              -- 42
-        { "Pipe Bomb" },                -- 43
-        { "Vehicle Mine" },             -- 44
-        { "Explosive Ammo" },           -- 45
-        { "APC Shell" },                -- 46
-        { "Cluster Bomb" },             -- 47
-        { "Gas Bomb" },                 -- 48
-        { "Incendiary Bomb" },          -- 49
-        { "Standard Bomb" },            -- 50
-        { "Torpedo" },                  -- 51
-        { "Torpedo (Underwater)" },     -- 52
-        { "Bombushka Cannon" },         -- 53
-        { "Cluster Bomb 2" },           -- 54
-        { "Hunter Barrage" },           -- 55
-        { "Hunter Cannon" },            -- 56
-        { "Rogue Cannon" },             -- 57
-        { "Underwater Mine" },          -- 58
-        { "Orbital Cannon" },           -- 59
-        { "Standard Bomb (Wide)" },     -- 60
-        { "Explosive Ammo (Shotgun)" }, -- 61
-        { "Oppressor Mk2 Cannon" },     -- 62
-        { "Kinetic Mortar" },           -- 63
-        { "Kinetic Vehicle Mine" },     -- 64
-        { "Emp Vehicle Mine" },         -- 65
-        { "Spike Vehicle Mine" },       -- 66
-        { "Slick Vehicle Mine" },       -- 67
-        { "Tar Vehicle Mine" },         -- 68
-        { "Script Drone" },             -- 69
-        { "Raygun" },                   -- 70
-        { "Buried Mine" },              -- 71
-        { "Script Missile" },           -- 72
-        { "RC Tank Rocket" },           -- 73
-        { "Water Bomb" },               -- 74
-        { "Water Bomb 2" },             -- 75
-        { "Cnc Spike Mine" },           -- 76
-        { "BZ Gas Mk2" },               -- 77
-        { "Flash Grenade" },            -- 78
-        { "Stun Grenade" },             -- 79
-        { "Cnc Kinetic Ram" },          -- 80
-        { "Large Missile" },            -- 81
-        { "Big Submarine" },            -- 82
-        { "Emp Launcher" },             -- 83
-        { "Railgun XM3" },              -- 84
-        { "Balanced Cannons" },         -- 85
+        { -1, "Dont Care" },
+        { 0,  "Grenade" },
+        { 1,  "Grenade Launcher" },
+        { 2,  "Sticky Bomb" },
+        { 3,  "Molotov" },
+        { 4,  "Rocket" },
+        { 5,  "Tank Shell" },
+        { 6,  "Hi Octane" },
+        { 7,  "Car" },
+        { 8,  "Plane" },
+        { 9,  "Petrol Pump" },
+        { 10, "Bike" },
+        { 11, "Steam" },
+        { 12, "Flame" },
+        { 13, "Water Hydrant" },
+        { 14, "Gas Canister Flame" },
+        { 15, "Boat" },
+        { 16, "Ship" },
+        { 17, "Truck" },
+        { 18, "Bullet" },
+        { 19, "Smoke Grenade Launcher" },
+        { 20, "Smoke Grenade" },
+        { 21, "BZ Gas" },
+        { 22, "Flare" },
+        { 23, "Gas Canister" },
+        { 24, "Extinguisher" },
+        { 25, "Programmable AR" },
+        { 26, "Train" },
+        { 27, "Barrel (Blue)" },
+        { 28, "Propane" },
+        { 29, "Blimp" },
+        { 30, "Flame Explode" },
+        { 31, "Tanker" },
+        { 32, "Plane Rocket" },
+        { 33, "Vehicle Bullet" },
+        { 34, "Gas Tank" },
+        { 35, "Bird Crap" },
+        { 36, "Railgun" },
+        { 37, "Blimp (Red & Cyan)" },
+        { 38, "Firework" },
+        { 39, "Snowball" },
+        { 40, "Proximity Mine" },
+        { 41, "Valkyrie Cannon" },
+        { 42, "Air Defence" },
+        { 43, "Pipe Bomb" },
+        { 44, "Vehicle Mine" },
+        { 45, "Explosive Ammo" },
+        { 46, "APC Shell" },
+        { 47, "Cluster Bomb" },
+        { 48, "Gas Bomb" },
+        { 49, "Incendiary Bomb" },
+        { 50, "Standard Bomb" },
+        { 51, "Torpedo" },
+        { 52, "Torpedo (Underwater)" },
+        { 53, "Bombushka Cannon" },
+        { 54, "Cluster Bomb 2" },
+        { 55, "Hunter Barrage" },
+        { 56, "Hunter Cannon" },
+        { 57, "Rogue Cannon" },
+        { 58, "Underwater Mine" },
+        { 59, "Orbital Cannon" },
+        { 60, "Standard Bomb (Wide)" },
+        { 61, "Explosive Ammo (Shotgun)" },
+        { 62, "Oppressor Mk2 Cannon" },
+        { 63, "Kinetic Mortar" },
+        { 64, "Kinetic Vehicle Mine" },
+        { 65, "Emp Vehicle Mine" },
+        { 66, "Spike Vehicle Mine" },
+        { 67, "Slick Vehicle Mine" },
+        { 68, "Tar Vehicle Mine" },
+        { 69, "Script Drone" },
+        { 70, "Raygun" },
+        { 71, "Buried Mine" },
+        { 72, "Script Missile" },
+        { 73, "RC Tank Rocket" },
+        { 74, "Water Bomb" },
+        { 75, "Water Bomb 2" },
+        { 76, "Cnc Spike Mine" },
+        { 77, "BZ Gas Mk2" },
+        { 78, "Flash Grenade" },
+        { 79, "Stun Grenade" },
+        { 80, "Cnc Kinetic Ram" },
+        { 81, "Large Missile" },
+        { 82, "Big Submarine" },
+        { 83, "Emp Launcher" },
+        { 84, "Railgun XM3" },
+        { 85, "Balanced Cannons" }
     }
 }
