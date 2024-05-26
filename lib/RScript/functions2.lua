@@ -36,10 +36,24 @@ function START_SCRIPT(script, arg_count)
     return true
 end
 
---- @param script string
 --- @return boolean
-function IS_MISSION_SCRIPT(script)
-    return script == "fm_mission_controller" or script == "fm_mission_controller_2020"
+function IS_MISSION_CONTROLLER_SCRIPT_RUNNING()
+    return IS_SCRIPT_RUNNING("fm_mission_controller") or IS_SCRIPT_RUNNING("fm_mission_controller_2020")
+end
+
+--- @return string|nil
+function GET_RUNNING_MISSION_CONTROLLER_SCRIPT()
+    local script = "fm_mission_controller"
+    if IS_SCRIPT_RUNNING(script) then
+        return script
+    end
+
+    script = "fm_mission_controller_2020"
+    if IS_SCRIPT_RUNNING(script) then
+        return script
+    end
+
+    return nil
 end
 
 --------------------------
@@ -61,10 +75,10 @@ function ADD_MP_INDEX(stat)
         end
     end
 
-    if not string.contains(stat, "MP_") and not string.contains(stat, "MPPLY_") then
-        return "MP" .. util.get_char_slot() .. "_" .. stat
+    if stat:sub(1, 3) == "MP_" or stat:sub(1, 6) == "MPPLY_" then
+        return stat
     end
-    return stat
+    return "MP" .. util.get_char_slot() .. "_" .. stat
 end
 
 function STAT_SET_INT(stat, value)
@@ -146,6 +160,7 @@ end
 -- Global Functions
 ----------------------------
 
+
 --- @param global integer
 --- @param value integer
 function GLOBAL_SET_INT(global, value)
@@ -156,6 +171,18 @@ end
 --- @param value float
 function GLOBAL_SET_FLOAT(global, value)
     memory.write_float(memory.script_global(global), value)
+end
+
+--- @param global integer
+--- @param value string
+function GLOBAL_SET_STRING(global, value)
+    memory.write_string(memory.script_global(global), value)
+end
+
+--- @param global integer
+--- @param value boolean
+function GLOBAL_SET_BOOL(global, value)
+    memory.write_int(memory.script_global(global), value and 1 or 0)
 end
 
 --- @param global integer
@@ -170,32 +197,45 @@ function GLOBAL_GET_FLOAT(global)
     return memory.read_float(memory.script_global(global))
 end
 
----------------------------
--- Tunable Functions
----------------------------
-
---- @param offset integer
---- @param value integer
-function TUNABLE_SET_INT(offset, value)
-    GLOBAL_SET_INT(262145 + offset, value)
+--- @param global integer
+---@return string
+function GLOBAL_GET_STRING(global)
+    return memory.read_string(memory.script_global(global))
 end
 
---- @param offset integer
---- @param value float
-function TUNABLE_SET_FLOAT(offset, value)
-    GLOBAL_SET_FLOAT(262145 + offset, value)
+--- @param global integer
+--- @return boolean
+function GLOBAL_GET_BOOL(global)
+    return memory.read_int(memory.script_global(global)) == 1
 end
 
---- @param offset integer
---- @return integer
-function TUNABLE_GET_INT(offset)
-    return GLOBAL_GET_INT(262145 + offset)
+--- @param global integer
+--- @param bit integer
+function GLOBAL_SET_BIT(global, bit)
+    local addr = memory.script_global(global)
+    memory.write_int(addr, SET_BIT(memory.read_int(addr), bit))
 end
 
---- @param offset integer
---- @return float
-function TUNABLE_GET_FLOAT(offset)
-    return GLOBAL_GET_FLOAT(262145 + offset)
+--- @param global integer
+--- @param bit integer
+function GLOBAL_CLEAR_BIT(global, bit)
+    local addr = memory.script_global(global)
+    memory.write_int(addr, CLEAR_BIT(memory.read_int(addr), bit))
+end
+
+--- @param global integer
+--- @param bit integer
+--- @return boolean
+function GLOBAL_BIT_TEST(global, bit)
+    local addr = memory.script_global(global)
+    return BIT_TEST(memory.read_int(addr), bit)
+end
+
+--- @param global integer
+--- @param ... bits
+function GLOBAL_SET_BITS(global, ...)
+    local addr = memory.script_global(global)
+    memory.write_int(addr, SET_BITS(memory.read_int(addr), ...))
 end
 
 ---------------------------
@@ -225,10 +265,7 @@ end
 ---@return integer
 function LOCAL_GET_INT(script, script_local)
     if memory.script_local(script, script_local) ~= 0 then
-        local value = memory.read_int(memory.script_local(script, script_local))
-        if value ~= nil then
-            return value
-        end
+        return memory.read_int(memory.script_local(script, script_local))
     end
 end
 
@@ -237,10 +274,7 @@ end
 ---@return float
 function LOCAL_GET_FLOAT(script, script_local)
     if memory.script_local(script, script_local) ~= 0 then
-        local value = memory.read_float(memory.script_local(script, script_local))
-        if value ~= nil then
-            return value
-        end
+        return memory.read_float(memory.script_local(script, script_local))
     end
 end
 
@@ -251,6 +285,27 @@ function LOCAL_SET_BIT(script, script_local, bit)
     local addr = memory.script_local(script, script_local)
     if addr ~= 0 then
         memory.write_int(addr, SET_BIT(memory.read_int(addr), bit))
+    end
+end
+
+--- @param script string
+--- @param script_local integer
+--- @param bit integer
+function LOCAL_CLEAR_BIT(script, script_local, bit)
+    local addr = memory.script_local(script, script_local)
+    if addr ~= 0 then
+        memory.write_int(addr, CLEAR_BIT(memory.read_int(addr), bit))
+    end
+end
+
+--- @param script string
+--- @param script_local integer
+--- @param bit integer
+--- @return boolean
+function LOCAL_BIT_TEST(script, script_local, bit)
+    local addr = memory.script_local(script, script_local)
+    if addr ~= 0 then
+        return BIT_TEST(memory.read_int(addr), bit)
     end
 end
 
@@ -277,4 +332,26 @@ end
 --- @return integer
 function BIT_TEST(bits, place)
     return (bits & (1 << place)) ~= 0
+end
+
+--- @param int integer
+--- @param ... bits
+--- @return integer
+function SET_BITS(int, ...)
+    local bits = { ... }
+    for _, bit in ipairs(bits) do
+        int = int | (1 << bit)
+    end
+    return int
+end
+
+--- @param int integer
+--- @param ... bits
+--- @return integer
+function CLEAR_BITS(int, ...)
+    local bits = { ... }
+    for ind, bit in ipairs(bits) do
+        int = int & ~(1 << bit)
+    end
+    return int
 end

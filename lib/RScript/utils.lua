@@ -138,8 +138,10 @@ function rs_menu.current_weapon_action(weapon_menu_list, action_name, on_click, 
     end
 end
 
--- local all_weapons <const> = {}
--- local all_weapons_without_melee <const> = {}
+
+
+-- local all_weapons = {}
+-- local all_weapons_without_melee = {}
 -- for key, item in pairs(util.get_weapons()) do
 --     local menu_name = util.get_label_text(item.label_key)
 --     local command_names = string.gsub(util.reverse_joaat(item.hash), "weapon_", "")
@@ -152,6 +154,8 @@ end
 --         table.insert(all_weapons_without_melee, list_item)
 --     end
 -- end
+
+
 
 -- function rs_menu.all_weapons2(menu_parent, menu_name, command_names, help_text, on_click, change_menu_name)
 --     local reference
@@ -182,6 +186,10 @@ end
 
 --     return reference
 -- end
+
+
+
+
 
 
 -------- [[ 载具武器 ]] --------
@@ -286,6 +294,7 @@ function rs_menu.delete_menu_list(menu_list)
             menu.delete(command)
         end
     end
+    menu.collect_garbage()
 end
 
 --------------------------------------------------

@@ -1,8 +1,9 @@
 ------------------------------------------
-------------    Dev Options    -----------
+--          Dev Options
 ------------------------------------------
 
-menu.textslider_stateful(Dev_Options, "Copy My Coords & Heading", { "copymypos" }, "", {
+
+menu.textslider_stateful(Dev_Options, "Copy My Coords & Heading", { "copyMyPos" }, "", {
     "without key", "with key"
 }, function(value)
     local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
@@ -24,7 +25,7 @@ menu.action(Dev_Options, "Get Network Time", {}, "", function()
         "\nAccurate Network Time: " .. NETWORK.GET_NETWORK_TIME_ACCURATE() ..
         "\nCloud Time: " .. NETWORK.GET_CLOUD_TIME_AS_INT())
 end)
-menu.action(Dev_Options, "Get Interior ID", { "getinteriorid" }, "", function()
+menu.action(Dev_Options, "Get Interior ID", { "getInteriorId" }, "", function()
     if INTERIOR.IS_INTERIOR_SCENE() then
         local interior = INTERIOR.GET_INTERIOR_FROM_ENTITY(players.user_ped())
         if INTERIOR.IS_VALID_INTERIOR(interior) then
@@ -67,7 +68,7 @@ menu.toggle_loop(Dev_Options, "GET_IS_TASK_ACTIVE", { "show_active_task" }, "", 
 end)
 
 
-local eventGroup = 1
+local eventGroup = 1 -- SCRIPT_EVENT_QUEUE_NETWORK
 local eventData = memory.alloc(13 * 8)
 menu.toggle_loop(Dev_Options, "Event Network Entity Damage", {}, "", function()
     for eventIndex = 0, SCRIPT.GET_NUMBER_OF_EVENTS(eventGroup) - 1 do
@@ -88,7 +89,7 @@ menu.toggle_loop(Dev_Options, "Event Network Entity Damage", {}, "", function()
                 local IsWithMeleeWeapon = memory.read_int(eventData + 11 * 8)        -- bool
                 local HitMaterial = memory.read_int(eventData + 12 * 8)              -- int
 
-                local text = "Victim: " .. Victim ..
+                local text = "\nVictim: " .. Victim ..
                     "\nAttacker: " .. Attacker ..
                     "\nDamage: " .. Damage ..
                     "\nEndurance Damage: " .. EnduranceDamage ..
@@ -101,7 +102,6 @@ menu.toggle_loop(Dev_Options, "Event Network Entity Damage", {}, "", function()
                     "\nIs Head Shot: " .. IsHeadShot ..
                     "\nIs With Melee Weapon: " .. IsWithMeleeWeapon ..
                     "\nHit Material: " .. HitMaterial ..
-                    "\nEvent Index: " .. eventNum ..
                     "\n"
 
 
@@ -115,7 +115,7 @@ end)
 menu.toggle_loop(Dev_Options, "Log Content Info", { "log_content_info" }, "", function()
     local content_id = NETWORK.UGC_GET_CONTENT_ID(0)
     if content_id ~= nil then
-        local text = "Content Name: " .. tostring(NETWORK.UGC_GET_CONTENT_NAME(0)) ..
+        local text = "\nContent Name: " .. tostring(NETWORK.UGC_GET_CONTENT_NAME(0)) ..
             "\nContent ID: " .. content_id ..
             "\nContent Path: " .. tostring(NETWORK.UGC_GET_CONTENT_PATH(0, 0)) ..
             "\nRoot Content ID: " .. tostring(NETWORK.UGC_GET_ROOT_CONTENT_ID(0)) ..

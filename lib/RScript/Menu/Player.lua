@@ -1,6 +1,6 @@
--------------------------------------------
------------    Player Options    ----------
--------------------------------------------
+------------------------------------------
+--          Player Options
+------------------------------------------
 
 
 players.add_command_hook(function(pid, player_root)
@@ -209,8 +209,9 @@ players.add_command_hook(function(pid, player_root)
             menu.trigger_commands("reporthate " .. player_name)
             menu.trigger_commands("reportexploits " .. player_name)
             menu.trigger_commands("reportbugabuse " .. player_name)
+
+            util.yield(800)
         end
-        util.yield(500)
     end)
 
 
@@ -227,8 +228,9 @@ players.add_command_hook(function(pid, player_root)
             local player_name = players.get_name(pid)
             menu.trigger_commands("commendhelpful " .. player_name)
             menu.trigger_commands("commendfriendly " .. player_name)
+
+            util.yield(800)
         end
-        util.yield(500)
     end)
 
 

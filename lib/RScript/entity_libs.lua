@@ -49,7 +49,7 @@ function Entity_Control.GetMenuInfo(entity, index)
         elseif entity == entities.get_user_personal_vehicle_as_handle() then
             menu_name = menu_name .. " [个人载具]"
         elseif not VEHICLE.IS_VEHICLE_SEAT_FREE(entity, -1, false) then
-            local driver_player = NETWORK.NETWORK_GET_PLAYER_INDEX_FROM_PED(
+            local driver_player = get_player_from_ped(
                 VEHICLE.GET_PED_IN_VEHICLE_SEAT(entity, -1, false))
             if players.exists(driver_player) then
                 menu_name = menu_name .. " [" .. players.get_name(driver_player) .. "]"
@@ -67,7 +67,7 @@ function Entity_Control.GetMenuInfo(entity, index)
 
     if ENTITY.IS_ENTITY_A_MISSION_ENTITY(entity) then
         local entity_script = GET_ENTITY_SCRIPT(entity)
-        if entity_script ~= nil then
+        if entity_script ~= "" then
             help_text = help_text .. "\nScript: " .. entity_script
         end
     end
@@ -114,43 +114,43 @@ function Entity_Control:Base()
 
     menu.toggle(menu_parent, "描绘实体连线", {}, "", function(toggle)
         if toggle then
-            if Loop_Handler.Entity.draw_line.toggle then
+            if LoopHandler.Entity.draw_line.toggle then
                 util.toast("正在描绘连线其它实体")
             else
-                Loop_Handler.Entity.draw_line.entity = entity
-                Loop_Handler.Entity.draw_line.toggle = true
+                LoopHandler.Entity.draw_line.entity = entity
+                LoopHandler.Entity.draw_line.toggle = true
             end
         else
-            if Loop_Handler.Entity.draw_line.entity == entity then
-                Loop_Handler.Entity.draw_line.toggle = false
+            if LoopHandler.Entity.draw_line.entity == entity then
+                LoopHandler.Entity.draw_line.toggle = false
             end
         end
     end)
     menu.toggle(menu_parent, "显示实体信息", {}, "", function(toggle)
         if toggle then
-            if Loop_Handler.Entity.show_info.toggle then
+            if LoopHandler.Entity.show_info.toggle then
                 util.toast("正在显示其它的实体信息")
             else
-                Loop_Handler.Entity.show_info.entity = entity
-                Loop_Handler.Entity.show_info.toggle = true
+                LoopHandler.Entity.show_info.entity = entity
+                LoopHandler.Entity.show_info.toggle = true
             end
         else
-            if Loop_Handler.Entity.show_info.entity == entity then
-                Loop_Handler.Entity.show_info.toggle = false
+            if LoopHandler.Entity.show_info.entity == entity then
+                LoopHandler.Entity.show_info.toggle = false
             end
         end
     end)
     menu.toggle(menu_parent, "预览实体", {}, "", function(toggle)
         if toggle then
-            if Loop_Handler.Entity.preview_ent.toggle then
+            if LoopHandler.Entity.preview_ent.toggle then
                 util.toast("正在预览其它的实体")
             else
-                Loop_Handler.Entity.preview_ent.ent = entity
-                Loop_Handler.Entity.preview_ent.toggle = true
+                LoopHandler.Entity.preview_ent.ent = entity
+                LoopHandler.Entity.preview_ent.toggle = true
             end
         else
-            if Loop_Handler.Entity.preview_ent.ent == entity then
-                Loop_Handler.Entity.preview_ent.toggle = false
+            if LoopHandler.Entity.preview_ent.ent == entity then
+                LoopHandler.Entity.preview_ent.toggle = false
             end
         end
     end)
@@ -162,15 +162,15 @@ function Entity_Control:Base()
 
     menu.toggle(ent_info, "描绘实体边界框", {}, "", function(toggle)
         if toggle then
-            if Loop_Handler.Entity.draw_bounding_box.toggle then
+            if LoopHandler.Entity.draw_bounding_box.toggle then
                 util.toast("正在描绘其它的实体")
             else
-                Loop_Handler.Entity.draw_bounding_box.entity = entity
-                Loop_Handler.Entity.draw_bounding_box.toggle = true
+                LoopHandler.Entity.draw_bounding_box.entity = entity
+                LoopHandler.Entity.draw_bounding_box.toggle = true
             end
         else
-            if Loop_Handler.Entity.draw_bounding_box.entity == entity then
-                Loop_Handler.Entity.draw_bounding_box.toggle = false
+            if LoopHandler.Entity.draw_bounding_box.entity == entity then
+                LoopHandler.Entity.draw_bounding_box.toggle = false
             end
         end
     end)
@@ -345,19 +345,19 @@ function Entity_Control:Teleport()
     menu.toggle(teleport_options, "锁定传送", {}, "如果更改了偏移，需要重新开关此选项",
         function(toggle)
             if toggle then
-                if Loop_Handler.Entity.lock_tp.toggle then
+                if LoopHandler.Entity.lock_tp.toggle then
                     util.toast("正在锁定传送其它实体")
                 else
-                    Loop_Handler.Entity.lock_tp.entity = entity
-                    Loop_Handler.Entity.lock_tp.method = lock_tp
-                    Loop_Handler.Entity.lock_tp.x = tp.x
-                    Loop_Handler.Entity.lock_tp.y = tp.y
-                    Loop_Handler.Entity.lock_tp.z = tp.z
-                    Loop_Handler.Entity.lock_tp.toggle = true
+                    LoopHandler.Entity.lock_tp.entity = entity
+                    LoopHandler.Entity.lock_tp.method = lock_tp
+                    LoopHandler.Entity.lock_tp.x = tp.x
+                    LoopHandler.Entity.lock_tp.y = tp.y
+                    LoopHandler.Entity.lock_tp.z = tp.z
+                    LoopHandler.Entity.lock_tp.toggle = true
                 end
             else
-                if Loop_Handler.Entity.lock_tp.entity == entity then
-                    Loop_Handler.Entity.lock_tp.toggle = false
+                if LoopHandler.Entity.lock_tp.entity == entity then
+                    LoopHandler.Entity.lock_tp.toggle = false
                 end
             end
         end)

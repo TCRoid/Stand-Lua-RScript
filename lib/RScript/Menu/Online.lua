@@ -1,6 +1,7 @@
 ------------------------------------------
-----------    Online Options    ----------
+--          Online Options
 ------------------------------------------
+
 
 local Online_Options <const> = menu.list(Menu_Root, "线上选项", {}, "")
 
@@ -47,7 +48,7 @@ menu.toggle_loop(Player_Language_Info, "开启", {}, "", function()
             else
                 local lang = players.get_language(pid)
                 if lang ~= -1 then
-                    local name      = players.get_name(pid)
+                    local name = players.get_name(pid)
                     local lang_text = player_lang.language[lang]
 
                     if text ~= "" then
@@ -76,11 +77,11 @@ menu.action(Player_Language, "获取玩家语言列表", { "player_language" }, 
 
     local text = ""
     for k, pid in pairs(players.list()) do
-        local name                 = players.get_name(pid)
-        local rank                 = players.get_rank(pid)
-        local lang                 = players.get_language(pid)
-        local lang_text            = player_lang.language[lang]
-        local title                = name .. " (" .. rank .. "级)"
+        local name = players.get_name(pid)
+        local rank = players.get_rank(pid)
+        local lang = players.get_language(pid)
+        local lang_text = player_lang.language[lang]
+        local title = name .. " (" .. rank .. "级)"
 
         player_lang.menu_list[pid] = menu.readonly(Player_Language, title, lang_text)
 
@@ -103,403 +104,170 @@ menu.divider(Player_Language, "列表")
 --#endregion
 
 
+--#region Entity Owner
+
+local Entity_Owner <const> = menu.list(Online_Options, "实体控制权", {}, "")
+
+local entity_owner = {
+    screen_pos = memory.alloc(8),
+    range = 100.0,
+    text_size = 0.5,
+}
+
+menu.toggle_loop(Entity_Owner, "显示载具控制权", { "DisplayEntityOwner" }, "", function()
+    local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+
+    for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
+        if ENTITY.IS_ENTITY_ON_SCREEN(vehicle) and ENTITY.HAS_ENTITY_CLEAR_LOS_TO_ENTITY(vehicle, players.user_ped(), 17) then
+            local ent_pos = ENTITY.GET_ENTITY_COORDS(vehicle)
+            if v3.distance(player_pos, ent_pos) <= entity_owner.range then
+                if util.get_screen_coord_from_world_coord_no_adjustment(ent_pos.x, ent_pos.y, ent_pos.z, entity_owner.screen_pos, entity_owner.screen_pos + 4) then
+                    local screen_x, screen_y = memory.read_float(entity_owner.screen_pos),
+                        memory.read_float(entity_owner.screen_pos + 4)
+
+                    local vehicle_name = get_vehicle_display_name(vehicle)
+                    local owner = entities.get_owner(vehicle)
+                    local screen_text = string.format("%s (%s)", vehicle_name, players.get_name(owner))
+
+                    local text_color = Colors.purple
+                    if owner == players.user() then
+                        text_color = Colors.green
+                    end
+
+                    directx.draw_text(screen_x, screen_y, screen_text, ALIGN_TOP_LEFT, entity_owner.text_size, text_color)
+                end
+            end
+        end
+    end
+end)
+
+local Entity_Owner_Setting <const> = menu.list(Entity_Owner, "显示设置", {}, "")
+
+menu.slider_float(Entity_Owner_Setting, "范围", { "EntityOwnerRange" }, "",
+    0, 1000000, entity_owner.range * 100, 5000, function(value)
+        entity_owner.range = value * 0.01
+    end)
+menu.slider_float(Entity_Owner_Setting, "文字大小", { "EntityOwnerTextSize" }, "",
+    10, 500, entity_owner.text_size * 100, 10, function(value)
+        entity_owner.text_size = value * 0.01
+    end)
+
+
+menu.divider(Entity_Owner, "当前载具")
+
+menu.toggle_loop(Entity_Owner, "信息显示 当前载具控制权", { "rsInfoVehOwner" }, "", function()
+    local vehicle = entities.get_user_vehicle_as_pointer(false)
+    if vehicle ~= 0 then
+        local owner = players.get_name(entities.get_owner(vehicle))
+        util.draw_debug_text("当前载具控制权拥有者: " .. owner)
+    end
+end)
+
+menu.click_slider(Entity_Owner, "请求控制当前载具", { "vehControl" }, "超时时间，单位毫秒",
+    500, 5000, 2000, 500, function(value)
+        local vehicle = entities.get_user_vehicle_as_pointer(false)
+        if vehicle ~= 0 then
+            if entities.request_control(vehicle, value) then
+                util.toast("成功")
+            else
+                local owner = players.get_name(entities.get_owner(vehicle))
+                util.toast("请求控制当前载具失败\n当前控制权拥有者: " .. owner)
+            end
+        end
+    end)
+
+menu.action(Entity_Owner, "当前载具控制权 给 当前司机", { "vehDriverControl" }, "", function()
+    local vehicle = entities.get_user_vehicle_as_handle(false)
+    if vehicle == INVALID_GUID then
+        return
+    end
+
+    local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
+    if driver == players.user_ped() and has_control_entity(vehicle) then
+        return
+    end
+
+    entities.give_control(vehicle, get_player_from_ped(driver))
+end)
+
+--#endregion
+
+
 --#region Request Service
 
 local Request_Service <const> = menu.list(Online_Options, "请求服务", {}, "")
 
-local Request_Service_Cooldown <const> = menu.list(Request_Service, "移除冷却时间", {}, "")
-menu.toggle(Request_Service_Cooldown, "CEO技能", {}, "", function(toggle)
-    Globals.RemoveCooldown.CeoAbility(toggle)
-    Loop_Handler.Tunables.Cooldown.CeoAbility = toggle
-end)
-menu.toggle(Request_Service_Cooldown, "CEO载具请求", {}, "", function(toggle)
-    if toggle then
-        TUNABLE_SET_INT(Tunables.GB_CALL_VEHICLE_COOLDOWN, 0)
-    else
-        TUNABLE_SET_INT(Tunables.GB_CALL_VEHICLE_COOLDOWN, 120000)
-    end
-    Loop_Handler.Tunables.Cooldown.CeoVehicle = toggle
-end)
-menu.toggle(Request_Service_Cooldown, "其它载具请求", {}, "", function(toggle)
-    Globals.RemoveCooldown.OtherVehicle(toggle)
-    Loop_Handler.Tunables.Cooldown.OtherVehicle = toggle
-end)
 
-local Request_Vehicle_Property <const> = menu.list(Request_Service, "请求载具资产", {}, "")
-for _, item in pairs(Globals.Request.VehicleProperty) do
-    menu.action(Request_Vehicle_Property, "请求 " .. item.name, { "req" .. item.command }, "", function()
-        GLOBAL_SET_INT(item.global, 1)
-        util.toast("已请求载具 " .. item.name)
-    end)
+local Request_Vehicle_Property <const> = menu.list(Request_Service, "请求服务载具", {}, "")
+
+local VehiclePropertyList = {
+    { offset = "bLaunchVehicleDropTruck",           command = "moc",          name = "PIM_TRTV",      help = "PIM_HRTV0" },      -- Request Mobile Operations Center
+    { offset = "bLaunchVehicleDropAvenger",         command = "avenger",      name = "PIM_ASRQ",      help = "PIM_AVEN0" },      -- Request Avenger
+    { offset = "bLaunchVehicleDropHackerTruck",     command = "terrorbyte",   name = "PIM_HSRQ",      help = "PIM_HTTV0" },      -- Request Terrorbyte
+    { offset = "bLaunchVehicleDropSubmarine",       command = "kosatka",      name = "PIM_SUBREQ",    help = "PIMD_SUBREQ" },    -- Request Kosatka
+    { offset = "bLaunchVehicleDropSubmarineDinghy", command = "dinghy",       name = "PIM_DINGHYREQ", help = "PIMD_DINGHYREQ" }, -- Request Dinghy
+    { offset = "bLaunchVehicleDropAcidLab",         command = "acidLab",      name = "PIM_ALRQB",     help = "PIMD_ALRQ0" },     -- Request Acid Lab
+    { offset = "bLaunchVehicleDropSupportBike",     command = "deliveryBike", name = "PIM_ALRQ_PV",   help = "PIMD_ALRQPV0" },   -- Request Delivery Bike
+}
+
+for _, item in pairs(VehiclePropertyList) do
+    menu.action(Request_Vehicle_Property, util.get_label_text(item.name),
+        { "req" .. item.command }, util.get_label_text(item.help), function()
+            GLOBAL_SET_BOOL(MPGlobalsAmbience[item.offset], true)
+            util.toast("已请求服务载具")
+        end)
 end
 
-menu.action(Request_Service, "请求重型装甲", { "ammo_drop" }, "请求弹道装甲和火神机枪",
-    function()
-        GLOBAL_SET_INT(Globals.BallisticArmor, 1)
-    end)
-menu.action(Request_Service, "重型装甲包裹 传送到我", {}, "", function()
-    local entity_model_hash = 1688540826
-    for k, ent in pairs(entities.get_all_pickups_as_handles()) do
-        local hash = ENTITY.GET_ENTITY_MODEL(ent)
-        if hash == entity_model_hash and ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
-            TP_TO_ME(ent, 0.0, 1.0, 0.0)
-        end
-    end
+
+menu.list_action(Request_Service, "重型防弹装甲服务", { "BallisticArmor" }, "", {
+    { MPGlobalsAmbience.bLaunchVehicleDropAcidLab, "请求", { "request" } },
+    { MPGlobalsAmbience.bEquipBallisticsDrop, "装备", { "equip" } },
+    { MPGlobalsAmbience.bRemoveBallisticsDrop, "移除", { "remove" } },
+    -- joaat("ex_prop_adv_case_sm")
+}, function(value)
+    GLOBAL_SET_BOOL(value, true)
 end)
-menu.toggle(Request_Service, "请求RC坦克", {}, "", function(toggle)
-    if toggle then
-        GLOBAL_SET_INT(Globals.RC_Tank, 1)
-    else
-        GLOBAL_SET_INT(Globals.RC_Tank, 0)
-    end
+
+menu.divider(Request_Service, "遥控载具")
+menu.toggle(Request_Service, "RC 坦克", {}, "", function(toggle)
+    GLOBAL_SET_BOOL(MPGlobalsAmbience.bLaunchRCTank, toggle)
 end)
-menu.toggle(Request_Service, "请求RC匪徒", {}, "", function(toggle)
-    if toggle then
-        GLOBAL_SET_INT(Globals.RC_Bandito, 1)
-    else
-        GLOBAL_SET_INT(Globals.RC_Bandito, 0)
-    end
+menu.toggle(Request_Service, "RC 匪徒", {}, "", function(toggle)
+    GLOBAL_SET_BOOL(MPGlobalsAmbience.bLaunchRCBandito, toggle)
 end)
 
 menu.divider(Request_Service, "无视犯罪")
 menu.toggle_loop(Request_Service, "锁定倒计时", {}, "无视犯罪的倒计时", function()
-    GLOBAL_SET_INT(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
+    GLOBAL_SET_INT(MPGlobalsAmbience.timeCopsDisabled, NETWORK.GET_NETWORK_TIME())
     util.yield(5000)
 end)
 menu.action(Request_Service, "清空倒计时", {}, "", function()
-    GLOBAL_SET_INT(Globals.NCOPS.time, 0)
+    GLOBAL_SET_INT(MPGlobalsAmbience.timeCopsDisabled, 0)
 end)
-menu.action(Request_Service, "警察无视犯罪", { "no_cops" }, "莱斯特电话请求", function()
-    GLOBAL_SET_INT(Globals.NCOPS.type, 5)
-    GLOBAL_SET_INT(Globals.NCOPS.flag, 1)
-    GLOBAL_SET_INT(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
+menu.action(Request_Service, "警察无视犯罪", { "noCops" }, "莱斯特电话请求", function()
+    -- biNoCops_Activated, biNoCops_Personal
+    GLOBAL_SET_INT(MPGlobalsAmbience.iLesterDisableCopsBitset, 5)
+    GLOBAL_SET_INT(MPGlobalsAmbience.iLesterDisableCopsProg, 0)
+    GLOBAL_SET_INT(MPGlobalsAmbience.timeCopsDisabled, NETWORK.GET_NETWORK_TIME())
 end)
-menu.toggle_loop(Request_Service, "贿赂当局", {}, "CEO技能", function()
-    GLOBAL_SET_INT(Globals.NCOPS.type, 81)
-    GLOBAL_SET_INT(Globals.NCOPS.flag, 1)
-    GLOBAL_SET_INT(Globals.NCOPS.time, NETWORK.GET_NETWORK_TIME())
-    util.yield(5000)
-end, function()
-    GLOBAL_SET_INT(Globals.NCOPS.time, 0)
+menu.action(Request_Service, "贿赂当局", {}, "CEO技能", function()
+    -- biNoCops_Activated, biNoCops_Gang
+    GLOBAL_SET_INT(MPGlobalsAmbience.iLesterDisableCopsBitset, 17)
+    GLOBAL_SET_INT(MPGlobalsAmbience.iLesterDisableCopsProg, 0)
+    GLOBAL_SET_INT(MPGlobalsAmbience.timeCopsDisabled, NETWORK.GET_NETWORK_TIME())
 end)
 
 menu.divider(Request_Service, "倒计时")
 menu.click_slider(Request_Service, "贿赂当局 倒计时时间", {}, "单位: 分钟\n切换战局后会失效,需要重新操作",
     1, 60, 2, 1, function(value)
-        TUNABLE_SET_INT(Tunables.GB_BRIBE_AUTHORITIES_DURATION, value * 60 * 1000)
+        Tunables.SetInt("GB_BRIBE_AUTHORITIES_DURATION", value * 60 * 1000)
         util.toast("完成！")
     end)
 menu.click_slider(Request_Service, "幽灵组织 倒计时时间", {}, "单位: 分钟\n切换战局后会失效,需要重新操作",
     1, 60, 3, 1, function(value)
-        TUNABLE_SET_INT(Tunables.GB_GHOST_ORG_DURATION, value * 60 * 1000)
+        Tunables.SetInt("GB_GHOST_ORG_DURATION", value * 60 * 1000)
         util.toast("完成！")
     end)
-
---#endregion
-
-
---#region Business Monitor
-
-local Business_Monitor <const> = menu.list(Online_Options, "资产监视", { "business_monitor" }, "")
-
-local Business = {
-    Caps = {
-        NightClub = {
-            [0] = 50,  -- Cargo
-            [1] = 100, -- Weapons
-            [2] = 10,  -- Cocaine
-            [3] = 20,  -- Meth
-            [4] = 80,  -- Weed
-            [5] = 60,  -- Forgery
-            [6] = 40   -- Cash
-        },
-        MCBusiness = {
-            [0] = 60, -- Forgery
-            [1] = 80, -- Weed
-            [2] = 40, -- Cash
-            [3] = 20, -- Meth
-            [4] = 10  -- Cocaine
-        },
-        Bunker = 100,
-        AcidLab = 160,
-        Warehouse = {
-            [1]  = 16,  -- "MP_WHOUSE_0",
-            [2]  = 16,  -- "MP_WHOUSE_1",
-            [3]  = 16,  -- "MP_WHOUSE_2",
-            [4]  = 16,  -- "MP_WHOUSE_3",
-            [5]  = 16,  -- "MP_WHOUSE_4",
-            [6]  = 111, -- "MP_WHOUSE_5",
-            [7]  = 42,  -- "MP_WHOUSE_6",
-            [8]  = 111, -- "MP_WHOUSE_7",
-            [9]  = 16,  -- "MP_WHOUSE_8",
-            [10] = 42,  -- "MP_WHOUSE_9",
-            [11] = 42,  -- "MP_WHOUSE_10",
-            [12] = 42,  -- "MP_WHOUSE_11",
-            [13] = 42,  -- "MP_WHOUSE_12",
-            [14] = 42,  -- "MP_WHOUSE_13",
-            [15] = 42,  -- "MP_WHOUSE_14",
-            [16] = 111, -- "MP_WHOUSE_15",
-            [17] = 111, -- "MP_WHOUSE_16",
-            [18] = 111, -- "MP_WHOUSE_17",
-            [19] = 111, -- "MP_WHOUSE_18",
-            [20] = 111, -- "MP_WHOUSE_19",
-            [21] = 42,  -- "MP_WHOUSE_20",
-            [22] = 111, -- "MP_WHOUSE_21",
-        }
-    },
-    SafeCash = {
-        NightClub = 250000,
-        Arcade = 100000,
-        Agency = 250000,
-    },
-}
-
-function Business.GetBusinessSupplies(slot)
-    return STAT_GET_INT("MATTOTALFORFACTORY" .. slot)
-end
-
-function Business.GetBusinessProduct(slot)
-    return STAT_GET_INT("PRODTOTALFORFACTORY" .. slot)
-end
-
-function Business.MCBusinessPropertyType(slot)
-    local mapping  = {
-        [0]  = -1,
-        [1]  = 3,
-        [2]  = 1,
-        [3]  = 4,
-        [4]  = 2,
-        [5]  = 0,
-        [6]  = 3,
-        [7]  = 1,
-        [8]  = 4,
-        [9]  = 2,
-        [10] = 0,
-        [11] = 3,
-        [12] = 1,
-        [13] = 4,
-        [14] = 2,
-        [15] = 0,
-        [16] = 3,
-        [17] = 1,
-        [18] = 4,
-        [19] = 2,
-        [20] = 0
-    }
-    local property = STAT_GET_INT("factoryslot" .. slot) -- returns a property ID number
-    return mapping[property]
-end
-
-Business.Menu = {
-    bunker = {},
-    nightclub = {
-        product = {
-            [0] = { name = "运输货物" },
-            [1] = { name = "体育用品" },
-            [2] = { name = "南美进口货" },
-            [3] = { name = "药学研究产品" },
-            [4] = { name = "有机农产品" },
-            [5] = { name = "印刷品" },
-            [6] = { name = "印钞" },
-        },
-    },
-    acid_lab = {},
-    safe_cash = {},
-    mc_business = {
-        [0] = { name = "伪造证件" },
-        [1] = { name = "大麻" },
-        [2] = { name = "假钞" },
-        [3] = { name = "冰毒" },
-        [4] = { name = "可卡因" },
-    },
-    special_cargo = {}
-}
-
-menu.action(Business_Monitor, "刷新状态", {}, "", function()
-    if IS_IN_SESSION() then
-        local text = ""
-        local product = 0
-        --- Bunker ---
-        text = Business.GetBusinessSupplies(5) .. "%"
-        menu.set_value(Business.Menu.bunker.supplies, text)
-
-        product = Business.GetBusinessProduct(5)
-        text = product .. "/" .. Business.Caps.Bunker
-        if product == Business.Caps.Bunker then
-            text = "[!] " .. text
-        end
-        menu.set_value(Business.Menu.bunker.product, text)
-
-        text = STAT_GET_INT("RESEARCHTOTALFORFACTORY5") .. "/60"
-        menu.set_value(Business.Menu.bunker.research, text)
-
-        --- Nightclub ---
-        text = math.floor(STAT_GET_INT('CLUB_POPULARITY') / 10) .. '%'
-        menu.set_value(Business.Menu.nightclub.popularity, text)
-
-        text = STAT_GET_INT("CLUB_SAFE_CASH_VALUE")
-        if text == Business.SafeCash.NightClub then
-            text = "[!] " .. text
-        end
-        menu.set_value(Business.Menu.nightclub.safe_cash, text)
-
-        for i = 0, 6 do
-            product = STAT_GET_INT("HUB_PROD_TOTAL_" .. i)
-            text = product .. "/" .. Business.Caps.NightClub[i]
-            if product == Business.Caps.NightClub[i] then
-                text = "[!] " .. text
-            end
-            menu.set_value(Business.Menu.nightclub.product[i].menu, text)
-        end
-
-        --- Acid Lab ---
-        text = Business.GetBusinessSupplies(6) .. "%"
-        menu.set_value(Business.Menu.acid_lab.supplies, text)
-
-        product = Business.GetBusinessProduct(6)
-        text = product .. "/" .. Business.Caps.AcidLab
-        if product == Business.Caps.AcidLab then
-            text = "[!] " .. text
-        end
-        menu.set_value(Business.Menu.acid_lab.product, text)
-
-        --- Safe Cash ---
-        text = STAT_GET_INT("ARCADE_SAFE_CASH_VALUE")
-        if text == Business.SafeCash.Arcade then
-            text = "[!] " .. text
-        end
-        menu.set_value(Business.Menu.safe_cash.arcade, text)
-
-        text = STAT_GET_INT("FIXER_SAFE_CASH_VALUE")
-        if text == Business.SafeCash.Agency then
-            text = "[!] " .. text
-        end
-        menu.set_value(Business.Menu.safe_cash.agency, text)
-
-        --- MC Business ---
-        for i = 0, 4 do
-            local type_number = Business.MCBusinessPropertyType(i)
-            if type_number ~= -1 then
-                text = Business.GetBusinessSupplies(i) .. "%"
-                menu.set_value(Business.Menu.mc_business[type_number].supplies, text)
-
-                product = Business.GetBusinessProduct(i)
-                text = product .. "/" .. Business.Caps.MCBusiness[type_number]
-                if product == Business.Caps.MCBusiness[type_number] then
-                    text = "[!] " .. text
-                end
-                menu.set_value(Business.Menu.mc_business[type_number].product, text)
-            end
-        end
-
-        --- Special Cargo ---
-        for i = 0, 4 do
-            local warehouse_slot = STAT_GET_INT("PROP_WHOUSE_SLOT" .. i) -- same stat: WARHOUSESLOT
-            if warehouse_slot ~= 0 then
-                local sp_crate = STAT_GET_INT("CONTOTALFORWHOUSE" .. i)
-                local sp_item = STAT_GET_INT("SPCONTOTALFORWHOUSE" .. i)
-                local warehouse_name = util.get_label_text("MP_WHOUSE_" .. warehouse_slot - 1)
-                local warehouse_cap = Business.Caps.Warehouse[warehouse_slot]
-
-                text = sp_crate .. "(" .. sp_item .. ")/" .. warehouse_cap
-                if sp_crate == warehouse_cap then
-                    text = "[!] " .. text
-                end
-                menu.set_value(Business.Menu.special_cargo[i], text)
-                menu.set_menu_name(Business.Menu.special_cargo[i], warehouse_name)
-            else
-                menu.set_value(Business.Menu.special_cargo[i], "")
-                menu.set_menu_name(Business.Menu.special_cargo[i], "无")
-            end
-        end
-    else
-        util.toast("仅在线上模式战局内可用")
-    end
-end)
-
-menu.divider(Business_Monitor, "地堡")
-Business.Menu.bunker.supplies = menu.readonly(Business_Monitor, "原材料")
-Business.Menu.bunker.product = menu.readonly(Business_Monitor, "产品")
-Business.Menu.bunker.research = menu.readonly(Business_Monitor, "研究")
-
-menu.divider(Business_Monitor, "夜总会")
-Business.Menu.nightclub.popularity = menu.readonly(Business_Monitor, "夜总会人气")
-Business.Menu.nightclub.safe_cash  = menu.readonly(Business_Monitor, "保险箱现金")
-for i = 0, 6 do
-    Business.Menu.nightclub.product[i].menu = menu.readonly(Business_Monitor,
-        Business.Menu.nightclub.product[i].name)
-end
-
-menu.divider(Business_Monitor, "致幻剂实验室")
-Business.Menu.acid_lab.supplies = menu.readonly(Business_Monitor, "原材料")
-Business.Menu.acid_lab.product = menu.readonly(Business_Monitor, "产品")
-
-menu.divider(Business_Monitor, "保险箱现金")
-Business.Menu.safe_cash.arcade = menu.readonly(Business_Monitor, "游戏厅")
-Business.Menu.safe_cash.agency = menu.readonly(Business_Monitor, "事务所")
-
-menu.divider(Business_Monitor, "")
-local Business_Monitor_MC = menu.list(Business_Monitor, "摩托帮工厂", {}, "")
-for i = 0, 4 do
-    menu.divider(Business_Monitor_MC, Business.Menu.mc_business[i].name)
-    Business.Menu.mc_business[i].supplies = menu.readonly(Business_Monitor_MC, "原材料")
-    Business.Menu.mc_business[i].product = menu.readonly(Business_Monitor_MC, "产品")
-end
-
-local Business_Monitor_SpecialCargo = menu.list(Business_Monitor, "特种货物", {}, "括号里是特殊物品数量")
-for i = 0, 4 do
-    Business.Menu.special_cargo[i] = menu.readonly(Business_Monitor_SpecialCargo, "无")
-end
-
---#endregion
-
-
---#region Business Stats
-
-local Business_Stats <const> = menu.list(Online_Options, "资产统计数据", {}, "")
-
-local BusinessStats = {
-    Bunker = {
-        [1] = { name = "总营收", stat = "LIFETIME_BKR_SELL_EARNINGS5" },
-        [2] = { name = "送达原材料次数", stat = "LFETIME_BIKER_BUY_COMPLET5" },
-        [3] = { name = "开启原材料任务次数", stat = "LFETIME_BIKER_BUY_UNDERTA5" },
-        [4] = { name = "成功卖货次数", stat = "LFETIME_BIKER_SELL_COMPLET5" },
-        [5] = { name = "开启卖货任务次数", stat = "LFETIME_BIKER_SELL_UNDERTA5" },
-    },
-    SpecialCargo = {
-        [1] = { name = "总营收", stat = "LIFETIME_CONTRA_EARNINGS" },
-        [2] = { name = "成功拉货次数", stat = "LIFETIME_BUY_COMPLETE" },
-        [3] = { name = "开启拉货任务次数", stat = "LIFETIME_BUY_UNDERTAKEN" },
-        [4] = { name = "成功卖货次数", stat = "LIFETIME_SELL_COMPLETE" },
-        [5] = { name = "开启卖货任务次数", stat = "LIFETIME_SELL_UNDERTAKEN" },
-    },
-}
-
-menu.action(Business_Stats, "刷新状态", {}, "", function()
-    if IS_IN_SESSION() then
-        for i = 1, 5 do
-            local stat = BusinessStats.Bunker[i].stat
-            local menu_ = BusinessStats.Bunker[i].menu
-            menu.set_value(menu_, STAT_GET_INT(stat))
-
-            stat = BusinessStats.SpecialCargo[i].stat
-            menu_ = BusinessStats.SpecialCargo[i].menu
-            menu.set_value(menu_, STAT_GET_INT(stat))
-        end
-    else
-        util.toast("仅在线上模式战局内可用")
-    end
-end)
-
-menu.divider(Business_Stats, "地堡")
-for i = 1, 5 do
-    BusinessStats.Bunker[i].menu = menu.readonly(Business_Stats, BusinessStats.Bunker[i].name)
-end
-
-menu.divider(Business_Stats, "特种货物")
-for i = 1, 5 do
-    BusinessStats.SpecialCargo[i].menu = menu.readonly(Business_Stats, BusinessStats.SpecialCargo[i].name)
-end
 
 --#endregion
 
@@ -559,7 +327,7 @@ local FastTP = {
 }
 
 menu.divider(Fast_Teleport, "载具资产")
-menu.action(Fast_Teleport, "传送到 机动作战中心", { "ftp_moc" }, "", function()
+menu.action(Fast_Teleport, "传送到 机动作战中心", { "rstpMoc" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(564)
     if HUD.DOES_BLIP_EXIST(blip) then
         if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
@@ -571,7 +339,7 @@ menu.action(Fast_Teleport, "传送到 机动作战中心", { "ftp_moc" }, "", fu
         util.toast("未在地图上找到 机动作战中心")
     end
 end)
-menu.action(Fast_Teleport, "传送到 复仇者", { "ftp_avenger" }, "", function()
+menu.action(Fast_Teleport, "传送到 复仇者", { "rstpAvenger" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(589)
     if HUD.DOES_BLIP_EXIST(blip) then
         if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
@@ -583,7 +351,7 @@ menu.action(Fast_Teleport, "传送到 复仇者", { "ftp_avenger" }, "", functio
         util.toast("未在地图上找到 复仇者")
     end
 end)
-menu.action(Fast_Teleport, "传送到 恐霸", { "ftp_terrorbyte" }, "", function()
+menu.action(Fast_Teleport, "传送到 恐霸", { "rstpTerrorbyte" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(632)
     if HUD.DOES_BLIP_EXIST(blip) then
         if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
@@ -595,7 +363,7 @@ menu.action(Fast_Teleport, "传送到 恐霸", { "ftp_terrorbyte" }, "", functio
         util.toast("未在地图上找到 恐霸")
     end
 end)
-menu.action(Fast_Teleport, "传送到 致幻剂实验室", { "ftp_acidlab" }, "", function()
+menu.action(Fast_Teleport, "传送到 致幻剂实验室", { "rstpAcidlab" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(840)
     if HUD.DOES_BLIP_EXIST(blip) then
         if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
@@ -610,7 +378,7 @@ end)
 
 menu.divider(Fast_Teleport, "资产")
 for key, item in pairs(FastTP.propertyList) do
-    menu.action(Fast_Teleport, "传送到 " .. item.name, { "ftp" .. item.command }, "", function()
+    menu.action(Fast_Teleport, "传送到 " .. item.name, { "rstp" .. item.command }, "", function()
         local blip = HUD.GET_NEXT_BLIP_INFO_ID(item.sprite)
         if HUD.DOES_BLIP_EXIST(blip) then
             if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
@@ -625,7 +393,7 @@ end
 
 menu.divider(Fast_Teleport, "活动")
 for key, item in pairs(FastTP.eventList) do
-    menu.action(Fast_Teleport, "传送到 " .. item.name, { "ftp" .. item.command }, "", function()
+    menu.action(Fast_Teleport, "传送到 " .. item.name, { "rstp" .. item.command }, "", function()
         local blip = HUD.GET_NEXT_BLIP_INFO_ID(item.sprite)
         if HUD.DOES_BLIP_EXIST(blip) then
             local coords = HUD.GET_BLIP_COORDS(blip)
@@ -639,182 +407,152 @@ end
 --#endregion
 
 
---#region Local Editor
+--#region Snack Armour
 
-local Local_Editor <const> = menu.list(Online_Options, "Local Editor", { "local_editor" }, "")
+local Snack_Armour <const> = menu.list(Online_Options, "零食和护甲", {}, "")
 
-local local_editor = {
-    script = "fm_mission_controller",
-    address = 0,
-    type = "int",
-    write = "",
+menu.action(Snack_Armour, "补满全部零食", {}, "", function()
+    STAT_SET_INT("NO_BOUGHT_YUM_SNACKS", 30)
+    STAT_SET_INT("NO_BOUGHT_HEALTH_SNACKS", 15)
+    STAT_SET_INT("NO_BOUGHT_EPIC_SNACKS", 5)
+    STAT_SET_INT("NUMBER_OF_ORANGE_BOUGHT", 10)
+    STAT_SET_INT("NUMBER_OF_BOURGE_BOUGHT", 10)
+    STAT_SET_INT("NUMBER_OF_CHAMP_BOUGHT", 5)
+    STAT_SET_INT("CIGARETTES_BOUGHT", 20)
+    STAT_SET_INT("NUMBER_OF_SPRUNK_BOUGHT", 10)
+    util.toast("完成！")
+end)
+menu.action(Snack_Armour, "补满全部护甲", {}, "", function()
+    STAT_SET_INT("MP_CHAR_ARMOUR_1_COUNT", 10)
+    STAT_SET_INT("MP_CHAR_ARMOUR_2_COUNT", 10)
+    STAT_SET_INT("MP_CHAR_ARMOUR_3_COUNT", 10)
+    STAT_SET_INT("MP_CHAR_ARMOUR_4_COUNT", 10)
+    STAT_SET_INT("MP_CHAR_ARMOUR_5_COUNT", 10)
+    util.toast("完成！")
+end)
+menu.action(Snack_Armour, "补满呼吸器", {}, "", function()
+    STAT_SET_INT("BREATHING_APPAR_BOUGHT", 20)
+    util.toast("完成！")
+end)
+
+local Snack_Editor <const> = menu.list(Snack_Armour, "零食编辑", {}, "")
+
+local Snack_List_Data = {
+    { stat = "NO_BOUGHT_YUM_SNACKS", name = "PQ豆", command = "yum", help = "+15 Health", default = 30 },
+    { stat = "NO_BOUGHT_HEALTH_SNACKS", name = "宝力旺", command = "health", help = "+45 Health", default = 15 },
+    { stat = "NO_BOUGHT_EPIC_SNACKS", name = "麦提来", command = "epic", help = "+30 Health", default = 5 },
+    { stat = "NUMBER_OF_ORANGE_BOUGHT", name = "易可乐", command = "orange", help = "+36 Health", default = 10 },
+    { stat = "NUMBER_OF_BOURGE_BOUGHT", name = "尿汤啤", command = "bourge", help = "", default = 10 },
+    { stat = "NUMBER_OF_CHAMP_BOUGHT", name = "蓝醉香槟", command = "champ", help = "", default = 5 },
+    { stat = "CIGARETTES_BOUGHT", name = "香烟", command = "cigarettes", help = "-5 Health", default = 20 },
+    { stat = "NUMBER_OF_SPRUNK_BOUGHT", name = "霜碧", command = "sprunk", help = "+36 Health", default = 10 },
 }
+for _, item in pairs(Snack_List_Data) do
+    menu.click_slider(Snack_Editor, item.name, { "snack" .. item.command }, item.help,
+        0, 999, item.default, 1, function(value)
+            STAT_SET_INT(item.stat, value)
+            util.toast("完成！")
+        end)
+end
 
-menu.list_select(Local_Editor, "选择脚本", {}, "", {
-    { 1, "fm_mission_controller" },
-    { 2, "fm_mission_controller_2020" },
-}, 1, function(value, name)
-    local_editor.script = name
-end)
+local Armour_Editor <const> = menu.list(Snack_Armour, "护甲编辑", {}, "")
 
-menu.slider(Local_Editor, "地址", { "local_address" }, "输入计算总和",
-    0, 16777216, 0, 1, function(value)
-        local_editor.address = value
+local Armour_List_Data = {
+    { stat = "MP_CHAR_ARMOUR_1_COUNT", name = "超轻型防弹衣", command = "1", help = "+10 Armour" },
+    { stat = "MP_CHAR_ARMOUR_2_COUNT", name = "轻型防弹衣", command = "2", help = "+20 Armour" },
+    { stat = "MP_CHAR_ARMOUR_3_COUNT", name = "标准防弹衣", command = "3", help = "+30 Armour" },
+    { stat = "MP_CHAR_ARMOUR_4_COUNT", name = "重型防弹衣", command = "4", help = "+40 Armour" },
+    { stat = "MP_CHAR_ARMOUR_5_COUNT", name = "超重型防弹衣", command = "5", help = "+50 Armour" },
+}
+for _, item in pairs(Armour_List_Data) do
+    menu.click_slider(Armour_Editor, item.name, { "armour" .. item.command }, item.help,
+        0, 999, 10, 1, function(value)
+            STAT_SET_INT(item.stat, value)
+            util.toast("完成！")
+        end)
+end
+
+
+menu.divider(Snack_Armour, "")
+menu.click_slider(Snack_Armour, "自定义全部零食数量", { "snackAll" }, "",
+    0, 9999, 999, 50, function(value)
+        STAT_SET_INT("NO_BOUGHT_YUM_SNACKS", value)
+        STAT_SET_INT("NO_BOUGHT_HEALTH_SNACKS", value)
+        STAT_SET_INT("NO_BOUGHT_EPIC_SNACKS", value)
+        STAT_SET_INT("NUMBER_OF_ORANGE_BOUGHT", value)
+        STAT_SET_INT("NUMBER_OF_BOURGE_BOUGHT", value)
+        STAT_SET_INT("NUMBER_OF_CHAMP_BOUGHT", value)
+        STAT_SET_INT("CIGARETTES_BOUGHT", value)
+        STAT_SET_INT("NUMBER_OF_SPRUNK_BOUGHT", value)
+        util.toast("完成！")
     end)
-menu.list_select(Local_Editor, "数值类型", {}, "", { { 1, "INT" }, { 2, "FLOAT" } }, 1, function(value, name)
-    local_editor.type = string.lower(name)
-end)
-
-menu.divider(Local_Editor, "读")
-menu.action(Local_Editor, "读取", {}, "", function()
-    local script = local_editor.script
-    local address = local_editor.address
-    if SCRIPT.HAS_SCRIPT_LOADED(script) then
-        local value
-        if local_editor.type == "int" then
-            value = LOCAL_GET_INT(script, address)
-        elseif local_editor.type == "float" then
-            value = LOCAL_GET_FLOAT(script, address)
-        end
-
-        if value ~= nil then
-            menu.set_value(local_editor.readonly, value)
-        else
-            menu.set_value(local_editor.readonly, "NULL")
-        end
-    else
-        util.toast("This Script Has Not Loaded")
-    end
-end)
-local_editor.readonly = menu.readonly(Local_Editor, "值")
-
-menu.divider(Local_Editor, "写")
-menu.text_input(Local_Editor, "要写入的值", { "local_write" }, "务必注意int类型和float类型的格式",
-    function(value)
-        local_editor.write = value
+menu.click_slider(Snack_Armour, "自定义全部护甲数量", { "armourAll" }, "",
+    0, 9999, 999, 50, function(value)
+        STAT_SET_INT("MP_CHAR_ARMOUR_1_COUNT", value)
+        STAT_SET_INT("MP_CHAR_ARMOUR_2_COUNT", value)
+        STAT_SET_INT("MP_CHAR_ARMOUR_3_COUNT", value)
+        STAT_SET_INT("MP_CHAR_ARMOUR_4_COUNT", value)
+        STAT_SET_INT("MP_CHAR_ARMOUR_5_COUNT", value)
+        util.toast("完成！")
     end)
-menu.action(Local_Editor, "写入", {}, "", function()
-    local script = local_editor.script
-    local address = local_editor.address
-    local value = tonumber(local_editor.write)
-    if value ~= nil then
-        if SCRIPT.HAS_SCRIPT_LOADED(script) then
-            if local_editor.type == "int" then
-                LOCAL_SET_INT(script, address, value)
-            elseif local_editor.type == "float" then
-                LOCAL_SET_FLOAT(script, address, value)
-            end
-        else
-            util.toast("This Script Has Not Loaded")
-        end
-    end
-end)
-menu.toggle_loop(Local_Editor, "锁定写入", {}, "更改地址类型，锁定的也会跟着改变", function()
-    local script = local_editor.script
-    local address = local_editor.address
-    local value = tonumber(local_editor.write)
-    if value ~= nil then
-        if SCRIPT.HAS_SCRIPT_LOADED(script) then
-            if local_editor.type == "int" then
-                LOCAL_SET_INT(script, address, value)
-            elseif local_editor.type == "float" then
-                LOCAL_SET_FLOAT(script, address, value)
-            end
-        end
-    end
+menu.toggle(Snack_Armour, "禁用最大携带量限制", {}, "", function(toggle)
+    Tunables.SetInt("DISABLE_STAT_CAP_CHECK", toggle and 1 or 0)
+    LoopHandler.Tunables.DisableStatCapCheck = toggle
 end)
 
 --#endregion
 
 
---#region Global Editor
+--#region Gun Van
 
-local Global_Editor <const> = menu.list(Online_Options, "Global Editor", { "global_editor" }, "")
+local Gun_Van <const> = menu.list(Online_Options, "枪支厢型车", {}, "")
 
-local global_editor = {
-    address1 = 262145,
-    address2 = 0,
-    type = "int",
-    write = "",
-}
 
-menu.slider(Global_Editor, "地址1", { "global_address1" }, "", 0, 16777216, 262145, 1, function(value)
-    global_editor.address1 = value
-end)
-menu.slider(Global_Editor, "地址2", { "global_address2" }, "", 0, 16777216, 0, 1, function(value)
-    global_editor.address2 = value
-end)
-menu.list_select(Global_Editor, "数值类型", {}, "", { { 1, "INT" }, { 2, "FLOAT" } }, 1, function(value, name)
-    global_editor.type = string.lower(name)
-end)
+local Gun_Van_List <const> = menu.list(Gun_Van, "厢型车武器列表", {}, "")
 
-menu.divider(Global_Editor, "读")
-menu.action(Global_Editor, "读取", {}, "", function()
-    local address = global_editor.address1 + global_editor.address2
-    local value
-    if global_editor.type == "int" then
-        value = GLOBAL_GET_INT(address)
-    elseif global_editor.type == "float" then
-        value = GLOBAL_GET_FLOAT(address)
-    end
+for index = 1, 10 do
+    local addr = 262145 + TunablesI["XM22_GUN_VAN_SLOT_WEAPON_TYPE_0"] + index
+    local weapon_hash = GLOBAL_GET_INT(addr)
 
-    if value ~= nil then
-        menu.set_value(global_editor.readonly, value)
-    else
-        menu.set_value(global_editor.readonly, "NULL")
+    menu.list_select(Gun_Van_List, "Slot " .. index, { "GunVanSlot" .. index }, "",
+        RS_T.AllWeapons, weapon_hash, function(value)
+            GLOBAL_SET_INT(addr, value)
+        end)
+end
+
+menu.action(Gun_Van, "传送到 枪支厢型车", { "rstpGunVan" }, "", function()
+    local location = GLOBAL_GET_INT(Globals.GunVanLocation)
+    local pos = Misc_T.GunVanPosition[location]
+    if pos then
+        teleport2(pos[1], pos[2], pos[3] + 2.0)
     end
 end)
-global_editor.readonly = menu.readonly(Global_Editor, "值")
+menu.action(Gun_Van, "附近生成厢型车", {}, "", function()
+    local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
+    local bool, coords, heading = get_closest_vehicle_node(player_pos, 1)
+    if bool then
+        local addr = memory.script_global(Globals.GunVanSpawnCoords)
+        memory.write_vector3(addr, coords)
+        util.toast("完成！")
+    end
+end)
+menu.action(Gun_Van, "重置厢型车位置", {}, "", function()
+    local addr = memory.script_global(Globals.GunVanSpawnCoords)
+    memory.write_vector3(addr, v3(0, 0, 0))
+end)
 
-menu.divider(Global_Editor, "写")
-menu.text_input(Global_Editor, "要写入的值", { "global_write" }, "务必注意int类型和float类型的格式",
-    function(value)
-        global_editor.write = value
-    end)
-menu.action(Global_Editor, "写入", {}, "", function()
-    local address = global_editor.address1 + global_editor.address2
-    local value = tonumber(global_editor.write)
-    if value ~= nil then
-        if global_editor.type == "int" then
-            GLOBAL_SET_INT(address, value)
-        elseif global_editor.type == "float" then
-            GLOBAL_SET_FLOAT(address, value)
-        end
-    end
-end)
-menu.toggle_loop(Global_Editor, "锁定写入", {}, "更改地址类型，锁定的也会跟着改变", function()
-    local address = global_editor.address1 + global_editor.address2
-    local value = tonumber(global_editor.write)
-    if value ~= nil then
-        if global_editor.type == "int" then
-            GLOBAL_SET_INT(address, value)
-        elseif global_editor.type == "float" then
-            GLOBAL_SET_FLOAT(address, value)
-        end
-    end
-end)
 
 --#endregion
 
 
 
-
-menu.list_select(Online_Options, "战局雪天", { "turn_snow" }, "", {
+menu.list_select(Online_Options, "战局雪天", { "turnSnow" }, "", {
     { -1, "不更改", { "default" }, "" },
     { 1, "开启", { "on" }, "" },
     { 0, "关闭", { "off" }, "" },
 }, -1, function(value)
-    Loop_Handler.Tunables.TurnSnow = value
     if value ~= -1 then
-        TUNABLE_SET_INT(Tunables.TURN_SNOW_ON_OFF, value)
+        Tunables.SetInt("TURN_SNOW_ON_OFF", value)
     end
-end)
-menu.click_slider_float(Online_Options, "AI血量倍数", { "ai_health_multiplier" }, "",
-    0, 1000, 100, 10, function(value)
-        TUNABLE_SET_FLOAT(Tunables.AI_HEALTH, value * 0.01)
-        Loop_Handler.Tunables.AiHealth = value * 0.01
-    end)
-menu.toggle(Online_Options, "禁用产业劫货", {}, "", function(toggle)
-    Globals.DisableBusinessRaid(toggle)
-    Loop_Handler.Tunables.DisableBusinessRaid = toggle
+    LoopHandler.Tunables.TurnSnow = value
 end)

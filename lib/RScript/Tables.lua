@@ -1,3 +1,25 @@
+------------------------
+-- ENUM ENTITY_TYPE
+------------------------
+
+ENTITY_NONE = 0
+ENTITY_PED = 1
+ENTITY_VEHICLE = 2
+ENTITY_OBJECT = 3
+ENTITY_PICKUP = 4
+ENTITY_ALL = 5
+
+
+------------------------
+-- Consts
+------------------------
+
+HIGHEST_INT = 2147483647
+LOWEST_INT = -2147483647
+
+
+
+
 -- 颜色 [0 - 1]格式
 Colors = {
     white = { r = 1.0, g = 1.0, b = 1.0, a = 1.0 },
@@ -2559,19 +2581,19 @@ Blip_T = {
 Misc_T = {
     -- `ListItem` 实体类型
     EntityType = {
-        { 1, "Ped", {}, "NPC" },
-        { 2, "Vehicle", {}, "载具" },
-        { 3, "Object", {}, "物体" },
-        { 4, "Pickup", {}, "拾取物" }
+        { ENTITY_PED, "Ped", {}, "NPC" },
+        { ENTITY_VEHICLE, "Vehicle", {}, "载具" },
+        { ENTITY_OBJECT, "Object", {}, "物体" },
+        { ENTITY_PICKUP, "Pickup", {}, "拾取物" }
     },
 
     -- `ListItem` 实体类型(All)
     EntityTypeAll = {
-        { 1, "All", {}, "全部类型实体" },
-        { 2, "Ped", {}, "NPC" },
-        { 3, "Vehicle", {}, "载具" },
-        { 4, "Object", {}, "物体" },
-        { 5, "Pickup", {}, "拾取物" }
+        { ENTITY_ALL, "All", {}, "全部类型实体" },
+        { ENTITY_PED, "Ped", {}, "NPC" },
+        { ENTITY_VEHICLE, "Vehicle", {}, "载具" },
+        { ENTITY_OBJECT, "Object", {}, "物体" },
+        { ENTITY_PICKUP, "Pickup", {}, "拾取物" }
     },
 
     -- `ListItem` NPC 类型
@@ -2670,5 +2692,58 @@ Misc_T = {
         { 83, "Emp Launcher" },
         { 84, "Railgun XM3" },
         { 85, "Balanced Cannons" }
-    }
+    },
+
+
+    GunVanPosition = {
+        [0] = { -29.532, 6435.136, 31.162 },
+        [1] = { 1705.214, 4819.167, 41.75 },
+        [2] = { 1795.522, 3899.753, 33.869 },
+        [3] = { 1335.536, 2758.746, 51.099 },
+        [4] = { 795.583, 1210.78, 338.962 },
+        [5] = { -3192.67, 1077.205, 20.594 },
+        [6] = { -789.719, 5400.921, 33.915 },
+        [7] = { -24.384, 3048.167, 40.703 },
+        [8] = { 2666.786, 1469.324, 24.237 },
+        [9] = { -1454.966, 2667.503, 3.2 },
+        [10] = { 2340.418, 3054.188, 47.888 },
+        [11] = { 1509.183, -2146.795, 76.853 },
+        [12] = { 1137.404, -1358.654, 34.322 },
+        [13] = { -57.208, -2658.793, 5.737 },
+        [14] = { 1905.017, 565.222, 175.558 },
+        [15] = { 974.484, -1718.798, 30.296 },
+        [16] = { 779.077, -3266.297, 5.719 },
+        [17] = { -587.728, -1637.208, 19.611 },
+        [18] = { 733.99, -736.803, 26.165 },
+        [19] = { -1694.632, -454.082, 40.712 },
+        [20] = { -1330.726, -1163.948, 4.313 },
+        [21] = { -496.618, 40.231, 52.316 },
+        [22] = { 275.527, 66.509, 94.108 },
+        [23] = { 260.928, -763.35, 30.559 },
+        [24] = { -478.025, -741.45, 30.299 },
+        [25] = { 894.94, 3603.911, 32.56 },
+        [26] = { -2166.511, 4289.503, 48.733 },
+        [27] = { 1465.633, 6553.67, 13.771 },
+        [28] = { 1101.032, -335.172, 66.944 },
+        [29] = { 149.683, -1655.674, 29.028 },
+    },
 }
+
+
+RS_T.AllWeapons = {
+    { 0, "无", { "none" }, "", "" }
+}
+RS_T.AllWeaponsWithoutMelee = {}
+
+for key, item in pairs(util.get_weapons()) do
+    local menu_name = util.get_label_text(item.label_key)
+    local command_names = string.gsub(util.reverse_joaat(item.hash), "weapon_", "")
+
+    local list_item = { item.hash, menu_name, { command_names }, "", item.category }
+
+    table.insert(RS_T.AllWeapons, list_item)
+
+    if item.category_id ~= 0 then
+        table.insert(RS_T.AllWeaponsWithoutMelee, list_item)
+    end
+end

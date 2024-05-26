@@ -2,9 +2,9 @@
 -- Local Player Functions
 ----------------------------------------
 
----传送玩家
----@param coords v3
----@param heading? float
+--- 传送玩家
+--- @param coords v3
+--- @param heading? float
 function teleport(coords, heading)
     local ent = entities.get_user_vehicle_as_handle(false)
     if ent == INVALID_GUID then
@@ -14,18 +14,18 @@ function teleport(coords, heading)
     TP_ENTITY(ent, coords, heading)
 end
 
----传送玩家
----@param x float
----@param y float
----@param z float
----@param heading? float
+--- 传送玩家
+--- @param x float
+--- @param y float
+--- @param z float
+--- @param heading? float
 function teleport2(x, y, z, heading)
     teleport(v3.new(x, y, z), heading)
 end
 
----设置/获取玩家朝向
----@param heading? float
----@return float
+--- 设置/获取玩家朝向
+--- @param heading? float
+--- @return float
 function user_heading(heading)
     local ent = entities.get_user_vehicle_as_handle(false)
     if ent == INVALID_GUID then
@@ -39,8 +39,8 @@ function user_heading(heading)
     return ENTITY.GET_ENTITY_HEADING(ent)
 end
 
----获取玩家室内ID，不在室内则返回-1
----@return integer
+--- 获取玩家室内ID，不在室内则返回-1
+--- @return integer
 function user_interior()
     if INTERIOR.IS_INTERIOR_SCENE() then
         return INTERIOR.GET_INTERIOR_FROM_ENTITY(players.user_ped())
@@ -48,11 +48,11 @@ function user_interior()
     return -1
 end
 
----传送实体到玩家 `offset`: 左/右，前/后，上/下
----@param entity Entity
----@param offsetX? float
----@param offsetY? float
----@param offsetZ? float
+--- 传送实体到玩家 `offset`: 左/右，前/后，上/下
+--- @param entity Entity
+--- @param offsetX? float
+--- @param offsetY? float
+--- @param offsetZ? float
 function tp_entity_to_me(entity, offsetX, offsetY, offsetZ)
     offsetX = offsetX or 0.0
     offsetY = offsetY or 0.0
@@ -61,11 +61,11 @@ function tp_entity_to_me(entity, offsetX, offsetY, offsetZ)
     TP_ENTITY(entity, coords)
 end
 
----传送玩家到实体 `offset`: 左/右，前/后，上/下
----@param entity Entity
----@param offsetX? float
----@param offsetY? float
----@param offsetZ? float
+--- 传送玩家到实体 `offset`: 左/右，前/后，上/下
+--- @param entity Entity
+--- @param offsetX? float
+--- @param offsetY? float
+--- @param offsetZ? float
 function tp_to_entity(entity, offsetX, offsetY, offsetZ)
     offsetX = offsetX or 0.0
     offsetY = offsetY or 0.0
@@ -74,29 +74,19 @@ function tp_to_entity(entity, offsetX, offsetY, offsetZ)
     teleport(coords)
 end
 
----玩家传送进载具
----@param vehicle Vehicle
----@param door? string *delete* : 删除车门
----@param driver? string *tp* : 传送司机到外面, *delete* : 删除司机
----@param seat? int default: -1
+--- 玩家传送进载具
+--- @param vehicle Vehicle
+--- @param door? string *delete* : 删除车门
+--- @param driver? string *tp* : 传送司机到外面, *delete* : 删除司机
+--- @param seat? int default: -1
 function tp_into_vehicle(vehicle, door, driver, seat)
     seat = seat or -1
-    -- unlock doors
-    VEHICLE.SET_VEHICLE_DOORS_LOCKED(vehicle, 1)
-    VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_PLAYERS(vehicle, false)
-    VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_NON_SCRIPT_PLAYERS(vehicle, false)
-    VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_TEAMS(vehicle, false)
-    VEHICLE.SET_DONT_ALLOW_PLAYER_TO_ENTER_VEHICLE_IF_LOCKED_FOR_PLAYER(vehicle, false)
+
+    unlock_vehicle_doors(vehicle)
+    clear_vehicle_wanted(vehicle)
     -- unfreeze
     ENTITY.FREEZE_ENTITY_POSITION(vehicle, false)
-    VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, true)
     VEHICLE.SET_VEHICLE_UNDRIVEABLE(vehicle, false)
-    -- clear wanted
-    VEHICLE.SET_VEHICLE_IS_WANTED(vehicle, false)
-    VEHICLE.SET_VEHICLE_INFLUENCES_WANTED_LEVEL(vehicle, false)
-    VEHICLE.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER(vehicle, true)
-    VEHICLE.SET_VEHICLE_IS_STOLEN(vehicle, false)
-    VEHICLE.SET_POLICE_FOCUS_WILL_TRACK_VEHICLE(vehicle, false)
 
     if door == "delete" then
         VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, 0, true) -- left front door
@@ -119,20 +109,20 @@ function tp_into_vehicle(vehicle, door, driver, seat)
     PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, seat)
 end
 
----传送载具到玩家，玩家传送进载具
----@param vehicle Vehicle
----@param door? string *delete* : 删除车门
----@param driver? string *tp* : 传送司机到外面, *delete* : 删除司机
----@param seat? int default: -1
+--- 传送载具到玩家，玩家传送进载具
+--- @param vehicle Vehicle
+--- @param door? string *delete* : 删除车门
+--- @param driver? string *tp* : 传送司机到外面, *delete* : 删除司机
+--- @param seat? int default: -1
 function tp_vehicle_to_me(vehicle, door, driver, seat)
     ENTITY_HEADING(vehicle, user_heading())
     tp_entity_to_me(vehicle)
     tp_into_vehicle(vehicle, door, driver, seat)
 end
 
----传送拾取物到玩家
----@param pickup Pickup
----@param attachToSelf? boolean
+--- 传送拾取物到玩家
+--- @param pickup Pickup
+--- @param attachToSelf? boolean
 function tp_pickup_to_me(pickup, attachToSelf)
     if ENTITY.IS_ENTITY_ATTACHED(pickup) then
         ENTITY.DETACH_ENTITY(pickup, true, true)
@@ -147,9 +137,9 @@ function tp_pickup_to_me(pickup, attachToSelf)
     end
 end
 
----玩家与实体绘制连线
----@param entity Entity
----@param colour Colour?
+--- 玩家与实体绘制连线
+--- @param entity Entity
+--- @param colour Colour?
 function draw_line_to_entity(entity, colour)
     local player_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
     local ent_pos = ENTITY.GET_ENTITY_COORDS(entity)
@@ -160,72 +150,73 @@ end
 -- Entity Functions
 ----------------------------------------
 
----获取实体类型 (String)
----
----`text_type`: 1 小写, 2 首字母大写, 3 大写 (默认: 2)
----@param entity Entity
----@param text_type integer?
----@return string
-function get_entity_type(entity, text_type)
-    local entity_type = "No Entity"
-    if ENTITY.DOES_ENTITY_EXIST(entity) and ENTITY.IS_AN_ENTITY(entity) then
-        if ENTITY.IS_ENTITY_A_PED(entity) then
-            entity_type = "Ped"
-        elseif ENTITY.IS_ENTITY_A_VEHICLE(entity) then
-            entity_type = "Vehicle"
-        elseif ENTITY.IS_ENTITY_AN_OBJECT(entity) then
-            entity_type = "Object"
-            if OBJECT.IS_OBJECT_A_PICKUP(entity) or OBJECT.IS_OBJECT_A_PORTABLE_PICKUP(entity) then
-                entity_type = "Pickup"
-            end
-        end
+--- 获取实体类型 (Integer)
+--- @param entity Entity
+--- @return ENTITY_TYPE
+function get_entity_type(entity)
+    if not ENTITY.DOES_ENTITY_EXIST(entity) or not ENTITY.IS_AN_ENTITY(entity) then
+        return ENTITY_NONE
     end
 
-    if text_type == 1 then
+    if ENTITY.IS_ENTITY_A_PED(entity) then
+        return ENTITY_PED
+    end
+
+    if ENTITY.IS_ENTITY_A_VEHICLE(entity) then
+        return ENTITY_VEHICLE
+    end
+
+    if ENTITY.IS_ENTITY_AN_OBJECT(entity) then
+        if OBJECT.IS_OBJECT_A_PICKUP(entity) or OBJECT.IS_OBJECT_A_PORTABLE_PICKUP(entity) then
+            return ENTITY_PICKUP
+        end
+        return ENTITY_OBJECT
+    end
+
+    return ENTITY_NONE
+end
+
+--- 获取实体类型 (String)
+---
+--- `text_type`: 1 小写, 2 首字母大写, 3 大写 (默认: 2)
+--- @param entity Entity
+--- @param textType integer?
+--- @return string
+function get_entity_type_text(entity, textType)
+    local entity_type_list = {
+        [ENTITY_NONE] = "No Entity",
+        [ENTITY_PED] = "Ped",
+        [ENTITY_VEHICLE] = "Vehicle",
+        [ENTITY_OBJECT] = "Object",
+        [ENTITY_PICKUP] = "Pickup"
+    }
+
+    local entity_type = get_entity_type(entity)
+    entity_type = entity_type_list[entity_type]
+
+    if textType == 1 then
         return string.lower(entity_type)
     end
-    if text_type == 3 then
+    if textType == 3 then
         return string.upper(entity_type)
     end
     return entity_type
 end
 
----String to Integer
----
----1: Ped, 2: Vehicle, 3: Object, 4: Pickup, 5: No Entity
----@param Type string
----@return integer
-function GET_ENTITY_TYPE_INDEX(Type)
-    Type = string.lower(Type)
-    if Type == "ped" then
-        return 1
-    end
-    if Type == "vehicle" then
-        return 2
-    end
-    if Type == "object" then
-        return 3
-    end
-    if Type == "pickup" then
-        return 4
-    end
-    return 5
-end
-
 ---设置实体左/右、前/后、上/下移动
----@param entity Entity
----@param offsetX float
----@param offsetY float
----@param offsetZ float
+--- @param entity Entity
+--- @param offsetX float
+--- @param offsetY float
+--- @param offsetZ float
 function set_entity_move(entity, offsetX, offsetY, offsetZ)
     local coords = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(entity, offsetX, offsetY, offsetZ)
     TP_ENTITY(entity, coords)
 end
 
 ---设置实体与目标实体之间的朝向角度差
----@param setEntity Entity
----@param toEntity Entity
----@param angle? float
+--- @param setEntity Entity
+--- @param toEntity Entity
+--- @param angle? float
 function set_entity_heading_to_entity(setEntity, toEntity, angle)
     angle = angle or 0.0
     local heading = ENTITY.GET_ENTITY_HEADING(toEntity)
@@ -233,11 +224,11 @@ function set_entity_heading_to_entity(setEntity, toEntity, angle)
 end
 
 ---传送实体到目标实体 `offset`: 左/右，前/后，上/下
----@param tpEntity Entity
----@param toEntity Entity
----@param offsetX? float
----@param offsetY? float
----@param offsetZ? float
+--- @param tpEntity Entity
+--- @param toEntity Entity
+--- @param offsetX? float
+--- @param offsetY? float
+--- @param offsetZ? float
 function tp_entity_to_entity(tpEntity, toEntity, offsetX, offsetY, offsetZ)
     offsetX = offsetX or 0.0
     offsetY = offsetY or 0.0
@@ -246,83 +237,8 @@ function tp_entity_to_entity(tpEntity, toEntity, offsetX, offsetY, offsetZ)
     TP_ENTITY(tpEntity, coords)
 end
 
----获取对应类型的所有实体
----@param Type string
----@return table<int, entity>
-function get_all_entities(Type)
-    Type = string.lower(Type)
-
-    if Type == "ped" then
-        return entities.get_all_peds_as_handles()
-    end
-    if Type == "vehicle" then
-        return entities.get_all_vehicles_as_handles()
-    end
-    if Type == "object" then
-        return entities.get_all_objects_as_handles()
-    end
-    if Type == "pickup" then
-        return entities.get_all_pickups_as_handles()
-    end
-
-    return {}
-end
-
----获取对应类型的所有实体指针
----@param Type string
----@return table<int, pointer>
-function get_all_entities_as_pointers(Type)
-    Type = string.lower(Type)
-
-    if Type == "ped" then
-        return entities.get_all_peds_as_pointers()
-    end
-    if Type == "vehicle" then
-        return entities.get_all_vehicles_as_pointers()
-    end
-    if Type == "object" then
-        return entities.get_all_objects_as_pointers()
-    end
-    if Type == "pickup" then
-        return entities.get_all_pickups_as_pointers()
-    end
-
-    return {}
-end
-
----通过 model hash 寻找实体
----@param Type string
----@param isMission boolean
----@param ... Hash
----@return table<int, entity>
-function get_entities_by_hash(Type, isMission, ...)
-    local entity_list = {}
-    local hash_list = { ... }
-
-    for key, entity_ptr in pairs(get_all_entities_as_pointers(Type)) do
-        local entity_hash = entities.get_model_hash(entity_ptr)
-        for _, hash in pairs(hash_list) do
-            if entity_hash == hash then
-                if entities.has_handle(entity_ptr) then
-                    local entity = entities.pointer_to_handle(entity_ptr)
-
-                    if isMission then
-                        if ENTITY.IS_ENTITY_A_MISSION_ENTITY(entity) then
-                            table.insert(entity_list, entity)
-                        end
-                    else
-                        table.insert(entity_list, entity)
-                    end
-                end
-            end
-        end
-    end
-
-    return entity_list
-end
-
----@param entity Entity
----@param toggle boolean
+--- @param entity Entity
+--- @param toggle boolean
 function set_entity_godmode(entity, toggle)
     if not ENTITY.DOES_ENTITY_EXIST(entity) then
         return false
@@ -333,12 +249,131 @@ function set_entity_godmode(entity, toggle)
     ENTITY.SET_ENTITY_CAN_BE_DAMAGED(entity, not toggle)
 end
 
----获取距离坐标最近的实体
----@param entityType string
----@param coords v3
----@param isMission boolean? default: false
----@param radius float? default: 100.0
----@return Entity
+----------------------------------------
+-- Get Entities Functions
+----------------------------------------
+
+--- 获取对应类型的所有实体
+--- @param entityType ENTITY_TYPE
+--- @return table<int, Entity>
+function get_all_entities(entityType)
+    if entityType == ENTITY_PED then
+        return entities.get_all_peds_as_handles()
+    end
+    if entityType == ENTITY_VEHICLE then
+        return entities.get_all_vehicles_as_handles()
+    end
+    if entityType == ENTITY_OBJECT then
+        return entities.get_all_objects_as_handles()
+    end
+    if entityType == ENTITY_PICKUP then
+        return entities.get_all_pickups_as_handles()
+    end
+
+    return {}
+end
+
+--- 获取对应类型的所有实体指针
+--- @param entityType ENTITY_TYPE
+--- @return table<int, pointer>
+function get_all_entities_as_pointers(entityType)
+    if entityType == ENTITY_PED then
+        return entities.get_all_peds_as_pointers()
+    end
+    if entityType == ENTITY_VEHICLE then
+        return entities.get_all_vehicles_as_pointers()
+    end
+    if entityType == ENTITY_OBJECT then
+        return entities.get_all_objects_as_pointers()
+    end
+    if entityType == ENTITY_PICKUP then
+        return entities.get_all_pickups_as_pointers()
+    end
+
+    return {}
+end
+
+--- 通过 model hash 获取实体
+--- @param entityType ENTITY_TYPE
+--- @param isMission boolean
+--- @param ... Hash
+--- @return table<int, Entity>
+function get_entities_by_hash(entityType, isMission, ...)
+    local entity_list = {}
+    local hash_list = { ... }
+
+    for key, entity_ptr in pairs(get_all_entities_as_pointers(entityType)) do
+        local entity_hash = entities.get_model_hash(entity_ptr)
+        for _, hash in pairs(hash_list) do
+            if entity_hash == hash then
+                local entity = entities.pointer_to_handle(entity_ptr)
+
+                if isMission then
+                    if ENTITY.IS_ENTITY_A_MISSION_ENTITY(entity) then
+                        table.insert(entity_list, entity)
+                    end
+                else
+                    table.insert(entity_list, entity)
+                end
+            end
+        end
+    end
+
+    return entity_list
+end
+
+--- 通过 model hash 获取指定脚本的任务实体
+--- @param entityType ENTITY_TYPE
+--- @param scriptName string
+--- @param ... Hash
+--- @return table<int, Entity>
+function get_mission_entities_by_hash(entityType, scriptName, ...)
+    if not IS_SCRIPT_RUNNING(scriptName) then
+        return {}
+    end
+
+    local entity_list = {}
+    local hash_list = { ... }
+
+    for key, entity_ptr in pairs(get_all_entities_as_pointers(entityType)) do
+        local entity_hash = entities.get_model_hash(entity_ptr)
+        for _, hash in pairs(hash_list) do
+            if entity_hash == hash then
+                local entity = entities.pointer_to_handle(entity_ptr)
+
+                if GET_ENTITY_SCRIPT(entity) == scriptName then
+                    table.insert(entity_list, entity)
+                end
+            end
+        end
+    end
+
+    return entity_list
+end
+
+--- 获取指定脚本的任务拾取物
+--- @param scriptName string
+--- @return table<int, Entity>
+function get_mission_pickups(scriptName)
+    if not IS_SCRIPT_RUNNING(scriptName) then
+        return {}
+    end
+
+    local entity_list = {}
+    for _, entity in pairs(entities.get_all_pickups_as_handles()) do
+        if GET_ENTITY_SCRIPT(entity) == scriptName then
+            table.insert(entity_list, entity)
+        end
+    end
+    return entity_list
+end
+
+--- 获取距离坐标最近的实体
+--- @param entityType ENTITY_TYPE
+--- @param coords v3
+--- @param isMission boolean? default: false
+--- @param radius float? default: 100.0
+--- @return Entity
 function get_closest_entity(entityType, coords, isMission, radius)
     radius = radius or 100.0
     local closest_disance = 9999.0
@@ -364,11 +399,11 @@ function get_closest_entity(entityType, coords, isMission, radius)
     return closest_ent
 end
 
----获取坐标附近的实体
----@param entityType string
----@param coords v3
----@param radius float
----@return table<int, entity>
+--- 获取坐标附近的实体
+--- @param entityType ENTITY_TYPE
+--- @param coords v3
+--- @param radius float
+--- @return table<int, Entity>
 function get_nearby_entities(entityType, coords, radius)
     local entity_list = {}
     for _, ent in pairs(get_all_entities(entityType)) do
@@ -386,16 +421,16 @@ end
 -- Check Entity Functions
 ----------------------------------------
 
----判断是否为玩家
----@param ped Ped
----@return boolean
+--- 判断是否为玩家
+--- @param ped Ped
+--- @return boolean
 function is_player_ped(ped)
     return entities.is_player_ped(ped)
 end
 
----判断是否为玩家载具
----@param vehicle Vehicle
----@return boolean
+--- 判断是否为玩家载具
+--- @param vehicle Vehicle
+--- @return boolean
 function is_player_vehicle(vehicle)
     if vehicle == entities.get_user_vehicle_as_handle() or vehicle == entities.get_user_personal_vehicle_as_handle() then
         return true
@@ -411,9 +446,9 @@ function is_player_vehicle(vehicle)
     return false
 end
 
----判断是否为实体
----@param entity Entity
----@return boolean
+--- 判断是否为实体
+--- @param entity Entity
+--- @return boolean
 function IS_AN_ENTITY(entity)
     if ENTITY.DOES_ENTITY_EXIST(entity) then
         if ENTITY.IS_ENTITY_A_PED(entity) or ENTITY.IS_ENTITY_A_VEHICLE(entity) or ENTITY.IS_ENTITY_AN_OBJECT(entity) then
@@ -423,9 +458,9 @@ function IS_AN_ENTITY(entity)
     return false
 end
 
----判断是否为拾取物
----@param entity Entity
----@return boolean
+--- 判断是否为拾取物
+--- @param entity Entity
+--- @return boolean
 function IS_ENTITY_A_PICKUP(entity)
     if ENTITY.IS_ENTITY_AN_OBJECT(entity) then
         if OBJECT.IS_OBJECT_A_PICKUP(entity) or OBJECT.IS_OBJECT_A_PORTABLE_PICKUP(entity) then
@@ -435,9 +470,9 @@ function IS_ENTITY_A_PICKUP(entity)
     return false
 end
 
----判断是否为敌对实体
----@param entity Entity
----@return boolean
+--- 判断是否为敌对实体
+--- @param entity Entity
+--- @return boolean
 function is_hostile_entity(entity)
     if ENTITY.IS_ENTITY_A_PED(entity) then
         if is_hostile_ped(entity) then
@@ -467,13 +502,13 @@ end
 -- Create Entity Functions
 ----------------------------------------
 
----@param ped_type int
----@param hash Hash
----@param coords v3
----@param heading float
----@param is_networked boolean? [default = true]
----@param is_mission boolean? [default = true]
----@return Ped
+--- @param ped_type int
+--- @param hash Hash
+--- @param coords v3
+--- @param heading float
+--- @param is_networked boolean? [default = true]
+--- @param is_mission boolean? [default = true]
+--- @return Ped
 function create_ped(ped_type, hash, coords, heading, is_networked, is_mission)
     if is_networked == nil then is_networked = true end
     if is_mission == nil then is_mission = true end
@@ -502,12 +537,12 @@ function create_ped(ped_type, hash, coords, heading, is_networked, is_mission)
     return ped
 end
 
----@param hash Hash
----@param coords v3
----@param heading float
----@param is_networked boolean? [default = true]
----@param is_mission boolean? [default = true]
----@return Vehicle
+--- @param hash Hash
+--- @param coords v3
+--- @param heading float
+--- @param is_networked boolean? [default = true]
+--- @param is_mission boolean? [default = true]
+--- @return Vehicle
 function create_vehicle(hash, coords, heading, is_networked, is_mission)
     if is_networked == nil then is_networked = true end
     if is_mission == nil then is_mission = true end
@@ -536,11 +571,11 @@ function create_vehicle(hash, coords, heading, is_networked, is_mission)
     return veh
 end
 
----@param hash Hash
----@param coords v3
----@param is_networked boolean? [default = true]
----@param is_mission boolean? [default = true]
----@return Object
+--- @param hash Hash
+--- @param coords v3
+--- @param is_networked boolean? [default = true]
+--- @param is_mission boolean? [default = true]
+--- @return Object
 function create_object(hash, coords, is_networked, is_mission)
     if is_networked == nil then is_networked = true end
     if is_mission == nil then is_mission = true end
@@ -574,11 +609,11 @@ end
 ----------------------------------------
 
 ---复制Ped
----@param target_ped Ped
----@param coords v3
----@param heading float
----@param is_networked boolean
----@return Ped
+--- @param target_ped Ped
+--- @param coords v3
+--- @param heading float
+--- @param is_networked boolean
+--- @return Ped
 function clone_target_ped(target_ped, coords, heading, is_networked)
     if ENTITY.DOES_ENTITY_EXIST(target_ped) and ENTITY.IS_ENTITY_A_PED(target_ped) then
         local ped_type = PED.GET_PED_TYPE(target_ped)
@@ -593,8 +628,8 @@ function clone_target_ped(target_ped, coords, heading, is_networked)
 end
 
 ---复制目标Vehicle的数据 应用到 克隆Vehicle
----@param target_vehicle Vehicle
----@param clone_vehicle Vehicle
+--- @param target_vehicle Vehicle
+--- @param clone_vehicle Vehicle
 function clone_target_vehicle_data(target_vehicle, clone_vehicle)
     VEHICLE.SET_VEHICLE_MOD_KIT(clone_vehicle, 0)
 
@@ -668,11 +703,11 @@ function clone_target_vehicle_data(target_vehicle, clone_vehicle)
 end
 
 ---复制Vehicle
----@param target_vehicle Vehicle
----@param coords v3
----@param heading float
----@param is_networked boolean
----@return Vehicle
+--- @param target_vehicle Vehicle
+--- @param coords v3
+--- @param heading float
+--- @param is_networked boolean
+--- @return Vehicle
 function clone_target_vehicle(target_vehicle, coords, heading, is_networked)
     if ENTITY.DOES_ENTITY_EXIST(target_vehicle) and ENTITY.IS_ENTITY_A_VEHICLE(target_vehicle) then
         local hash = ENTITY.GET_ENTITY_MODEL(target_vehicle)
@@ -686,10 +721,10 @@ function clone_target_vehicle(target_vehicle, coords, heading, is_networked)
 end
 
 ---复制Object
----@param target_object Object
----@param coords v3
----@param is_networked boolean
----@return Object
+--- @param target_object Object
+--- @param coords v3
+--- @param is_networked boolean
+--- @return Object
 function clone_target_object(target_object, coords, is_networked)
     if ENTITY.DOES_ENTITY_EXIST(target_object) and ENTITY.IS_ENTITY_AN_OBJECT(target_object) then
         local hash = ENTITY.GET_ENTITY_MODEL(target_object)
@@ -708,8 +743,8 @@ end
 -- Vehicle Functions
 ----------------------------------------
 
----升级载具（排除涂装、车轮）
----@param vehicle Vehicle
+--- 升级载具（排除涂装、车轮）
+--- @param vehicle Vehicle
 function upgrade_vehicle(vehicle)
     if not ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         return
@@ -742,8 +777,8 @@ function upgrade_vehicle(vehicle)
     VEHICLE.SET_HELI_TAIL_BOOM_CAN_BREAK_OFF(vehicle, false)
 end
 
----修复载具
----@param vehicle Vehicle
+--- 修复载具
+--- @param vehicle Vehicle
 function fix_vehicle(vehicle)
     if not ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         return
@@ -756,8 +791,8 @@ function fix_vehicle(vehicle)
     SET_ENTITY_HEALTH(vehicle, ENTITY.GET_ENTITY_MAX_HEALTH(vehicle))
 end
 
----强化载具
----@param vehicle Vehicle
+--- 强化载具
+--- @param vehicle Vehicle
 function strong_vehicle(vehicle)
     if not ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         return
@@ -811,8 +846,8 @@ function strong_vehicle(vehicle)
     VEHICLE.REMOVE_VEHICLE_STUCK_CHECK(vehicle)
 end
 
----解锁载具车门
----@param vehicle Vehicle
+--- 解锁载具车门
+--- @param vehicle Vehicle
 function unlock_vehicle_doors(vehicle)
     if not ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
         return
@@ -823,14 +858,31 @@ function unlock_vehicle_doors(vehicle)
     VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_NON_SCRIPT_PLAYERS(vehicle, false)
     VEHICLE.SET_VEHICLE_DOORS_LOCKED_FOR_ALL_TEAMS(vehicle, false)
     VEHICLE.SET_DONT_ALLOW_PLAYER_TO_ENTER_VEHICLE_IF_LOCKED_FOR_PLAYER(vehicle, false)
+
+    VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, true)
 end
 
----获取最近的载具生成点
+--- 清除载具通缉状态
+--- @param vehicle Vehicle
+function clear_vehicle_wanted(vehicle)
+    if not ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
+        return
+    end
+
+    VEHICLE.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER(vehicle, true)
+    VEHICLE.SET_VEHICLE_IS_STOLEN(vehicle, false)
+    VEHICLE.SET_VEHICLE_IS_WANTED(vehicle, false)
+    VEHICLE.SET_POLICE_FOCUS_WILL_TRACK_VEHICLE(vehicle, false)
+    VEHICLE.SET_VEHICLE_INFLUENCES_WANTED_LEVEL(vehicle, false)
+    VEHICLE.SET_DISABLE_WANTED_CONES_RESPONSE(vehicle, true)
+end
+
+--- 获取最近的载具生成点
 --- - - -
----`nodeType`: 0 = main roads, 1 = any dry path, 3 = water
----@param coords v3
----@param nodeType integer
----@return boolean, v3, float
+--- `nodeType`: 0 = main roads, 1 = any dry path, 3 = water
+--- @param coords v3
+--- @param nodeType integer
+--- @return boolean, v3, float
 function get_closest_vehicle_node(coords, nodeType)
     local outCoords = v3.new()
     local outHeading = memory.alloc(4)
@@ -842,10 +894,10 @@ function get_closest_vehicle_node(coords, nodeType)
     end
 end
 
----获取随机的载具生成点
----@param coords v3
----@param radius float
----@return boolean, v3, integer
+--- 获取随机的载具生成点
+--- @param coords v3
+--- @param radius float
+--- @return boolean, v3, integer
 function get_random_vehicle_node(coords, radius)
     local vecReturn = v3.new()
     local NodeAddress = memory.alloc_int()
@@ -857,11 +909,11 @@ function get_random_vehicle_node(coords, radius)
     end
 end
 
----获取载具内所有Ped
+--- 获取载具内所有Ped
 ---
----返回 ped num 和 ped table
----@param vehicle Vehicle
----@return integer, table<int, ped>
+--- 返回 ped num 和 ped table
+--- @param vehicle Vehicle
+--- @return integer, table<int, ped>
 function get_vehicle_peds(vehicle)
     local num = 0
     local peds = {}
@@ -879,37 +931,37 @@ function get_vehicle_peds(vehicle)
     return num, peds
 end
 
----通过载具Hash获取载具名称
----@param modelHash Hash
----@return string
+--- 通过载具Hash获取载具名称
+--- @param modelHash Hash
+--- @return string
 function get_vehicle_display_name_by_hash(modelHash)
-    local display_name = "NULL"
-    if STREAMING.IS_MODEL_VALID(modelHash) then
-        display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(modelHash))
+    if not STREAMING.IS_MODEL_VALID(modelHash) then
+        return "NULL"
     end
-    return display_name
+
+    return util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(modelHash))
 end
 
----获取载具名称
----@param vehicle Vehicle
----@return string
+--- 获取载具名称
+--- @param vehicle Vehicle
+--- @return string
 function get_vehicle_display_name(vehicle)
-    local display_name = "NULL"
-    if ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
-        local hash = ENTITY.GET_ENTITY_MODEL(vehicle)
-        display_name = util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(hash))
+    if not ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
+        return "NULL"
     end
-    return display_name
+
+    local hash = ENTITY.GET_ENTITY_MODEL(vehicle)
+    return util.get_label_text(VEHICLE.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL(hash))
 end
 
 ----------------------------------------
 -- Ped Functions
 ----------------------------------------
 
----增强NPC作战能力
----@param ped Ped
----@param isGodmode boolean? [default = false]
----@param canRagdoll boolean? [default = true]
+--- 增强NPC作战能力
+--- @param ped Ped
+--- @param isGodmode boolean? [default = false]
+--- @param canRagdoll boolean? [default = true]
 function increase_ped_combat_ability(ped, isGodmode, canRagdoll)
     if not ENTITY.IS_ENTITY_A_PED(ped) then
         return
@@ -977,8 +1029,8 @@ function increase_ped_combat_ability(ped, isGodmode, canRagdoll)
     PED.SET_DISABLE_HIGH_FALL_DEATH(ped, true)
 end
 
----增强NPC作战属性
----@param ped Ped
+--- 增强NPC作战属性
+--- @param ped Ped
 function increase_ped_combat_attributes(ped)
     if not ENTITY.IS_ENTITY_A_PED(ped) then
         return
@@ -1013,7 +1065,7 @@ function increase_ped_combat_attributes(ped)
 end
 
 ---清理NPC外观
----@param ped Ped
+--- @param ped Ped
 function clear_ped_body(ped)
     if not ENTITY.IS_ENTITY_A_PED(ped) then
         return
@@ -1026,7 +1078,7 @@ function clear_ped_body(ped)
     PED.CLEAR_PED_ENV_DIRT(ped)
 end
 
----@param ped Ped
+--- @param ped Ped
 function clear_ped_all_tasks(ped)
     if not ENTITY.IS_ENTITY_A_PED(ped) then
         return
@@ -1045,7 +1097,7 @@ function clear_ped_all_tasks(ped)
     end
 end
 
----@param ped Ped
+--- @param ped Ped
 function disable_ped_flee_attributes(ped)
     if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
         PED.SET_PED_COMBAT_ATTRIBUTES(ped, 6, false)  -- FLEE_WHILST_IN_VEHICLE
@@ -1058,9 +1110,9 @@ function disable_ped_flee_attributes(ped)
     end
 end
 
----是否为敌对NPC
----@param ped Ped
----@return boolean
+--- 是否为敌对NPC
+--- @param ped Ped
+--- @return boolean
 function is_hostile_ped(ped)
     if not ENTITY.IS_ENTITY_A_PED(ped) then
         return false
@@ -1078,9 +1130,9 @@ function is_hostile_ped(ped)
     return false
 end
 
----是否为友好NPC
----@param ped Ped
----@return boolean
+--- 是否为友好NPC
+--- @param ped Ped
+--- @return boolean
 function is_friendly_ped(ped)
     if not ENTITY.IS_ENTITY_A_PED(ped) then
         return false
@@ -1094,17 +1146,32 @@ function is_friendly_ped(ped)
     return false
 end
 
+--- @param ped Ped
+--- @param weaponHash Hash
+--- @param setCurrent boolean [default = true]
+function give_weapon_to_ped(ped, weaponHash, setCurrent)
+    if setCurrent == nil then setCurrent = true end
+    WEAPON.GIVE_DELAYED_WEAPON_TO_PED(ped, weaponHash, -1, setCurrent)
+end
+
+--- 通过Ped获取玩家ID
+--- @param ped Ped
+--- @return Player
+function get_player_from_ped(ped)
+    return NETWORK.NETWORK_GET_PLAYER_INDEX_FROM_PED(ped)
+end
+
 ----------------------------------------
 -- Weapon Functions
 ----------------------------------------
 
----获取Ped当前使用的武器或载具武器的Hash，和武器类型
+--- 获取Ped当前使用的武器或载具武器的Hash，和武器类型
 ---
----武器类型 (integer):
+--- 武器类型 (integer):
 --- - `1`: Ped Weapon
 --- - `2`: Vehicle Weapon
----@param ped Ped
----@return Hash, integer
+--- @param ped Ped
+--- @return Hash, integer
 function get_ped_current_weapon(ped)
     local ptr = memory.alloc_int()
 
@@ -1125,37 +1192,39 @@ function get_ped_current_weapon(ped)
     return 0, 0
 end
 
----获取Ped当前的武器Hash
----@param ped Ped
----@return Hash
+--- 获取Ped当前的武器Hash
+--- @param ped Ped
+--- @return Hash
 function get_ped_weapon(ped)
-    local weaponHash = 0
-    if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
-        local ptr = memory.alloc_int()
-        if WEAPON.GET_CURRENT_PED_WEAPON(ped, ptr, true) then
-            weaponHash = memory.read_int(ptr)
-        end
+    if not ENTITY.IS_ENTITY_A_PED(ped) then
+        return 0
     end
-    return weaponHash
+
+    local ptr = memory.alloc_int()
+    if WEAPON.GET_CURRENT_PED_WEAPON(ped, ptr, true) then
+        return memory.read_int(ptr)
+    end
+    return 0
 end
 
----获取Ped当前的载具武器Hash
----@param ped Ped
----@return Hash
+--- 获取Ped当前的载具武器Hash
+--- @param ped Ped
+--- @return Hash
 function get_ped_vehicle_weapon(ped)
-    local weaponHash = 0
-    if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
-        local ptr = memory.alloc_int()
-        if WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(ped, ptr) then
-            weaponHash = memory.read_int(ptr)
-        end
+    if not ENTITY.IS_ENTITY_A_PED(ped) then
+        return 0
     end
-    return weaponHash
+
+    local ptr = memory.alloc_int()
+    if WEAPON.GET_CURRENT_PED_VEHICLE_WEAPON(ped, ptr) then
+        return memory.read_int(ptr)
+    end
+    return 0
 end
 
----通过武器Hash获取武器名称
----@param weaponHash Hash
----@return string
+--- 通过武器Hash获取武器名称
+--- @param weaponHash Hash
+--- @return string
 function get_weapon_name_by_hash(weaponHash)
     if WEAPON.IS_WEAPON_VALID(weaponHash) then
         for _, item in pairs(util.get_weapons()) do
@@ -1171,10 +1240,10 @@ end
 -- Network Functions
 ----------------------------------------
 
----请求控制实体
----@param entity Entity
----@param timeout integer?
----@return boolean
+--- 请求控制实体
+--- @param entity Entity
+--- @param timeout integer?
+--- @return boolean
 function request_control(entity, timeout)
     if not NETWORK.NETWORK_HAS_CONTROL_OF_ENTITY(entity) and util.is_session_started() then
         return entities.request_control(entity, timeout)
@@ -1182,10 +1251,10 @@ function request_control(entity, timeout)
     return true
 end
 
----请求控制实体，如果失败则通知
----@param entity Entity
----@param timeout integer?
----@return boolean
+--- 请求控制实体，如果失败则通知
+--- @param entity Entity
+--- @param timeout integer?
+--- @return boolean
 function request_control2(entity, timeout)
     if request_control(entity, timeout) then
         return true
@@ -1194,16 +1263,16 @@ function request_control2(entity, timeout)
     return false
 end
 
----是否已控制实体
----@param entity Entity
----@return boolean
+--- 是否已控制实体
+--- @param entity Entity
+--- @return boolean
 function has_control_entity(entity)
     return NETWORK.NETWORK_HAS_CONTROL_OF_ENTITY(entity)
 end
 
----@param entity Entity
----@param can_migrate? boolean
----@return boolean
+--- @param entity Entity
+--- @param can_migrate? boolean
+--- @return boolean
 function set_entity_networked(entity, can_migrate)
     if not ENTITY.DOES_ENTITY_EXIST(entity) then
         return false
@@ -1227,9 +1296,9 @@ end
 -- Blip Functions
 ----------------------------------------
 
----获取标记点实体
----@param blip Blip
----@return Entity
+--- 获取标记点实体
+--- @param blip Blip
+--- @return Entity
 function get_entity_from_blip(blip)
     if not HUD.DOES_BLIP_EXIST(blip) then
         return 0
@@ -1243,9 +1312,9 @@ function get_entity_from_blip(blip)
     return entity
 end
 
----获取标记点坐标
----@param blip Blip
----@return v3
+--- 获取标记点坐标
+--- @param blip Blip
+--- @return v3
 function GET_BLIP_COORDS(blip)
     if not HUD.DOES_BLIP_EXIST(blip) then
         return nil
@@ -1262,11 +1331,11 @@ function GET_BLIP_COORDS(blip)
     return pos
 end
 
----为实体添加标记点并显示一段时间，已有标记点则闪烁一段时间
----@param ent Entity
----@param blipSprite integer
----@param colour integer
----@param time integer ms
+--- 为实体添加标记点并显示一段时间，已有标记点则闪烁一段时间
+--- @param ent Entity
+--- @param blipSprite integer
+--- @param colour integer
+--- @param time integer ms
 function SHOW_BLIP_TIMER(ent, blipSprite, colour, time)
     util.create_thread(function()
         local blip = HUD.GET_BLIP_FROM_ENTITY(ent)
@@ -1287,8 +1356,8 @@ end
 -- Streaming Functions
 ----------------------------------------
 
----请求模型资源
----@param Hash Hash
+--- 请求模型资源
+--- @param Hash Hash
 function request_model(Hash)
     if STREAMING.IS_MODEL_VALID(Hash) then
         STREAMING.REQUEST_MODEL(Hash)
@@ -1299,8 +1368,8 @@ function request_model(Hash)
     end
 end
 
----请求武器资源
----@param Hash Hash
+--- 请求武器资源
+--- @param Hash Hash
 function request_weapon_asset(Hash)
     if WEAPON.IS_WEAPON_VALID(Hash) then
         WEAPON.REQUEST_WEAPON_ASSET(Hash, 31, 0)
@@ -1311,8 +1380,8 @@ function request_weapon_asset(Hash)
     end
 end
 
----请求粒子资源
----@param asset string
+--- 请求粒子资源
+--- @param asset string
 function request_ptfx_asset(asset)
     STREAMING.REQUEST_NAMED_PTFX_ASSET(asset)
     while not STREAMING.HAS_NAMED_PTFX_ASSET_LOADED(asset) do
@@ -1325,11 +1394,11 @@ end
 -- Draw Functions
 ----------------------------------------
 
----@param pos0 v3
----@param pos1 v3
----@param pos2 v3
----@param pos3 v3
----@param colour Colour
+--- @param pos0 v3
+--- @param pos1 v3
+--- @param pos2 v3
+--- @param pos3 v3
+--- @param colour Colour
 local draw_rect = function(pos0, pos1, pos2, pos3, colour)
     GRAPHICS.DRAW_POLY(pos0.x, pos0.y, pos0.z, pos1.x, pos1.y, pos1.z, pos3.x, pos3.y, pos3.z, colour.r, colour.g,
         colour.b, colour.a)
@@ -1337,9 +1406,9 @@ local draw_rect = function(pos0, pos1, pos2, pos3, colour)
         colour.b, colour.a)
 end
 
----@param entity Entity
----@param showPoly? boolean
----@param colour? Colour
+--- @param entity Entity
+--- @param showPoly? boolean
+--- @param colour? Colour
 function draw_bounding_box(entity, showPoly, colour)
     if not ENTITY.DOES_ENTITY_EXIST(entity) then
         return
@@ -1388,13 +1457,13 @@ function draw_bounding_box(entity, showPoly, colour)
     end
 end
 
----@param text string
----@param x float
----@param y float
----@param scale? float [default = 0.5]
----@param margin? float [default = 0.01]
----@param text_color? Color
----@param background_color? Color
+--- @param text string
+--- @param x float
+--- @param y float
+--- @param scale? float [default = 0.5]
+--- @param margin? float [default = 0.01]
+--- @param text_color? Color
+--- @param background_color? Color
 function draw_text_box(text, x, y, scale, margin, text_color, background_color)
     scale = scale or 0.5
     margin = margin or 0.01
@@ -1406,8 +1475,8 @@ function draw_text_box(text, x, y, scale, margin, text_color, background_color)
     directx.draw_text(x + margin, y + margin, text, ALIGN_TOP_LEFT, scale, text_color)
 end
 
----@param text string
----@param scale? float [default = 0.5]
+--- @param text string
+--- @param scale? float [default = 0.5]
 function DrawString(text, scale)
     scale = scale or 0.5
     local background = {
@@ -1430,8 +1499,8 @@ end
 -- Camera & Aim Functions
 ----------------------------------------
 
----@param distance number
----@return v3
+--- @param distance number
+--- @return v3
 function get_offset_from_cam(distance)
     local rot = CAM.GET_FINAL_RENDERED_CAM_ROT(2)
     local pos = CAM.GET_FINAL_RENDERED_CAM_COORD()
@@ -1454,9 +1523,9 @@ local TraceFlag <const> = {
     foliage = 256,
 }
 
----@param distance number
----@param flag? integer
----@return RaycastResult
+--- @param distance number
+--- @param flag? integer
+--- @return RaycastResult
 --- - - -
 --- class **RaycastResult** :
 --- - `didHit` *boolean*
@@ -1498,13 +1567,13 @@ end
 -- Colour Functions
 ----------------------------------------
 
----@class Colour
----@field r number | integer
----@field g number | integer
----@field b number | integer
----@field a number | integer
+--- @class Colour
+--- @field r number | integer
+--- @field g number | integer
+--- @field b number | integer
+--- @field a number | integer
 
----@return Colour
+--- @return Colour
 function get_random_colour()
     local colour = { a = 255 }
     colour.r = math.random(0, 255)
@@ -1514,8 +1583,8 @@ function get_random_colour()
 end
 
 --- 颜色数值 [0 - 1]格式 转换到 [0 - 255]格式 (float -> int)
----@param colour Colour
----@return Colour
+--- @param colour Colour
+--- @return Colour
 function to_rage_colour(colour)
     return {
         r = math.ceil(colour.r * 255),
@@ -1526,8 +1595,8 @@ function to_rage_colour(colour)
 end
 
 --- 颜色数值 [0 - 255]格式 转换到 [0 - 1]格式 (int -> float)
----@param colour Colour
----@return Colour
+--- @param colour Colour
+--- @return Colour
 function to_stand_colour(colour)
     return {
         r = string.format("%.2f", colour.r / 255),
@@ -1557,8 +1626,8 @@ local org_blip_colours <const> = {
 }
 
 ---获取玩家组织地图标记点的颜色
----@param player_id player
----@return integer
+--- @param player_id player
+--- @return integer
 function get_org_blip_colour(player_id)
     return org_blip_colours[players.get_org_colour(player_id)]
 end
@@ -1602,10 +1671,10 @@ Vector = {
 }
 
 ---计算模型大小，返回 long, width, height
----@param model Hash
----@return number
----@return number
----@return number
+--- @param model Hash
+--- @return number
+--- @return number
+--- @return number
 function calculate_model_size(model)
     local minVec = v3.new()
     local maxVec = v3.new()
@@ -1613,17 +1682,17 @@ function calculate_model_size(model)
     return (maxVec:getX() - minVec:getX()), (maxVec:getY() - minVec:getY()), (maxVec:getZ() - minVec:getZ())
 end
 
----@param num number
----@param places integer
----@return number?
+--- @param num number
+--- @param places integer
+--- @return number?
 function round(num, places)
     return tonumber(string.format('%.' .. (places or 0) .. 'f', num))
 end
 
----@param bool boolean
----@param true_text string? [默认: 是]
----@param false_text string? [默认: 否]
----@return string
+--- @param bool boolean
+--- @param true_text string? [默认: 是]
+--- @param false_text string? [默认: 否]
+--- @return string
 function bool_to_string(bool, true_text, false_text)
     if bool then
         return true_text or "是"
@@ -1632,9 +1701,9 @@ function bool_to_string(bool, true_text, false_text)
 end
 
 ---返回a和b的中间值
----@param a number
----@param b number
----@return number
+--- @param a number
+--- @param b number
+--- @return number
 function get_middle_num(a, b)
     local min = math.min(a, b)
     local max = math.max(a, b)
@@ -1642,8 +1711,8 @@ function get_middle_num(a, b)
     return middle
 end
 
----@param text string
----@return boolean
+--- @param text string
+--- @return boolean
 function to_boolean(text)
     if text == 'true' or text == "1" then
         return true
@@ -1655,10 +1724,10 @@ end
 -- Table Functions
 ----------------------------------------
 
----遍历表 判断某值是否在表中
----@param tbl table
----@param value any
----@return boolean
+--- 遍历表 判断某值是否在表中
+--- @param tbl table
+--- @param value any
+--- @return boolean
 function is_in_table(tbl, value)
     for k, v in pairs(tbl) do
         if v == value then
@@ -1674,15 +1743,15 @@ end
 
 THEFEED_POST = {}
 
----@param message string
+--- @param message string
 function THEFEED_POST.TEXT(message)
     util.BEGIN_TEXT_COMMAND_THEFEED_POST(message)
     HUD.END_TEXT_COMMAND_THEFEED_POST_TICKER(false, false)
 end
 
 ---Dev Mode Notify
----@param text string
----@param log? boolean
+--- @param text string
+--- @param log? boolean
 function notify(text, log)
     if not DEV_MODE then
         return
@@ -1701,9 +1770,9 @@ end
 ----------------------------------------
 
 ---爆头击杀NPC
----@param targetPed Ped
----@param weaponHash Hash? default: 584646201(WEAPON_APPISTOL)
----@param owner Ped?
+--- @param targetPed Ped
+--- @param weaponHash Hash? default: 584646201(WEAPON_APPISTOL)
+--- @param owner Ped?
 function shoot_ped_head(targetPed, weaponHash, owner)
     local head_pos = PED.GET_PED_BONE_COORDS(targetPed, 0x322c, 0, 0, 0)
     local vector = ENTITY.GET_ENTITY_FORWARD_VECTOR(targetPed)
@@ -1760,8 +1829,8 @@ function explode_hostile_objects()
 end
 
 ---生成实体阻挡任务刷新点
----@param point_list table<int, table<pos_x, pos_y, pos_z, heading>>
----@param hash Hash?
+--- @param point_list table<int, table<pos_x, pos_y, pos_z, heading>>
+--- @param hash Hash?
 function block_mission_generate_point(point_list, hash)
     hash = hash or util.joaat("khanjali")
 
