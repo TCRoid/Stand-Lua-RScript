@@ -18,7 +18,9 @@ HIGHEST_INT = 2147483647
 LOWEST_INT = -2147483647
 
 
-
+------------------------
+-- Tables
+------------------------
 
 -- 颜色 [0 - 1]格式
 Colors = {
@@ -2730,20 +2732,31 @@ Misc_T = {
 }
 
 
-RS_T.AllWeapons = {
-    { 0, "无", { "none" }, "", "" }
+Weapon_T = {
+    -- `ListItem` 全部武器
+    AllWeapons = {
+        { 0, "无", { "none" }, "", "" }
+    },
+
+    -- `ListItem` 全部武器（无近战武器）
+    AllWeaponsWithoutMelee = {},
+
+    -- `Enum` 全部武器名称
+    WeaponNameList = {},
 }
-RS_T.AllWeaponsWithoutMelee = {}
 
 for key, item in pairs(util.get_weapons()) do
     local menu_name = util.get_label_text(item.label_key)
     local command_names = string.gsub(util.reverse_joaat(item.hash), "weapon_", "")
+    command_names = string.gsub(command_names, "_", "")
 
     local list_item = { item.hash, menu_name, { command_names }, "", item.category }
 
-    table.insert(RS_T.AllWeapons, list_item)
+    table.insert(Weapon_T.AllWeapons, list_item)
 
     if item.category_id ~= 0 then
-        table.insert(RS_T.AllWeaponsWithoutMelee, list_item)
+        table.insert(Weapon_T.AllWeaponsWithoutMelee, list_item)
     end
+
+    Weapon_T.WeaponNameList[item.hash] = menu_name
 end

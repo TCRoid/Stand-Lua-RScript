@@ -1227,11 +1227,12 @@ end
 --- @return string
 function get_weapon_name_by_hash(weaponHash)
     if WEAPON.IS_WEAPON_VALID(weaponHash) then
-        for _, item in pairs(util.get_weapons()) do
-            if item.hash == weaponHash then
-                return util.get_label_text(item.label_key)
-            end
-        end
+        -- for _, item in pairs(util.get_weapons()) do
+        --     if item.hash == weaponHash then
+        --         return util.get_label_text(item.label_key)
+        --     end
+        -- end
+        return Weapon_T.WeaponNameList[weaponHash] or ""
     end
     return ""
 end

@@ -515,7 +515,7 @@ for index = 1, 10 do
     local weapon_hash = GLOBAL_GET_INT(addr)
 
     menu.list_select(Gun_Van_List, "Slot " .. index, { "GunVanSlot" .. index }, "",
-        RS_T.AllWeapons, weapon_hash, function(value)
+        Weapon_T.AllWeapons, weapon_hash, function(value)
             GLOBAL_SET_INT(addr, value)
         end)
 end

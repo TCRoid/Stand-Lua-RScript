@@ -297,7 +297,7 @@ menu.action(Entity_Vehicle_Options, "拆下左右车门和打开引擎", { "brok
     end
 end)
 
-menu.toggle_loop(Entity_Vehicle_Options, "按F解锁附近载具车门", {}, "", function()
+menu.toggle_loop(Entity_Vehicle_Options, "按F解锁附近载具车门", { "fOpenVeh" }, "", function()
     -- INPUT_ENTER 23
     if PAD.IS_CONTROL_PRESSED(0, 23) and not PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
         for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
@@ -335,7 +335,7 @@ menu.toggle(Entity_Pickup_Options, "任务拾取物", {}, "", function(toggle)
     EntityPickup.mission = toggle
 end, true)
 
-menu.action(Entity_Pickup_Options, "全部传送到我", {}, "", function()
+menu.action(Entity_Pickup_Options, "全部传送到我", { "tpmePickups" }, "", function()
     for _, pickup in pairs(entities.get_all_pickups_as_handles()) do
         if EntityPickup.mission and not ENTITY.IS_ENTITY_A_MISSION_ENTITY(pickup) then
             goto continue

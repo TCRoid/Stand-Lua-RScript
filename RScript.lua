@@ -4,7 +4,7 @@
 
 local SCRIPT_START_TIME <const> = util.current_time_millis()
 
-local SCRIPT_VERSION <const> = "2024/5/26"
+local SCRIPT_VERSION <const> = "2024/6/2"
 
 local SUPPORT_GAME_VERSION <const> = "1.68-3179"
 
@@ -15,7 +15,7 @@ local SUPPORT_GAME_VERSION <const> = "1.68-3179"
 ------------------------------------------
 
 -- Store
-local STORE_DIR <const> = filesystem.store_dir() .. "RScript\\"
+STORE_DIR = filesystem.store_dir() .. "RScript\\"
 if not filesystem.exists(STORE_DIR) then
     filesystem.mkdir(STORE_DIR)
 end
@@ -91,6 +91,7 @@ local LIB_MODULES <const> = {
 for _, lib_module in ipairs(LIB_MODULES) do
     require(lib_module)
 end
+
 
 
 
