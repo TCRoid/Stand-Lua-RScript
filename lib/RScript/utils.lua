@@ -138,8 +138,6 @@ function rs_menu.current_weapon_action(weapon_menu_list, action_name, on_click, 
     end
 end
 
-
-
 -- local all_weapons = {}
 -- local all_weapons_without_melee = {}
 -- for key, item in pairs(util.get_weapons()) do
@@ -306,13 +304,17 @@ rs_memory = {}
 --- @param addr pointer
 --- @return boolean
 function rs_memory.is_entity_froze(addr)
-    return memory.read_byte(addr + 0x2E) == 3
+    local m_base_flags = memory.read_uint(addr + 0x2C)
+    -- IS_FIXED, IS_FIXED_BY_NETWORK
+    return IS_ANY_BIT_SET(m_base_flags, 17, 18)
 end
 
 --- @param addr pointer
 --- @return boolean
 function rs_memory.is_mission_entity(addr)
-    return memory.read_byte(addr + 0x19) == 4
+    local m_dynamic_entity_flags = memory.read_ushort(addr + 0xDA)
+    -- POPTYPE_MISSION, POPTYPE_PERMANENT
+    return BITS_TEST(m_dynamic_entity_flags, 0, 1, 2) or BITS_TEST(m_dynamic_entity_flags, 1, 2)
 end
 
 --- @param addr pointer
