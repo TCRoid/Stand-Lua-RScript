@@ -337,7 +337,7 @@ local AttackedResponse = {
 }
 
 function AttackedResponse.checkAttacker(attacker, isKiller)
-    if AttackedResponse.reactionType == 2 and not isKiller then
+    if AttackedResponse.reactionType == 2 and isKiller ~= 1 then
         return false
     end
 

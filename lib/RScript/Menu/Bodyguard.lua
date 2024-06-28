@@ -2,8 +2,8 @@
 --          Bodyguard Options
 ------------------------------------------
 
-
 local Bodyguard_Options <const> = menu.list(Menu_Root, "保镖选项", {}, "")
+
 
 local Bodyguard = {
     onTick = false,
@@ -120,10 +120,10 @@ function Bodyguard.SetPedAttribute(ped)
     PED.SET_PED_ID_RANGE(ped, 500.0)
     PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(ped, 500.0)
     PED.SET_PED_HIGHLY_PERCEPTIVE(ped, true)
-    PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, 90.0)
-    PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 90.0)
-    PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, 90.0)
-    PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 90.0)
+    PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, -180.0)
+    PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 180.0)
+    PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, -180.0)
+    PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 180.0)
     PED.SET_PED_VISUAL_FIELD_CENTER_ANGLE(ped, 90.0)
     -- COMBAT
     PED.SET_PED_SHOOT_RATE(ped, 1000)
@@ -161,8 +161,9 @@ function Bodyguard.SetPedAttribute(ped)
     -- COMBAT FLOAT
     PED.SET_COMBAT_FLOAT(ped, 6, 1.0)                  -- Weapon Accuracy
     PED.SET_COMBAT_FLOAT(ped, 7, 1.0)                  -- Fight Proficiency
-    PED.SET_COMBAT_FLOAT(ped, 9, 10.0)                 -- Heli Speed Modifier
-    PED.SET_COMBAT_FLOAT(ped, 10, 500.0)               -- Heli Senses Range
+    PED.SET_COMBAT_FLOAT(ped, 9, 1.0)                  -- Heli Speed Modifier
+    PED.SET_COMBAT_FLOAT(ped, 10, 200.0)               -- Heli Senses Range
+    PED.SET_COMBAT_FLOAT(ped, 26, 10.0)                -- Homing Rocket Turn Rate Modifier
     PED.SET_COMBAT_FLOAT(ped, 29,
         Bodyguard.Setting.ped.weapon_damamge_modifier) -- Weapon Damamge Modifier
     -- FLEE ATTRIBUTES
@@ -174,6 +175,7 @@ function Bodyguard.SetPedAttribute(ped)
     TASK.SET_PED_PATH_AVOID_FIRE(ped, false)
     TASK.SET_PED_PATH_MAY_ENTER_WATER(ped, true)
     -- CONFIG FLAG
+    PED.SET_PED_CONFIG_FLAG(ped, 32, false)       -- Will Fly Through Windscreen
     PED.SET_PED_CONFIG_FLAG(ped, 42, true)        -- Dont Influence Wanted Level
     PED.SET_PED_CONFIG_FLAG(ped, 107, true)       -- Dont Activate Ragdoll From BulletImpact
     PED.SET_PED_CONFIG_FLAG(ped, 108, true)       -- Dont Activate Ragdoll From Explosions
@@ -207,13 +209,13 @@ function Bodyguard.TickHandler()
                 keep_running_flag = true
             end
         end
-        for _, ped in pairs(Bodyguard.Heli.ped_list) do
+        for _, ped in pairs(Bodyguard.Heli.pedList) do
             if ENTITY.DOES_ENTITY_EXIST(ped) and not ENTITY.IS_ENTITY_DEAD(ped) then
                 PED.SET_PED_NO_TIME_DELAY_BEFORE_SHOT(ped)
                 keep_running_flag = true
             end
         end
-        for _, heli in pairs(Bodyguard.Heli.heli_list) do
+        for _, heli in pairs(Bodyguard.Heli.heliList) do
             local blip = HUD.GET_BLIP_FROM_ENTITY(heli)
             if ENTITY.DOES_ENTITY_EXIST(heli) and HUD.DOES_BLIP_EXIST(blip) then
                 if not ENTITY.IS_ENTITY_DEAD(heli) then
@@ -370,23 +372,49 @@ end)
 
 
 
-------------------------
--- Bodyguard Heli
-------------------------
+--------------------------------
+--      Bodyguard Heli
+--------------------------------
 
 local Bodyguard_Heli <const> = menu.list(Bodyguard_Options, "保镖直升机", {}, "")
 
-Bodyguard.Heli = {
-    heli_list = {}, -- 保镖 heli list
-    ped_list = {},  -- 保镖 ped list
-
-    heli_models = {
-        { util.joaat("valkyrie"), "女武神" },
-        { util.joaat("buzzard"), "秃鹰" },
-        { util.joaat("hunter"), "猎杀者" },
-        { util.joaat("polmav"), "警用小蛮牛" },
-    },
+local BodyguardHeliModels <const> = {
+    { model = "valkyrie",     label = "Valkyrie",    vehWeapons = nil },
+    { model = "hunter",       label = "Hunter",      vehWeapons = { "VEHICLE_WEAPON_HUNTER_MISSILE", "VEHICLE_WEAPON_HUNTER_CANNON", "VEHICLE_WEAPON_HUNTER_BARRAGE" } },
+    { model = "akula",        label = "Akula",       vehWeapons = { "VEHICLE_WEAPON_AKULA_MISSILE", "VEHICLE_WEAPON_AKULA_MINIGUN" }, },
+    { model = "savage",       label = "Savage",      vehWeapons = { "VEHICLE_WEAPON_SPACE_ROCKET", "VEHICLE_WEAPON_PLAYER_SAVAGE" }, },
+    { model = "annihilator2", label = "ANNIHLATOR2", vehWeapons = { "VEHICLE_WEAPON_ANNIHILATOR2_MISSILE", "VEHICLE_WEAPON_ANNIHILATOR2_MINI" }, },
+    { model = "buzzard",      label = "Buzzard",     vehWeapons = { "VEHICLE_WEAPON_SPACE_ROCKET", "VEHICLE_WEAPON_PLAYER_BUZZARD" }, },
+    { model = "polmav",       label = "Polmav",      vehWeapons = nil }
 }
+
+Bodyguard.Heli = {
+    heliModel = "",
+    heliModelListItem = {},
+    heliLabels = {},
+    heliWeapons = {},
+
+    pedList = {},
+    heliList = {},
+    menuList = {},
+    index = 0,
+}
+
+function Bodyguard.Heli.Init()
+    for _, item in pairs(BodyguardHeliModels) do
+        local model_hash = util.joaat(item.model)
+        local label_text = util.get_label_text(item.label)
+        local list_item = { model_hash, label_text }
+        table.insert(Bodyguard.Heli.heliModelListItem, list_item)
+
+        Bodyguard.Heli.heliWeapons[model_hash] = item.vehWeapons
+        Bodyguard.Heli.heliLabels[model_hash] = label_text
+    end
+
+    Bodyguard.Heli.heliModel = Bodyguard.Heli.heliModelListItem[1][1]
+end
+
+Bodyguard.Heli.Init()
 
 function Bodyguard.Heli.AddBlipForHeli(heli)
     local blip = HUD.ADD_BLIP_FOR_ENTITY(heli)
@@ -414,12 +442,21 @@ function Bodyguard.Heli.SetHeliAttribute(heli)
     VEHICLE.SET_HELI_BLADES_FULL_SPEED(heli)
     VEHICLE.SET_VEHICLE_SEARCHLIGHT(heli, true, true)
     strong_vehicle(heli)
+    -- UPGRADE
+    for _, mod_type in pairs({ 5, 11, 12, 13, 16 }) do
+        local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(heli, mod_type)
+        VEHICLE.SET_VEHICLE_MOD(heli, mod_type, mod_num - 1, false)
+    end
+    VEHICLE.TOGGLE_VEHICLE_MOD(heli, 18, true)
 
     entities.set_can_migrate(heli, false)
 end
 
 function Bodyguard.Heli.SetPedAttribute(ped)
+    Bodyguard.SetPedAttribute(ped)
+
     PED.SET_PED_CAN_BE_SHOT_IN_VEHICLE(ped, false)
+
     PED.SET_PED_CAN_BE_KNOCKED_OFF_VEHICLE(ped, 1)
     PED.SET_PED_CAN_BE_DRAGGED_OUT(ped, false)
     PED.SET_DRIVER_ABILITY(ped, 1.0)
@@ -427,21 +464,91 @@ function Bodyguard.Heli.SetPedAttribute(ped)
     PED.SET_PED_COMBAT_ATTRIBUTES(ped, 3, false) -- Leave Vehicles
 end
 
-function Bodyguard.Heli.ClearDeletedEntities()
-    for key, ent in pairs(Bodyguard.Heli.ped_list) do
-        if not ENTITY.DOES_ENTITY_EXIST(ent) then
-            table.remove(Bodyguard.Heli.ped_list, key)
+function Bodyguard.Heli.GenerateMenu(menu_name, index, heli_data)
+    local heli = heli_data.heli
+    local pilot = heli_data.pilot
+    local members = heli_data.members
+    local heli_weapons = heli_data.heli_weapons
+
+
+    local menu_parent = Bodyguard_Heli
+    local menu_list = menu.list(menu_parent, menu_name, {}, "", function()
+        if not ENTITY.DOES_ENTITY_EXIST(heli) then
+            util.toast("保镖直升机已不存在")
+            return
         end
-    end
-    for key, ent in pairs(Bodyguard.Heli.heli_list) do
-        if not ENTITY.DOES_ENTITY_EXIST(ent) then
-            table.remove(Bodyguard.Heli.heli_list, key)
+        if ENTITY.IS_ENTITY_DEAD(heli) then
+            util.toast("保镖直升机已死亡")
+            return
         end
+    end)
+    Bodyguard.Heli.menuList[index] = menu_list
+
+
+    local on_tick = menu.divider(menu_list, menu_name)
+    menu.on_tick_in_viewport(on_tick, function()
+        if ENTITY.DOES_ENTITY_EXIST(heli) and not ENTITY.IS_ENTITY_DEAD(heli) then
+            draw_line_to_entity(heli)
+        end
+    end)
+
+    menu.action(menu_list, "传送到我", {}, "", function()
+        tp_entity_to_me(heli, math.random(-60, 60), math.random(-60, 60), 30)
+    end)
+    menu.textslider(menu_list, "无敌", {}, "", { "设置", "取消" }, function(value)
+        local toggle = true
+        if value == 2 then
+            toggle = false
+        end
+
+        set_entity_godmode(heli, toggle)
+        set_entity_godmode(pilot, toggle)
+        for _, ped in pairs(members) do
+            set_entity_godmode(ped, toggle)
+        end
+    end)
+    menu.action(menu_list, "恢复", {}, "", function()
+        SET_ENTITY_HEALTH(heli, ENTITY.GET_ENTITY_MAX_HEALTH(heli))
+        fix_vehicle(heli)
+
+        SET_ENTITY_HEALTH(pilot, ENTITY.GET_ENTITY_MAX_HEALTH(ped))
+        clear_ped_body(pilot)
+
+        for _, ped in pairs(members) do
+            SET_ENTITY_HEALTH(ped, ENTITY.GET_ENTITY_MAX_HEALTH(ped))
+            clear_ped_body(ped)
+        end
+    end)
+
+    if heli_weapons ~= nil then
+        local list_item = {}
+        for _, weapon_model in pairs(heli_weapons) do
+            table.insert(list_item, { util.joaat(weapon_model), weapon_model })
+        end
+        menu.list_action(menu_list, "主驾驶载具武器", {}, "", list_item, function(value)
+            WEAPON.SET_CURRENT_PED_VEHICLE_WEAPON(pilot, value)
+        end)
     end
+
+    menu.action(menu_list, "删除", {}, "", function()
+        if ENTITY.DOES_ENTITY_EXIST(heli) then
+            entities.delete(heli)
+        end
+        if ENTITY.DOES_ENTITY_EXIST(pilot) then
+            entities.delete(pilot)
+        end
+        for _, ped in pairs(members) do
+            if ENTITY.DOES_ENTITY_EXIST(ped) then
+                entities.delete(ped)
+            end
+        end
+
+        menu.delete(menu_list)
+    end)
 end
 
 function Bodyguard.Heli.AllPeds(callback)
-    for _, ped in pairs(Bodyguard.Heli.ped_list) do
+    for _, ped in pairs(Bodyguard.Heli.pedList) do
         if ENTITY.DOES_ENTITY_EXIST(ped) and not ENTITY.IS_ENTITY_DEAD(ped) then
             callback(ped)
         end
@@ -449,22 +556,20 @@ function Bodyguard.Heli.AllPeds(callback)
 end
 
 function Bodyguard.Heli.AllHelis(callback)
-    for _, heli in pairs(Bodyguard.Heli.heli_list) do
+    for _, heli in pairs(Bodyguard.Heli.heliList) do
         if ENTITY.DOES_ENTITY_EXIST(heli) and not ENTITY.IS_ENTITY_DEAD(heli) then
             callback(heli)
         end
     end
 end
 
--- 保镖 heli hash
-Bodyguard.Heli.heli_hash = Bodyguard.Heli.heli_models[1][1]
-
 menu.list_select(Bodyguard_Heli, "直升机模型", {}, "",
-    Bodyguard.Heli.heli_models, Bodyguard.Heli.heli_hash, function(value)
-        Bodyguard.Heli.heli_hash = value
+    Bodyguard.Heli.heliModelListItem, Bodyguard.Heli.heliModel, function(value)
+        Bodyguard.Heli.heliModel = value
     end)
+
 menu.action(Bodyguard_Heli, "生成保镖直升机", {}, "", function()
-    local heli_hash = Bodyguard.Heli.heli_hash
+    local heli_hash = Bodyguard.Heli.heliModel
     local ped_hash = util.joaat("s_m_y_blackops_01")
     local heading = user_heading()
     local coords = ENTITY.GET_ENTITY_COORDS(players.user_ped())
@@ -489,26 +594,40 @@ menu.action(Bodyguard_Heli, "生成保镖直升机", {}, "", function()
     PED.SET_PED_KEEP_TASK(pilot, true)
 
     Bodyguard.Group.SetPedRelationship(pilot)
-    Bodyguard.SetPedAttribute(pilot)
     Bodyguard.Heli.SetPedAttribute(pilot)
 
-    Bodyguard.Heli.ClearDeletedEntities()
-    table.insert(Bodyguard.Heli.heli_list, heli)
-    table.insert(Bodyguard.Heli.ped_list, pilot)
+    -- Pilot Vehicle Weapon
+    local heli_weapons = Bodyguard.Heli.heliWeapons[heli_hash]
+    if heli_weapons ~= nil then
+        WEAPON.SET_CURRENT_PED_VEHICLE_WEAPON(pilot, util.joaat(heli_weapons[1]))
+    end
+
+    Bodyguard.Heli.index = Bodyguard.Heli.index + 1
+    Bodyguard.Heli.heliList[Bodyguard.Heli.index] = heli
+
+    table.insert(Bodyguard.Heli.pedList, pilot)
 
 
-    -- Other Memebers
+    -- Other Members
+    local members = {}
     local seats = VEHICLE.GET_VEHICLE_MODEL_NUMBER_OF_SEATS(heli_hash) - 2
     for seat = 0, seats do
         local ped = create_ped(29, ped_hash, coords, heading)
         PED.SET_PED_INTO_VEHICLE(ped, heli, seat)
 
         Bodyguard.Group.SetPedRelationship(ped)
-        Bodyguard.SetPedAttribute(ped)
         Bodyguard.Heli.SetPedAttribute(ped)
 
-        table.insert(Bodyguard.Heli.ped_list, ped)
+        table.insert(Bodyguard.Heli.pedList, ped)
+        table.insert(members, ped)
     end
+
+
+    -- Generate Menu
+    local menu_name = Bodyguard.Heli.index .. ". " .. Bodyguard.Heli.heliLabels[heli_hash]
+    local heli_data = { heli = heli, pilot = pilot, members = members, heli_weapons = heli_weapons }
+    Bodyguard.Heli.GenerateMenu(menu_name, Bodyguard.Heli.index, heli_data)
+
 
     Bodyguard.TickHandler()
 end)
@@ -519,14 +638,19 @@ menu.divider(Bodyguard_Heli, "管理保镖直升机")
 -- All Heli
 ----------------
 
-local Bodyguard_Heli_All <const> = menu.list(Bodyguard_Heli, "所有保镖直升机", {}, "")
+local Bodyguard_Heli_All2 <const> = menu.list(Bodyguard_Heli, "所有保镖直升机", {}, "")
 
-menu.action(Bodyguard_Heli_All, "传送到我", {}, "", function()
+menu.action(Bodyguard_Heli_All2, "传送到我", {}, "", function()
     Bodyguard.Heli.AllHelis(function(heli)
-        tp_entity_to_me(heli, math.random(-30, 30), math.random(-30, 30), 30)
+        tp_entity_to_me(heli, math.random(-60, 60), math.random(-60, 60), 30)
     end)
 end)
-menu.toggle(Bodyguard_Heli_All, "无敌", {}, "", function(toggle)
+menu.textslider(Bodyguard_Heli_All2, "无敌", {}, "", { "设置", "取消" }, function(value)
+    local toggle = true
+    if value == 2 then
+        toggle = false
+    end
+
     Bodyguard.Heli.AllPeds(function(ped)
         set_entity_godmode(ped, toggle)
     end)
@@ -534,7 +658,7 @@ menu.toggle(Bodyguard_Heli_All, "无敌", {}, "", function(toggle)
         set_entity_godmode(heli, toggle)
     end)
 end)
-menu.action(Bodyguard_Heli_All, "恢复", {}, "恢复生命值,清理NPC血迹,修复载具", function()
+menu.action(Bodyguard_Heli_All2, "恢复", {}, "恢复生命值，清理NPC血迹，修复载具", function()
     Bodyguard.Heli.AllPeds(function(ped)
         SET_ENTITY_HEALTH(ped, ENTITY.GET_ENTITY_MAX_HEALTH(ped))
         clear_ped_body(ped)
@@ -544,49 +668,61 @@ menu.action(Bodyguard_Heli_All, "恢复", {}, "恢复生命值,清理NPC血迹,�
         fix_vehicle(heli)
     end)
 end)
-menu.toggle(Bodyguard_Heli_All, "禁用直升机碰撞", {},
-    "避免卡在墙里等情况,但可能会导致某些座位的NPC掉出载具", function(toggle)
+menu.textslider(Bodyguard_Heli_All2, "禁用直升机碰撞", {},
+    "避免卡在墙里等情况，但可能会导致某些座位的NPC掉出载具", { "设置", "取消" }, function(value)
+        local toggle = true
+        if value == 2 then
+            toggle = false
+        end
+
         Bodyguard.Heli.AllHelis(function(heli)
             ENTITY.SET_ENTITY_COLLISION(heli, not toggle, true)
         end)
     end)
-menu.divider(Bodyguard_Heli_All, "删除")
-menu.action(Bodyguard_Heli_All, "删除已死亡", {}, "", function()
-    for key, ent in pairs(Bodyguard.Heli.ped_list) do
+menu.divider(Bodyguard_Heli_All2, "删除")
+menu.action(Bodyguard_Heli_All2, "删除已死亡", {}, "", function()
+    for key, ent in pairs(Bodyguard.Heli.pedList) do
         if ENTITY.DOES_ENTITY_EXIST(ent) and ENTITY.IS_ENTITY_DEAD(ent) then
             entities.delete(ent)
 
-            table.remove(Bodyguard.Heli.ped_list, key)
+            --table.remove(Bodyguard.Heli.pedList, key)
         end
     end
-    for key, ent in pairs(Bodyguard.Heli.heli_list) do
+    for key, ent in pairs(Bodyguard.Heli.heliList) do
         if ENTITY.DOES_ENTITY_EXIST(ent) and ENTITY.IS_ENTITY_DEAD(ent) then
             entities.delete(ent)
 
-            table.remove(Bodyguard.Heli.heli_list, key)
+            --table.remove(Bodyguard.Heli.heliList, key)
         end
     end
 end)
-menu.action(Bodyguard_Heli_All, "删除全部", {}, "", function()
-    for _, ent in pairs(Bodyguard.Heli.ped_list) do
+menu.action(Bodyguard_Heli_All2, "删除全部", {}, "", function()
+    for _, ent in pairs(Bodyguard.Heli.pedList) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             entities.delete(ent)
         end
     end
-    for _, ent in pairs(Bodyguard.Heli.heli_list) do
+    for _, ent in pairs(Bodyguard.Heli.heliList) do
         if ENTITY.DOES_ENTITY_EXIST(ent) then
             entities.delete(ent)
         end
     end
+    Bodyguard.Heli.pedList = {}
+    Bodyguard.Heli.heliList = {}
 
-    Bodyguard.Heli.heli_list = {}
-    Bodyguard.Heli.ped_list = {}
+    rs_menu.delete_menu_list(Bodyguard.Heli.menuList)
+    Bodyguard.Heli.index = 0
 end)
 
 
 
 
 
+
+
+
+
+--
 
 menu.divider(Bodyguard_Options, "默认设置")
 
@@ -629,6 +765,7 @@ end)
 --------------------------------
 
 local Bodyguard_Heli_Setting <const> = menu.list(Bodyguard_Options, "保镖直升机设置", {}, "")
+
 menu.toggle(Bodyguard_Heli_Setting, "无敌", {}, "", function(toggle)
     Bodyguard.Setting.heli.godmode = toggle
 end)

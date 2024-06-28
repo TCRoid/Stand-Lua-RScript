@@ -60,6 +60,8 @@ end
 -- Stat Functions
 --------------------------
 
+--- @param stat string
+--- @return string
 function ADD_MP_INDEX(stat)
     local Exceptions = {
         "MP_CHAR_STAT_RALLY_ANIM",
@@ -81,18 +83,26 @@ function ADD_MP_INDEX(stat)
     return "MP" .. util.get_char_slot() .. "_" .. stat
 end
 
+--- @param stat string
+--- @param value integer
 function STAT_SET_INT(stat, value)
     STATS.STAT_SET_INT(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
+--- @param stat string
+--- @param value float
 function STAT_SET_FLOAT(stat, value)
     STATS.STAT_SET_FLOAT(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
+--- @param stat string
+--- @param value boolean
 function STAT_SET_BOOL(stat, value)
     STATS.STAT_SET_BOOL(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
+--- @param stat string
+--- @param value string
 function STAT_SET_STRING(stat, value)
     STATS.STAT_SET_STRING(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
@@ -113,18 +123,24 @@ function STAT_INCREMENT(stat, value)
     STATS.STAT_INCREMENT(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
+--- @param stat string
+--- @return integer
 function STAT_GET_INT(stat)
     local IntPTR = memory.alloc_int()
     STATS.STAT_GET_INT(util.joaat(ADD_MP_INDEX(stat)), IntPTR, -1)
     return memory.read_int(IntPTR)
 end
 
+--- @param stat string
+--- @return float
 function STAT_GET_FLOAT(stat)
     local FloatPTR = memory.alloc_int()
     STATS.STAT_GET_FLOAT(util.joaat(ADD_MP_INDEX(stat)), FloatPTR, -1)
     return tonumber(string.format("%.3f", memory.read_float(FloatPTR)))
 end
 
+--- @param stat string
+--- @return boolean
 function STAT_GET_BOOL(stat)
     if STAT_GET_INT(stat) ~= 0 then
         return "true"
@@ -133,6 +149,8 @@ function STAT_GET_BOOL(stat)
     end
 end
 
+--- @param stat string
+--- @return string
 function STAT_GET_STRING(stat)
     return STATS.STAT_GET_STRING(util.joaat(ADD_MP_INDEX(stat)), -1)
 end
@@ -159,7 +177,6 @@ end
 ----------------------------
 -- Global Functions
 ----------------------------
-
 
 --- @param global integer
 --- @param value integer

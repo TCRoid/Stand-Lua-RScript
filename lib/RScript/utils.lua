@@ -328,3 +328,25 @@ end
 function rs_memory.set_entity_health(addr, value)
     memory.write_float(addr + 0x280, value)
 end
+
+--- Only applicable to peds.
+--- @param addr pointer
+--- @return pointer
+function rs_memory.get_weapon_info(addr)
+    local m_weapon_manager = memory.read_long(addr + 0x10B8)
+    if m_weapon_manager == 0 then
+        return 0
+    end
+
+    local m_equipped_weapon_info = memory.read_long(m_weapon_manager + 0x58 + 0x10)
+    if m_equipped_weapon_info ~= 0 then
+        return m_equipped_weapon_info
+    end
+
+    local m_equipped_vehicle_weapon_info = memory.read_long(m_weapon_manager + 0x58 + 0x18)
+    if m_equipped_vehicle_weapon_info ~= 0 then
+        return m_equipped_vehicle_weapon_info
+    end
+
+    return 0
+end

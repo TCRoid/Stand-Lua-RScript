@@ -2,7 +2,6 @@
 --          Dev Options
 ------------------------------------------
 
-
 menu.textslider_stateful(Dev_Options, "Copy My Coords & Heading", { "copyMyPos" }, "", {
     "without key", "with key"
 }, function(value)
@@ -201,21 +200,3 @@ menu.action(Dev_Options, "关闭电脑界面", { "shut_computer" }, "", function
     end
 end)
 
-menu.action(Dev_Options, "结束自由模式任务", { "shut_task" }, "", function()
-    -- "SMHUD_TIMEREM" /* GXT: TIME REMAINING */
-
-    local data = {
-        { script = "gb_casino_heist",              addr = 4280 + 1521 },
-        { script = "fm_content_island_heist",      addr = 13262 + 1460 },
-        { script = "fm_content_payphone_hit",      addr = 5639 + 724 },
-        { script = "fm_content_security_contract", addr = 7095 + 1320 },
-        { script = "gb_contraband_buy",            addr = 601 + 189 },
-    }
-
-    for key, item in pairs(data) do
-        if IS_SCRIPT_RUNNING(item.script) then
-            LOCAL_SET_INT(item.script, item.addr, 0)
-            util.toast(item.script)
-        end
-    end
-end)

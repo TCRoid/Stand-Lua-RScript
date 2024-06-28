@@ -1,22 +1,22 @@
 -- Game Variables
--- 1.68-3179
+-- 1.69-3258
 
 --------------------------------
 --  Tunables
 --------------------------------
 
 TunablesI = {
-    ["DISABLE_STAT_CAP_CHECK"] = 167,
-    ["TURN_SNOW_ON_OFF"] = 4575,
+    ["DISABLE_STAT_CAP_CHECK"] = 158,
+    ["TURN_SNOW_ON_OFF"] = 4413,
 
-    ["GB_GHOST_ORG_DURATION"] = 13349,
-    ["GB_BRIBE_AUTHORITIES_DURATION"] = 13350,
+    ["GB_GHOST_ORG_DURATION"] = 13117,
+    ["GB_BRIBE_AUTHORITIES_DURATION"] = 13118,
 
-    ["XM22_GUN_VAN_SLOT_WEAPON_TYPE_0"] = 34328,
+    ["XM22_GUN_VAN_SLOT_WEAPON_TYPE_0"] = 33273,
 }
 
 TunablesF = {
-    ["AI_HEALTH"] = 165,
+    ["AI_HEALTH"] = 156,
 }
 
 local g_sMPTunables = 262145

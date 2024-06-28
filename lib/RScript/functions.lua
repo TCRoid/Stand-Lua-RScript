@@ -860,6 +860,7 @@ function unlock_vehicle_doors(vehicle)
     VEHICLE.SET_DONT_ALLOW_PLAYER_TO_ENTER_VEHICLE_IF_LOCKED_FOR_PLAYER(vehicle, false)
 
     VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, true)
+    VEHICLE.SET_VEHICLE_EXCLUSIVE_DRIVER(vehicle, 0, 0)
 end
 
 --- 清除载具通缉状态
@@ -984,10 +985,10 @@ function increase_ped_combat_ability(ped, isGodmode, canRagdoll)
     PED.SET_PED_SEEING_RANGE(ped, 500.0)
     PED.SET_PED_HEARING_RANGE(ped, 500.0)
     PED.SET_PED_ID_RANGE(ped, 500.0)
-    PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, 90.0)
-    PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 90.0)
-    PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, 90.0)
-    PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 90.0)
+    PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, -180.0)
+    PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 180.0)
+    PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, -180.0)
+    PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 180.0)
     PED.SET_PED_VISUAL_FIELD_CENTER_ANGLE(ped, 90.0)
 
     -- WEAPON
@@ -1097,19 +1098,6 @@ function clear_ped_all_tasks(ped)
     end
 end
 
---- @param ped Ped
-function disable_ped_flee_attributes(ped)
-    if ENTITY.DOES_ENTITY_EXIST(ped) and ENTITY.IS_ENTITY_A_PED(ped) then
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 6, false)  -- FLEE_WHILST_IN_VEHICLE
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 17, false) -- ALWAYS_FLEE
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 46, true)  -- CAN_FIGHT_ARMED_PEDS_WHEN_NOT_ARMED
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 58, true)  -- DISABLE_FLEE_FROM_COMBAT
-        PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true)  -- DISABLE_ALL_RANDOMS_FLEE
-
-        PED.SET_PED_FLEE_ATTRIBUTES(ped, 512, true)   -- NEVER_FLEE
-    end
-end
-
 --- 是否为敌对NPC
 --- @param ped Ped
 --- @return boolean
@@ -1154,7 +1142,7 @@ function give_weapon_to_ped(ped, weaponHash, setCurrent)
     WEAPON.GIVE_DELAYED_WEAPON_TO_PED(ped, weaponHash, -1, setCurrent)
 end
 
---- 通过Ped获取玩家ID
+--- 通过 Ped 获取玩家ID
 --- @param ped Ped
 --- @return Player
 function get_player_from_ped(ped)
