@@ -608,7 +608,7 @@ end
 -- Clone Entity Functions
 ----------------------------------------
 
----复制Ped
+--- 复制 Ped
 --- @param target_ped Ped
 --- @param coords v3
 --- @param heading float
@@ -627,7 +627,7 @@ function clone_target_ped(target_ped, coords, heading, is_networked)
     return 0
 end
 
----复制目标Vehicle的数据 应用到 克隆Vehicle
+--- 复制目标 Vehicle 的数据 应用到 克隆 Vehicle
 --- @param target_vehicle Vehicle
 --- @param clone_vehicle Vehicle
 function clone_target_vehicle_data(target_vehicle, clone_vehicle)
@@ -702,7 +702,7 @@ function clone_target_vehicle_data(target_vehicle, clone_vehicle)
     end
 end
 
----复制Vehicle
+--- 复制 Vehicle
 --- @param target_vehicle Vehicle
 --- @param coords v3
 --- @param heading float
@@ -720,7 +720,7 @@ function clone_target_vehicle(target_vehicle, coords, heading, is_networked)
     return 0
 end
 
----复制Object
+--- 复制 Object
 --- @param target_object Object
 --- @param coords v3
 --- @param is_networked boolean
@@ -910,7 +910,7 @@ function get_random_vehicle_node(coords, radius)
     end
 end
 
---- 获取载具内所有Ped
+--- 获取载具内所有 Ped
 ---
 --- 返回 ped num 和 ped table
 --- @param vehicle Vehicle
@@ -932,7 +932,7 @@ function get_vehicle_peds(vehicle)
     return num, peds
 end
 
---- 通过载具Hash获取载具名称
+--- 通过载具 Hash 获取载具名称
 --- @param modelHash Hash
 --- @return string
 function get_vehicle_display_name_by_hash(modelHash)
@@ -959,7 +959,7 @@ end
 -- Ped Functions
 ----------------------------------------
 
---- 增强NPC作战能力
+--- 增强 NPC 作战能力
 --- @param ped Ped
 --- @param isGodmode boolean? [default = false]
 --- @param canRagdoll boolean? [default = true]
@@ -1030,7 +1030,7 @@ function increase_ped_combat_ability(ped, isGodmode, canRagdoll)
     PED.SET_DISABLE_HIGH_FALL_DEATH(ped, true)
 end
 
---- 增强NPC作战属性
+--- 增强 NPC 作战属性
 --- @param ped Ped
 function increase_ped_combat_attributes(ped)
     if not ENTITY.IS_ENTITY_A_PED(ped) then
@@ -1065,7 +1065,7 @@ function increase_ped_combat_attributes(ped)
     PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true)  -- Disable All Randoms Flee
 end
 
----清理NPC外观
+---清理 NPC 外观
 --- @param ped Ped
 function clear_ped_body(ped)
     if not ENTITY.IS_ENTITY_A_PED(ped) then
@@ -1098,7 +1098,7 @@ function clear_ped_all_tasks(ped)
     end
 end
 
---- 是否为敌对NPC
+--- 是否为敌对 NPC
 --- @param ped Ped
 --- @return boolean
 function is_hostile_ped(ped)
@@ -1118,7 +1118,7 @@ function is_hostile_ped(ped)
     return false
 end
 
---- 是否为友好NPC
+--- 是否为友好 NPC
 --- @param ped Ped
 --- @return boolean
 function is_friendly_ped(ped)
@@ -1614,7 +1614,7 @@ local org_blip_colours <const> = {
     [14] = -2038592001
 }
 
----获取玩家组织地图标记点的颜色
+--- 获取玩家组织地图标记点的颜色
 --- @param player_id player
 --- @return integer
 function get_org_blip_colour(player_id)
@@ -1625,7 +1625,7 @@ end
 -- Misc Functions
 ----------------------------------------
 
----坐标计算
+--- 坐标计算
 Vector = {
     ['new'] = function(x, y, z)
         return { ['x'] = x, ['y'] = y, ['z'] = z }
@@ -1659,7 +1659,7 @@ Vector = {
     end
 }
 
----计算模型大小，返回 long, width, height
+--- 计算模型大小，返回 long, width, height
 --- @param model Hash
 --- @return number
 --- @return number
@@ -1689,7 +1689,7 @@ function bool_to_string(bool, true_text, false_text)
     return false_text or "否"
 end
 
----返回a和b的中间值
+--- 返回 a 和 b 的中间值
 --- @param a number
 --- @param b number
 --- @return number
@@ -1738,7 +1738,7 @@ function THEFEED_POST.TEXT(message)
     HUD.END_TEXT_COMMAND_THEFEED_POST_TICKER(false, false)
 end
 
----Dev Mode Notify
+--- Dev Mode Notify
 --- @param text string
 --- @param log? boolean
 function notify(text, log)
@@ -1758,7 +1758,7 @@ end
 -- Other Functions
 ----------------------------------------
 
----爆头击杀NPC
+--- 爆头击杀NPC
 --- @param targetPed Ped
 --- @param weaponHash Hash? default: 584646201(WEAPON_APPISTOL)
 --- @param owner Ped?
@@ -1782,7 +1782,7 @@ function shoot_ped_head(targetPed, weaponHash, owner)
         target_ped_veh, targetPed)
 end
 
----玩家爆炸敌对NPC(无声)
+--- 玩家爆炸敌对NPC(无声)
 function explode_hostile_peds()
     for _, ped in pairs(entities.get_all_peds_as_handles()) do
         if is_hostile_entity(ped) then
@@ -1792,7 +1792,7 @@ function explode_hostile_peds()
     end
 end
 
----玩家爆炸敌对载具(无声)
+--- 玩家爆炸敌对载具(无声)
 function explode_hostile_vehicles()
     for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
         if is_hostile_entity(vehicle) then
@@ -1805,7 +1805,7 @@ function explode_hostile_vehicles()
     end
 end
 
----玩家爆炸敌对物体(无声)
+--- 玩家爆炸敌对物体(无声)
 function explode_hostile_objects()
     for _, object in pairs(entities.get_all_objects_as_handles()) do
         if is_hostile_entity(object) then
@@ -1817,7 +1817,7 @@ function explode_hostile_objects()
     end
 end
 
----生成实体阻挡任务刷新点
+--- 生成实体阻挡任务刷新点
 --- @param point_list table<int, table<pos_x, pos_y, pos_z, heading>>
 --- @param hash Hash?
 function block_mission_generate_point(point_list, hash)

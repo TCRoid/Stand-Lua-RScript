@@ -2580,13 +2580,27 @@ menu.action(Freemode_Mission, "传送到 出租车乘客", { "rstpTaxiPassenger"
         end
     end
 end)
-menu.action(Freemode_Mission, "传送到 杰拉德包裹", { "rstpDrugPackage" }, "进入范围内才能传送", function()
-    local entity_list = get_entities_by_hash(ENTITY_OBJECT, true, 138777325, -1620734287, 765087784)
-    if next(entity_list) ~= nil then
-        for _, ent in pairs(entity_list) do
-            tp_to_entity(ent, 0.0, 0.0, 0.5)
-        end
+menu.action(Freemode_Mission, "传送到 杰拉德包裹", { "rstpDeadDrop" }, "", function()
+    -- local entity_list = get_entities_by_hash(ENTITY_OBJECT, true, 138777325, -1620734287, 765087784)
+    -- if next(entity_list) ~= nil then
+    --     for _, ent in pairs(entity_list) do
+    --         tp_to_entity(ent, 0.0, 0.0, 0.5)
+    --     end
+    -- end
+    local area = GET_PACKED_STAT_INT_CODE(PackedStats.DAILYCOLLECT_DEAD_DROP_AREA_0)
+    local location = GET_PACKED_STAT_INT_CODE(PackedStats.DAILYCOLLECT_DEAD_DROP_LOCATION_0)
+
+    local coords = Misc_T.DeadDropCoords[area]
+    if not coords then
+        return
     end
+
+    coords = coords[location]
+    if not coords then
+        return
+    end
+
+    teleport2(coords[1], coords[2], coords[3] + 0.5)
 end)
 menu.action(Freemode_Mission, "会所酒吧补给品 传送到我", { "tpmeBikerBar" }, "", function()
     -- Hash: 528555233 (pickup)

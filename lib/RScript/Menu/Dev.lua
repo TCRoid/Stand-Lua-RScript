@@ -2,6 +2,7 @@
 --          Dev Options
 ------------------------------------------
 
+
 menu.textslider_stateful(Dev_Options, "Copy My Coords & Heading", { "copyMyPos" }, "", {
     "without key", "with key"
 }, function(value)

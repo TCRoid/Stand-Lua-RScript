@@ -4,7 +4,7 @@
 
 local SCRIPT_START_TIME <const> = util.current_time_millis()
 
-local SCRIPT_VERSION <const> = "2024/6/28"
+local SCRIPT_VERSION <const> = "2024/6/29"
 
 local SUPPORT_GAME_VERSION <const> = "1.69-3258"
 
