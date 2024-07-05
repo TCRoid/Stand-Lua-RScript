@@ -357,3 +357,4 @@ menu.action(Other_Options, "EXPLODE_VEHICLE_IN_CUTSCENE", { "cutExplodeVeh" }, "
         end
     end
 end)
+

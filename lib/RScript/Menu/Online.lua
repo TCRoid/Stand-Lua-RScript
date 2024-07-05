@@ -166,14 +166,39 @@ end)
 menu.click_slider(Entity_Owner, "请求控制当前载具", { "vehControl" }, "超时时间，单位毫秒",
     500, 5000, 2000, 500, function(value)
         local vehicle = entities.get_user_vehicle_as_pointer(false)
-        if vehicle ~= 0 then
-            if entities.request_control(vehicle, value) then
-                util.toast("成功")
-            else
-                local owner = players.get_name(entities.get_owner(vehicle))
-                util.toast("请求控制当前载具失败\n当前控制权拥有者: " .. owner)
-            end
+        if vehicle == 0 then
+            return
         end
+
+        if entities.request_control(vehicle, value) then
+            util.toast("成功")
+        else
+            local owner = players.get_name(entities.get_owner(vehicle))
+            util.toast("请求控制当前载具失败\n当前控制权拥有者: " .. owner)
+        end
+    end)
+menu.click_slider(Entity_Owner, "请求控制当前载具2", { "vehControl" }, "对当前控制权拥有者超时\n超时时间，单位毫秒",
+    500, 5000, 2000, 500, function(value)
+        local vehicle = entities.get_user_vehicle_as_pointer(false)
+        if vehicle == 0 then
+            return
+        end
+
+        local owner = players.get_name(entities.get_owner(vehicle))
+        if owner == players.user() then
+            return
+        end
+
+        menu.trigger_commands("timeout" .. owner .. " on")
+
+        if entities.request_control(vehicle, value) then
+            util.toast("成功")
+        else
+            owner = players.get_name(entities.get_owner(vehicle))
+            util.toast("请求控制当前载具失败\n当前控制权拥有者: " .. owner)
+        end
+
+        menu.trigger_commands("timeout" .. owner .. " off")
     end)
 
 menu.action(Entity_Owner, "当前载具控制权 给 当前司机", { "vehDriverControl" }, "", function()
@@ -189,6 +214,19 @@ menu.action(Entity_Owner, "当前载具控制权 给 当前司机", { "vehDriver
 
     entities.give_control(vehicle, get_player_from_ped(driver))
 end)
+
+
+menu.action(Entity_Owner, "所有载具控制权 给 对应司机", {}, "只作用于控制权是自己的载具", function()
+    for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
+        if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) and has_control_entity(vehicle) then
+            local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
+            if driver ~= players.user_ped() and is_player_ped(driver) then
+                entities.give_control(vehicle, get_player_from_ped(driver))
+            end
+        end
+    end
+end)
+
 
 --#endregion
 
@@ -316,6 +354,7 @@ local FastTP = {
         { sprite = 826, name = "事务所", command = "agency" },
         { sprite = 475, name = "办公室", command = "office" },
         { sprite = 492, name = "摩托帮会所", command = "biker" },
+        { sprite = 867, name = "回收站", command = "salvageYard" },
     },
     eventList = {
         { sprite = 430, name = "时间挑战赛", command = "timetrial" },
