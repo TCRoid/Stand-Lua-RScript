@@ -939,6 +939,8 @@ menu.toggle_loop(Weapon_Options, "无限载具武器弹药", { "infVehAmmo" }, "
                     VEHICLE.SET_VEHICLE_WEAPON_RESTRICTED_AMMO(vehicle, i, -1)
                 end
             end
+            VEHICLE.SET_VEHICLE_BOMB_AMMO(vehicle, -1);
+            VEHICLE.SET_VEHICLE_COUNTERMEASURE_AMMO(vehicle, -1);
         end
     end
 end)
