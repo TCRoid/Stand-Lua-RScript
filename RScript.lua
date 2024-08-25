@@ -4,7 +4,7 @@
 
 local SCRIPT_START_TIME <const> = util.current_time_millis()
 
-local SCRIPT_VERSION <const> = "2024/7/21"
+local SCRIPT_VERSION <const> = "2024/8/25"
 
 local SUPPORT_GAME_VERSION <const> = "1.69-3274"
 
@@ -75,7 +75,7 @@ end
 
 
 -- Require
-util.require_natives("3095a", "init")
+util.require_natives("3274a", "init")
 
 local LIB_MODULES <const> = {
     "RScript.tables",
@@ -282,7 +282,7 @@ menu.divider(About_Options, "Update")
 local About_LatestVersion = menu.readonly(About_Options, "Latest Version")
 menu.action(About_Options, "Check Update", {}, "Only check version", function()
     if not async_http.have_access() then
-        util.toast("本Lua被禁止联网")
+        util.toast("本 Lua 被限制禁止联网，请取消限制")
         return
     end
     menu.set_value(About_LatestVersion, "Checking...")
@@ -291,7 +291,7 @@ menu.action(About_Options, "Check Update", {}, "Only check version", function()
         if data == SCRIPT_VERSION then
             util.toast("当前为最新版本")
         else
-            util.toast("发现新版本?")
+            util.toast("疑似发现新版本?")
         end
     end, function()
         menu.set_value(About_LatestVersion, "")

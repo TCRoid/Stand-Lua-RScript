@@ -2706,7 +2706,7 @@ Heist_Mission_Vehicle = menu.list(Heist_Mission, "管理任务载具", {}, "", f
                     end
                 end
 
-                help_text = help_text .. "\nOwner: " .. players.get_name(entities.get_owner(vehicle))
+                help_text = help_text .. "\nOwner: " .. get_entity_owner_name(vehicle)
 
 
                 local menu_list = menu.list(Heist_Mission_Vehicle, menu_name, {}, help_text)

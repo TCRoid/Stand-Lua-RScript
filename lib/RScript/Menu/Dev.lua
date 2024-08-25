@@ -142,7 +142,7 @@ menu.action(dev_map_blips, "获取地图所有标记点", {}, "相同的获取�
     map_blips.menu_list = {}
 
     local blip_list = {}
-    for i = 0, 888, 1 do
+    for i = 0, 999, 1 do
         local blip = HUD.GET_CLOSEST_BLIP_INFO_ID(i)
         if HUD.DOES_BLIP_EXIST(blip) then
             table.insert(blip_list, blip)

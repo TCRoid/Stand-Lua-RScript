@@ -158,7 +158,7 @@ menu.divider(Entity_Owner, "当前载具")
 menu.toggle_loop(Entity_Owner, "信息显示 当前载具控制权", { "rsInfoVehOwner" }, "", function()
     local vehicle = entities.get_user_vehicle_as_pointer(false)
     if vehicle ~= 0 then
-        local owner = players.get_name(entities.get_owner(vehicle))
+        local owner = get_entity_owner_name(vehicle)
         util.draw_debug_text("当前载具控制权拥有者: " .. owner)
     end
 end)
@@ -173,34 +173,10 @@ menu.click_slider(Entity_Owner, "请求控制当前载具", { "vehControl" }, "�
         if entities.request_control(vehicle, value) then
             util.toast("成功")
         else
-            local owner = players.get_name(entities.get_owner(vehicle))
+            local owner = get_entity_owner_name(vehicle)
             util.toast("请求控制当前载具失败\n当前控制权拥有者: " .. owner)
         end
     end)
-menu.click_slider(Entity_Owner, "请求控制当前载具2", { "vehControl" }, "对当前控制权拥有者超时\n超时时间，单位毫秒",
-    500, 5000, 2000, 500, function(value)
-        local vehicle = entities.get_user_vehicle_as_pointer(false)
-        if vehicle == 0 then
-            return
-        end
-
-        local owner = players.get_name(entities.get_owner(vehicle))
-        if owner == players.user() then
-            return
-        end
-
-        menu.trigger_commands("timeout" .. owner .. " on")
-
-        if entities.request_control(vehicle, value) then
-            util.toast("成功")
-        else
-            owner = players.get_name(entities.get_owner(vehicle))
-            util.toast("请求控制当前载具失败\n当前控制权拥有者: " .. owner)
-        end
-
-        menu.trigger_commands("timeout" .. owner .. " off")
-    end)
-
 menu.action(Entity_Owner, "当前载具控制权 给 当前司机", { "vehDriverControl" }, "", function()
     local vehicle = entities.get_user_vehicle_as_handle(false)
     if vehicle == INVALID_GUID then
@@ -209,6 +185,10 @@ menu.action(Entity_Owner, "当前载具控制权 给 当前司机", { "vehDriver
 
     local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
     if driver == players.user_ped() and has_control_entity(vehicle) then
+        return
+    end
+
+    if not is_player_ped(driver) then
         return
     end
 
@@ -325,6 +305,7 @@ local remote_computer_list = {
     { menu_name = "复仇者操作终端", script = "appavengeroperations", command = "avenger" },
     -- { menu_name = "办公室电脑", script = "appsecuroserv", command = "office" },
     -- { menu_name = "机动作战指挥中心", script = "appcovertops", command = "moc"  },
+    { menu_name = "保金办公室电脑", script = "appbailoffice", command = "bailOffice" },
 }
 
 for _, item in pairs(remote_computer_list) do
@@ -355,6 +336,7 @@ local FastTP = {
         { sprite = 475, name = "办公室", command = "office" },
         { sprite = 492, name = "摩托帮会所", command = "biker" },
         { sprite = 867, name = "回收站", command = "salvageYard" },
+        { sprite = 893, name = "保金办公室", command = "bailOffice" },
     },
     eventList = {
         { sprite = 430, name = "时间挑战赛", command = "timetrial" },
@@ -362,6 +344,7 @@ local FastTP = {
         { sprite = 842, name = "杰拉德包裹", command = "gcaches" },
         { sprite = 845, name = "藏匿屋", command = "stashhouse" },
         { sprite = 860, name = "拉机能量时间挑战赛", command = "junktimetrial" },
+        { sprite = 886, name = "玛德拉索雇凶", command = "madrazoHits" },
     },
 }
 

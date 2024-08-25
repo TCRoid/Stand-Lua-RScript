@@ -123,3 +123,32 @@ end)
 menu.action(Clean_Options, "中断当前动作", { "clsTask" }, "", function()
     TASK.CLEAR_PED_TASKS_IMMEDIATELY(players.user_ped())
 end)
+
+
+menu.textslider(Clean_Options, "清理残留在本地的实体", {}, "切换战局也无法清理掉的本地实体", {
+    "载具", "NPC", "物体"
+}, function(value)
+    local entity_list = {}
+    if value == 1 then
+        entity_list = entities.get_all_vehicles_as_handles()
+    elseif value == 2 then
+        entity_list = entities.get_all_peds_as_handles()
+    elseif value == 3 then
+        entity_list = entities.get_all_objects_as_handles()
+    end
+
+    local num = 0
+    for _, ent in pairs(entity_list) do
+        if GET_ENTITY_SCRIPT(ent) == "main_persistent" and NETWORK.NETWORK_GET_ENTITY_IS_LOCAL(ent) then
+            entities.delete(ent)
+
+            if not ENTITY.DOES_ENTITY_EXIST(num) then
+                num = num + 1
+            end
+        end
+    end
+
+    if num > 0 then
+        util.toast("清理残留在本地的实体数量: " .. num)
+    end
+end)

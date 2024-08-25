@@ -2,7 +2,7 @@
 -- Local Player Functions
 ----------------------------------------
 
---- 传送玩家
+--- 传送本地玩家
 --- @param coords v3
 --- @param heading? float
 function teleport(coords, heading)
@@ -14,7 +14,7 @@ function teleport(coords, heading)
     TP_ENTITY(ent, coords, heading)
 end
 
---- 传送玩家
+--- 传送本地玩家
 --- @param x float
 --- @param y float
 --- @param z float
@@ -23,7 +23,7 @@ function teleport2(x, y, z, heading)
     teleport(v3.new(x, y, z), heading)
 end
 
---- 设置/获取玩家朝向
+--- 设置/获取本地玩家朝向
 --- @param heading? float
 --- @return float
 function user_heading(heading)
@@ -39,7 +39,7 @@ function user_heading(heading)
     return ENTITY.GET_ENTITY_HEADING(ent)
 end
 
---- 获取玩家室内ID，不在室内则返回-1
+--- 获取本地玩家室内 ID，不在室内则返回 -1
 --- @return integer
 function user_interior()
     if INTERIOR.IS_INTERIOR_SCENE() then
@@ -48,7 +48,7 @@ function user_interior()
     return -1
 end
 
---- 传送实体到玩家 `offset`: 左/右，前/后，上/下
+--- 传送实体到本地玩家 `offset`: 左/右，前/后，上/下
 --- @param entity Entity
 --- @param offsetX? float
 --- @param offsetY? float
@@ -61,7 +61,7 @@ function tp_entity_to_me(entity, offsetX, offsetY, offsetZ)
     TP_ENTITY(entity, coords)
 end
 
---- 传送玩家到实体 `offset`: 左/右，前/后，上/下
+--- 传送本地玩家到实体 `offset`: 左/右，前/后，上/下
 --- @param entity Entity
 --- @param offsetX? float
 --- @param offsetY? float
@@ -74,10 +74,10 @@ function tp_to_entity(entity, offsetX, offsetY, offsetZ)
     teleport(coords)
 end
 
---- 玩家传送进载具
+--- 本地玩家传送进载具
 --- @param vehicle Vehicle
---- @param door? string *delete* : 删除车门
---- @param driver? string *tp* : 传送司机到外面, *delete* : 删除司机
+--- @param door? string *"delete"* : 删除车门
+--- @param driver? string *"tp"* : 传送司机到外面, *"delete"* : 删除司机
 --- @param seat? int default: -1
 function tp_into_vehicle(vehicle, door, driver, seat)
     seat = seat or -1
@@ -92,7 +92,7 @@ function tp_into_vehicle(vehicle, door, driver, seat)
         VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, 0, true) -- left front door
     end
 
-    if driver ~= nil then
+    if driver then
         local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, seat)
         if ped ~= 0 then
             if driver == "tp" then
@@ -109,10 +109,10 @@ function tp_into_vehicle(vehicle, door, driver, seat)
     PED.SET_PED_INTO_VEHICLE(players.user_ped(), vehicle, seat)
 end
 
---- 传送载具到玩家，玩家传送进载具
+--- 传送载具到本地玩家，本地玩家传送进载具
 --- @param vehicle Vehicle
---- @param door? string *delete* : 删除车门
---- @param driver? string *tp* : 传送司机到外面, *delete* : 删除司机
+--- @param door? string *"delete"* : 删除车门
+--- @param driver? string *"tp"* : 传送司机到外面, *"delete"* : 删除司机
 --- @param seat? int default: -1
 function tp_vehicle_to_me(vehicle, door, driver, seat)
     ENTITY_HEADING(vehicle, user_heading())
@@ -120,7 +120,7 @@ function tp_vehicle_to_me(vehicle, door, driver, seat)
     tp_into_vehicle(vehicle, door, driver, seat)
 end
 
---- 传送拾取物到玩家
+--- 传送拾取物到本地玩家
 --- @param pickup Pickup
 --- @param attachToSelf? boolean
 function tp_pickup_to_me(pickup, attachToSelf)
@@ -137,7 +137,7 @@ function tp_pickup_to_me(pickup, attachToSelf)
     end
 end
 
---- 玩家与实体绘制连线
+--- 本地玩家与实体绘制连线
 --- @param entity Entity
 --- @param colour Colour?
 function draw_line_to_entity(entity, colour)
@@ -203,7 +203,7 @@ function get_entity_type_text(entity, textType)
     return entity_type
 end
 
----设置实体左/右、前/后、上/下移动
+--- 设置实体左/右、前/后、上/下移动
 --- @param entity Entity
 --- @param offsetX float
 --- @param offsetY float
@@ -213,7 +213,7 @@ function set_entity_move(entity, offsetX, offsetY, offsetZ)
     TP_ENTITY(entity, coords)
 end
 
----设置实体与目标实体之间的朝向角度差
+--- 设置实体与目标实体之间的朝向角度差
 --- @param setEntity Entity
 --- @param toEntity Entity
 --- @param angle? float
@@ -223,7 +223,9 @@ function set_entity_heading_to_entity(setEntity, toEntity, angle)
     ENTITY.SET_ENTITY_HEADING(setEntity, heading + angle)
 end
 
----传送实体到目标实体 `offset`: 左/右，前/后，上/下
+--- 传送实体到目标实体
+---
+--- `offset`: 左/右，前/后，上/下
 --- @param tpEntity Entity
 --- @param toEntity Entity
 --- @param offsetX? float
@@ -247,6 +249,13 @@ function set_entity_godmode(entity, toggle)
     ENTITY.SET_ENTITY_INVINCIBLE(entity, toggle)
     ENTITY.SET_ENTITY_PROOFS(entity, toggle, toggle, toggle, toggle, toggle, toggle, toggle, toggle)
     ENTITY.SET_ENTITY_CAN_BE_DAMAGED(entity, not toggle)
+end
+
+--- 获取拥有实体控制权的玩家名称
+--- @param entity Entity
+--- @return string
+function get_entity_owner_name(entity)
+    return players.get_name(entities.get_owner(entity))
 end
 
 ----------------------------------------
@@ -1065,7 +1074,7 @@ function increase_ped_combat_attributes(ped)
     PED.SET_PED_COMBAT_ATTRIBUTES(ped, 78, true)  -- Disable All Randoms Flee
 end
 
----清理 NPC 外观
+--- 清理 NPC 外观
 --- @param ped Ped
 function clear_ped_body(ped)
     if not ENTITY.IS_ENTITY_A_PED(ped) then
@@ -1142,7 +1151,7 @@ function give_weapon_to_ped(ped, weaponHash, setCurrent)
     WEAPON.GIVE_DELAYED_WEAPON_TO_PED(ped, weaponHash, -1, setCurrent)
 end
 
---- 通过 Ped 获取玩家ID
+--- 通过 Ped 获取玩家 ID
 --- @param ped Ped
 --- @return Player
 function get_player_from_ped(ped)
@@ -1153,11 +1162,11 @@ end
 -- Weapon Functions
 ----------------------------------------
 
---- 获取Ped当前使用的武器或载具武器的Hash，和武器类型
+--- 获取 Ped 当前使用的手持武器或载具武器的 Hash 和武器类型
 ---
 --- 武器类型 (integer):
---- - `1`: Ped Weapon
---- - `2`: Vehicle Weapon
+--- - `1`: 手持武器
+--- - `2`: 载具武器
 --- @param ped Ped
 --- @return Hash, integer
 function get_ped_current_weapon(ped)
@@ -1180,7 +1189,7 @@ function get_ped_current_weapon(ped)
     return 0, 0
 end
 
---- 获取Ped当前的武器Hash
+--- 获取 Ped 当前的手持武器 Hash
 --- @param ped Ped
 --- @return Hash
 function get_ped_weapon(ped)
@@ -1195,7 +1204,7 @@ function get_ped_weapon(ped)
     return 0
 end
 
---- 获取Ped当前的载具武器Hash
+--- 获取 Ped 当前的载具武器 Hash
 --- @param ped Ped
 --- @return Hash
 function get_ped_vehicle_weapon(ped)
@@ -1210,7 +1219,7 @@ function get_ped_vehicle_weapon(ped)
     return 0
 end
 
---- 通过武器Hash获取武器名称
+--- 通过武器 Hash 获取武器显示名称
 --- @param weaponHash Hash
 --- @return string
 function get_weapon_name_by_hash(weaponHash)
@@ -1571,7 +1580,7 @@ function get_random_colour()
     return colour
 end
 
---- 颜色数值 [0 - 1]格式 转换到 [0 - 255]格式 (float -> int)
+--- 颜色数值 [0 - 1] 格式 转换到 [0 - 255] 格式 (float -> int)
 --- @param colour Colour
 --- @return Colour
 function to_rage_colour(colour)
@@ -1583,7 +1592,7 @@ function to_rage_colour(colour)
     }
 end
 
---- 颜色数值 [0 - 255]格式 转换到 [0 - 1]格式 (int -> float)
+--- 颜色数值 [0 - 255] 格式 转换到 [0 - 1] 格式 (int -> float)
 --- @param colour Colour
 --- @return Colour
 function to_stand_colour(colour)
@@ -1595,6 +1604,7 @@ function to_stand_colour(colour)
     }
 end
 
+--- 不同组织的 Blip 颜色
 local org_blip_colours <const> = {
     [-1] = 4,
     [0] = -140542977,
@@ -1614,7 +1624,7 @@ local org_blip_colours <const> = {
     [14] = -2038592001
 }
 
---- 获取玩家组织地图标记点的颜色
+--- 获取玩家组织的地图标记点颜色
 --- @param player_id player
 --- @return integer
 function get_org_blip_colour(player_id)
@@ -1700,6 +1710,7 @@ function get_middle_num(a, b)
     return middle
 end
 
+--- string to boolean
 --- @param text string
 --- @return boolean
 function to_boolean(text)
@@ -1758,10 +1769,10 @@ end
 -- Other Functions
 ----------------------------------------
 
---- 爆头击杀NPC
+--- 爆头击杀 NPC
 --- @param targetPed Ped
---- @param weaponHash Hash? default: 584646201(WEAPON_APPISTOL)
---- @param owner Ped?
+--- @param weaponHash? Hash default: 584646201 (WEAPON_APPISTOL)
+--- @param owner? Ped
 function shoot_ped_head(targetPed, weaponHash, owner)
     local head_pos = PED.GET_PED_BONE_COORDS(targetPed, 0x322c, 0, 0, 0)
     local vector = ENTITY.GET_ENTITY_FORWARD_VECTOR(targetPed)
@@ -1782,7 +1793,7 @@ function shoot_ped_head(targetPed, weaponHash, owner)
         target_ped_veh, targetPed)
 end
 
---- 玩家爆炸敌对NPC(无声)
+--- 玩家爆炸敌对 NPC (无声)
 function explode_hostile_peds()
     for _, ped in pairs(entities.get_all_peds_as_handles()) do
         if is_hostile_entity(ped) then
@@ -1792,7 +1803,7 @@ function explode_hostile_peds()
     end
 end
 
---- 玩家爆炸敌对载具(无声)
+--- 玩家爆炸敌对载具 (无声)
 function explode_hostile_vehicles()
     for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
         if is_hostile_entity(vehicle) then
@@ -1805,7 +1816,7 @@ function explode_hostile_vehicles()
     end
 end
 
---- 玩家爆炸敌对物体(无声)
+--- 玩家爆炸敌对物体 (无声)
 function explode_hostile_objects()
     for _, object in pairs(entities.get_all_objects_as_handles()) do
         if is_hostile_entity(object) then
