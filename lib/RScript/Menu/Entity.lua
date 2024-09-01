@@ -383,7 +383,7 @@ local Cams2 <const> = {
 menu.action(Entity_Object_Options, "删除", { "delCams" }, "", function()
     for _, ent_ptr in pairs(entities.get_all_objects_as_pointers()) do
         local model_hash = entities.get_model_hash(ent_ptr)
-        if is_in_table(Cams, model_hash) then
+        if table.contains(Cams, model_hash) then
             entities.delete(ent_ptr)
         end
     end
@@ -392,7 +392,7 @@ menu.click_slider(Entity_Object_Options, "上下移动", { "moveCams" }, "易导
     -30, 30, 0, 1, function(value)
         for _, ent_ptr in pairs(entities.get_all_objects_as_pointers()) do
             local model_hash = entities.get_model_hash(ent_ptr)
-            if is_in_table(Cams, model_hash) then
+            if table.contains(Cams, model_hash) then
                 local ent = entities.pointer_to_handle(ent_ptr)
                 set_entity_move(ent, 0.0, 0.0, value)
             end
@@ -427,7 +427,7 @@ local CayoPericoDoors2 <const> = -607013269 -- h4_prop_h4_door_01a 豪宅内的�
 menu.action(Entity_Object_Options, "删除门", { "deletePericoDoors" }, "", function()
     for _, ent_ptr in pairs(entities.get_all_objects_as_pointers()) do
         local model_hash = entities.get_model_hash(ent_ptr)
-        if is_in_table(CayoPericoDoors, model_hash) then
+        if table.contains(CayoPericoDoors, model_hash) then
             entities.delete(ent_ptr)
         end
     end
@@ -435,7 +435,7 @@ end)
 menu.action(Entity_Object_Options, "开启无碰撞", {}, "可以直接穿过门，包括库房门", function()
     for _, ent_ptr in pairs(entities.get_all_objects_as_pointers()) do
         local model_hash = entities.get_model_hash(ent_ptr)
-        if model_hash == CayoPericoDoors2 or is_in_table(CayoPericoDoors, model_hash) then
+        if model_hash == CayoPericoDoors2 or table.contains(CayoPericoDoors, model_hash) then
             local ent = entities.pointer_to_handle(ent_ptr)
             ENTITY.SET_ENTITY_COLLISION(ent, false, true)
         end
@@ -444,7 +444,7 @@ end)
 menu.action(Entity_Object_Options, "关闭无碰撞", {}, "", function()
     for _, ent_ptr in pairs(entities.get_all_objects_as_pointers()) do
         local model_hash = entities.get_model_hash(ent_ptr)
-        if model_hash == CayoPericoDoors2 or is_in_table(CayoPericoDoors, model_hash) then
+        if model_hash == CayoPericoDoors2 or table.contains(CayoPericoDoors, model_hash) then
             local ent = entities.pointer_to_handle(ent_ptr)
             ENTITY.SET_ENTITY_COLLISION(ent, true, true)
         end
@@ -1769,10 +1769,7 @@ function tEntityInfo.generateMenus()
     local menu_parent = tEntityInfo.menuList
 
     -- Clear Old Menus
-    local children = menu.get_children(menu_parent)
-    for key, value in pairs(children) do
-        menu.delete(value)
-    end
+    rs_menu.delete_menu_children(menu_parent)
 
 
     if tEntityInfo.showToggles.base then
@@ -2424,11 +2421,7 @@ function All_Entity.ClearListData()
         end
     end
     -- 实体的 menu.list()
-    for k, v in pairs(All_Entity.entity_menu_list) do
-        if v ~= nil and menu.is_ref_valid(v) then
-            menu.delete(v)
-        end
-    end
+    rs_menu.delete_menu_list(All_Entity.entity_menu_list)
     -- 初始化
     All_Entity.InitListData()
     menu.set_menu_name(All_Entity.count_divider, "实体列表")

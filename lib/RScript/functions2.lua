@@ -18,7 +18,7 @@ function IS_SCRIPT_RUNNING(script)
 end
 
 --- @param script string
---- @param arg_count integer
+--- @param stackSize integer
 --- @return boolean
 function START_SCRIPT(script, arg_count)
     if not SCRIPT.DOES_SCRIPT_EXIST(script) then

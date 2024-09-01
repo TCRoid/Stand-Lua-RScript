@@ -287,10 +287,22 @@ end
 --- 删除 menu list (table)
 --- @param menu_list table<int, CommandRef>
 function rs_menu.delete_menu_list(menu_list)
-    for k, command in pairs(menu_list) do
+    for _, command in pairs(menu_list) do
         if command ~= nil and menu.is_ref_valid(command) then
             menu.delete(command)
         end
+    end
+    menu.collect_garbage()
+end
+
+--- 删除 menu.list 下的所有子菜单
+--- @param list CommandRef
+function rs_menu.delete_menu_children(list)
+    local children = menu.get_children(list)
+    if #children == 0 then return end
+
+    for _, command in pairs(children) do
+        menu.delete(command)
     end
     menu.collect_garbage()
 end

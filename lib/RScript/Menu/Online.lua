@@ -184,7 +184,7 @@ menu.action(Entity_Owner, "当前载具控制权 给 当前司机", { "vehDriver
     end
 
     local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
-    if driver == players.user_ped() and has_control_entity(vehicle) then
+    if driver == players.user_ped() or not has_control_entity(vehicle) then
         return
     end
 
@@ -348,53 +348,102 @@ local FastTP = {
     },
 }
 
+--- @param decoratorName string
+--- @return Vehicle
+local function get_personal_vehicle_by_decorator(decoratorName)
+    local playerHash = NETWORK.NETWORK_HASH_FROM_PLAYER_HANDLE(players.user())
+
+    for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
+        if ENTITY.IS_ENTITY_A_MISSION_ENTITY(vehicle) then
+            if DECORATOR.DECOR_EXIST_ON(vehicle, decoratorName) then
+                if DECORATOR.DECOR_GET_INT(vehicle, decoratorName) == playerHash then
+                    return vehicle
+                end
+            end
+        end
+    end
+    return 0
+end
+
 menu.divider(Fast_Teleport, "载具资产")
 menu.action(Fast_Teleport, "传送到 机动作战中心", { "rstpMoc" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(564)
-    if HUD.DOES_BLIP_EXIST(blip) then
-        if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
-            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-            set_entity_heading_to_entity(players.user_ped(), ent)
-            tp_to_entity(ent, 0.0, -9.0, -1.0)
-        end
-    else
+    if not HUD.DOES_BLIP_EXIST(blip) then
         util.toast("未在地图上找到 机动作战中心")
+    end
+
+    local ent = 0
+    if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
+        ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+    else
+        ent = get_personal_vehicle_by_decorator("Player_Truck")
+    end
+
+    if ENTITY.DOES_ENTITY_EXIST(ent) then
+        set_entity_heading_to_entity(players.user_ped(), ent)
+        tp_to_entity(ent, 0.0, -9.0, -1.0)
+    else
+        util.toast("未找到 机动作战中心")
     end
 end)
 menu.action(Fast_Teleport, "传送到 复仇者", { "rstpAvenger" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(589)
-    if HUD.DOES_BLIP_EXIST(blip) then
-        if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
-            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-            set_entity_heading_to_entity(players.user_ped(), ent)
-            tp_to_entity(ent, 0.0, -8.0, 0.0)
-        end
-    else
+    if not HUD.DOES_BLIP_EXIST(blip) then
         util.toast("未在地图上找到 复仇者")
+    end
+
+    local ent = 0
+    if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
+        ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+    else
+        ent = get_personal_vehicle_by_decorator("Player_Avenger")
+    end
+
+    if ENTITY.DOES_ENTITY_EXIST(ent) then
+        set_entity_heading_to_entity(players.user_ped(), ent)
+        tp_to_entity(ent, 0.0, -8.0, 0.0)
+    else
+        util.toast("未找到 复仇者")
     end
 end)
 menu.action(Fast_Teleport, "传送到 恐霸", { "rstpTerrorbyte" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(632)
-    if HUD.DOES_BLIP_EXIST(blip) then
-        if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
-            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-            set_entity_heading_to_entity(players.user_ped(), ent, 90)
-            tp_to_entity(ent, 2.0, 0.0, 0.0)
-        end
-    else
+    if not HUD.DOES_BLIP_EXIST(blip) then
         util.toast("未在地图上找到 恐霸")
+    end
+
+    local ent = 0
+    if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
+        ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+    else
+        ent = get_personal_vehicle_by_decorator("Player_Hacker_Truck")
+    end
+
+    if ENTITY.DOES_ENTITY_EXIST(ent) then
+        set_entity_heading_to_entity(players.user_ped(), ent, 90)
+        tp_to_entity(ent, 2.0, 0.0, 0.0)
+    else
+        util.toast("未找到 恐霸")
     end
 end)
 menu.action(Fast_Teleport, "传送到 致幻剂实验室", { "rstpAcidlab" }, "", function()
     local blip = HUD.GET_NEXT_BLIP_INFO_ID(840)
-    if HUD.DOES_BLIP_EXIST(blip) then
-        if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
-            local ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
-            set_entity_heading_to_entity(players.user_ped(), ent)
-            tp_to_entity(ent, 3.0, 0.0, 0.0)
-        end
-    else
+    if not HUD.DOES_BLIP_EXIST(blip) then
         util.toast("未在地图上找到 致幻剂实验室")
+    end
+
+    local ent = 0
+    if HUD.GET_BLIP_COLOUR(blip) == get_org_blip_colour(players.user()) then
+        ent = HUD.GET_BLIP_INFO_ID_ENTITY_INDEX(blip)
+    else
+        ent = get_personal_vehicle_by_decorator("Player_Acid_Lab")
+    end
+
+    if ENTITY.DOES_ENTITY_EXIST(ent) then
+        set_entity_heading_to_entity(players.user_ped(), ent)
+        tp_to_entity(ent, 3.0, 0.0, 0.0)
+    else
+        util.toast("未找到 致幻剂实验室")
     end
 end)
 

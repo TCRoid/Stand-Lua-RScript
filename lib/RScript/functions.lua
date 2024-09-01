@@ -752,7 +752,7 @@ end
 -- Vehicle Functions
 ----------------------------------------
 
---- 升级载具（排除涂装、车轮）
+--- 升级载具（排除喇叭、悬挂、车轮、涂装）
 --- @param vehicle Vehicle
 function upgrade_vehicle(vehicle)
     if not ENTITY.IS_ENTITY_A_VEHICLE(vehicle) then
@@ -760,13 +760,18 @@ function upgrade_vehicle(vehicle)
     end
 
     VEHICLE.SET_VEHICLE_MOD_KIT(vehicle, 0)
+
+    local excluded_mod_types = { 14, 15, 23, 24, 48 }
     for i = 0, 50 do
-        if i ~= 48 and i ~= 23 and i ~= 24 then
+        if not table.contains(excluded_mod_types, i) then
             local mod_num = VEHICLE.GET_NUM_VEHICLE_MODS(vehicle, i)
             if mod_num > 0 then
                 VEHICLE.SET_VEHICLE_MOD(vehicle, i, mod_num - 1, false)
             end
         end
+    end
+    for i = 17, 22 do
+        VEHICLE.TOGGLE_VEHICLE_MOD(vehicle, i, true)
     end
 
     VEHICLE.SET_VEHICLE_TYRES_CAN_BURST(vehicle, false)
@@ -1724,11 +1729,11 @@ end
 -- Table Functions
 ----------------------------------------
 
---- 遍历表 判断某值是否在表中
+--- 检查指定的值是否存在于表中
 --- @param tbl table
 --- @param value any
 --- @return boolean
-function is_in_table(tbl, value)
+function table.contains(tbl, value)
     for k, v in pairs(tbl) do
         if v == value then
             return true

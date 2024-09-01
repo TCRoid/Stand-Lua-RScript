@@ -46,6 +46,9 @@ g_FMMC_STRUCT = {
 
     iRootContentIDHash = _g_FMMC_STRUCT + 127178,
     tl63MissionName = _g_FMMC_STRUCT + 127185,
+
+    iTeamNames = _g_FMMC_STRUCT + 107178 + 1,   -- +[0~3]
+    tlCustomName = _g_FMMC_STRUCT + 107183 + 1, -- +[0~3]*4
 }
 
 
@@ -83,6 +86,22 @@ Locals = {
     fm_content_smuggler_resupply = {
         mission_start_time = 6045 + 1319,
     },
+
+
+    ---- Mission Controller
+
+    ["fm_mission_controller"] = {
+        sFMMC_SBD = {
+            -- MC_serverBD_1.sFMMC_SBD.niVehicle[index]
+            niVehicle = 22960 + 834 + 81 + 1
+        },
+    },
+    ["fm_mission_controller_2020"] = {
+        sFMMC_SBD = {
+            -- MC_serverBD_1.sFMMC_SBD.niVehicle[index]
+            niVehicle = 53558 + 777 + 81 + 1
+        },
+    },
 }
 
 
@@ -92,3 +111,22 @@ Locals = {
 --------------------------------
 -- Functions
 --------------------------------
+
+--- 获取团队名称
+--- @param team integer
+--- @return string
+function GET_TEAM_NAME(team)
+    if team < 0 then
+        return util.get_label_text("HEIST_RL_NONE") -- UNASSIGNED
+    end
+
+    local labelName = "COR_TEAM_" -- or "FMMC_TEAM_"
+
+    local teamName = GLOBAL_GET_INT(g_FMMC_STRUCT.iTeamNames + team)
+    if teamName == 38 then -- ciTEAM_NAME_MAX
+        local customName = GLOBAL_GET_STRING(g_FMMC_STRUCT.tlCustomName + team * 4)
+        return util.get_label_text(customName)
+    end
+
+    return util.get_label_text(labelName .. teamName)
+end

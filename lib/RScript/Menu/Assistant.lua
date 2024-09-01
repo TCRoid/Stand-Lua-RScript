@@ -216,7 +216,7 @@ function cargobob_pickup.get_player_cargobob()
     if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
         local veh = PED.GET_VEHICLE_PED_IS_IN(ped, false)
         local hash = ENTITY.GET_ENTITY_MODEL(veh)
-        if is_in_table(cargobob_pickup.model_list, hash) then
+        if table.contains(cargobob_pickup.model_list, hash) then
             return veh
         end
     end

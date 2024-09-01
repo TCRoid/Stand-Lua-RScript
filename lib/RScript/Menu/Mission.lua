@@ -97,7 +97,7 @@ special_cargo_lupe_menu = menu.list_action(Special_Cargo, "卢佩: 传送到 水
             for k, ent in pairs(entities.get_all_objects_as_handles()) do
                 if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) then
                     local EntityHash = ENTITY.GET_ENTITY_MODEL(ent)
-                    if is_in_table(water_cargo_hash_list, EntityHash) then
+                    if table.contains(water_cargo_hash_list, EntityHash) then
                         table.insert(list_item_data, { ent, "货箱 " .. i })
                         i = i + 1
                     end
@@ -2623,108 +2623,10 @@ end)
 local Heist_Mission <const> = menu.list(Mission_Options, "多人抢劫任务", {}, "")
 
 
---#region Heist Mission Vehicle
-
-local HeistMissionVehicle = {
-    getDriverName = function(vehicle)
-        local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
-
-        if entities.is_player_ped(driver) then
-            return players.get_name(get_player_from_ped(driver))
-        end
-
-        local driver_hash = ENTITY.GET_ENTITY_MODEL(driver)
-        local driver_model = util.reverse_joaat(driver_hash)
-        if driver_model == "" then
-            return driver_hash
-        end
-        return driver_model
-    end,
-    generateMenuActions = function(menu_parent, vehicle)
-        menu.action(menu_parent, "无敌强化", {}, "", function()
-            if request_control2(vehicle) then
-                set_entity_godmode(vehicle, true)
-                strong_vehicle(vehicle)
-
-                util.toast("完成！")
-            end
-        end)
-        menu.action(menu_parent, "载具升级", {}, "", function()
-            if request_control2(vehicle) then
-                upgrade_vehicle(vehicle)
-
-                util.toast("完成！")
-            end
-        end)
-    end
-}
-
-local Heist_Mission_Vehicle
-Heist_Mission_Vehicle = menu.list(Heist_Mission, "管理任务载具", {}, "", function()
-    local menu_children = menu.get_children(Heist_Mission_Vehicle)
-    if #menu_children > 0 then
-        for _, command in pairs(menu_children) do
-            menu.delete(command)
-        end
-    end
-
-    local script = GET_RUNNING_MISSION_CONTROLLER_SCRIPT()
-    if script == nil then
-        return
-    end
-
-    for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
-        if ENTITY.IS_ENTITY_A_MISSION_ENTITY(vehicle) then
-            if GET_ENTITY_SCRIPT(vehicle) == script then
-                local menu_name = get_vehicle_display_name(vehicle)
-                local help_text = ""
-
-                if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
-                    help_text = help_text .. "Driver: " .. HeistMissionVehicle.getDriverName(vehicle)
-                end
-
-                local blip = HUD.GET_BLIP_FROM_ENTITY(vehicle)
-                if HUD.DOES_BLIP_EXIST(blip) then
-                    local blip_sprite = HUD.GET_BLIP_SPRITE(blip)
-                    if blip_sprite == 1 then
-                        menu_name = menu_name .. " [目标点]"
-                    else
-                        menu_name = menu_name .. " [标记点]"
-                    end
-
-                    local blip_colour = HUD.GET_BLIP_COLOUR(blip)
-                    if blip_colour == 54 then
-                        help_text = help_text .. "\nBLIP_COLOUR_BLUEDARK"
-                    end
-                end
-
-                if vehicle == PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false) then
-                    if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
-                        menu_name = menu_name .. " [当前载具]"
-                    else
-                        menu_name = menu_name .. " [上一辆载具]"
-                    end
-                end
-
-                help_text = help_text .. "\nOwner: " .. get_entity_owner_name(vehicle)
-
-
-                local menu_list = menu.list(Heist_Mission_Vehicle, menu_name, {}, help_text)
-                HeistMissionVehicle.generateMenuActions(menu_list, vehicle)
-            end
-        end
-    end
-end)
-
-
---#endregion
-
+menu.divider(Heist_Mission, "公寓抢劫")
 
 
 --#region Apartment Heist
-
-menu.divider(Heist_Mission, "公寓抢劫")
-
 
 --------------------------------
 -- The Fleeca Job
@@ -3707,4 +3609,244 @@ menu.list_action(Mission_Options, "镜头锁定", { "camLock" }, "", {
     { 2, "第三人称", { "third" } },
 }, function(value)
     GLOBAL_SET_INT(g_FMMC_STRUCT.iFixedCamera, value)
+end)
+
+
+
+
+local HeistMissionVehicle = {
+    replaceVehicles = {
+        { util.joaat("oppressor2"), util.get_label_text("oppressor2") },
+
+        { util.joaat("kuruma2"),    util.get_label_text("kuruma2") },
+        { util.joaat("toreador"),   util.get_label_text("toreador") },
+        { util.joaat("insurgent3"), util.get_label_text("insurgent3") },
+        { util.joaat("deluxo"),     util.get_label_text("deluxo") },
+        { util.joaat("vigilante"),  util.get_label_text("vigilante") },
+
+        { util.joaat("krieger"),    util.get_label_text("krieger") },
+        { util.joaat("t20"),        util.get_label_text("t20") },
+
+        { util.joaat("Lazer"),      util.get_label_text("Lazer") },
+        { util.joaat("hydra"),      util.get_label_text("hydra") },
+        { util.joaat("raiju"),      util.get_label_text("raiju") },
+        { util.joaat("buzzard"),    util.get_label_text("buzzard") },
+
+        { util.joaat("khanjali"),   util.get_label_text("khanjali") },
+        { util.joaat("phantom2"),   util.get_label_text("phantom2") },
+    }
+}
+
+function HeistMissionVehicle.getDriverName(vehicle)
+    local driver = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1, false)
+
+    if entities.is_player_ped(driver) then
+        return players.get_name(get_player_from_ped(driver))
+    end
+
+    local driver_hash = ENTITY.GET_ENTITY_MODEL(driver)
+    local driver_model = util.reverse_joaat(driver_hash)
+    if driver_model == "" then
+        return driver_hash .. " [NPC]"
+    end
+    return driver_model .. " [NPC]"
+end
+
+function HeistMissionVehicle.getNetIdAddr(vehicle, script)
+    local netId = NETWORK.NETWORK_GET_NETWORK_ID_FROM_ENTITY(vehicle)
+    if not NETWORK.NETWORK_DOES_NETWORK_ID_EXIST(netId) then
+        return 0
+    end
+
+    for i = 0, 31, 1 do
+        local addr = Locals[script].sFMMC_SBD.niVehicle + i
+        if LOCAL_GET_INT(script, addr) == netId then
+            return addr
+        end
+    end
+
+    return 0
+end
+
+function HeistMissionVehicle.replaceVehicle(vehicle, hash)
+    local coords = ENTITY.GET_ENTITY_COORDS(vehicle)
+    local heading = ENTITY.GET_ENTITY_HEADING(vehicle)
+
+    -- 生成替换载具，先放到天上
+    local replace_veh = VEHICLE.CREATE_VEHICLE(hash, coords.x, coords.y, coords.z + 2000, heading, true, true, false)
+    ENTITY.FREEZE_ENTITY_POSITION(replace_veh, true)
+
+    ENTITY.SET_ENTITY_AS_MISSION_ENTITY(replace_veh, true, false)
+
+    NETWORK.NETWORK_REGISTER_ENTITY_AS_NETWORKED(replace_veh)
+    local netId = NETWORK.NETWORK_GET_NETWORK_ID_FROM_ENTITY(replace_veh)
+    if not NETWORK.NETWORK_DOES_NETWORK_ID_EXIST(netId) then
+        -- 没有成功获得 net id
+        entities.delete(replace_veh)
+        return 0
+    end
+
+    NETWORK.SET_NETWORK_ID_EXISTS_ON_ALL_MACHINES(netId, true)
+    NETWORK.SET_NETWORK_ID_CAN_MIGRATE(netId, true)
+    for _, pid in pairs(players.list()) do
+        NETWORK.SET_NETWORK_ID_ALWAYS_EXISTS_FOR_PLAYER(netId, pid, true)
+    end
+
+    strong_vehicle(replace_veh)
+    upgrade_vehicle(replace_veh)
+
+    -- 传送原载具到其它地方
+    ENTITY.DETACH_ENTITY(vehicle, false, false)
+    ENTITY.FREEZE_ENTITY_POSITION(vehicle, true)
+    ENTITY.SET_ENTITY_COLLISION(vehicle, false, false)
+    TP_ENTITY(vehicle, v3(7000, 7000, -100))
+    -- 传送原载具内NPC到替换载具内
+    -- local seats = VEHICLE.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS(vehicle)
+    -- for i = -1, seats - 1 do
+    --     if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, i, false) then
+    --         util.create_thread(function()
+    --             local ped = VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, i)
+    --             request_control(ped)
+    --             PED.SET_PED_INTO_VEHICLE(ped, replace_veh, i)
+    --         end)
+    --     end
+    -- end
+
+    -- 传送替换载具到原载具位置
+    TP_ENTITY(replace_veh, coords)
+    ENTITY.FREEZE_ENTITY_POSITION(replace_veh, false)
+
+    return netId
+end
+
+function HeistMissionVehicle.generateMenuActions(menu_parent, vehicle, script)
+    menu.list_action(menu_parent, "传送", {}, "", {
+        { 1, "传送到 我并驾驶" },
+        { 2, "传送进 驾驶位" },
+        { 3, "传送进 空座位" },
+    }, function(value)
+        if value == 1 then
+            tp_vehicle_to_me(vehicle)
+        elseif value == 2 then
+            tp_into_vehicle(vehicle)
+        elseif value == 3 then
+            tp_into_vehicle(vehicle, "", "", -2)
+        end
+    end)
+
+    menu.action(menu_parent, "无敌强化", {}, "", function()
+        if request_control2(vehicle) then
+            set_entity_godmode(vehicle, true)
+            strong_vehicle(vehicle)
+
+            util.toast("完成！")
+        end
+    end)
+
+    menu.action(menu_parent, "载具升级", {}, "", function()
+        if request_control2(vehicle) then
+            upgrade_vehicle(vehicle)
+
+            util.toast("完成！")
+        end
+    end)
+
+    menu.list_action(menu_parent, "替换载具", {}, "", HeistMissionVehicle.replaceVehicles, function(value)
+        if NETWORK.NETWORK_GET_HOST_OF_SCRIPT(script, 0, 0) ~= players.user() then
+            if not util.request_script_host(script) then
+                util.toast("成为脚本主机失败，请重试")
+                return
+            end
+
+            util.yield() -- 如果不加 yield 下面的 spoof_script 会有问题
+        end
+
+        if not request_control(vehicle) then
+            util.toast("请求控制载具失败，请重试")
+            return
+        end
+
+        util.yield()
+
+        local hash = value
+        util.request_model(hash)
+        if not STREAMING.HAS_MODEL_LOADED(hash) then
+            return
+        end
+
+        util.spoof_script(script, function()
+            local netIdAddr = HeistMissionVehicle.getNetIdAddr(vehicle, script)
+            if netIdAddr == 0 then
+                return
+            end
+
+            local netId = HeistMissionVehicle.replaceVehicle(vehicle, hash)
+            if netId == 0 then
+                return
+            end
+
+            LOCAL_SET_INT(script, netIdAddr, netId)
+            util.toast("完成！")
+        end)
+
+        STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(hash)
+    end)
+
+
+    local temp = menu.divider(menu_parent, "")
+    menu.set_visible(temp, false)
+    menu.on_tick_in_viewport(temp, function()
+        draw_line_to_entity(vehicle)
+    end)
+end
+
+local Heist_Mission_Vehicle
+Heist_Mission_Vehicle = menu.list(Mission_Options, "管理任务载具", {}, "", function()
+    rs_menu.delete_menu_children(Heist_Mission_Vehicle)
+
+    local script = GET_RUNNING_MISSION_CONTROLLER_SCRIPT()
+    if script == nil then return end
+
+    for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
+        if ENTITY.IS_ENTITY_A_MISSION_ENTITY(vehicle) then
+            if GET_ENTITY_SCRIPT(vehicle) == script then
+                local menu_name = get_vehicle_display_name(vehicle)
+                local help_text = ""
+
+                if not VEHICLE.IS_VEHICLE_SEAT_FREE(vehicle, -1, false) then
+                    help_text = help_text .. "司机: " .. HeistMissionVehicle.getDriverName(vehicle) .. "\n"
+                end
+
+                local blip = HUD.GET_BLIP_FROM_ENTITY(vehicle)
+                if HUD.DOES_BLIP_EXIST(blip) then
+                    local blip_sprite = HUD.GET_BLIP_SPRITE(blip)
+                    if blip_sprite == 1 then
+                        menu_name = menu_name .. " [目标点]"
+                    else
+                        menu_name = menu_name .. " [标记点]"
+                    end
+
+                    local blip_colour = HUD.GET_BLIP_COLOUR(blip)
+                    if blip_colour == 54 then
+                        help_text = help_text .. "BLIP_COLOUR_BLUEDARK" .. "\n"
+                    end
+                end
+
+                if vehicle == PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), false) then
+                    if PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+                        menu_name = menu_name .. " [当前载具]"
+                    else
+                        menu_name = menu_name .. " [上一辆载具]"
+                    end
+                end
+
+                help_text = help_text .. "控制权: " .. get_entity_owner_name(vehicle) .. "\n"
+                help_text = help_text .. "乘客数: " .. VEHICLE.GET_VEHICLE_NUMBER_OF_PASSENGERS(vehicle, false, false)
+
+
+                local menu_list = menu.list(Heist_Mission_Vehicle, menu_name, {}, help_text)
+                HeistMissionVehicle.generateMenuActions(menu_list, vehicle, script)
+            end
+        end
+    end
 end)

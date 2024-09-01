@@ -189,15 +189,24 @@ menu.divider(dev_map_blips, "列表")
 
 menu.action(Dev_Options, "关闭电脑界面", { "shut_computer" }, "", function()
     local script_list = {
-        "appbunkerbusiness", "appsmuggler", "appbusinesshub", "appbikerbusiness",
-        "apparcadebusinesshub", "apphackertruck", "appfixersecurity", "appavengeroperations",
-        "appcovertops"
+        "apparcadebusiness",
+        "apparcadebusinesshub",
+        "appavengeroperations",
+        "appbailoffice",
+        "appbikerbusiness",
+        "appbunkerbusiness",
+        "appbusinesshub",
+        "appcovertops",
+        "appfixersecurity",
+        "apphackertruck",
+        "appimportexport",
+        "appinternet",
+        "appsecuroserv",
+        "appsmuggler",
     }
     for key, script in pairs(script_list) do
         if IS_SCRIPT_RUNNING(script) then
-            GLOBAL_SET_INT(Globals.IsUsingComputerScreen, 0)
             MISC.TERMINATE_ALL_SCRIPTS_WITH_THIS_NAME(script)
         end
     end
 end)
-
