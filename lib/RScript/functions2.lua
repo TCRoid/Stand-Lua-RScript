@@ -18,7 +18,7 @@ function IS_SCRIPT_RUNNING(script)
 end
 
 --- @param script string
---- @param arg_count integer
+--- @param stackSize integer
 --- @return boolean
 function START_SCRIPT(script, arg_count)
     if not SCRIPT.DOES_SCRIPT_EXIST(script) then
@@ -36,16 +36,32 @@ function START_SCRIPT(script, arg_count)
     return true
 end
 
---- @param script string
 --- @return boolean
-function IS_MISSION_SCRIPT(script)
-    return script == "fm_mission_controller" or script == "fm_mission_controller_2020"
+function IS_MISSION_CONTROLLER_SCRIPT_RUNNING()
+    return IS_SCRIPT_RUNNING("fm_mission_controller") or IS_SCRIPT_RUNNING("fm_mission_controller_2020")
+end
+
+--- @return string|nil
+function GET_RUNNING_MISSION_CONTROLLER_SCRIPT()
+    local script = "fm_mission_controller"
+    if IS_SCRIPT_RUNNING(script) then
+        return script
+    end
+
+    script = "fm_mission_controller_2020"
+    if IS_SCRIPT_RUNNING(script) then
+        return script
+    end
+
+    return nil
 end
 
 --------------------------
 -- Stat Functions
 --------------------------
 
+--- @param stat string
+--- @return string
 function ADD_MP_INDEX(stat)
     local Exceptions = {
         "MP_CHAR_STAT_RALLY_ANIM",
@@ -61,24 +77,32 @@ function ADD_MP_INDEX(stat)
         end
     end
 
-    if not string.contains(stat, "MP_") and not string.contains(stat, "MPPLY_") then
-        return "MP" .. util.get_char_slot() .. "_" .. stat
+    if stat:sub(1, 3) == "MP_" or stat:sub(1, 6) == "MPPLY_" then
+        return stat
     end
-    return stat
+    return "MP" .. util.get_char_slot() .. "_" .. stat
 end
 
+--- @param stat string
+--- @param value integer
 function STAT_SET_INT(stat, value)
     STATS.STAT_SET_INT(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
+--- @param stat string
+--- @param value float
 function STAT_SET_FLOAT(stat, value)
     STATS.STAT_SET_FLOAT(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
+--- @param stat string
+--- @param value boolean
 function STAT_SET_BOOL(stat, value)
     STATS.STAT_SET_BOOL(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
+--- @param stat string
+--- @param value string
 function STAT_SET_STRING(stat, value)
     STATS.STAT_SET_STRING(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
@@ -99,18 +123,24 @@ function STAT_INCREMENT(stat, value)
     STATS.STAT_INCREMENT(util.joaat(ADD_MP_INDEX(stat)), value, true)
 end
 
+--- @param stat string
+--- @return integer
 function STAT_GET_INT(stat)
     local IntPTR = memory.alloc_int()
     STATS.STAT_GET_INT(util.joaat(ADD_MP_INDEX(stat)), IntPTR, -1)
     return memory.read_int(IntPTR)
 end
 
+--- @param stat string
+--- @return float
 function STAT_GET_FLOAT(stat)
     local FloatPTR = memory.alloc_int()
     STATS.STAT_GET_FLOAT(util.joaat(ADD_MP_INDEX(stat)), FloatPTR, -1)
     return tonumber(string.format("%.3f", memory.read_float(FloatPTR)))
 end
 
+--- @param stat string
+--- @return boolean
 function STAT_GET_BOOL(stat)
     if STAT_GET_INT(stat) ~= 0 then
         return "true"
@@ -119,6 +149,8 @@ function STAT_GET_BOOL(stat)
     end
 end
 
+--- @param stat string
+--- @return string
 function STAT_GET_STRING(stat)
     return STATS.STAT_GET_STRING(util.joaat(ADD_MP_INDEX(stat)), -1)
 end
@@ -142,6 +174,34 @@ function STAT_GET_DATE(stat, type)
     end
 end
 
+------------------------------
+-- Packed Stat Functions
+------------------------------
+
+--- @param statIndex integer
+--- @return integer
+function GET_PACKED_STAT_INT_CODE(statIndex)
+    return STATS.GET_PACKED_STAT_INT_CODE(statIndex, util.get_char_slot())
+end
+
+--- @param statIndex integer
+--- @return boolean
+function GET_PACKED_STAT_BOOL_CODE(statIndex)
+    return STATS.GET_PACKED_STAT_BOOL_CODE(statIndex, util.get_char_slot())
+end
+
+--- @param statIndex integer
+--- @param value integer
+function SET_PACKED_STAT_INT_CODE(statIndex, value)
+    STATS.SET_PACKED_STAT_INT_CODE(statIndex, value, util.get_char_slot())
+end
+
+--- @param statIndex integer
+--- @param value boolean
+function SET_PACKED_STAT_BOOL_CODE(statIndex, value)
+    STATS.SET_PACKED_STAT_BOOL_CODE(statIndex, value, util.get_char_slot())
+end
+
 ----------------------------
 -- Global Functions
 ----------------------------
@@ -159,6 +219,18 @@ function GLOBAL_SET_FLOAT(global, value)
 end
 
 --- @param global integer
+--- @param value string
+function GLOBAL_SET_STRING(global, value)
+    memory.write_string(memory.script_global(global), value)
+end
+
+--- @param global integer
+--- @param value boolean
+function GLOBAL_SET_BOOL(global, value)
+    memory.write_int(memory.script_global(global), value and 1 or 0)
+end
+
+--- @param global integer
 --- @return integer
 function GLOBAL_GET_INT(global)
     return memory.read_int(memory.script_global(global))
@@ -170,32 +242,45 @@ function GLOBAL_GET_FLOAT(global)
     return memory.read_float(memory.script_global(global))
 end
 
----------------------------
--- Tunable Functions
----------------------------
-
---- @param offset integer
---- @param value integer
-function TUNABLE_SET_INT(offset, value)
-    GLOBAL_SET_INT(262145 + offset, value)
+--- @param global integer
+---@return string
+function GLOBAL_GET_STRING(global)
+    return memory.read_string(memory.script_global(global))
 end
 
---- @param offset integer
---- @param value float
-function TUNABLE_SET_FLOAT(offset, value)
-    GLOBAL_SET_FLOAT(262145 + offset, value)
+--- @param global integer
+--- @return boolean
+function GLOBAL_GET_BOOL(global)
+    return memory.read_int(memory.script_global(global)) == 1
 end
 
---- @param offset integer
---- @return integer
-function TUNABLE_GET_INT(offset)
-    return GLOBAL_GET_INT(262145 + offset)
+--- @param global integer
+--- @param bit integer
+function GLOBAL_SET_BIT(global, bit)
+    local addr = memory.script_global(global)
+    memory.write_int(addr, SET_BIT(memory.read_int(addr), bit))
 end
 
---- @param offset integer
---- @return float
-function TUNABLE_GET_FLOAT(offset)
-    return GLOBAL_GET_FLOAT(262145 + offset)
+--- @param global integer
+--- @param bit integer
+function GLOBAL_CLEAR_BIT(global, bit)
+    local addr = memory.script_global(global)
+    memory.write_int(addr, CLEAR_BIT(memory.read_int(addr), bit))
+end
+
+--- @param global integer
+--- @param bit integer
+--- @return boolean
+function GLOBAL_BIT_TEST(global, bit)
+    local addr = memory.script_global(global)
+    return BIT_TEST(memory.read_int(addr), bit)
+end
+
+--- @param global integer
+--- @param ... bits
+function GLOBAL_SET_BITS(global, ...)
+    local addr = memory.script_global(global)
+    memory.write_int(addr, SET_BITS(memory.read_int(addr), ...))
 end
 
 ---------------------------
@@ -225,10 +310,7 @@ end
 ---@return integer
 function LOCAL_GET_INT(script, script_local)
     if memory.script_local(script, script_local) ~= 0 then
-        local value = memory.read_int(memory.script_local(script, script_local))
-        if value ~= nil then
-            return value
-        end
+        return memory.read_int(memory.script_local(script, script_local))
     end
 end
 
@@ -237,10 +319,7 @@ end
 ---@return float
 function LOCAL_GET_FLOAT(script, script_local)
     if memory.script_local(script, script_local) ~= 0 then
-        local value = memory.read_float(memory.script_local(script, script_local))
-        if value ~= nil then
-            return value
-        end
+        return memory.read_float(memory.script_local(script, script_local))
     end
 end
 
@@ -254,27 +333,98 @@ function LOCAL_SET_BIT(script, script_local, bit)
     end
 end
 
+--- @param script string
+--- @param script_local integer
+--- @param bit integer
+function LOCAL_CLEAR_BIT(script, script_local, bit)
+    local addr = memory.script_local(script, script_local)
+    if addr ~= 0 then
+        memory.write_int(addr, CLEAR_BIT(memory.read_int(addr), bit))
+    end
+end
+
+--- @param script string
+--- @param script_local integer
+--- @param bit integer
+--- @return boolean
+function LOCAL_BIT_TEST(script, script_local, bit)
+    local addr = memory.script_local(script, script_local)
+    if addr ~= 0 then
+        return BIT_TEST(memory.read_int(addr), bit)
+    end
+end
+
 ---------------------------
 -- Bit Functions
 ---------------------------
 
---- @param bits integer
---- @param place integer
+--- @param value integer
+--- @param position integer
 --- @return integer
-function SET_BIT(bits, place)
-    return (bits | (1 << place))
+function SET_BIT(value, position)
+    return (value | (1 << position))
 end
 
---- @param bits integer
---- @param place integer
+--- @param value integer
+--- @param position integer
 --- @return integer
-function CLEAR_BIT(bits, place)
-    return (bits & ~(1 << place))
+function CLEAR_BIT(value, position)
+    return (value & ~(1 << position))
 end
 
---- @param bits integer
---- @param place integer
+--- @param value integer
+--- @param position integer
 --- @return integer
-function BIT_TEST(bits, place)
-    return (bits & (1 << place)) ~= 0
+function BIT_TEST(value, position)
+    return (value & (1 << position)) ~= 0
+end
+
+--- @param value integer
+--- @param ... positions
+--- @return integer
+function SET_BITS(value, ...)
+    local positions = { ... }
+    for _, position in ipairs(positions) do
+        value = value | (1 << position)
+    end
+    return value
+end
+
+--- @param value integer
+--- @param ... positions
+--- @return integer
+function CLEAR_BITS(value, ...)
+    local positions = { ... }
+    for _, position in ipairs(positions) do
+        value = value & ~(1 << position)
+    end
+    return value
+end
+
+--- Checks if **all** specified bit positions are set to 1 in the given value.
+--- @param value integer
+--- @param ... positions
+--- @return boolean
+function BITS_TEST(value, ...)
+    local positions = { ... }
+    for _, position in ipairs(positions) do
+        if (value & (1 << position)) == 0 then
+            return false
+        end
+    end
+    return true
+end
+
+--- Checks if **any** of the specified bit positions are set to 1 in the given value.
+--- @param value integer
+--- @param ... positions
+--- @return boolean
+function IS_ANY_BIT_SET(value, ...)
+    local positions = { ... }
+    for _, position in ipairs(positions) do
+        if (value & (1 << position)) ~= 0 then
+            return true
+        end
+    end
+    return false
 end

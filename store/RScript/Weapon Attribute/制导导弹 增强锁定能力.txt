@@ -1,0 +1,12 @@
+lifetime: 10.0
+side_drag_coeff: 10.0
+pitch_change_rate: 100.0
+yaw_change_rate: 100.0
+roll_change_rate: 100.0
+should_use_homing_params_from_info: 1
+time_before_starting_homing: 0.15
+turn_rate_modifier: 100.0
+pitch_yaw_roll_clamp: 8.5
+default_homing_rocket_break_lock_angle: 0.2
+default_homing_rocket_break_lock_angle_close: 0.6
+default_homing_rocket_break_lock_close_distance: 20.0

@@ -1,6 +1,7 @@
--------------------------------------------
----------    Assistant Options    ---------
--------------------------------------------
+------------------------------------------
+--          Assistant Options
+------------------------------------------
+
 
 local Assistant_Options <const> = menu.list(Menu_Root, "助手选项", {}, "")
 
@@ -215,7 +216,7 @@ function cargobob_pickup.get_player_cargobob()
     if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
         local veh = PED.GET_VEHICLE_PED_IS_IN(ped, false)
         local hash = ENTITY.GET_ENTITY_MODEL(veh)
-        if is_in_table(cargobob_pickup.model_list, hash) then
+        if table.contains(cargobob_pickup.model_list, hash) then
             return veh
         end
     end
@@ -320,6 +321,189 @@ menu.slider_float(Cargobob_Pickup, "Offset Y", { "cargobob_pickup_y" }, "", -100
 end)
 menu.slider_float(Cargobob_Pickup, "Offset Z", { "cargobob_pickup_z" }, "", -10000, 10000, -100, 10, function(value)
     cargobob_pickup.z = value * 0.01
+end)
+
+--#endregion
+
+
+--#region Attacked Response
+
+local Attacked_Response <const> = menu.list(Assistant_Options, "玩家受到攻击时反应", {}, "")
+
+local AttackedResponse = {
+    reactionType = 1,
+    pedReactionType = 1,
+    vehicleReactionType = 1,
+}
+
+function AttackedResponse.checkAttacker(attacker, isKiller)
+    if AttackedResponse.reactionType == 2 and isKiller ~= 1 then
+        return false
+    end
+
+    if not ENTITY.DOES_ENTITY_EXIST(attacker) or ENTITY.IS_ENTITY_DEAD(attacker) then
+        return false
+    end
+
+    return true
+end
+
+function AttackedResponse.attackerReaction(attacker)
+    if ENTITY.IS_ENTITY_A_PED(attacker) then
+        AttackedResponse.pedReaction(attacker)
+        return
+    end
+
+    if ENTITY.IS_ENTITY_A_VEHICLE(attacker) then
+        AttackedResponse.vehicleReaction(attacker)
+        return
+    end
+end
+
+function AttackedResponse.pedReaction(attacker)
+    if is_player_ped(attacker) then
+        return
+    end
+
+    local reactionType = AttackedResponse.pedReactionType
+
+    -- 禁用
+    if reactionType == 0 then
+        return
+    end
+
+    -- 死亡
+    if reactionType == 1 then
+        SET_ENTITY_HEALTH(attacker, 0)
+        return
+    end
+    -- 爆头击杀
+    if reactionType == 2 then
+        shoot_ped_head(attacker, util.joaat("WEAPON_PISTOL"), players.user_ped())
+        return
+    end
+    -- 署名爆炸
+    if reactionType == 3 then
+        local pos = ENTITY.GET_ENTITY_COORDS(attacker)
+        add_owned_explosion(players.user_ped(), pos, 4)
+        return
+    end
+    -- 匿名爆炸
+    if reactionType == 4 then
+        local pos = ENTITY.GET_ENTITY_COORDS(attacker)
+        add_explosion(pos, 4)
+        return
+    end
+    -- 燃烧
+    if reactionType == 5 then
+        FIRE.START_ENTITY_FIRE(attacker)
+        return
+    end
+    -- 电击
+    if reactionType == 6 then
+        shoot_ped_head(attacker, util.joaat("WEAPON_STUNGUN"), players.user_ped())
+        return
+    end
+    -- 移除武器
+    if reactionType == 7 then
+        WEAPON.REMOVE_ALL_PED_WEAPONS(attacker)
+        return
+    end
+end
+
+function AttackedResponse.vehicleReaction(attacker)
+    local reactionType = AttackedResponse.vehicleReactionType
+
+    -- 禁用
+    if reactionType == 0 then
+        return
+    end
+
+    notify("AttackedResponse.vehicleReaction")
+
+    -- 破坏引擎
+    if reactionType == 1 then
+        VEHICLE.SET_VEHICLE_ENGINE_HEALTH(attacker, -4000.0)
+        return
+    end
+    -- 爆胎
+    if reactionType == 2 then
+        for i = 0, 7 do
+            VEHICLE.SET_VEHICLE_TYRE_BURST(attacker, i, true, 1000.0)
+        end
+        return
+    end
+    -- 卸下车轮
+    if reactionType == 3 then
+        for i = 0, 7 do
+            entities.detach_wheel(attacker, i)
+        end
+        return
+    end
+end
+
+local playerAttackedEventData = memory.alloc(13 * 8)
+
+menu.toggle_loop(Attacked_Response, "玩家受到攻击时反应", {}, "仅在线上模式可用并且需要关闭无敌", function()
+    local eventData = playerAttackedEventData
+    local eventGroup = 1 -- SCRIPT_EVENT_QUEUE_NETWORK
+    for eventIndex = 0, SCRIPT.GET_NUMBER_OF_EVENTS(eventGroup) - 1 do
+        local eventType = SCRIPT.GET_EVENT_AT_INDEX(eventGroup, eventIndex)
+        if eventType == 186 then                                    -- CEventNetworkEntityDamage
+            if SCRIPT.GET_EVENT_DATA(eventGroup, eventIndex, eventData, 13) then
+                local Victim = memory.read_int(eventData)           -- entity
+                local Attacker = memory.read_int(eventData + 1 * 8) -- entity
+                -- local Damage = memory.read_float(eventData + 2 * 8) -- float
+                -- local EnduranceDamage = memory.read_float(eventData + 3 * 8)         -- float
+                -- local VictimIncapacitated = memory.read_int(eventData + 4 * 8)       -- bool
+                local VictimDestroyed = memory.read_int(eventData + 5 * 8) -- bool
+                -- local WeaponHash = memory.read_int(eventData + 6 * 8)                -- int
+                -- local VictimSpeed = memory.read_float(eventData + 7 * 8)             -- float
+                -- local AttackerSpeed = memory.read_float(eventData + 8 * 8)           -- float
+                -- local IsResponsibleForCollision = memory.read_int(eventData + 9 * 8) -- bool
+                -- local IsHeadShot = memory.read_int(eventData + 10 * 8)               -- bool
+                -- local IsWithMeleeWeapon = memory.read_int(eventData + 11 * 8)        -- bool
+                -- local HitMaterial = memory.read_int(eventData + 12 * 8)              -- int
+
+                if Victim == players.user_ped() and Attacker ~= players.user_ped() then
+                    if AttackedResponse.checkAttacker(Attacker, VictimDestroyed) then
+                        AttackedResponse.attackerReaction(Attacker)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+menu.divider(Attacked_Response, "选项")
+
+menu.list_select(Attacked_Response, "反应对象", {}, "", {
+    { 1, "攻击者", {}, "" },
+    { 2, "仅击杀者", {}, "" }
+}, 1, function(value)
+    AttackedResponse.reactionType = value
+end)
+
+menu.list_select(Attacked_Response, "对 NPC 的反应", {}, "", {
+    { 0, "禁用" },
+    { 1, "死亡" },
+    { 2, "爆头击杀" },
+    { 3, "署名爆炸" },
+    { 4, "匿名爆炸" },
+    { 5, "燃烧" },
+    { 6, "电击" },
+    { 7, "移除武器" },
+}, 1, function(value)
+    AttackedResponse.pedReactionType = value
+end)
+
+menu.list_select(Attacked_Response, "对 载具 的反应", {}, "", {
+    { 0, "禁用" },
+    { 1, "破坏引擎" },
+    { 2, "爆胎" },
+    { 3, "卸下车轮" },
+}, 1, function(value)
+    AttackedResponse.vehicleReactionType = value
 end)
 
 --#endregion

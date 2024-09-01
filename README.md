@@ -1,18 +1,18 @@
-# Stand Lua RScript
+## Stand 自用脚本 😋
 
-Stand 自用脚本 😋
-
-
-
-- **RScript.lua**
+#### RScript.lua
 
 常用功能
 
 
 
-- **RScript2.lua**
+#### RS_Collectibles.lua
 
-非常用功能
+收藏品相关功能
+
+
+
+
 
 
 

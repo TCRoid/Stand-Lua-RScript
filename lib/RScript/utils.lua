@@ -138,8 +138,8 @@ function rs_menu.current_weapon_action(weapon_menu_list, action_name, on_click, 
     end
 end
 
--- local all_weapons <const> = {}
--- local all_weapons_without_melee <const> = {}
+-- local all_weapons = {}
+-- local all_weapons_without_melee = {}
 -- for key, item in pairs(util.get_weapons()) do
 --     local menu_name = util.get_label_text(item.label_key)
 --     local command_names = string.gsub(util.reverse_joaat(item.hash), "weapon_", "")
@@ -152,6 +152,8 @@ end
 --         table.insert(all_weapons_without_melee, list_item)
 --     end
 -- end
+
+
 
 -- function rs_menu.all_weapons2(menu_parent, menu_name, command_names, help_text, on_click, change_menu_name)
 --     local reference
@@ -182,6 +184,10 @@ end
 
 --     return reference
 -- end
+
+
+
+
 
 
 -------- [[ 载具武器 ]] --------
@@ -281,11 +287,24 @@ end
 --- 删除 menu list (table)
 --- @param menu_list table<int, CommandRef>
 function rs_menu.delete_menu_list(menu_list)
-    for k, command in pairs(menu_list) do
+    for _, command in pairs(menu_list) do
         if command ~= nil and menu.is_ref_valid(command) then
             menu.delete(command)
         end
     end
+    menu.collect_garbage()
+end
+
+--- 删除 menu.list 下的所有子菜单
+--- @param list CommandRef
+function rs_menu.delete_menu_children(list)
+    local children = menu.get_children(list)
+    if #children == 0 then return end
+
+    for _, command in pairs(children) do
+        menu.delete(command)
+    end
+    menu.collect_garbage()
 end
 
 --------------------------------------------------
@@ -297,13 +316,17 @@ rs_memory = {}
 --- @param addr pointer
 --- @return boolean
 function rs_memory.is_entity_froze(addr)
-    return memory.read_byte(addr + 0x2E) == 3
+    local m_base_flags = memory.read_uint(addr + 0x2C)
+    -- IS_FIXED, IS_FIXED_BY_NETWORK
+    return IS_ANY_BIT_SET(m_base_flags, 17, 18)
 end
 
 --- @param addr pointer
 --- @return boolean
 function rs_memory.is_mission_entity(addr)
-    return memory.read_byte(addr + 0x19) == 4
+    local m_dynamic_entity_flags = memory.read_ushort(addr + 0xDA)
+    -- POPTYPE_MISSION, POPTYPE_PERMANENT
+    return BITS_TEST(m_dynamic_entity_flags, 0, 1, 2) or BITS_TEST(m_dynamic_entity_flags, 1, 2)
 end
 
 --- @param addr pointer
@@ -316,4 +339,26 @@ end
 --- @param value float
 function rs_memory.set_entity_health(addr, value)
     memory.write_float(addr + 0x280, value)
+end
+
+--- Only applicable to peds.
+--- @param addr pointer
+--- @return pointer
+function rs_memory.get_weapon_info(addr)
+    local m_weapon_manager = memory.read_long(addr + 0x10B8)
+    if m_weapon_manager == 0 then
+        return 0
+    end
+
+    local m_equipped_weapon_info = memory.read_long(m_weapon_manager + 0x58 + 0x10)
+    if m_equipped_weapon_info ~= 0 then
+        return m_equipped_weapon_info
+    end
+
+    local m_equipped_vehicle_weapon_info = memory.read_long(m_weapon_manager + 0x58 + 0x18)
+    if m_equipped_vehicle_weapon_info ~= 0 then
+        return m_equipped_vehicle_weapon_info
+    end
+
+    return 0
 end

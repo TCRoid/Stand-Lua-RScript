@@ -1,6 +1,7 @@
 ------------------------------------------
-----------    Entity Options    ----------
+--          Entity Options
 ------------------------------------------
+
 
 local Entity_Options <const> = menu.list(Menu_Root, "实体选项", {}, "")
 
@@ -9,11 +10,11 @@ local Entity_Options <const> = menu.list(Menu_Root, "实体选项", {}, "")
 
 local Entity_NPC_Options <const> = menu.list(Entity_Options, "NPC选项", {}, "")
 
-local tNPC = {
+local EntityNPC = {
     ped_select = 1,
 }
 
-function tNPC.checkPed(ped, pedTypeSelect)
+function EntityNPC.checkPed(ped, pedTypeSelect)
     if is_player_ped(ped) then
         return false
     end
@@ -35,34 +36,34 @@ end
 
 menu.divider(Entity_NPC_Options, "全部NPC")
 menu.list_select(Entity_NPC_Options, "NPC类型", {}, "", Misc_T.PedType, 1, function(value)
-    tNPC.ped_select = value
+    EntityNPC.ped_select = value
 end)
 
-menu.action(Entity_NPC_Options, "删除", { "del_ped" }, "", function()
+menu.action(Entity_NPC_Options, "删除", { "delPed" }, "", function()
     for _, ped in pairs(entities.get_all_peds_as_handles()) do
-        if tNPC.checkPed(ped, tNPC.ped_select) then
+        if EntityNPC.checkPed(ped, EntityNPC.ped_select) then
             entities.delete(ped)
         end
     end
 end)
-menu.action(Entity_NPC_Options, "死亡", { "dead_ped" }, "", function()
+menu.action(Entity_NPC_Options, "死亡", { "deadPed" }, "", function()
     for _, ped in pairs(entities.get_all_peds_as_handles()) do
-        if not ENTITY.IS_ENTITY_DEAD(ped) and tNPC.checkPed(ped, tNPC.ped_select) then
+        if not ENTITY.IS_ENTITY_DEAD(ped) and EntityNPC.checkPed(ped, EntityNPC.ped_select) then
             SET_ENTITY_HEALTH(ped, 0)
         end
     end
 end)
-menu.action(Entity_NPC_Options, "爆头击杀", { "kill_ped" }, "", function()
+menu.action(Entity_NPC_Options, "爆头击杀", { "killPed" }, "", function()
     local weaponHash = util.joaat("WEAPON_APPISTOL")
     for _, ped in pairs(entities.get_all_peds_as_handles()) do
-        if not ENTITY.IS_ENTITY_DEAD(ped) and tNPC.checkPed(ped, tNPC.ped_select) then
+        if not ENTITY.IS_ENTITY_DEAD(ped) and EntityNPC.checkPed(ped, EntityNPC.ped_select) then
             shoot_ped_head(ped, weaponHash, players.user_ped())
         end
     end
 end)
 
 menu.divider(Entity_NPC_Options, "警察和特警")
-menu.toggle_loop(Entity_NPC_Options, "删除", { "del_cop" }, "", function()
+menu.toggle_loop(Entity_NPC_Options, "删除", { "delCops" }, "", function()
     for _, ped_ptr in pairs(entities.get_all_peds_as_pointers()) do
         local hash = entities.get_model_hash(ped_ptr)
         if hash == 1581098148 or hash == -1320879687 or hash == -1920001264 then
@@ -70,7 +71,7 @@ menu.toggle_loop(Entity_NPC_Options, "删除", { "del_cop" }, "", function()
         end
     end
 end)
-menu.toggle_loop(Entity_NPC_Options, "死亡", { "dead_cop" }, "", function()
+menu.toggle_loop(Entity_NPC_Options, "死亡", { "deadCops" }, "", function()
     for _, ped_ptr in pairs(entities.get_all_peds_as_pointers()) do
         local hash = entities.get_model_hash(ped_ptr)
         if hash == 1581098148 or hash == -1320879687 or hash == -1920001264 then
@@ -80,7 +81,7 @@ menu.toggle_loop(Entity_NPC_Options, "死亡", { "dead_cop" }, "", function()
 end)
 
 menu.divider(Entity_NPC_Options, "友方NPC")
-menu.action(Entity_NPC_Options, "无敌强化", { "strong_friendly_ped" }, "", function()
+menu.action(Entity_NPC_Options, "无敌强化", { "strongFriendlyPed" }, "", function()
     for _, ent in pairs(entities.get_all_peds_as_handles()) do
         if not ENTITY.IS_ENTITY_DEAD(ent) and not is_player_ped(ent) then
             local rel = PED.GET_RELATIONSHIP_BETWEEN_PEDS(ent, players.user_ped())
@@ -112,33 +113,34 @@ end)
 
 local NPC_Weak_Options <const> = menu.list(Entity_Options, "弱化NPC选项", {}, "")
 
-tNPC.Weak = {
+EntityNPC.Weak = {
     ped_select = 1,
     time_delay = 2000,
     toggle = {
         health = false,
         weapon_damage = true,
         vehicle_weapon = false,
+        deaf_blind = false,
     },
 }
 
 menu.list_select(NPC_Weak_Options, "NPC类型", {}, "", Misc_T.PedType, 1, function(value)
-    tNPC.Weak.ped_select = value
+    EntityNPC.Weak.ped_select = value
 end)
 
-menu.toggle_loop(NPC_Weak_Options, "弱化", { "weak_ped" }, "", function()
+menu.toggle_loop(NPC_Weak_Options, "弱化", { "WeakPed" }, "", function()
     local weak_health = 100
     local weak_weapon_damage = 0.01
 
     for _, ped in pairs(entities.get_all_peds_as_handles()) do
-        if not ENTITY.IS_ENTITY_DEAD(ped) and tNPC.checkPed(ped, tNPC.Weak.ped_select) then
-            if tNPC.Weak.toggle.health then
+        if not ENTITY.IS_ENTITY_DEAD(ped) and EntityNPC.checkPed(ped, EntityNPC.Weak.ped_select) then
+            if EntityNPC.Weak.toggle.health then
                 if ENTITY.GET_ENTITY_HEALTH(ped) > weak_health then
                     SET_ENTITY_HEALTH(ped, weak_health)
                 end
             end
 
-            if tNPC.Weak.toggle.weapon_damage then
+            if EntityNPC.Weak.toggle.weapon_damage then
                 PED.SET_COMBAT_FLOAT(ped, 29, weak_weapon_damage) -- WEAPON_DAMAGE_MODIFIER
             end
 
@@ -150,7 +152,7 @@ menu.toggle_loop(NPC_Weak_Options, "弱化", { "weak_ped" }, "", function()
             PED.STOP_PED_WEAPON_FIRING_WHEN_DROPPED(ped)
             PED.DISABLE_PED_INJURED_ON_GROUND_BEHAVIOUR(ped)
 
-            if tNPC.Weak.toggle.vehicle_weapon then
+            if EntityNPC.Weak.toggle.vehicle_weapon then
                 if PED.IS_PED_IN_ANY_VEHICLE(ped, false) then
                     local ped_veh = PED.GET_VEHICLE_PED_IS_IN(ped, false)
                     if VEHICLE.DOES_VEHICLE_HAVE_WEAPONS(ped_veh) then
@@ -161,26 +163,44 @@ menu.toggle_loop(NPC_Weak_Options, "弱化", { "weak_ped" }, "", function()
                     end
                 end
             end
+
+            if EntityNPC.Weak.toggle.deaf_blind then
+                PED.SET_PED_HIGHLY_PERCEPTIVE(ped, false)
+                PED.SET_PED_VISUAL_FIELD_PERIPHERAL_RANGE(ped, 0.0)
+                PED.SET_PED_SEEING_RANGE(ped, 0.0)
+                PED.SET_PED_HEARING_RANGE(ped, 0.0)
+                PED.SET_PED_ID_RANGE(ped, 0.0)
+                PED.SET_PED_VISUAL_FIELD_MIN_ANGLE(ped, 0.0)
+                PED.SET_PED_VISUAL_FIELD_MAX_ANGLE(ped, 0.0)
+                PED.SET_PED_VISUAL_FIELD_MIN_ELEVATION_ANGLE(ped, 0.0)
+                PED.SET_PED_VISUAL_FIELD_MAX_ELEVATION_ANGLE(ped, 0.0)
+                PED.SET_PED_VISUAL_FIELD_CENTER_ANGLE(ped, 0.0)
+            end
         end
     end
 
-    util.yield(tNPC.Weak.time_delay)
+    util.yield(EntityNPC.Weak.time_delay)
 end)
 
 menu.divider(NPC_Weak_Options, "设置")
 
 menu.toggle(NPC_Weak_Options, "弱化血量", {}, "修改血量为: 100", function(toggle)
-    tNPC.Weak.toggle.health = toggle
+    EntityNPC.Weak.toggle.health = toggle
 end)
 menu.toggle(NPC_Weak_Options, "弱化武器伤害", {}, "修改武器伤害为: 0.01", function(toggle)
-    tNPC.Weak.toggle.weapon_damage = toggle
+    EntityNPC.Weak.toggle.weapon_damage = toggle
 end, true)
 menu.toggle(NPC_Weak_Options, "禁用载具武器", {}, "", function(toggle)
-    tNPC.Weak.toggle.vehicle_weapon = toggle
+    EntityNPC.Weak.toggle.vehicle_weapon = toggle
 end)
+menu.toggle(NPC_Weak_Options, "变成聋瞎", {}, "", function(toggle)
+    EntityNPC.Weak.toggle.deaf_blind = toggle
+end)
+
+
 menu.slider(NPC_Weak_Options, "循环间隔", { "setting_weak_ped_time_delay" }, "单位: 毫秒",
     0, 5000, 2000, 100, function(value)
-        tNPC.Weak.time_delay = value
+        EntityNPC.Weak.time_delay = value
     end)
 
 menu.divider(NPC_Weak_Options, "其它(默认设置)")
@@ -197,25 +217,25 @@ menu.readonly(NPC_Weak_Options, "禁止受伤倒地时的行为", "是")
 
 local Entity_Hostile_Options <const> = menu.list(Entity_Options, "敌对实体选项", {}, "")
 
-menu.action(Entity_Hostile_Options, "爆炸敌对NPC", { "h_ped_explode" }, "", function()
+menu.action(Entity_Hostile_Options, "爆炸敌对NPC", { "hPedExplode" }, "", function()
     explode_hostile_peds()
 end)
-menu.action(Entity_Hostile_Options, "爆炸敌对载具", { "h_veh_explode" }, "", function()
+menu.action(Entity_Hostile_Options, "爆炸敌对载具", { "hVehExplode" }, "", function()
     explode_hostile_vehicles()
 end)
-menu.action(Entity_Hostile_Options, "爆炸敌对物体", { "h_obj_explode" }, "", function()
+menu.action(Entity_Hostile_Options, "爆炸敌对物体", { "hObjExplode" }, "", function()
     explode_hostile_objects()
 end)
 
 menu.divider(Entity_Hostile_Options, "")
-menu.action(Entity_Hostile_Options, "破坏敌对载具引擎", { "h_veh_kill_engine" }, "", function()
+menu.action(Entity_Hostile_Options, "破坏敌对载具引擎", { "hVehKillEngine" }, "", function()
     for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
         if is_hostile_entity(vehicle) then
             VEHICLE.SET_VEHICLE_ENGINE_HEALTH(vehicle, -4000.0)
         end
     end
 end)
-menu.action(Entity_Hostile_Options, "杀死敌对物体", { "h_obj_kill" }, "", function()
+menu.action(Entity_Hostile_Options, "杀死敌对物体", { "hObjKill" }, "", function()
     for _, object in pairs(entities.get_all_objects_as_handles()) do
         if is_hostile_entity(object) then
             SET_ENTITY_HEALTH(object, 0)
@@ -230,12 +250,12 @@ end)
 
 local Entity_Vehicle_Options <const> = menu.list(Entity_Options, "载具选项", {}, "")
 
-local tEntityVehicle = {
-    exceptPlayer = true,
+local EntityVehicle = {
+    exceptPlayer = false,
 }
 
-function tEntityVehicle.checkVehicle(vehicle)
-    if tEntityVehicle.exceptPlayer and is_player_vehicle(vehicle) then
+function EntityVehicle.checkVehicle(vehicle)
+    if EntityVehicle.exceptPlayer and is_player_vehicle(vehicle) then
         return false
     end
 
@@ -244,37 +264,32 @@ end
 
 menu.divider(Entity_Vehicle_Options, "全部载具")
 
-menu.action(Entity_Vehicle_Options, "解锁车门和打开引擎", { "unlock_vehs_door" }, "", function()
+menu.action(Entity_Vehicle_Options, "解锁车门和打开引擎", { "unlockVehsDoor" }, "", function()
     for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
-        if tEntityVehicle.checkVehicle(vehicle) then
+        if EntityVehicle.checkVehicle(vehicle) then
             unlock_vehicle_doors(vehicle)
 
-            VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(vehicle, true)
             VEHICLE.SET_VEHICLE_UNDRIVEABLE(vehicle, false)
             VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
 
-            VEHICLE.SET_VEHICLE_IS_WANTED(vehicle, false)
-            VEHICLE.SET_VEHICLE_INFLUENCES_WANTED_LEVEL(vehicle, false)
-            VEHICLE.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER(vehicle, true)
-            VEHICLE.SET_VEHICLE_IS_STOLEN(vehicle, false)
-            VEHICLE.SET_POLICE_FOCUS_WILL_TRACK_VEHICLE(vehicle, false)
+            clear_vehicle_wanted(vehicle)
 
             ENTITY.FREEZE_ENTITY_POSITION(vehicle, false)
         end
     end
 end)
-menu.action(Entity_Vehicle_Options, "打开左右车门和引擎", { "open_vehs_door" }, "", function()
+menu.action(Entity_Vehicle_Options, "打开左右车门和引擎", { "openVehsDoor" }, "", function()
     for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
-        if tEntityVehicle.checkVehicle(vehicle) then
+        if EntityVehicle.checkVehicle(vehicle) then
             VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
             VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 0, false, false)
             VEHICLE.SET_VEHICLE_DOOR_OPEN(vehicle, 1, false, false)
         end
     end
 end)
-menu.action(Entity_Vehicle_Options, "拆下左右车门和打开引擎", { "broken_vehs_door" }, "", function()
+menu.action(Entity_Vehicle_Options, "拆下左右车门和打开引擎", { "brokenVehsDoor" }, "", function()
     for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
-        if tEntityVehicle.checkVehicle(vehicle) then
+        if EntityVehicle.checkVehicle(vehicle) then
             VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
             VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, 0, false)
             VEHICLE.SET_VEHICLE_DOOR_BROKEN(vehicle, 1, false)
@@ -282,10 +297,28 @@ menu.action(Entity_Vehicle_Options, "拆下左右车门和打开引擎", { "brok
     end
 end)
 
+menu.toggle_loop(Entity_Vehicle_Options, "按F解锁附近载具车门", { "fOpenVeh" }, "", function()
+    -- INPUT_ENTER 23
+    if PAD.IS_CONTROL_PRESSED(0, 23) and not PED.IS_PED_IN_ANY_VEHICLE(players.user_ped(), false) then
+        for _, vehicle in pairs(entities.get_all_vehicles_as_handles()) do
+            if EntityVehicle.checkVehicle(vehicle) then
+                unlock_vehicle_doors(vehicle)
+
+                VEHICLE.SET_VEHICLE_UNDRIVEABLE(vehicle, false)
+                VEHICLE.SET_VEHICLE_ENGINE_ON(vehicle, true, true, false)
+
+                clear_vehicle_wanted(vehicle)
+
+                ENTITY.FREEZE_ENTITY_POSITION(vehicle, false)
+            end
+        end
+    end
+end)
+
 menu.divider(Entity_Vehicle_Options, "设置")
 menu.toggle(Entity_Vehicle_Options, "排除 玩家载具", {}, "", function(toggle)
-    tEntityVehicle.exceptPlayer = toggle
-end, true)
+    EntityVehicle.exceptPlayer = toggle
+end, EntityVehicle.exceptPlayer)
 
 --#endregion
 
@@ -294,17 +327,17 @@ end, true)
 
 local Entity_Pickup_Options <const> = menu.list(Entity_Options, "拾取物选项", {}, "")
 
-local tEntityPickup = {
+local EntityPickup = {
     mission = true,
 }
 
 menu.toggle(Entity_Pickup_Options, "任务拾取物", {}, "", function(toggle)
-    tEntityPickup.mission = toggle
+    EntityPickup.mission = toggle
 end, true)
 
-menu.action(Entity_Pickup_Options, "全部传送到我", {}, "", function()
+menu.action(Entity_Pickup_Options, "全部传送到我", { "tpmePickups" }, "", function()
     for _, pickup in pairs(entities.get_all_pickups_as_handles()) do
-        if tEntityPickup.mission and not ENTITY.IS_ENTITY_A_MISSION_ENTITY(pickup) then
+        if EntityPickup.mission and not ENTITY.IS_ENTITY_A_MISSION_ENTITY(pickup) then
             goto continue
         end
 
@@ -323,7 +356,8 @@ end)
 local Entity_Object_Options <const> = menu.list(Entity_Options, "摄像头和门", {}, "")
 
 menu.divider(Entity_Object_Options, "摄像头")
-local Cams = {
+
+local Cams <const> = {
     548760764,   --prop_cctv_cam_01a
     -354221800,  --prop_cctv_cam_01b
     -1159421424, --prop_cctv_cam_02a
@@ -341,89 +375,78 @@ local Cams = {
     -247409812,  --xm_prop_x17_server_farm_cctv_01
     2135655372   --prop_cctv_pole_04
 }
-local Cams2 = {
+local Cams2 <const> = {
     1919058329, --prop_cctv_cam_04b
     1849991131  --prop_snow_cam_03a
 }
-menu.action(Entity_Object_Options, "删除", { "del_cam" }, "", function()
-    for _, obj_ptr in pairs(entities.get_all_objects_as_pointers()) do
-        local hash = entities.get_model_hash(obj_ptr)
-        for i = 1, #Cams do
-            if hash == Cams[i] then
-                entities.delete(obj_ptr)
-            end
+
+menu.action(Entity_Object_Options, "删除", { "delCams" }, "", function()
+    for _, ent_ptr in pairs(entities.get_all_objects_as_pointers()) do
+        local model_hash = entities.get_model_hash(ent_ptr)
+        if table.contains(Cams, model_hash) then
+            entities.delete(ent_ptr)
         end
     end
 end)
-menu.click_slider(Entity_Object_Options, "上下移动", { "move_cam" }, "易导致bug",
+menu.click_slider(Entity_Object_Options, "上下移动", { "moveCams" }, "易导致bug",
     -30, 30, 0, 1, function(value)
-        for _, ent in pairs(entities.get_all_objects_as_handles()) do
-            local EntityModel = ENTITY.GET_ENTITY_MODEL(ent)
-            for i = 1, #Cams do
-                if EntityModel == Cams[i] then
-                    set_entity_move(ent, 0.0, 0.0, value)
-                end
+        for _, ent_ptr in pairs(entities.get_all_objects_as_pointers()) do
+            local model_hash = entities.get_model_hash(ent_ptr)
+            if table.contains(Cams, model_hash) then
+                local ent = entities.pointer_to_handle(ent_ptr)
+                set_entity_move(ent, 0.0, 0.0, value)
             end
         end
     end)
 
-menu.divider(Entity_Object_Options, "佩里科岛的门（本地有效）")
-local Perico_Doors = {
-    -- 豪宅内 各种铁门
-    -1052729812,                 -- h4_prop_h4_gate_l_01a
-    1866987242,                  -- h4_prop_h4_gate_r_01a
-    -1360938964,                 -- h4_prop_h4_gate_02a
-    -2058786200,                 -- h4_prop_h4_gate_03a
-    -630812075,                  -- h4_prop_h4_gate_05a
-    -- 豪宅内 电梯门
-    -1240156945,                 -- v_ilev_garageliftdoor
-    -576022807,                  -- h4_prop_office_elevator_door_01
-    -- 豪宅大门
-    -1574151574,                 -- h4_prop_h4_gate_r_03a
-    1215477734,                  -- h4_prop_h4_gate_l_03a
-    -- 豪宅外 铁门
-    227019171,                   -- prop_fnclink_02gate6_r
-    1526539404,                  -- prop_fnclink_02gate6_l
-    141297241,                   -- h4_prop_h4_garage_door_01a
-    -1156020871                  -- prop_fnclink_03gate5
-}
-local Perico_Doors2 = -607013269 -- h4_prop_h4_door_01a 豪宅内的库房门
 
-menu.action(Entity_Object_Options, "删除门", { "delete_perico_door" }, "", function()
-    for _, ent in pairs(entities.get_all_objects_as_handles()) do
-        local EntityModel = ENTITY.GET_ENTITY_MODEL(ent)
-        for i = 1, #Perico_Doors do
-            if EntityModel == Perico_Doors[i] then
-                entities.delete(ent)
-            end
+
+menu.divider(Entity_Object_Options, "佩里科岛的门（本地有效）")
+
+local CayoPericoDoors <const> = {
+    -- 豪宅内 各种铁门
+    -1052729812,                            -- h4_prop_h4_gate_l_01a
+    1866987242,                             -- h4_prop_h4_gate_r_01a
+    -1360938964,                            -- h4_prop_h4_gate_02a
+    -2058786200,                            -- h4_prop_h4_gate_03a
+    -630812075,                             -- h4_prop_h4_gate_05a
+    -- 豪宅内 电梯门
+    -1240156945,                            -- v_ilev_garageliftdoor
+    -576022807,                             -- h4_prop_office_elevator_door_01
+    -- 豪宅大门
+    -1574151574,                            -- h4_prop_h4_gate_r_03a
+    1215477734,                             -- h4_prop_h4_gate_l_03a
+    -- 豪宅外 铁门
+    227019171,                              -- prop_fnclink_02gate6_r
+    1526539404,                             -- prop_fnclink_02gate6_l
+    141297241,                              -- h4_prop_h4_garage_door_01a
+    -1156020871                             -- prop_fnclink_03gate5
+}
+local CayoPericoDoors2 <const> = -607013269 -- h4_prop_h4_door_01a 豪宅内的库房门
+
+menu.action(Entity_Object_Options, "删除门", { "deletePericoDoors" }, "", function()
+    for _, ent_ptr in pairs(entities.get_all_objects_as_pointers()) do
+        local model_hash = entities.get_model_hash(ent_ptr)
+        if table.contains(CayoPericoDoors, model_hash) then
+            entities.delete(ent_ptr)
         end
     end
 end)
 menu.action(Entity_Object_Options, "开启无碰撞", {}, "可以直接穿过门，包括库房门", function()
-    for _, ent in pairs(entities.get_all_objects_as_handles()) do
-        local EntityModel = ENTITY.GET_ENTITY_MODEL(ent)
-        if EntityModel == Perico_Doors2 then
+    for _, ent_ptr in pairs(entities.get_all_objects_as_pointers()) do
+        local model_hash = entities.get_model_hash(ent_ptr)
+        if model_hash == CayoPericoDoors2 or table.contains(CayoPericoDoors, model_hash) then
+            local ent = entities.pointer_to_handle(ent_ptr)
             ENTITY.SET_ENTITY_COLLISION(ent, false, true)
-        else
-            for i = 1, #Perico_Doors do
-                if EntityModel == Perico_Doors[i] then
-                    ENTITY.SET_ENTITY_COLLISION(ent, false, true)
-                end
-            end
         end
     end
 end)
 menu.action(Entity_Object_Options, "关闭无碰撞", {}, "", function()
-    for _, ent in pairs(entities.get_all_objects_as_handles()) do
-        local EntityModel = ENTITY.GET_ENTITY_MODEL(ent)
-        if EntityModel == Perico_Doors2 then
+    for _, ent_ptr in pairs(entities.get_all_objects_as_pointers()) do
+        local model_hash = entities.get_model_hash(ent_ptr)
+        if model_hash == CayoPericoDoors2 or table.contains(CayoPericoDoors, model_hash) then
+            local ent = entities.pointer_to_handle(ent_ptr)
             ENTITY.SET_ENTITY_COLLISION(ent, true, true)
-        else
-            for i = 1, #Perico_Doors do
-                if EntityModel == Perico_Doors[i] then
-                    ENTITY.SET_ENTITY_COLLISION(ent, true, true)
-                end
-            end
         end
     end
 end)
@@ -975,7 +998,7 @@ function Entity_Info.EntityInfo(entity)
     table.insert(entity_info.main, info)
 
     -- Entity Type
-    local entity_type = get_entity_type(entity)
+    local entity_type = get_entity_type_text(entity)
     info = { "Entity Type", entity_type }
     table.insert(entity_info.main, info)
 
@@ -1044,7 +1067,7 @@ function Entity_Info.EntityInfo(entity)
 
     -- Script
     local entity_script = GET_ENTITY_SCRIPT(entity)
-    if entity_script ~= nil then
+    if entity_script ~= "" then
         info = { "Script", entity_script }
         table.insert(entity_info.main, info)
     end
@@ -1117,7 +1140,7 @@ function Entity_Info.EntityInfo(entity)
         table.insert(entity_info.attached, info)
 
         -- Entity Type
-        info = { "Entity Type", get_entity_type(attached_entity) }
+        info = { "Entity Type", get_entity_type_text(attached_entity) }
         table.insert(entity_info.attached, info)
     end
 
@@ -1415,7 +1438,7 @@ function Entity_Info.GetBaseInfo(entity)
     table.insert(base_info.entity, info)
 
     -- Entity Type
-    local entity_type = get_entity_type(entity)
+    local entity_type = get_entity_type_text(entity)
     info = { "Entity Type", entity_type }
     table.insert(base_info.entity, info)
 
@@ -1484,7 +1507,7 @@ function Entity_Info.GetBaseInfo(entity)
 
     -- Script
     local entity_script = GET_ENTITY_SCRIPT(entity)
-    if entity_script ~= nil then
+    if entity_script ~= "" then
         info = { "Script", entity_script }
         table.insert(base_info.entity, info)
     end
@@ -1528,7 +1551,7 @@ function Entity_Info.GetBaseInfo(entity)
         table.insert(base_info.entity, info)
 
         -- Entity Type
-        info = { "Attached Entity Type", get_entity_type(attached_entity) }
+        info = { "Attached Entity Type", get_entity_type_text(attached_entity) }
         table.insert(base_info.entity, info)
     end
 
@@ -1689,7 +1712,7 @@ local tEntityInfo = {
     infoText = "",
 
 
-    entityType = "All",
+    entityType = ENTITY_ALL,
     showToggles = {
         base = true,
         entity = false,
@@ -1746,10 +1769,7 @@ function tEntityInfo.generateMenus()
     local menu_parent = tEntityInfo.menuList
 
     -- Clear Old Menus
-    local children = menu.get_children(menu_parent)
-    for key, value in pairs(children) do
-        menu.delete(value)
-    end
+    rs_menu.delete_menu_children(menu_parent)
 
 
     if tEntityInfo.showToggles.base then
@@ -1820,7 +1840,7 @@ function tEntityInfo.generateMenus()
 end
 
 menu.toggle_loop(Entity_Info_Options, "获取目标实体信息[E键]", {}, "", function()
-    Loop_Handler.draw_centred_point(true)
+    LoopHandler.drawCentredPoint(true)
 
     local result = get_raycast_result(1500, -1)
     if result.didHit then
@@ -1829,15 +1849,15 @@ menu.toggle_loop(Entity_Info_Options, "获取目标实体信息[E键]", {}, "", 
 
         local ent = result.hitEntity
         local ent_type = get_entity_type(ent)
-        if ent_type ~= "No Entity" then
+        if ent_type ~= ENTITY_NONE then
             draw_line_colour = { r = 0, g = 255, b = 0, a = 255 }
         end
         DRAW_LINE(player_pos, result.endCoords, draw_line_colour)
 
 
         if PAD.IS_CONTROL_PRESSED(0, 51) then
-            if ent_type ~= "No Entity" then
-                if tEntityInfo.entityType ~= "All" and tEntityInfo.entityType ~= ent_type then
+            if ent_type ~= ENTITY_NONE then
+                if tEntityInfo.entityType ~= ENTITY_ALL and tEntityInfo.entityType ~= ent_type then
                     tEntityInfo.targetEntity = 0
                     return
                 end
@@ -1888,12 +1908,12 @@ menu.toggle_loop(Entity_Info_Options, "获取目标实体信息[E键]", {}, "", 
         end
     end
 end, function()
-    Loop_Handler.draw_centred_point(false)
+    LoopHandler.drawCentredPoint(false)
     tEntityInfo.targetEntity = 0
 end)
 
 menu.list_select(Entity_Info_Options, "实体类型", {}, "", Misc_T.EntityTypeAll, 1, function(index, name)
-    tEntityInfo.entityType = name
+    tEntityInfo.entityType = index
 end)
 
 
@@ -1935,7 +1955,7 @@ end)
 local Entity_Control_Options <const> = menu.list(Entity_Options, "实体控制", {}, "")
 
 local tEntityControl = {
-    entityType = "All",
+    entityType = ENTITY_ALL,
 }
 
 function tEntityControl.GenerateMenuHead(menu_parent, entity)
@@ -1980,18 +2000,14 @@ tEntityControl.InitListData()
 -- 清理并初始化数据
 function tEntityControl.ClearListData()
     -- 实体的 menu.list()
-    for k, v in pairs(tEntityControl.entity_menu_list) do
-        if v ~= nil and menu.is_ref_valid(v) then
-            menu.delete(v)
-        end
-    end
+    rs_menu.delete_menu_list(tEntityControl.entity_menu_list)
     -- 初始化
     tEntityControl.InitListData()
     menu.set_menu_name(tEntityControl.count_divider, "实体列表")
 end
 
 menu.toggle_loop(Entity_Control_Options, "控制目标实体[E键]", {}, "", function()
-    Loop_Handler.draw_centred_point(true)
+    LoopHandler.drawCentredPoint(true)
 
     local result = get_raycast_result(1500, -1)
     if result.didHit then
@@ -2000,15 +2016,15 @@ menu.toggle_loop(Entity_Control_Options, "控制目标实体[E键]", {}, "", fun
 
         local ent = result.hitEntity
         local ent_type = get_entity_type(ent)
-        if ent_type ~= "No Entity" then
+        if ent_type ~= ENTITY_NONE then
             draw_line_colour = { r = 0, g = 255, b = 0, a = 255 }
         end
         DRAW_LINE(player_pos, result.endCoords, draw_line_colour)
 
 
         if PAD.IS_CONTROL_PRESSED(0, 51) then
-            if ent_type ~= "No Entity" then
-                if tEntityControl.entityType ~= "All" and tEntityControl.entityType ~= ent_type then
+            if ent_type ~= ENTITY_NONE then
+                if tEntityControl.entityType ~= ENTITY_ALL and tEntityControl.entityType ~= ent_type then
                     return
                 end
 
@@ -2042,16 +2058,16 @@ menu.toggle_loop(Entity_Control_Options, "控制目标实体[E键]", {}, "", fun
         end
     end
 end, function()
-    Loop_Handler.draw_centred_point(false)
+    LoopHandler.drawCentredPoint(false)
 end)
 
 menu.list_select(Entity_Control_Options, "实体类型", {}, "", Misc_T.EntityTypeAll, 1, function(index, name)
-    tEntityControl.entityType = name
+    tEntityControl.entityType = index
 end)
 
 menu.action(Entity_Control_Options, "清空列表", {}, "", function()
     tEntityControl.ClearListData()
-    Loop_Handler.Entity.ClearToggles()
+    LoopHandler.Entity.clearToggles()
 end)
 
 tEntityControl.count_divider = menu.divider(Entity_Control_Options, "实体列表")
@@ -2061,11 +2077,11 @@ tEntityControl.count_divider = menu.divider(Entity_Control_Options, "实体列�
 
 --#region Manage All Entity
 
-local Manage_All_Entity <const> = menu.list(Entity_Options, "管理全部实体", { "manage_all_entity" }, "")
+local Manage_All_Entity <const> = menu.list(Entity_Options, "管理全部实体", {}, "")
 
 local All_Entity = {
     -- 实体类型
-    entityType = "Ped",
+    entityType = ENTITY_PED,
 
     -- 筛选设置
     filter = {
@@ -2095,8 +2111,8 @@ local All_Entity = {
     sortMethod = 1,
 }
 
-menu.list_select(Manage_All_Entity, "实体类型", {}, "", Misc_T.EntityType, 1, function(value, name)
-    All_Entity.entityType = name
+menu.list_select(Manage_All_Entity, "实体类型", {}, "", Misc_T.EntityType, 1, function(index, name)
+    All_Entity.entityType = index
 end)
 
 
@@ -2405,11 +2421,7 @@ function All_Entity.ClearListData()
         end
     end
     -- 实体的 menu.list()
-    for k, v in pairs(All_Entity.entity_menu_list) do
-        if v ~= nil and menu.is_ref_valid(v) then
-            menu.delete(v)
-        end
-    end
+    rs_menu.delete_menu_list(All_Entity.entity_menu_list)
     -- 初始化
     All_Entity.InitListData()
     menu.set_menu_name(All_Entity.count_divider, "实体列表")
@@ -2470,7 +2482,7 @@ end)
 
 menu.action(Manage_All_Entity, "清空列表", {}, "", function()
     All_Entity.ClearListData()
-    Loop_Handler.Entity.ClearToggles()
+    LoopHandler.Entity.clearToggles()
 end)
 All_Entity.count_divider = menu.divider(Manage_All_Entity, "实体列表")
 
