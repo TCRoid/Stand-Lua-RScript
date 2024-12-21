@@ -250,14 +250,13 @@ menu.action(Air_Freight, "货物 传送到我", { "tpme_air_product" },
     end)
 menu.action(Air_Freight, "结束任务", {},
     "进入机库提示货物已送达后就可以直接结束任务", function()
-        local script_locals = {
-            { script = "gb_smuggler",                  addr = Locals.gb_smuggler.mission_start_time },
-            { script = "fm_content_smuggler_resupply", addr = Locals.fm_content_smuggler_resupply.mission_start_time },
+        local script_list = {
+            "gb_smuggler", "fm_content_smuggler_resupply"
         }
-        for _, item in pairs(script_locals) do
-            if IS_SCRIPT_RUNNING(item.script) then
-                LOCAL_SET_INT(item.script, item.addr, 0)
-            end
+        for _, script_name in pairs(script_list) do
+            SPOOF_SCRIPT(script_name, function(script)
+                LOCAL_SET_INT(script, Locals[script].stModeTimer, 0)
+            end)
         end
     end)
 
@@ -682,14 +681,15 @@ menu.textslider(Cayo_Perico, "前置任务助手", {},
         if not IS_SCRIPT_RUNNING(script) then
             return
         end
+
         if value == 1 then
-            for _, ent in pairs(entities.get_all_pickups_as_handles()) do
-                if ENTITY.IS_ENTITY_A_MISSION_ENTITY(ent) and GET_ENTITY_SCRIPT(ent) == script then
-                    tp_entity_to_me(ent)
-                end
+            for _, pickup in pairs(get_mission_pickups(script)) do
+                tp_pickup_to_me(pickup)
             end
         elseif value == 2 then
-            LOCAL_SET_INT(script, Locals.fm_content_island_heist.mission_start_time, 0)
+            SPOOF_SCRIPT(script, function()
+                LOCAL_SET_INT(script, Locals[script].stModeTimer, 0)
+            end)
         end
     end)
 
@@ -886,13 +886,18 @@ local Diamond_Casino <const> = menu.list(Preparation_Mission, "赌场抢劫", {}
 
 menu.divider(Diamond_Casino, "侦查")
 menu.action(Diamond_Casino, "保安 传送到我", {}, "骇入手机会直接完成", function()
+    local script = "gb_casino_heist"
+    if not IS_SCRIPT_RUNNING(script) then
+        return
+    end
+
     local entity_list = get_entities_by_hash(ENTITY_PED, true, -1094177627)
     if next(entity_list) ~= nil then
         for _, ent in pairs(entity_list) do
             tp_entity_to_me(ent, 0.0, 2.0, 0.0)
         end
 
-        LOCAL_SET_INT("gb_casino_heist", Locals.gb_casino_heist.phone_hack_progress, 100000)
+        LOCAL_SET_INT(script, Locals[script].iRangeHackingTime, 100000)
     end
 end)
 menu.textslider(Diamond_Casino, "赌场 传送到骇入位置", {}, "进入赌场后再传送", {
@@ -915,7 +920,7 @@ menu.textslider(Diamond_Casino, "赌场 传送到骇入位置", {}, "进入赌�
     }
 
     if value == 1 then
-        value = LOCAL_GET_INT(script, Locals.gb_casino_heist.camera_hack_position)
+        value = LOCAL_GET_INT(script, Locals[script].iRandomModeInt1)
         if value then
             local pos = data[value]
             if pos then
@@ -1182,20 +1187,6 @@ menu.action(Diamond_Casino_Aggressive, "加固防弹衣: 潜水套装 传送到�
     end
 end)
 
-----------------
--- Tool
-----------------
-
-menu.toggle_loop(Diamond_Casino, "设置目标包裹数量为1", {}, "右下角目标数量", function()
-    local script = "gb_casino_heist"
-    if not IS_SCRIPT_RUNNING(script) then
-        return
-    end
-    local value = LOCAL_GET_INT(script, Locals.gb_casino_heist.target_package_number)
-    if value == 2 then
-        LOCAL_SET_INT(script, Locals.gb_casino_heist.target_package_number, 1)
-    end
-end)
 
 ----------------
 -- 终章
@@ -2097,8 +2088,8 @@ menu.action(Security_Contract, "目标载具 传送到目的地", {}, "玩家自
         }
     }
 
-    local mission_type = LOCAL_GET_INT(script, Locals.fm_content_security_contract.mission_type)
-    local destination = LOCAL_GET_INT(script, Locals.fm_content_security_contract.realize_assets_destination)
+    local mission_type = LOCAL_GET_INT(script, Locals[script].eMissionSubvariation)
+    local destination = LOCAL_GET_INT(script, Locals[script].iGenericSet)
     if not (mission_type >= 20 and mission_type <= 24) then
         return
     end
@@ -2156,13 +2147,11 @@ menu.action(Security_Contract, "保安 无敌强化", {}, "", function()
         util.toast("完成！\n数量: " .. i)
     end
 end)
-menu.action(Security_Contract, "跳过倒计时", {}, "不再等待漫长的10分钟\n其它任务使用此选项会直接任务失败",
-    function()
-        local script = "fm_content_security_contract"
-        if not IS_SCRIPT_RUNNING(script) then
-            return
-        end
-        LOCAL_SET_INT(script, Locals.fm_content_security_contract.mission_time, 0)
+menu.action(Security_Contract, "跳过倒计时", {},
+    "不再等待漫长的10分钟\n其它任务使用此选项会直接任务失败", function()
+        SPOOF_SCRIPT("fm_content_security_contract", function(script)
+            LOCAL_SET_INT(script, Locals[script].stModeTimer, 0)
+        end)
     end)
 
 --#endregion
@@ -2613,6 +2602,7 @@ end)
 
 
 --#endregion
+
 
 
 

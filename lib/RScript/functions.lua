@@ -1725,6 +1725,18 @@ function to_boolean(text)
     return false
 end
 
+--- @param num integer
+--- @return string
+function int_to_hex(num)
+    return string.format("%x", num)
+end
+
+--- @param num integer
+--- @return float
+function int_to_float(num)
+    return num + .0
+end
+
 ----------------------------------------
 -- Table Functions
 ----------------------------------------

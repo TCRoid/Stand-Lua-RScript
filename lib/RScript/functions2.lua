@@ -56,6 +56,27 @@ function GET_RUNNING_MISSION_CONTROLLER_SCRIPT()
     return nil
 end
 
+--- @param script string
+--- @param func function
+function SPOOF_SCRIPT(script, func)
+    if not IS_SCRIPT_RUNNING(script) then
+        return
+    end
+    if not util.request_script_host(script) then
+        return
+    end
+
+    util.yield()
+
+    util.spoof_script(script, function()
+        if not NETWORK.NETWORK_IS_HOST_OF_THIS_SCRIPT() then
+            return
+        end
+
+        func(script)
+    end)
+end
+
 --------------------------
 -- Stat Functions
 --------------------------
@@ -374,7 +395,7 @@ end
 
 --- @param value integer
 --- @param position integer
---- @return integer
+--- @return boolean
 function BIT_TEST(value, position)
     return (value & (1 << position)) ~= 0
 end

@@ -1,54 +1,54 @@
 -- Game Variables
--- 1.69-3274
+-- 1.70-3411
 
 --------------------------------
 -- Globals
 --------------------------------
 
 Globals = {
-    GunVanSpawnCoords = 1949748,
-    GunVanLocation = 2652592 + 2671,
+    GunVanSpawnCoords = 1950373,
+    GunVanLocation = 2652568 + 2706,
 }
 
 
-local _MPGlobalsAmbience = 2738934
+local _MPGlobalsAmbience = 2739811
 -- MPGlobalsAmbienceStruct
 MPGlobalsAmbience = {
     -- Launch Vehicle Drop
-    bLaunchVehicleDropTruck = _MPGlobalsAmbience + 945,
-    bLaunchVehicleDropAvenger = _MPGlobalsAmbience + 953,
-    bLaunchVehicleDropHackerTruck = _MPGlobalsAmbience + 958,
-    bLaunchVehicleDropSubmarine = _MPGlobalsAmbience + 975,
-    bLaunchVehicleDropSubmarineDinghy = _MPGlobalsAmbience + 987,
-    bLaunchVehicleDropAcidLab = _MPGlobalsAmbience + 959,
-    bLaunchVehicleDropSupportBike = _MPGlobalsAmbience + 1009,
+    bLaunchVehicleDropTruck = _MPGlobalsAmbience + 956,
+    bLaunchVehicleDropAvenger = _MPGlobalsAmbience + 964,
+    bLaunchVehicleDropHackerTruck = _MPGlobalsAmbience + 969,
+    bLaunchVehicleDropSubmarine = _MPGlobalsAmbience + 991,
+    bLaunchVehicleDropSubmarineDinghy = _MPGlobalsAmbience + 1003,
+    bLaunchVehicleDropAcidLab = _MPGlobalsAmbience + 970,
+    bLaunchVehicleDropSupportBike = _MPGlobalsAmbience + 1025,
 
     -- Lester Disable Cops
-    iLesterDisableCopsBitset = _MPGlobalsAmbience + 4676,
-    iLesterDisableCopsProg = _MPGlobalsAmbience + 4677,
-    timeCopsDisabled = _MPGlobalsAmbience + 4679,
+    iLesterDisableCopsBitset = _MPGlobalsAmbience + 4692,
+    iLesterDisableCopsProg = _MPGlobalsAmbience + 4693,
+    timeCopsDisabled = _MPGlobalsAmbience + 4695,
 
     -- Ballistics Armor Drop
-    bLaunchBallisticsDrop = _MPGlobalsAmbience + 916,
-    bEquipBallisticsDrop = _MPGlobalsAmbience + 917,
-    bRemoveBallisticsDrop = _MPGlobalsAmbience + 918,
+    bLaunchBallisticsDrop = _MPGlobalsAmbience + 927,
+    bEquipBallisticsDrop = _MPGlobalsAmbience + 928,
+    bRemoveBallisticsDrop = _MPGlobalsAmbience + 929,
 
     -- RC Vehicle
-    bLaunchRCBandito = _MPGlobalsAmbience + 6956,
-    bLaunchRCTank = _MPGlobalsAmbience + 6957,
+    bLaunchRCBandito = _MPGlobalsAmbience + 6995,
+    bLaunchRCTank = _MPGlobalsAmbience + 6996,
 }
 
 
 local _g_FMMC_STRUCT = 4718592
 -- FMMC_GLOBAL_STRUCT
 g_FMMC_STRUCT = {
-    iFixedCamera = _g_FMMC_STRUCT + 155346,
+    iFixedCamera = _g_FMMC_STRUCT + 157365,
 
-    iRootContentIDHash = _g_FMMC_STRUCT + 127178,
+    iRootContentIDHash = _g_FMMC_STRUCT + 128476,
     tl63MissionName = _g_FMMC_STRUCT + 127185,
 
-    iTeamNames = _g_FMMC_STRUCT + 107178 + 1,   -- +[0~3]
-    tlCustomName = _g_FMMC_STRUCT + 107183 + 1, -- +[0~3]*4
+    iTeamNames = _g_FMMC_STRUCT + 108374 + 1,   -- +[0~3]
+    tlCustomName = _g_FMMC_STRUCT + 108379 + 1, -- +[0~3]*4
 }
 
 
@@ -60,46 +60,38 @@ g_FMMC_STRUCT = {
 --------------------------------
 
 Locals = {
-    -- Diamond Casino Heist Prep
-    gb_casino_heist = {
-        phone_hack_progress = 2332,
-        camera_hack_position = 4413 + 1522,
-        target_package_number = 4413 + 1592,
+    ["gb_casino_heist"] = {
+        iRangeHackingTime = 2353,
+        iRandomModeInt1 = 4470 + 1522
     },
-
-    -- Security Contract
-    fm_content_security_contract = {
-        mission_time = 256 + 1550,
-        mission_type = 7136 + 1339 + 1,
-        realize_assets_destination = 119 + 34,
+    ["fm_content_security_contract"] = {
+        eMissionSubvariation = 7268 + 1357 + 1,
+        stModeTimer = 7268 + 1388,
+        iGenericSet = 140 + 34,
+        iTimeLimit = 277 + 1568
     },
-
-    -- Cayo Perico Heist Prep
-    fm_content_island_heist = {
-        mission_start_time = 13311 + 1460,
+    ["fm_content_island_heist"] = {
+        stModeTimer = 13433 + 1479
     },
-
-    -- Air Freight
-    gb_smuggler = {
-        mission_start_time = 1934 + 768,
+    ["gb_smuggler"] = {
+        stModeTimer = 1985 + 768
     },
-    fm_content_smuggler_resupply = {
-        mission_start_time = 6045 + 1319,
+    ["fm_content_smuggler_resupply"] = {
+        stModeTimer = 6166 + 1326
     },
 
 
-    ---- Mission Controller
 
     ["fm_mission_controller"] = {
         sFMMC_SBD = {
             -- MC_serverBD_1.sFMMC_SBD.niVehicle[index]
-            niVehicle = 22960 + 834 + 81 + 1
+            niVehicle = 22995 + 834 + 81 + 1
         },
     },
     ["fm_mission_controller_2020"] = {
         sFMMC_SBD = {
             -- MC_serverBD_1.sFMMC_SBD.niVehicle[index]
-            niVehicle = 53558 + 777 + 81 + 1
+            niVehicle = 55623 + 777 + 81 + 1
         },
     },
 }

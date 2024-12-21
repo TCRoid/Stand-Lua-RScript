@@ -306,7 +306,7 @@ end)
 
 
 
-local nophonespam = menu.ref_by_command_name("nophonespam")
+local nophonespam = menu.ref_by_path("Game>Disables>Straight To Voicemail", 55)
 menu.toggle_loop(Other_Options, "打字时禁用来电电话", {}, "避免在打字时有电话把输入框挤掉",
     function()
         if chat.is_open() then

@@ -2869,6 +2869,16 @@ for key, item in pairs(util.get_weapons()) do
 end
 
 
+-- for `menu.list_action`
+ListOptions = {
+    Default = { { -1, "< 刷新列表 >" } },
+    DafaultVehicle = { { -1, "< 刷新载具列表 >" } }
+}
+
+------------------------
+-- Packed Stats
+------------------------
+
 PackedStats = {
     DAILYCOLLECT_DEAD_DROP_LOCATION_0 = 41213,
     DAILYCOLLECT_DEAD_DROP_AREA_0 = 41214,
