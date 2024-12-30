@@ -593,7 +593,7 @@ end
 
 menu.action(Gun_Van, "传送到 枪支厢型车", { "rstpGunVan" }, "", function()
     local location = GLOBAL_GET_INT(Globals.GunVanLocation)
-    local pos = Misc_T.GunVanPosition[location]
+    local pos = Coords_T.GunVan[location]
     if pos then
         teleport2(pos[1], pos[2], pos[3] + 2.0)
     end
@@ -612,9 +612,31 @@ menu.action(Gun_Van, "重置厢型车位置", {}, "", function()
     memory.write_vector3(addr, v3(0, 0, 0))
 end)
 
-
 --#endregion
 
+
+--#region Street Dealer
+
+local Street_Dealer <const> = menu.list(Online_Options, "街头毒贩", {}, "")
+
+menu.click_slider(Street_Dealer, "传送到 街头毒贩", {}, "", 1, 3, 1, 1, function(value)
+    local location = GLOBAL_GET_INT(MPGlobalsAmbience.sStreetDealers.iActiveLocations + 1 + (value - 1) * 7)
+
+    local pos = Coords_T.StreetDealers[location]
+    if pos then
+        teleport2(pos[1], pos[2], pos[3])
+    end
+end)
+menu.click_slider(Street_Dealer, "可出售货物数量", {}, "需要远离后才可以刷新",
+    0, 100, 10, 1, function(value)
+        for i = 0, 3, 1 do
+            SET_PACKED_STAT_INT_CODE(PackedStats.STREET_DEALER_0_SELL_PRODUCT_TOTAL_COUNT + i, value)
+            SET_PACKED_STAT_INT_CODE(PackedStats.STREET_DEALER_1_SELL_PRODUCT_TOTAL_COUNT + i, value)
+            SET_PACKED_STAT_INT_CODE(PackedStats.STREET_DEALER_2_SELL_PRODUCT_TOTAL_COUNT + i, value)
+        end
+    end)
+
+--#endregion
 
 
 menu.list_select(Online_Options, "战局雪天", { "turnSnow" }, "", {
@@ -626,4 +648,30 @@ menu.list_select(Online_Options, "战局雪天", { "turnSnow" }, "", {
         Tunables.SetInt("TURN_SNOW_ON_OFF", value)
     end
     LoopHandler.Tunables.TurnSnow = value
+end)
+
+
+
+local patch_GUNCLUB_UNLOCK_WEAPON = ScriptPatch.New("gunclub_shop", {
+    ["IS_GUNSHOP_WEAPON_UNLOCKED"] = {
+        pattern = "2D 03 2E 00 00 2C 01 02 82 2A 56",
+        offset = 5,
+        patch_bytes = { 0x72, 0x2E, 0x03, 0x01 }
+    },
+    ["IS_GUNSHOP_WEAPON_COMP_UNLOCKED"] = {
+        pattern = "2D 02 2E 00 00 38 00 71 58 35 05 2C",
+        offset = 5,
+        patch_bytes = { 0x72, 0x2E, 0x02, 0x01 }
+    },
+    ["DOES_GUNSHOP_SUPPORT_MK2_WEAPONS"] = {
+        pattern = "2D 01 03 00 00 38 00 65 0A 2E 00 00",
+        offset = 5,
+        patch_bytes = { 0x72, 0x2E, 0x01, 0x01 }
+    }
+})
+
+menu.toggle_loop(Online_Options, "解锁武器改装", {}, "", function()
+    patch_GUNCLUB_UNLOCK_WEAPON:Enable()
+end, function()
+    patch_GUNCLUB_UNLOCK_WEAPON:Disable()
 end)

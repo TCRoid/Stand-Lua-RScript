@@ -362,3 +362,128 @@ function rs_memory.get_weapon_info(addr)
 
     return 0
 end
+
+--------------------------------------------------
+--        Script Patch Function
+--------------------------------------------------
+
+ScriptPatch = {
+    initialized = false,
+    enabled = false,
+    scan_failed = false,
+
+    script = "",
+    script_address = 0
+}
+ScriptPatch.__index = ScriptPatch
+
+function ScriptPatch:Init()
+    for key, data in pairs(self.patch_data) do
+        local pattern = data.pattern
+        local offset = data.offset
+        local patch_bytes = data.patch_bytes
+
+        local addr = self.ScanPattern(self.script, pattern)
+        if not addr then
+            self.scan_failed = true
+            return false
+        end
+
+        addr = addr + offset
+
+        local original_bytes = {}
+        for i, patch_byte in pairs(patch_bytes) do
+            local patch_addr = addr + i - 1
+
+            table.insert(original_bytes, memory.read_ubyte(patch_addr))
+            memory.write_ubyte(patch_addr, patch_byte)
+        end
+
+        self.patch_data[key].address = addr
+        self.patch_data[key].original_bytes = original_bytes
+    end
+
+    self.script_address = memory.scan_script(self.script, "")
+    self.initialized = true
+
+    self.enabled = true
+end
+
+function ScriptPatch:Enable()
+    if not IS_SCRIPT_RUNNING(self.script) then
+        self.enabled = false
+        return
+    end
+
+    if self.enabled or self.scan_failed then
+        return
+    end
+
+    if not self.initialized then
+        self:Init()
+        return
+    end
+
+    if self:_isNeedUpdate() then
+        self.initialized = false
+        return
+    end
+
+    for key, data in pairs(self.patch_data) do
+        local addr = data.address
+        local patch_bytes = data.patch_bytes
+
+        for i, patch_byte in pairs(patch_bytes) do
+            local patch_addr = addr + i - 1
+            memory.write_ubyte(patch_addr, patch_byte)
+        end
+    end
+
+    self.enabled = true
+end
+
+function ScriptPatch:Disable()
+    if not self.enabled then
+        return
+    end
+
+    for key, data in pairs(self.patch_data) do
+        local addr = data.address
+        local original_bytes = data.original_bytes
+
+        for i, original_byte in pairs(original_bytes) do
+            local patch_addr = addr + i - 1
+            memory.write_ubyte(patch_addr, original_byte)
+        end
+    end
+
+    self.enabled = false
+end
+
+function ScriptPatch:_isNeedUpdate()
+    return self.script_address ~= memory.scan_script(self.script, "")
+end
+
+--- @param script string
+--- @param pattern string
+--- @return boolean|integer
+function ScriptPatch.ScanPattern(script, pattern)
+    local addr = memory.scan_script(script, pattern)
+    if not addr or addr == 0 then
+        util.toast("Scan pattern failed!\n" .. script .. ": " .. pattern, TOAST_ALL)
+        return false
+    end
+    return addr
+end
+
+--- @param script string
+--- @param patch_data table
+--- @return ScriptPatch
+function ScriptPatch.New(script, patch_data)
+    local self = setmetatable({}, ScriptPatch)
+
+    self.script = script
+    self.patch_data = patch_data
+
+    return self
+end

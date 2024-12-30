@@ -2579,15 +2579,11 @@ menu.action(Freemode_Mission, "传送到 杰拉德包裹", { "rstpDeadDrop" }, "
     local area = GET_PACKED_STAT_INT_CODE(PackedStats.DAILYCOLLECT_DEAD_DROP_AREA_0)
     local location = GET_PACKED_STAT_INT_CODE(PackedStats.DAILYCOLLECT_DEAD_DROP_LOCATION_0)
 
-    local coords = Misc_T.DeadDropCoords[area]
-    if not coords then
-        return
-    end
+    local coords = Coords_T.DeadDrops[area]
+    if not coords then return end
 
     coords = coords[location]
-    if not coords then
-        return
-    end
+    if not coords then return end
 
     teleport2(coords[1], coords[2], coords[3] + 0.5)
 end)

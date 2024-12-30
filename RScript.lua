@@ -1,10 +1,11 @@
---------------------------------
+----------------------------------------------------------------
 -- Author: Rostal
---------------------------------
+-- Github: https://github.com/TCRoid/Stand-Lua-RScript
+----------------------------------------------------------------
 
 local SCRIPT_START_TIME <const> = util.current_time_millis()
 
-local SCRIPT_VERSION <const> = "2024/12/21"
+local SCRIPT_VERSION <const> = "2024/12/30"
 
 local SUPPORT_GAME_VERSION <const> = "1.70-3411"
 

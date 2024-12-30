@@ -36,6 +36,11 @@ MPGlobalsAmbience = {
     -- RC Vehicle
     bLaunchRCBandito = _MPGlobalsAmbience + 6995,
     bLaunchRCTank = _MPGlobalsAmbience + 6996,
+
+    -- StreetDealersStruct
+    sStreetDealers = {
+        iActiveLocations = _MPGlobalsAmbience + 6852 -- +1+[0~2]*7
+    },
 }
 
 
