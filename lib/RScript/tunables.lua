@@ -55,3 +55,46 @@ function Tunables.SetFloatList(tunable_list_name, value)
         GLOBAL_SET_FLOAT(g_sMPTunables + offset, value)
     end
 end
+
+--------------------------------
+-- Tunable Service
+--------------------------------
+
+local TunableServiceData = {
+    Int = {},
+    Float = {}
+}
+
+TunableService = {}
+
+function TunableService.RegisterInt(tunable_name, value)
+    local addr = g_sMPTunables + TunablesI[tunable_name]
+    GLOBAL_SET_INT(addr, value)
+
+    TunableServiceData.Int[addr] = value
+end
+
+function TunableService.RemoveInt(tunable_name)
+    local addr = g_sMPTunables + TunablesI[tunable_name]
+
+    TunableServiceData.Int[addr] = nil
+end
+
+function TunableService.RegisterToggle(tunable_name, toggle)
+    local addr = g_sMPTunables + TunablesI[tunable_name]
+
+    local value = toggle and 1 or 0
+    GLOBAL_SET_INT(addr, value)
+
+    if toggle then
+        TunableServiceData.Int[addr] = value
+    else
+        TunableServiceData.Int[addr] = nil
+    end
+end
+
+function TunableService.HandleInt()
+    for addr, value in pairs(TunableServiceData.Int) do
+        GLOBAL_SET_INT(addr, value)
+    end
+end

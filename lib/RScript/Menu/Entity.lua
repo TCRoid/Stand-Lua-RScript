@@ -2067,7 +2067,7 @@ end)
 
 menu.action(Entity_Control_Options, "清空列表", {}, "", function()
     tEntityControl.ClearListData()
-    LoopHandler.Entity.clearToggles()
+    LoopHandler.Entity.ClearToggles()
 end)
 
 tEntityControl.count_divider = menu.divider(Entity_Control_Options, "实体列表")
@@ -2482,7 +2482,7 @@ end)
 
 menu.action(Manage_All_Entity, "清空列表", {}, "", function()
     All_Entity.ClearListData()
-    LoopHandler.Entity.clearToggles()
+    LoopHandler.Entity.ClearToggles()
 end)
 All_Entity.count_divider = menu.divider(Manage_All_Entity, "实体列表")
 

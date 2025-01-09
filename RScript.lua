@@ -5,7 +5,7 @@
 
 local SCRIPT_START_TIME <const> = util.current_time_millis()
 
-local SCRIPT_VERSION <const> = "2024/12/30"
+local SCRIPT_VERSION <const> = "2025/1/9"
 
 local SUPPORT_GAME_VERSION <const> = "1.70-3411"
 
@@ -74,8 +74,8 @@ for _, file in pairs(REQUIRED_FILES) do
     end
 end
 
+----------------  Require libs  ----------------
 
--- Require
 util.require_natives("3407a", "init")
 
 local LIB_MODULES <const> = {
@@ -92,8 +92,6 @@ local LIB_MODULES <const> = {
 for _, lib_module in ipairs(LIB_MODULES) do
     require(lib_module)
 end
-
-
 
 
 
@@ -146,12 +144,9 @@ end
 
 DEV_MODE = getSetting("Dev Mode")
 
-
 -- Backend Loop
 LoopHandler = {
     Main = {},
-    Tunables = {
-    },
     Entity = {
         show_info = {},
         draw_line = {},
@@ -160,17 +155,17 @@ LoopHandler = {
             ent = 0,
             clone_ent = 0,
             has_cloned_ent = 0,
-            camera_distance = 2.0,
+            camera_distance = 2.0
         },
-        lock_tp = {},
-    },
+        lock_tp = {}
+    }
 }
 
 function LoopHandler.drawCentredPoint(toggle)
     LoopHandler.Main.drawCentredPoint = toggle
 end
 
-function LoopHandler.Entity.clearToggles()
+function LoopHandler.Entity.ClearToggles()
     LoopHandler.Entity.draw_line.toggle = false
     LoopHandler.Entity.show_info.toggle = false
     LoopHandler.Entity.draw_bounding_box.toggle = false
@@ -180,7 +175,7 @@ end
 
 -- Transition Finished
 TransitionData = {
-    Self = {},
+    Self = {}
 }
 
 util.on_transition_finished(function()
@@ -225,6 +220,7 @@ end
 menu.divider(Menu_Root, "RScript")
 
 
+----------------  Require Modules  ----------------
 
 local MENU_MODULES <const> = {
     "RScript.Menu.Self",
@@ -322,15 +318,7 @@ util.create_tick_handler(function()
     ------------------------
 
     if IS_SCRIPT_RUNNING("tuneables_processing") then
-        local tunables = LoopHandler.Tunables
-
-        if tunables.TurnSnow and tunables.TurnSnow ~= -1 then
-            Tunables.SetInt("TURN_SNOW_ON_OFF", tunables.TurnSnow)
-        end
-        if tunables.DisableStatCapCheck then
-            Tunables.SetInt("DISABLE_STAT_CAP_CHECK", 1)
-        end
-
+        TunableService.HandleInt()
 
         notify("tuneables_processing")
     end
@@ -340,105 +328,7 @@ util.create_tick_handler(function()
     -- Entity
     ------------------------
 
-    local control_ent = LoopHandler.Entity
-
-    -- 描绘实体连线
-    if control_ent.draw_line.toggle then
-        if not ENTITY.DOES_ENTITY_EXIST(control_ent.draw_line.entity) then
-            util.toast("描绘实体连线: 目标实体已不存在")
-            control_ent.draw_line.toggle = false
-        else
-            local my_pos = ENTITY.GET_ENTITY_COORDS(players.user_ped())
-            local ent_pos = ENTITY.GET_ENTITY_COORDS(control_ent.draw_line.entity)
-            DRAW_LINE(my_pos, ent_pos)
-            util.draw_ar_beacon(ent_pos)
-        end
-    end
-
-    -- 显示实体信息
-    if control_ent.show_info.toggle then
-        if not ENTITY.DOES_ENTITY_EXIST(control_ent.show_info.entity) then
-            util.toast("显示实体信息: 目标实体已不存在")
-            control_ent.show_info.toggle = false
-        else
-            local text = Entity_Info.GetBaseInfoText(control_ent.show_info.entity)
-            DrawString(text, 0.65)
-        end
-    end
-
-    -- 描绘实体边界框
-    if control_ent.draw_bounding_box.toggle then
-        if not ENTITY.DOES_ENTITY_EXIST(control_ent.draw_bounding_box.entity) then
-            util.toast("描绘实体边界框: 目标实体已不存在")
-            control_ent.draw_bounding_box.toggle = false
-        else
-            draw_bounding_box(control_ent.draw_bounding_box.entity)
-        end
-    end
-
-    -- 锁定传送
-    if control_ent.lock_tp.toggle then
-        if not ENTITY.DOES_ENTITY_EXIST(control_ent.lock_tp.entity) then
-            util.toast("锁定传送: 目标实体已不存在")
-            control_ent.lock_tp.toggle = false
-        else
-            if control_ent.lock_tp.method == 1 then
-                tp_entity_to_me(control_ent.lock_tp.entity,
-                    control_ent.lock_tp.x,
-                    control_ent.lock_tp.y,
-                    control_ent.lock_tp.z)
-            else
-                tp_to_entity(control_ent.lock_tp.entity,
-                    control_ent.lock_tp.x,
-                    control_ent.lock_tp.y,
-                    control_ent.lock_tp.z)
-            end
-        end
-    end
-
-    -- 预览实体
-    if control_ent.preview_ent.toggle then
-        local target_ent = control_ent.preview_ent.ent
-        local clone_ent = control_ent.preview_ent.clone_ent
-        if not ENTITY.DOES_ENTITY_EXIST(target_ent) then
-            util.toast("预览实体: 目标实体已不存在")
-            control_ent.preview_ent.toggle = false
-
-            if ENTITY.DOES_ENTITY_EXIST(control_ent.preview_ent.clone_ent) then
-                entities.delete(control_ent.preview_ent.clone_ent)
-                control_ent.preview_ent.has_cloned_ent = 0
-            end
-        elseif control_ent.preview_ent.has_cloned_ent ~= target_ent and not ENTITY.DOES_ENTITY_EXIST(clone_ent) then
-            -- 生成（克隆）预览实体
-            local l, w, h = calculate_model_size(ENTITY.GET_ENTITY_MODEL(target_ent))
-            control_ent.preview_ent.camera_distance = math.max(l, w, h) + 1.0
-            local coords = get_offset_from_cam(control_ent.preview_ent.camera_distance)
-            local heading = ENTITY.GET_ENTITY_HEADING(players.user_ped()) + 180.0
-
-            if ENTITY.IS_ENTITY_A_PED(target_ent) then
-                clone_ent = clone_target_ped(target_ent, coords, heading, false)
-            elseif ENTITY.IS_ENTITY_A_VEHICLE(target_ent) then
-                clone_ent = clone_target_vehicle(target_ent, coords, heading, false)
-            elseif ENTITY.IS_ENTITY_AN_OBJECT(target_ent) then
-                clone_ent = clone_target_object(target_ent, coords, false)
-            end
-
-            ENTITY.FREEZE_ENTITY_POSITION(clone_ent, true)
-            ENTITY.SET_ENTITY_ALPHA(clone_ent, 206, false)
-            ENTITY.SET_ENTITY_COMPLETELY_DISABLE_COLLISION(clone_ent, false, true)
-
-            control_ent.preview_ent.clone_ent = clone_ent
-            control_ent.preview_ent.has_cloned_ent = target_ent
-        elseif control_ent.preview_ent.has_cloned_ent == target_ent and ENTITY.DOES_ENTITY_EXIST(clone_ent) then
-            -- 旋转预览实体
-            local coords = get_offset_from_cam(control_ent.preview_ent.camera_distance)
-            local heading = ENTITY.GET_ENTITY_HEADING(clone_ent) + 0.5
-            TP_ENTITY(clone_ent, coords, heading)
-        end
-    elseif ENTITY.DOES_ENTITY_EXIST(control_ent.preview_ent.clone_ent) then
-        entities.delete(control_ent.preview_ent.clone_ent)
-        control_ent.preview_ent.has_cloned_ent = 0
-    end
+    HandleEntityControlLoop()
 end)
 
 

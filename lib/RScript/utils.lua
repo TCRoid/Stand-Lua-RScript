@@ -424,7 +424,7 @@ function ScriptPatch:Enable()
         return
     end
 
-    if self:_isNeedUpdate() then
+    if self:IsScriptReloaded() then
         self.initialized = false
         return
     end
@@ -443,7 +443,10 @@ function ScriptPatch:Enable()
 end
 
 function ScriptPatch:Disable()
-    if not self.enabled then
+    if self.scan_failed or not self.initialized then
+        return
+    end
+    if self:IsScriptReloaded() then
         return
     end
 
@@ -460,7 +463,7 @@ function ScriptPatch:Disable()
     self.enabled = false
 end
 
-function ScriptPatch:_isNeedUpdate()
+function ScriptPatch:IsScriptReloaded()
     return self.script_address ~= memory.scan_script(self.script, "")
 end
 
@@ -486,4 +489,16 @@ function ScriptPatch.New(script, patch_data)
     self.patch_data = patch_data
 
     return self
+end
+
+ScriptFunc = {}
+
+--- @param bool boolean
+--- @param arg_count integer Number of function arguments
+--- @return table
+function ScriptFunc.ReturnBool(bool, arg_count)
+    if bool then
+        return { 0x72, 0x2E, arg_count, 0x01 }
+    end
+    return { 0x71, 0x2E, arg_count, 0x01 }
 end

@@ -566,9 +566,9 @@ menu.click_slider(Snack_Armour, "自定义全部护甲数量", { "armourAll" }, 
         STAT_SET_INT("MP_CHAR_ARMOUR_5_COUNT", value)
         util.toast("完成！")
     end)
+
 menu.toggle(Snack_Armour, "禁用最大携带量限制", {}, "", function(toggle)
-    Tunables.SetInt("DISABLE_STAT_CAP_CHECK", toggle and 1 or 0)
-    LoopHandler.Tunables.DisableStatCapCheck = toggle
+    TunableService.RegisterToggle("DISABLE_STAT_CAP_CHECK", toggle)
 end)
 
 --#endregion
@@ -645,9 +645,10 @@ menu.list_select(Online_Options, "战局雪天", { "turnSnow" }, "", {
     { 0, "关闭", { "off" }, "" },
 }, -1, function(value)
     if value ~= -1 then
-        Tunables.SetInt("TURN_SNOW_ON_OFF", value)
+        TunableService.RegisterInt("TURN_SNOW_ON_OFF", value)
+    else
+        TunableService.RemoveInt("TURN_SNOW_ON_OFF")
     end
-    LoopHandler.Tunables.TurnSnow = value
 end)
 
 
@@ -656,17 +657,17 @@ local patch_GUNCLUB_UNLOCK_WEAPON = ScriptPatch.New("gunclub_shop", {
     ["IS_GUNSHOP_WEAPON_UNLOCKED"] = {
         pattern = "2D 03 2E 00 00 2C 01 02 82 2A 56",
         offset = 5,
-        patch_bytes = { 0x72, 0x2E, 0x03, 0x01 }
+        patch_bytes = ScriptFunc.ReturnBool(true, 3)
     },
     ["IS_GUNSHOP_WEAPON_COMP_UNLOCKED"] = {
         pattern = "2D 02 2E 00 00 38 00 71 58 35 05 2C",
         offset = 5,
-        patch_bytes = { 0x72, 0x2E, 0x02, 0x01 }
+        patch_bytes = ScriptFunc.ReturnBool(true, 2)
     },
     ["DOES_GUNSHOP_SUPPORT_MK2_WEAPONS"] = {
         pattern = "2D 01 03 00 00 38 00 65 0A 2E 00 00",
         offset = 5,
-        patch_bytes = { 0x72, 0x2E, 0x01, 0x01 }
+        patch_bytes = ScriptFunc.ReturnBool(true, 1)
     }
 })
 
