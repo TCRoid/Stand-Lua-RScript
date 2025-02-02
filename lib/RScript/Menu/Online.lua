@@ -653,6 +653,9 @@ end)
 
 
 
+menu.divider(Online_Options, "增强")
+
+
 local patch_GUNCLUB_UNLOCK_WEAPON = ScriptPatch.New("gunclub_shop", {
     ["IS_GUNSHOP_WEAPON_UNLOCKED"] = {
         pattern = "2D 03 2E 00 00 2C 01 02 82 2A 56",
@@ -671,8 +674,53 @@ local patch_GUNCLUB_UNLOCK_WEAPON = ScriptPatch.New("gunclub_shop", {
     }
 })
 
-menu.toggle_loop(Online_Options, "解锁武器改装", {}, "", function()
+menu.toggle_loop(Online_Options, "解锁武器改装", {}, "解锁武器及改装配件", function()
     patch_GUNCLUB_UNLOCK_WEAPON:Enable()
 end, function()
     patch_GUNCLUB_UNLOCK_WEAPON:Disable()
+end)
+
+
+
+local patch_ALLOW_VEHICLE_IN_GARAGE_1 = ScriptPatch.New("am_mp_smpl_interior_ext", {
+    ["IS_VEHICLE_SUITABLE_FOR_PROPERTY"] = {
+        pattern = "2D 08 13 00 00 38 00 2C 05",
+        offset = 5,
+        patch_bytes = ScriptFunc.ReturnBool(true, 8)
+    },
+    ["IS_VEHICLE_SUITABLE_FOR_PROPERTY_SLOT"] = {
+        pattern = "2D 02 05 00 00 38 00 28 52 6C 3C B5 57 ? ?",
+        offset = 5,
+        patch_bytes = ScriptFunc.ReturnBool(true, 2)
+    },
+    ["IS_THIS_MODEL_ALLOWED_IN_HANGAR"] = {
+        pattern = "2D 01 03 00 00 38 00 65 ? 7B 54 03 2F",
+        offset = 5,
+        patch_bytes = ScriptFunc.ReturnBool(false, 1)
+    }
+})
+local patch_ALLOW_VEHICLE_IN_GARAGE_2 = ScriptPatch.New("am_mp_property_ext", {
+    ["IS_VEHICLE_SUITABLE_FOR_PROPERTY"] = {
+        pattern = "2D 08 13 00 00 38 00 2C 05",
+        offset = 5,
+        patch_bytes = ScriptFunc.ReturnBool(true, 8)
+    },
+    ["IS_VEHICLE_SUITABLE_FOR_PROPERTY_SLOT"] = {
+        pattern = "2D 02 05 00 00 38 00 28 52 6C 3C B5 57 ? ?",
+        offset = 5,
+        patch_bytes = ScriptFunc.ReturnBool(true, 2)
+    },
+    ["IS_THIS_MODEL_ALLOWED_IN_HANGAR"] = {
+        pattern = "2D 01 03 00 00 38 00 65 ? 7B 54 03 2F",
+        offset = 5,
+        patch_bytes = ScriptFunc.ReturnBool(false, 1)
+    }
+})
+
+menu.toggle_loop(Online_Options, "允许任意载具进入车库", {}, "通过替换载具方式进入车库可避免卡黑屏加载", function()
+    patch_ALLOW_VEHICLE_IN_GARAGE_1:Enable()
+    patch_ALLOW_VEHICLE_IN_GARAGE_2:Enable()
+end, function()
+    patch_ALLOW_VEHICLE_IN_GARAGE_1:Disable()
+    patch_ALLOW_VEHICLE_IN_GARAGE_2:Disable()
 end)
